@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SPARTA AP — Portfolio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
+<noscript><link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"></noscript>
 <style>
 :root{
   --yf-inc:#38BDF8; --yf-exp:#F97316;   /* income blue / expense orange, used across Yearly */
@@ -117,6 +121,16 @@ body.monthly-view .monthlyfield{opacity:1}
 .arc-clock{left:44vw;top:70vh;width:10vw;min-width:100px;color:var(--teal);opacity:.1;animation-delay:-13s}
 .arc-mesh{right:30vw;top:8vh;width:24vw;min-width:220px;color:var(--teal);opacity:.06;animation-delay:-4s}
 @media (prefers-reduced-motion: reduce){.financefield *,.archivefield *,.monthlyfield *{animation:none!important}}
+
+/* Backdrop fields stay in the DOM for the cross-fade, but only the ACTIVE tab's
+   field animates. opacity:0 hides an element without stopping its animation, so
+   without this the engine ticks every hidden field's transforms on every frame. */
+.tk,.cu,.fin,.mo,.arc,.tkchart,.tkcandle,.curing,.cubar{animation-play-state:paused}
+body.dash-view    .tk,body.dash-view .tkchart,body.dash-view .tkcandle,
+body.contrib-view .cu,body.contrib-view .curing,body.contrib-view .cubar,
+body.yearly-view  .fin,
+body.archive-view .arc,
+body.monthly-view .mo{animation-play-state:running}
 @media (max-width:720px){
   .fin-growth,.arc-clock,.arc-mesh{display:none}
   .fin-bill,.arc-vault{opacity:.1}
@@ -182,12 +196,11 @@ header{display:flex;align-items:center;justify-content:space-between;gap:0px;mar
 .yearbar label{margin:0;font-size:10.5px;letter-spacing:.12em}
 .yearbar select{width:auto;min-width:132px;padding:9px 34px 9px 14px;font-size:13.5px}
 .brand{display:flex;align-items:center;gap:10px}
-/* .brand .orb{width:50px;height:50px;flex:none;border-radius:50%;background:conic-gradient(from 210deg,#5EEAD4,#A78BFA,#38BDF8,#5EEAD4);filter:saturate(120%);box-shadow:0 0 24px rgba(94,234,212,.45), inset 0 0 12px rgba(0,0,0,.35)} */
 .brand .orb { width: 70px; height: 100px;
   flex: none;
-  /* first URL works when SpAPP.png sits beside this HTML file; second is the
-     absolute Windows path. A URL that fails to load simply isn't painted. */
-  background-image: url('SpAPP.png'), url('file:///C:/Users/abhi.patel/Downloads/SpAPP.png');
+  /* SpAPP.png sits beside this HTML file. A URL that fails to load simply
+     isn't painted, so the header degrades to text-only without it. */
+  background-image: url('SpAPP.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -392,7 +405,6 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .dz-main{font-size:13.5px;font-weight:600;color:var(--text)}
 .dz-sub{font-size:11.5px;color:var(--text-faint)}
 #impTable th,#impTable td{padding:7px 6px;font-size:12px}
-#impCard .note{margin-top:12px}
 
 
 /* ---------- Collapsible sections ---------- */
@@ -449,12 +461,6 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .yf-statgrid .cell b{font-size:16px;font-variant-numeric:tabular-nums;margin-top:2px}
 .yf-card-bars,.yf-card-stats,.yf-card-avg,.yf-savings-card{display:flex;flex-direction:column;justify-content:center}
 .yf-savings{display:flex;flex-direction:column;justify-content:center;text-align:center}
-.yf-avg{display:flex;flex-direction:column;justify-content:center;gap:12px}
-.yf-avg .arow{text-align:center}
-.yf-avg .arow span{display:block;color:var(--text-dim);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase}
-.yf-avg .arow b{font-size:17px;font-variant-numeric:tabular-nums;display:block;margin-top:2px}
-.yf-avg .inc b{color:#38BDF8}
-.yf-avg .exp b{color:#F97316}
 /* ---- Glassmorphism: Yearly Finance + Finance Archives ---- */
 #yearlyView .panel{
   background:linear-gradient(135deg,rgba(255,255,255,.11),rgba(255,255,255,.035));
@@ -478,8 +484,6 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 #yearlyView .statrow{gap:8px}
 #yearlyView>.statrow{margin:8px 0}
 @media(max-width:900px){.yf-cards{grid-template-columns:1fr}}
-.yf-balbars{display:flex;gap:20px;align-items:flex-end}
-.yf-bal{text-align:center}
 .yf-bar{width:38px;border-radius:8px 8px 3px 3px;margin:0 auto;transition:height .5s cubic-bezier(.2,.8,.2,1)}
 .yf-bar-start{background:var(--yf-start);box-shadow:0 0 18px rgba(160,133,243,.55);height:56px}
 .yf-bar-end{
@@ -489,9 +493,6 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   animation:endflow 5.5s linear infinite}
 @keyframes endflow{0%{background-position:50% 0%}100%{background-position:50% 100%}}
 @media (prefers-reduced-motion:reduce){.yf-bar-end{animation:none;background-position:50% 50%}}
-.yf-mini{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:12.5px}
-.yf-mini div{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);padding:4px 0}
-.yf-mini span{color:var(--text-dim)} .yf-mini b{font-variant-numeric:tabular-nums}
 .yf-pa{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12.5px}
 .yf-pa span{width:56px;color:var(--text-dim)}
 .yf-pa b{width:80px;text-align:right;font-variant-numeric:tabular-nums}
@@ -657,10 +658,6 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   box-shadow:0 4px 16px rgba(94,234,212,.28),inset 0 1px 0 rgba(255,255,255,.45)}
 .skeu-btn.primary:hover{background:linear-gradient(180deg,rgba(150,247,230,1),rgba(60,222,200,.95))}
 .skeu-btn.sm{padding:6px 12px;font-size:11px;letter-spacing:.06em}
-.skeu-plate{font-family:var(--font-display);font-weight:700;font-size:14px;letter-spacing:.06em;
-  padding:8px 16px;border-radius:12px;color:#EAF0FA;min-width:118px;text-align:center;
-  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.14);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
 #meMonthWrap{gap:10px}
 /* drop target */
 .skeu-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
@@ -734,7 +731,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 
 
 /* ═════════ Archives — minimal: flat surfaces, thin rules, indigo accent ═════════ */
-#archiveView{--arc:#8B93F8;--arc2:#6BA8F5}
+#archiveView{--arc:#8B93F8}
 #archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
   border-radius:10px;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:22px 24px}
 #archiveView h3{font-family:var(--font-display);font-size:13px;font-weight:600;letter-spacing:.14em;
@@ -795,7 +792,7 @@ select{color-scheme:dark}
   #yfTxTable,#meTable,#mePreview,#ctable{min-width:520px}
   #yfExpTable,#yfIncTable{min-width:440px}
   .me-bar-row{grid-template-columns:96px 1fr 78px;font-size:11.5px}
-  .yf-six,.me-cards{gap:8px}
+  .me-cards{gap:8px}
   .skeu-readout{font-size:26px}
   .modal-card{max-width:100%;padding:18px}
 }
@@ -837,7 +834,7 @@ select{color-scheme:dark}
 /* ── logo: floating, breathing halo, slow rotating ring ── */
 .pin-orb{
   position:relative; width:74px; height:104px; margin-bottom:12px;
-  background-image:url('SpAPP.png'), url('file:///C:/Users/abhi.patel/Downloads/SpAPP.png');
+  background-image:url('SpAPP.png');
   background-size:contain; background-repeat:no-repeat; background-position:center;
   filter:drop-shadow(0 0 14px rgba(94,234,212,.55)) drop-shadow(0 0 34px rgba(167,139,250,.35));
   animation:pinOrbFloat 5.5s ease-in-out infinite;
@@ -1070,7 +1067,6 @@ select{color-scheme:dark}
   .pin-msg{font-size:11px;margin-bottom:8px;min-height:13px}
   .pin-keys{max-width:210px;gap:8px} .pin-keys button{font-size:18px}
   .pin-card{padding:8px 0}
-}
 }
 
 </style>
@@ -2150,7 +2146,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-07-26p</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-08-14a</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -2332,7 +2328,6 @@ function inScope(h){ return state.filter==='ALL' || h.acct===state.filter }
 // Holdings store avg/price in their OWN currency (h.ccy). These helpers convert to
 // the app's base (USD) so totals across a mixed CAD/USD portfolio add up correctly.
 function natToBase(v,ccy){ return ccy==='CAD' ? v/state.fx : v }
-function baseToNat(v,ccy){ return ccy==='CAD' ? v*state.fx : v }
 const hCcy=h=>h.ccy||'USD';
 function invested(list){ return list.reduce((s,h)=>s+natToBase(h.qty*h.avg,hCcy(h)),0) }
 function marketVal(list){ return list.reduce((s,h)=>s+natToBase(h.qty*(h.price??h.avg),hCcy(h)),0) }
@@ -2413,7 +2408,6 @@ function render(){
 
 /* ============ contributions ============ */
 let YEAR=new Date().getFullYear();
-const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 // CRA annual TFSA dollar limits by year; FHSA is 8,000/yr from 2023
 const nowYear=()=>new Date().getFullYear();      // always fresh, never trust a cached value for this
 const TFSA_LIMITS={2009:5000,2010:5000,2011:5000,2012:5000,2013:5500,2014:5500,2015:10000,
@@ -2456,10 +2450,6 @@ state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t
 })();
 function contributed(acct,y){
   return state.contribs.filter(c=>c.acct===acct && c.y===y).reduce((s,c)=>s+c.amt,0);
-}
-function loggedYears(){ return [...new Set(state.contribs.map(c=>c.y))] }
-function lifetimeFhsaCad(){
-  return state.contribs.filter(c=>c.acct==='FHSA').reduce((s,c)=>s+c.amt,0);
 }
 const fmtCADterm=cad=>'C$'+cad.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
 function yearOptions(acct){
@@ -3151,10 +3141,6 @@ function loadFirebaseSDK(){
   });
 }
 // legacy flat shape - kept only so old exports/pulls still parse
-function syncPayload(){
-  return { holdings:state.holdings, cash:state.cash, history:state.history.slice(-1500),
-    contribs:state.contribs, limits:state.limits, limitsY:state.limitsY, yearly:state.yearly, yf:state.yf, updatedAt:state.updatedAt||Date.now() };
-}
 function applyPayload(p){
   if(!p) return;
   fbApplying=true;
@@ -3631,22 +3617,6 @@ function applyImport(){
   impRows=[]; $('impPreview').style.display='none'; $('csvFile').value=''; $('dzName').textContent='or drag the file here';
   snapshot(true); persist(); render(); fetchPrices(false);
   toast(`Imported — ${added} added, ${updated} updated${removed?`, ${removed} removed`:''}`);
-}
-function exportHoldingsCSV(){
-  if(!state.holdings.length){ toast('No holdings to export'); return }
-  const head=['Symbol','Account','Quantity','AverageCost','CurrentPrice','MarketValue','Currency'];
-  const lines=[head.join(',')];
-  state.holdings.forEach(h=>{
-    const px=h.price!=null?h.price:h.avg;
-    lines.push([h.sym,h.acct,h.qty,h.avg.toFixed(2),px.toFixed(2),(h.qty*px).toFixed(2),hCcy(h)].join(','));
-  });
-  const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='sparta-holdings-'+new Date().toISOString().slice(0,10)+'.csv';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  toast('Exported '+state.holdings.length+' holdings');
 }
 function readFile(file){
   if(!file) return;

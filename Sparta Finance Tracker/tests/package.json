@@ -1,0 +1,15 @@
+{
+  "name": "sparta-finance-tracker-tests",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Regression, unit, data-driven and UI tests for the Sparta AP finance tracker",
+  "scripts": {
+    "test": "./run-all.sh",
+    "test:regression": "node test-regression.js",
+    "test:data": "node test-data.js",
+    "test:ui": "node test-ui.js",
+    "bench": "node bench.js ../Sparta\\ ap\\ stock\\ tracker.html 7",
+    "bench:ab": "node ab.js 9"
+  },
+  "devDependencies": { "playwright": "^1.49.1" }
+}

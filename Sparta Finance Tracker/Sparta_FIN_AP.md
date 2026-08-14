@@ -2,7 +2,9 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~260KB, ~4800 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-07-26p` (footer, bottom of page). **Bump the letter suffix on every change** (`...26p` → `...26q`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-08-14a` (footer, bottom of page). **Bump the letter suffix on every change** (`...14a` → `...14b`). If the day changes, bump the date and reset to `a`.
+
+> An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why, and `tests/` for the 87-check suite that verifies it.
 
 This doc exists to onboard a new coding session (e.g. Claude Code) quickly. Read this before touching the file.
 
@@ -227,3 +229,6 @@ These have each caused real, shipped bugs in this project. When making changes, 
 - Plausible Archives scope, based on prior conversation: read-only view of closed positions, prior-year Yearly Finance summaries (the year selector was removed from Yearly Finance's main view when it became a static current-year badge — Archives could be where historical years live), or compacted history snapshots.
 - No live Firebase listener (§4) — acceptable per user, don't add without asking.
 - No xlsx import support (CSV only, by design — avoids bundling SheetJS in a single-file app).
+- `SpAPP.png` is not committed next to the HTML, so the header/PIN logo 404s until
+  you drop it in this folder. The old `file:///C:/Users/...` fallback was removed
+  (browsers block `file://` subresources on any http-served page).
