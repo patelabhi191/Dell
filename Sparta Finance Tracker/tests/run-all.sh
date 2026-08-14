@@ -1,6 +1,6 @@
 #!/bin/bash
 tot=0; totf=0
-suites="test-data test-ui test-contrib"
+suites="test-data test-ui test-contrib test-yf-me-contrib"
 [ -f baseline.html ] || [ -n "$BASELINE" ] && suites="test-regression $suites"
 for t in $suites; do
   echo "════════ $t ════════"

@@ -1832,6 +1832,12 @@ select{color-scheme:dark}
   <!-- YEARLY FINANCE VIEW -->
   <div id="yearlyView" style="display:none">
 
+    <div class="seg" id="yfWhoSeg" role="tablist" aria-label="Contributor filter" style="margin-bottom:14px">
+      <button data-who="ALL" class="active all">All</button>
+      <button data-who="Abi">Abi</button>
+      <button data-who="Poo">Poo</button>
+    </div>
+
     <!-- summary cards -->
     <div class="yf-cards">
       <section class="panel stat" style="min-width:0">
@@ -1967,6 +1973,10 @@ select{color-scheme:dark}
           <select id="yfCat"></select>
         </div>
         <div class="full">
+          <label for="yfWho">Contributor</label>
+          <select id="yfWho"><option>Abi</option><option>Poo</option></select>
+        </div>
+        <div class="full">
           <label for="yfDesc">Description</label>
           <input id="yfDesc" placeholder="DVS Pay">
         </div>
@@ -1977,7 +1987,7 @@ select{color-scheme:dark}
       </div>
       <div class="tscroll" style="margin-top:16px;max-height:420px;overflow-y:auto">
         <table class="htable" id="yfTxTable">
-          <thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Type</th><th>Amount</th><th style="text-align:left">Description</th><th style="text-align:left">Category</th><th></th></tr></thead>
+          <thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Type</th><th>Amount</th><th style="text-align:left">Description</th><th style="text-align:left">Category</th><th style="text-align:left">Who</th><th></th></tr></thead>
           <tbody id="yfTxBody"></tbody>
         </table>
       </div>
@@ -1988,6 +1998,12 @@ select{color-scheme:dark}
 
   <!-- MONTHLY EXPENSE VIEW -->
   <div id="monthlyView" style="display:none">
+
+    <div class="seg" id="meWhoSeg" role="tablist" aria-label="Contributor filter" style="margin-bottom:14px">
+      <button data-who="ALL" class="active all">All</button>
+      <button data-who="Abi">Abi</button>
+      <button data-who="Poo">Poo</button>
+    </div>
 
     <!-- summary strip -->
     <div class="me-cards">
@@ -2095,6 +2111,10 @@ select{color-scheme:dark}
           <label for="meDesc">Description</label>
           <input id="meDesc" placeholder="Loblaws">
         </div>
+        <div class="full">
+          <label for="meWho">Contributor</label>
+          <select id="meWho"><option>Abi</option><option>Poo</option></select>
+        </div>
         <div class="duo full">
           <button class="skeu-btn primary" id="meSave">Add expense</button>
           <button class="skeu-btn" id="meCancelEdit" style="display:none">Cancel edit</button>
@@ -2144,7 +2164,7 @@ select{color-scheme:dark}
       </h3>
       <div class="tscroll" style="max-height:420px;overflow-y:auto">
         <table class="htable" id="meTable">
-          <thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Description</th><th>Amount</th><th style="text-align:left">Category</th><th></th></tr></thead>
+          <thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Description</th><th>Amount</th><th style="text-align:left">Category</th><th style="text-align:left">Who</th><th></th></tr></thead>
           <tbody id="meBody"></tbody>
         </table>
       </div>
@@ -2160,7 +2180,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-08-14b</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-08-14c</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -3781,12 +3801,15 @@ function normalizeYF(){
   if(!Array.isArray(y.cats.exp)) y.cats.exp=YF_EXP.slice();
   if(!Array.isArray(y.cats.inc)) y.cats.inc=YF_INC.slice();
   y.txns=y.txns.filter(t=>t && typeof t==='object' && t.date);   // drop corrupt rows
+  // default any transaction logged before contributor-tracking existed to Abi;
+  // Abi/Poo are hardcoded directly in each <select>, matching the Contributions tab.
+  y.txns.forEach(t=>{ if(!t.who) t.who='Abi'; });
   return y;
 }
 normalizeYF();
 
 state.yfYear = new Date().getFullYear();
-let yfEditId=null, yfFilter='all', yfChartMode='both', yfTxMonth='all';
+let yfEditId=null, yfFilter='all', yfChartMode='both', yfTxMonth='all', yfWhoFilter='ALL';
 const yf$=v=>'$'+Math.round(v).toLocaleString('en-CA');
 const yf$2=v=>'$'+(v||0).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
 function yfPersist(){ store.set('sparta.yf.data', state.yf); if(typeof cloudSaveDebounced==='function') cloudSaveDebounced(); }
@@ -3929,6 +3952,7 @@ function renderYF(){
   const list=txns
     .filter(t=>yfFilter==='all'||t.type===yfFilter)
     .filter(t=>yfTxMonth==='all'||(t.date||'').slice(5,7)===yfTxMonth)
+    .filter(t=>yfWhoFilter==='ALL'||t.who===yfWhoFilter)
     .slice().sort((a,b)=>b.date.localeCompare(a.date));
   const tb=$('yfTxBody'); tb.innerHTML='';
   list.forEach(t=>{
@@ -3938,6 +3962,7 @@ function renderYF(){
       <td class="${t.type==='income'?'yf-pos':''}" style="font-weight:600">${yf$2(t.amt)}</td>
       <td style="text-align:left;max-width:180px;overflow:hidden;text-overflow:ellipsis">${(t.desc||'').replace(/</g,'&lt;')}</td>
       <td style="text-align:left">${t.cat}</td>
+      <td style="text-align:left">${t.who||'Abi'}</td>
       <td style="white-space:nowrap"><button class="yf-edit" data-eid="${t.id}" title="Edit">\u270e</button><button class="rm" data-did="${t.id}" title="Delete">\u2715</button></td>`;
     tb.appendChild(tr);
   });
@@ -4013,15 +4038,16 @@ function yfSaveTx(){
   markUserEdit();
   normalizeYF();
   const type=$('yfType').value, date=$('yfDate').value,
-        amt=parseFloat($('yfAmt').value), desc=$('yfDesc').value.trim(), cat=$('yfCat').value;
+        amt=parseFloat($('yfAmt').value), desc=$('yfDesc').value.trim(), cat=$('yfCat').value,
+        who=$('yfWho').value||'Abi';
   if(!date){ toast('Pick a date'); return }
   if(isNaN(amt)){ toast('Enter an amount'); return }
   if(yfEditId){
     const t=state.yf.txns.find(x=>x.id===yfEditId);
-    if(t){ Object.assign(t,{type,date,amt,desc,cat}); toast('Transaction updated'); }
+    if(t){ Object.assign(t,{type,date,amt,desc,cat,who}); toast('Transaction updated'); }
     yfCancelEdit();
   } else {
-    state.yf.txns.push({id:uid(),type,date,amt,desc,cat});
+    state.yf.txns.push({id:uid(),type,date,amt,desc,cat,who});
     toast((type==='income'?'Income':'Expense')+' added \u2014 '+yf$2(amt));
     $('yfAmt').value=''; $('yfDesc').value='';
   }
@@ -4035,6 +4061,7 @@ function yfStartEdit(id){
   $('yfType').value=t.type; yfFillCats();
   $('yfDate').value=t.date; $('yfAmt').value=t.amt;
   $('yfDesc').value=t.desc||''; $('yfCat').value=t.cat;
+  $('yfWho').value=t.who||'Abi';
   $('yfSave').textContent='Update transaction';
   $('yfCancelEdit').style.display='';
   if($('yfForm').scrollIntoView) $('yfForm').scrollIntoView({behavior:'smooth',block:'center'});
@@ -4147,6 +4174,14 @@ $('yfFilterSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
   if(yfFilter==='income'||yfFilter==='expense'){ $('yfType').value=yfFilter; yfFillCats(); }
   renderYF();
 });
+if($('yfWhoSeg')){
+  $('yfWhoSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    yfWhoFilter=b.dataset.who;
+    $('yfWhoSeg').querySelectorAll('button').forEach(x=>{x.className=''});
+    b.className='active all';
+    renderYF();
+  });
+}
 $('yfDate').value=new Date().toISOString().slice(0,10);
 yfFillCats(); yfFillYearSel();
 
@@ -4184,6 +4219,7 @@ function normalizeME(){
 normalizeME();   // merchant->category rules + dedup fingerprints
 let meMonth = new Date().toISOString().slice(0,7);            // 'YYYY-MM'
 let mePending = [];
+let meWhoFilter='ALL';
 function mePersist(){ store.set('sparta.me', state.me); if(typeof cloudSaveDebounced==='function') cloudSaveDebounced() }
 
 const meMoney=n=>'$'+(n||0).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -4207,7 +4243,8 @@ function meFillMonthSelect(){
 }
 // expenses live in the SAME store as Yearly Finance - one dataset, two views
 function meTxns(){
-  return (state.yf.txns||[]).filter(t=>t.type==='expense' && (t.date||'').slice(0,7)===meMonth);
+  return (state.yf.txns||[]).filter(t=>t.type==='expense' && (t.date||'').slice(0,7)===meMonth
+    && (meWhoFilter==='ALL'||t.who===meWhoFilter));
 }
 
 /* ---- categorisation waterfall ---- */
@@ -4256,15 +4293,15 @@ function meSaveTx(){
   markUserEdit();
   normalizeYF(); normalizeME();
   const date=$('meDate').value, amt=parseFloat($('meAmt').value),
-        cat=$('meCat').value, desc=$('meDesc').value.trim();
+        cat=$('meCat').value, desc=$('meDesc').value.trim(), who=$('meWho').value||'Abi';
   if(!date){ toast('Pick a date'); return }
   if(!(amt>0)){ toast('Enter an amount greater than 0'); return }
   if(meEditId){
     const t=(state.yf.txns||[]).find(x=>x.id===meEditId);
-    if(t){ t.date=date; t.amt=+amt.toFixed(2); t.cat=cat; t.desc=desc; toast('Expense updated') }
+    if(t){ t.date=date; t.amt=+amt.toFixed(2); t.cat=cat; t.desc=desc; t.who=who; toast('Expense updated') }
     meCancelEdit();
   } else {
-    state.yf.txns.push({id:uid(),type:'expense',date,amt:+amt.toFixed(2),desc,cat});
+    state.yf.txns.push({id:uid(),type:'expense',date,amt:+amt.toFixed(2),desc,cat,who});
     toast('Added '+meMoney(amt)+' \u2014 '+cat);
     $('meAmt').value=''; $('meDesc').value='';
   }
@@ -4278,6 +4315,7 @@ function meStartEdit(id){
   meFillCatSelect();
   $('meDate').value=t.date; $('meAmt').value=t.amt; $('meDesc').value=t.desc||'';
   $('meCat').value=t.cat;
+  $('meWho').value=t.who||'Abi';
   $('meFormTitle').textContent='EDIT EXPENSE';
   $('meSave').textContent='Update expense';
   $('meCancelEdit').style.display='';
@@ -4406,7 +4444,8 @@ function renderME(){
   const [y,m]=meMonth.split('-').map(Number);
   const prev=new Date(y,m-2,1);
   const prevKey=prev.getFullYear()+'-'+String(prev.getMonth()+1).padStart(2,'0');
-  const prevTotal=(state.yf.txns||[]).filter(t=>t.type==='expense'&&(t.date||'').slice(0,7)===prevKey)
+  const prevTotal=(state.yf.txns||[]).filter(t=>t.type==='expense'&&(t.date||'').slice(0,7)===prevKey
+    &&(meWhoFilter==='ALL'||t.who===meWhoFilter))
     .reduce((s,t)=>s+t.amt,0);
   if(prevTotal>0){
     const diff=total-prevTotal, pct=diff/prevTotal*100;
@@ -4443,6 +4482,7 @@ function renderME(){
       <td style="text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis">${(t.desc||'').replace(/</g,'&lt;')}</td>
       <td style="font-weight:600">${meMoney(t.amt)}</td>
       <td style="text-align:left">${t.cat}</td>
+      <td style="text-align:left">${t.who||'Abi'}</td>
       <td style="white-space:nowrap"><button class="yf-edit" data-meedit="${t.id}" title="Edit">\u270e</button><button class="rm" data-medel="${t.id}" title="Delete">\u2715</button></td>`;
     tb.appendChild(tr);
   });
@@ -4544,7 +4584,7 @@ function meApplyImport(){
   if(!chosen.length){ toast('Nothing selected'); return }
   let learned=0;
   chosen.forEach(p=>{
-    state.yf.txns.push({id:uid(),type:'expense',date:p.date,amt:p.amt,desc:p.desc,cat:p.cat});
+    state.yf.txns.push({id:uid(),type:'expense',date:p.date,amt:p.amt,desc:p.desc,cat:p.cat,who:'Abi'});
     state.me.imported.push(p.fp);
     if(p.changed||p.why==='none'){                        // teach the categoriser
       const key=meMerchantKey(p.desc);
@@ -4585,6 +4625,14 @@ if($('meFile')){
   $('mePopAll').onclick=()=>{ state.me.chartCats=meAllCats().slice(); mePersist(); renderMEChart(); renderMEGear() };
   $('mePopNone').onclick=()=>{ state.me.chartCats=[]; mePersist(); renderMEChart(); renderMEGear() };
   $('meMonthSel').onchange=()=>{ meMonth=$('meMonthSel').value; renderME() };
+  if($('meWhoSeg')){
+    $('meWhoSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+      meWhoFilter=b.dataset.who;
+      $('meWhoSeg').querySelectorAll('button').forEach(x=>{x.className=''});
+      b.className='active all';
+      renderME();
+    });
+  }
   $('meBody').addEventListener('click',e=>{
     const ed=e.target.closest('[data-meedit]');
     if(ed){ meStartEdit(ed.dataset.meedit); return }
