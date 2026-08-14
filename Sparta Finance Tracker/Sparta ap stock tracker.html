@@ -1712,6 +1712,11 @@ select{color-scheme:dark}
 
   <!-- CONTRIBUTIONS VIEW -->
   <div id="contribView" style="display:none">
+    <div class="seg" id="cWhoSeg" role="tablist" aria-label="Contributor filter" style="margin-bottom:14px">
+      <button data-who="ALL" class="active all">All</button>
+      <button data-who="Abi">Abi</button>
+      <button data-who="Poo">Poo</button>
+    </div>
     <section class="panel cash" id="contribChartCard" style="margin-bottom:20px">
       <h3>Contributions by year
         <span style="display:flex;gap:14px;font-weight:500;font-size:11.5px;align-items:center">
@@ -1719,6 +1724,7 @@ select{color-scheme:dark}
           <span style="display:flex;align-items:center;gap:6px"><i class="lg lg-f"></i>FHSA</span>
         </span>
       </h3>
+      <div id="cContribSummary" class="note" style="margin:-4px 0 10px"></div>
       <div style="position:relative">
         <svg id="cChart" viewBox="0 0 700 190" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;max-height:210px"></svg>
         <div id="cTip" class="ctip"></div>
@@ -1739,6 +1745,10 @@ select{color-scheme:dark}
             <input id="depAmtT" type="number" min="0" step="0.01" placeholder="1,000.00">
           </div>
           <div>
+            <label for="depWhoT">Contributor</label>
+            <select id="depWhoT"><option>Abi</option><option>Poo</option></select>
+          </div>
+          <div>
             <label for="depYrT">Year</label>
             <select id="depYrT"></select>
           </div>
@@ -1746,7 +1756,7 @@ select{color-scheme:dark}
             <label for="limT">Annual limit (C$)</label>
             <input id="limT" type="number" min="0" step="1">
           </div>
-          <div style="display:flex;align-items:flex-end">
+          <div class="full" style="display:flex;align-items:flex-end">
             <button class="btn primary" id="depBtnT" style="width:100%">Add money</button>
           </div>
         </div>
@@ -1764,6 +1774,10 @@ select{color-scheme:dark}
             <input id="depAmtF" type="number" min="0" step="0.01" placeholder="1,000.00">
           </div>
           <div>
+            <label for="depWhoF">Contributor</label>
+            <select id="depWhoF"><option>Abi</option><option>Poo</option></select>
+          </div>
+          <div>
             <label for="depYrF">Year</label>
             <select id="depYrF"></select>
           </div>
@@ -1771,7 +1785,7 @@ select{color-scheme:dark}
             <label for="limF">Annual limit (C$)</label>
             <input id="limF" type="number" min="0" step="1">
           </div>
-          <div style="display:flex;align-items:flex-end">
+          <div class="full" style="display:flex;align-items:flex-end">
             <button class="btn primary" id="depBtnF" style="width:100%">Add money</button>
           </div>
         </div>
@@ -1791,7 +1805,7 @@ select{color-scheme:dark}
       <div id="logBody" class="collapsible">
       <div class="tscroll">
       <table class="htable" id="ctable">
-        <thead><tr><th>Year</th><th>Logged</th><th>Account</th><th>Amount</th><th></th></tr></thead>
+        <thead><tr><th>Year</th><th>Logged</th><th>Account</th><th>Who</th><th>Amount</th><th></th></tr></thead>
         <tbody id="cbody"></tbody>
       </table>
       </div>
@@ -1803,7 +1817,7 @@ select{color-scheme:dark}
       <h3>Total contributions by year</h3>
       <div class="tscroll">
       <table class="htable" id="ytable">
-        <thead><tr><th>Year</th><th>TFSA (C$)</th><th>FHSA (C$)</th><th></th></tr></thead>
+        <thead><tr><th>Year</th><th>TFSA · Abi (C$)</th><th>TFSA · Poo (C$)</th><th>FHSA · Abi (C$)</th><th>FHSA · Poo (C$)</th><th></th></tr></thead>
         <tbody id="ybody"></tbody>
       </table>
       </div>
@@ -2146,7 +2160,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-08-14a</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-08-14b</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -2189,9 +2203,13 @@ select{color-scheme:dark}
         <label for="cedYear">Year</label>
         <input id="cedYear" type="number" step="1" min="2009" max="2100">
       </div>
-      <div class="full">
+      <div>
         <label for="cedAcct">Account</label>
         <select id="cedAcct"><option>TFSA</option><option>FHSA</option></select>
+      </div>
+      <div>
+        <label for="cedWho">Contributor</label>
+        <select id="cedWho"><option>Abi</option><option>Poo</option></select>
       </div>
     </div>
     <div class="duo" style="margin-top:16px">
@@ -2284,6 +2302,7 @@ let state = {
   limits: store.get('sparta.limits', {TFSA:7000, FHSA:8000}), // legacy, kept for migration
   limitsY: loadNS('sparta.contrib.limitsY','sparta.limitsY', {}),   // {'TFSA-2026':7000} CAD, overrides CRA defaults
   cYear: new Date().getFullYear(),            // year being viewed on Contributions tab
+  cWho: 'ALL',                                // contributor filter on Contributions tab: 'ALL'|'Abi'|'Poo'
   logYear: String(new Date().getFullYear()),  // deposit-log filter ('ALL' or a year)
   yearly: loadNS('sparta.contrib.yearly','sparta.yearly', []),     // [{y, tfsa, fhsa}] in CAD
   fbOn: store.get('sparta.fbOn', true),      // sync switch (config itself lives in the file)
@@ -2293,6 +2312,10 @@ let state = {
   filter: 'ALL',
   range: '1D'
 };
+state.yearly.forEach(r=>{
+  if(r.tfsaAbi==null && r.tfsaPoo==null && r.tfsa!=null){ r.tfsaAbi=r.tfsa; r.tfsaPoo=0; delete r.tfsa; }
+  if(r.fhsaAbi==null && r.fhsaPoo==null && r.fhsa!=null){ r.fhsaAbi=r.fhsa; r.fhsaPoo=0; delete r.fhsa; }
+});
 function persist(){
   store.set('sparta.dash.holdings',state.holdings);   // --- Dashboard store ---
   store.set('sparta.dash.cash',state.cash);
@@ -2425,8 +2448,11 @@ function limitFor(acct,y){
   const v=state.limitsY[acct+'-'+y];
   return v!=null?v:defaultLimit(acct,y);
 }
-// migrate legacy entries: give every contribution an id and an explicit year
-state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t).getFullYear(); });
+// migrate legacy entries: give every contribution an id and an explicit year, and
+// default any deposit logged before contributor-tracking existed to Abi. Abi/Poo
+// are hardcoded (not Settings-configurable) directly in each <select> in markup,
+// matching every other short account-style select in this file.
+state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t).getFullYear(); if(!c.who) c.who='Abi'; });
 // Contributions used to be stored in USD base and re-converted at the live rate on
 // every render, so recorded CAD amounts drifted whenever FX moved. They are now
 // stored as plain CAD. Convert existing rows once, at the current rate.
@@ -2450,6 +2476,9 @@ state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t
 })();
 function contributed(acct,y){
   return state.contribs.filter(c=>c.acct===acct && c.y===y).reduce((s,c)=>s+c.amt,0);
+}
+function contributedBy(acct,y,who){
+  return state.contribs.filter(c=>c.acct===acct && c.y===y && c.who===who).reduce((s,c)=>s+c.amt,0);
 }
 const fmtCADterm=cad=>'C$'+cad.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
 function yearOptions(acct){
@@ -2490,7 +2519,8 @@ function renderContribs(){
     lsel.dataset.opts=wantOpts;
   }
   lsel.value=state.logYear;
-  const rows=state.logYear==='ALL'?allRows:allRows.filter(c=>c.y===parseInt(state.logYear,10));
+  const rows=(state.logYear==='ALL'?allRows:allRows.filter(c=>c.y===parseInt(state.logYear,10)))
+    .filter(c=>state.cWho==='ALL'||c.who===state.cWho);
   $('logScope').textContent=state.logYear==='ALL'
     ? '\u2014 all years ('+allRows.length+')'
     : (allRows.length>rows.length?'\u2014 '+(allRows.length-rows.length)+' hidden from other years':'');
@@ -2503,6 +2533,7 @@ function renderContribs(){
     tr.innerHTML=`<td style="text-align:left"><span class="sym" style="font-size:13px">${c.y}</span></td>
       <td>${c.backfill?'yearly entry':dte.toLocaleDateString('en-CA')}</td>
       <td><span class="acct-tag ${c.acct==='TFSA'?'tag-tfsa':c.acct==='FHSA'?'tag-fhsa':'tag-other'}" style="margin:0">${c.acct}</span></td>
+      <td>${c.who||'Abi'}</td>
       <td>${fmtCADterm(c.amt)}</td>
       <td style="white-space:nowrap"><button class="yf-edit" title="Edit entry" data-cedit="${c.id}">\u270e</button><button class="rm" title="Remove entry" data-cid="${c.id}">\u2715</button></td>`;
     tb.appendChild(tr);
@@ -2523,13 +2554,14 @@ function renderYearly(){
   const years=[...new Set(state.contribs.map(c=>c.y))].sort((a,b)=>b-a);
   // saved rows — read only
   years.forEach(y=>{
-    const t=contributed('TFSA',y), f=contributed('FHSA',y);
+    const tA=contributedBy('TFSA',y,'Abi'), tP=contributedBy('TFSA',y,'Poo');
+    const fA=contributedBy('FHSA',y,'Abi'), fP=contributedBy('FHSA',y,'Poo');
     const entries=state.contribs.filter(c=>c.y===y);
     const allBackfill=entries.length>0&&entries.every(c=>c.backfill);
     const tr=document.createElement('tr');
     if(y===state.cYear) tr.style.background='rgba(255,255,255,.035)';
     tr.innerHTML=`<td style="text-align:left"><span class="sym" style="font-size:13px">${y}<small>${allBackfill?'saved entry':'from deposit log'}</small></span></td>
-      <td>${fmtCADterm(t)}</td><td>${fmtCADterm(f)}</td>
+      <td>${fmtCADterm(tA)}</td><td>${fmtCADterm(tP)}</td><td>${fmtCADterm(fA)}</td><td>${fmtCADterm(fP)}</td>
       <td>${allBackfill?`<button class="rm" title="Delete this year's saved entry" data-byear="${y}">\u2715</button>`:''}</td>`;
     tb.appendChild(tr);
   });
@@ -2541,8 +2573,10 @@ function renderYearly(){
     tr.dataset.rid=r.id;
     tr.style.background='rgba(94,234,212,.06)';
     tr.innerHTML=`<td style="text-align:left"><select class="yin" data-f="y" style="width:100px">${opts.map(y=>`<option value="${y}"${y===r.y?' selected':''}>${y}</option>`).join('')}</select></td>
-      <td><input class="yin" data-f="tfsa" type="number" min="0" step="0.01" value="${r.tfsa||''}" placeholder="0.00" style="width:120px;text-align:right;margin-left:auto"></td>
-      <td><input class="yin" data-f="fhsa" type="number" min="0" step="0.01" value="${r.fhsa||''}" placeholder="0.00" style="width:120px;text-align:right;margin-left:auto"></td>
+      <td><input class="yin" data-f="tfsaAbi" type="number" min="0" step="0.01" value="${r.tfsaAbi||''}" placeholder="0.00" style="width:90px;text-align:right;margin-left:auto"></td>
+      <td><input class="yin" data-f="tfsaPoo" type="number" min="0" step="0.01" value="${r.tfsaPoo||''}" placeholder="0.00" style="width:90px;text-align:right;margin-left:auto"></td>
+      <td><input class="yin" data-f="fhsaAbi" type="number" min="0" step="0.01" value="${r.fhsaAbi||''}" placeholder="0.00" style="width:90px;text-align:right;margin-left:auto"></td>
+      <td><input class="yin" data-f="fhsaPoo" type="number" min="0" step="0.01" value="${r.fhsaPoo||''}" placeholder="0.00" style="width:90px;text-align:right;margin-left:auto"></td>
       <td><button class="rm" title="Discard this draft" data-yid="${r.id}">\u2715</button></td>`;
     tb.appendChild(tr);
   });
@@ -2557,7 +2591,7 @@ function renderYearly(){
     persist(); render(); toast(y+' entry deleted');
   });
   if(!tb.children.length){
-    tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text-faint);padding:18px">No contributions recorded yet.</td></tr>';
+    tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text-faint);padding:18px">No contributions recorded yet.</td></tr>';
   }
 }
 function saveYearly(){
@@ -2578,8 +2612,8 @@ function saveYearly(){
     // clear any previous saved entry for this year, then write fresh ones
     state.contribs=state.contribs.filter(c=>!(c.y===r.y&&c.backfill));
     const t=new Date(r.y,11,15,12).getTime();
-    [['TFSA',r.tfsa],['FHSA',r.fhsa]].forEach(([acct,cad])=>{
-      if(cad>0) state.contribs.push({id:uid(),t,y:r.y,acct,amt:cad,cad:true,backfill:true});
+    [['TFSA','Abi',r.tfsaAbi],['TFSA','Poo',r.tfsaPoo],['FHSA','Abi',r.fhsaAbi],['FHSA','Poo',r.fhsaPoo]].forEach(([acct,who,cad])=>{
+      if(cad>0) state.contribs.push({id:uid(),t,y:r.y,acct,amt:cad,cad:true,backfill:true,who});
     });
     saved++;
   });
@@ -2594,12 +2628,14 @@ function depositContrib(acct){
   markUserEdit();
   const amtEl=$(acct==='TFSA'?'depAmtT':'depAmtF');
   const yrEl=$(acct==='TFSA'?'depYrT':'depYrF');
+  const whoEl=$(acct==='TFSA'?'depWhoT':'depWhoF');
   const amt=parseFloat(amtEl.value);        // CAD as typed - contributions are CAD-only
   if(!(amt>0)){ toast('Enter an amount'); return }
   const y=parseInt(yrEl.value,10)||state.cYear;
   const t=(y===YEAR)?Date.now():new Date(y,11,15,12).getTime();
   const before=contributed(acct,y);
-  state.contribs.push({id:uid(),t,y,acct,amt,cad:true});   // independent of Dashboard cash
+  const who=whoEl.value||'Abi';
+  state.contribs.push({id:uid(),t,y,acct,amt,cad:true,who});   // independent of Dashboard cash
   amtEl.value='';
   const after=before+amt;
   toast(`${acct} ${y}: ${fmtCADterm(before)} + ${fmtCADterm(amt)} = ${fmtCADterm(after)}`);
@@ -2613,6 +2649,7 @@ function editContrib(id){
   $('cedAmt').value=c.amt;
   $('cedYear').value=String(c.y);
   $('cedAcct').value=c.acct;
+  $('cedWho').value=c.who||'Abi';
   $('cedTitle').textContent=`Edit ${c.acct} deposit`;
   $('cedModal').classList.add('open');
   setTimeout(()=>$('cedAmt').focus(),40);
@@ -2623,11 +2660,12 @@ function saveContribEdit(){
   const amt=parseFloat($('cedAmt').value);
   const y=parseInt($('cedYear').value,10);
   const acct=$('cedAcct').value;
+  const who=$('cedWho').value;
   if(!(amt>0)){ toast('Enter an amount greater than 0'); return }
   if(!(y>1900&&y<2200)){ toast('Enter a valid year'); return }
   const was=`${fmtCADterm(c.amt)} ${c.acct} ${c.y}`;
   const movedYear = c.y!==y;
-  c.amt=+amt.toFixed(2); c.y=y; c.acct=acct;
+  c.amt=+amt.toFixed(2); c.y=y; c.acct=acct; c.who=who;
   if(movedYear){                       // follow it, or the row just disappears
     state.cYear=y;
     if(state.logYear!=='ALL') state.logYear=String(y);
@@ -2866,6 +2904,14 @@ if($('cedSave')){
   $('cedSave').onclick=saveContribEdit;
   $('cedCancel').onclick=closeContribEdit;
   $('cedModal').addEventListener('click',e=>{ if(e.target===$('cedModal')) closeContribEdit() });
+}
+if($('cWhoSeg')){
+  $('cWhoSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    state.cWho=b.dataset.who;
+    $('cWhoSeg').querySelectorAll('button').forEach(x=>{x.className=''});
+    b.className='active all';
+    render();
+  });
 }
 $('sortSym').onclick=()=>{ sortBy='sym'; render() };
 $('sortPL').onclick=()=>{ sortBy='pl'; render() };
@@ -3148,6 +3194,10 @@ function applyPayload(p){
   state.history=(p.history||[]).map(e=>e.k?e:Object.assign({},e,{k:String(e.t)}));
   state.contribs=p.contribs||[];
   state.limits=p.limits||{TFSA:7000,FHSA:8000}; state.limitsY=p.limitsY||{}; state.yearly=p.yearly||[];
+state.yearly.forEach(r=>{
+  if(r.tfsaAbi==null && r.tfsaPoo==null && r.tfsa!=null){ r.tfsaAbi=r.tfsa; r.tfsaPoo=0; delete r.tfsa; }
+  if(r.fhsaAbi==null && r.fhsaPoo==null && r.fhsa!=null){ r.fhsaAbi=r.fhsa; r.fhsaPoo=0; delete r.fhsa; }
+});
   if(p.yf) state.yf=p.yf;
   if(p.me) state.me=p.me;
   if(p.pin && typeof p.pin==='object'){
@@ -3159,7 +3209,7 @@ function applyPayload(p){
   if(typeof normalizeYF==='function'){ normalizeYF(); store.set('sparta.yf.data',state.yf) }
   if(typeof normalizeME==='function'){ normalizeME(); store.set('sparta.me',state.me) }
   state.updatedAt=p.updatedAt||Date.now();
-  state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t).getFullYear(); });
+  state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t).getFullYear(); if(!c.who) c.who='Abi'; });
 // migrate holdings saved under the old "everything in base USD" model to native values
 (function migrateNative(){
   let changed=false;
@@ -3393,11 +3443,27 @@ function renderContribChart(){
   const years=[...new Set(state.contribs.map(c=>c.y))].sort((a,b)=>a-b);
   const empty=$('cChartEmpty'), tip=$('cTip');
   if(tip) tip.style.opacity='0';
-  if(years.length<1){ svg.innerHTML=''; empty.style.display='flex'; return }
+  if(years.length<1){ svg.innerHTML=''; empty.style.display='flex'; if($('cContribSummary')) $('cContribSummary').textContent=''; return }
   empty.style.display='none';
+  const sumEl=$('cContribSummary');
+  if(sumEl){
+    const fmtY=who=>fmtCADterm(contributedBy('TFSA',state.cYear,who)+contributedBy('FHSA',state.cYear,who));
+    sumEl.textContent=state.cWho==='ALL'
+      ? `This year: Abi ${fmtY('Abi')} · Poo ${fmtY('Poo')}`
+      : `This year: ${state.cWho} ${fmtY(state.cWho)}`;
+  }
   const xs=years.slice(-6);                       // keep it readable
-  const t=xs.map(y=>contributed('TFSA',y));
-  const f=xs.map(y=>contributed('FHSA',y));
+  const zeros=xs.map(()=>0);
+  // In a single-person filtered view, the selected person's numbers always ride the
+  // 'A'-slot (tA/fA) arrays regardless of who's actually selected, so the surviving
+  // bar always uses the full-opacity gradient tier rather than the dimmer stacking one.
+  const soloT=state.cWho==='Poo'?xs.map(y=>contributedBy('TFSA',y,'Poo')):xs.map(y=>contributedBy('TFSA',y,'Abi'));
+  const soloF=state.cWho==='Poo'?xs.map(y=>contributedBy('FHSA',y,'Poo')):xs.map(y=>contributedBy('FHSA',y,'Abi'));
+  const tA=state.cWho==='ALL'?xs.map(y=>contributedBy('TFSA',y,'Abi')):soloT;
+  const tP=state.cWho==='ALL'?xs.map(y=>contributedBy('TFSA',y,'Poo')):zeros;
+  const fA=state.cWho==='ALL'?xs.map(y=>contributedBy('FHSA',y,'Abi')):soloF;
+  const fP=state.cWho==='ALL'?xs.map(y=>contributedBy('FHSA',y,'Poo')):zeros;
+  const t=xs.map((_,i)=>tA[i]+tP[i]), f=xs.map((_,i)=>fA[i]+fP[i]);
   const W=700,H=190,L=56,R=16,T=14,B=30;
   const maxV=Math.max(...t,...f,0);
   let top=8000; while(maxV>top) top*=2;
@@ -3412,23 +3478,34 @@ function renderContribChart(){
     grid+=`<line x1="${L}" y1="${y.toFixed(1)}" x2="${W-R}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.08)"/>`;
     ylab+=`<text x="${L-9}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="rgba(234,240,250,.45)">C$${v>=1000?(v/1000)+'k':v}</text>`;
   });
-  const bars=(arr,col,grad,name,side)=>arr.map((v,i)=>{
+  const bars=(arrA,arrP,col,gradBase,name,side)=>arrA.map((a,i)=>{
+    const p=arrP[i];
     const x=cx(i)+(side<0?-(bw+gap/2):gap/2);
-    const y=py(v), h=Math.max(H-B-y,v>0?2:0);
-    return `<rect class="bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}"
-      rx="4" fill="url(#${grad})" stroke="${col}" stroke-width="1" style="cursor:pointer"
-      data-acct="${name}" data-year="${xs[i]}" data-val="${v}" data-col="${col}"/>`;
+    const yBase=py(0), yA=py(a), yTop=py(a+p);
+    const hA=Math.max(yBase-yA, a>0?2:0);
+    const hP=Math.max(yA-yTop, p>0?2:0);
+    let seg='';
+    if(hA>0) seg+=`<rect class="bar" x="${x.toFixed(1)}" y="${yA.toFixed(1)}" width="${bw.toFixed(1)}" height="${hA.toFixed(1)}"
+      rx="4" fill="url(#${gradBase}Abi)" stroke="${col}" stroke-width="1" style="cursor:pointer"
+      data-acct="${name}" data-year="${xs[i]}" data-who="Abi" data-val="${a}" data-other="${p}" data-otherwho="Poo" data-total="${a+p}" data-col="${col}"/>`;
+    if(hP>0) seg+=`<rect class="bar" x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${hP.toFixed(1)}"
+      rx="4" fill="url(#${gradBase}Poo)" stroke="${col}" stroke-width="1" style="cursor:pointer"
+      data-acct="${name}" data-year="${xs[i]}" data-who="Poo" data-val="${p}" data-other="${a}" data-otherwho="Abi" data-total="${a+p}" data-col="${col}"/>`;
+    if(hA>0 && hP>0) seg+=`<line x1="${x.toFixed(1)}" y1="${yA.toFixed(1)}" x2="${(x+bw).toFixed(1)}" y2="${yA.toFixed(1)}" stroke="rgba(6,12,20,.55)" stroke-width="1.5"/>`;
+    return seg;
   }).join('');
   const xlab=xs.map((y,i)=>`<text x="${cx(i).toFixed(1)}" y="${H-B+20}" text-anchor="middle" font-size="11.5" font-weight="600" fill="${y===state.cYear?'rgba(234,240,250,.9)':'rgba(234,240,250,.45)'}">${y}</text>`).join('');
   svg.innerHTML=`
     <defs>
-      <linearGradient id="tBar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5EEAD4" stop-opacity=".95"/><stop offset="1" stop-color="#5EEAD4" stop-opacity=".35"/></linearGradient>
-      <linearGradient id="fBar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A78BFA" stop-opacity=".95"/><stop offset="1" stop-color="#A78BFA" stop-opacity=".35"/></linearGradient>
+      <linearGradient id="tBarAbi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5EEAD4" stop-opacity=".95"/><stop offset="1" stop-color="#5EEAD4" stop-opacity=".35"/></linearGradient>
+      <linearGradient id="tBarPoo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5EEAD4" stop-opacity=".55"/><stop offset="1" stop-color="#5EEAD4" stop-opacity=".18"/></linearGradient>
+      <linearGradient id="fBarAbi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A78BFA" stop-opacity=".95"/><stop offset="1" stop-color="#A78BFA" stop-opacity=".35"/></linearGradient>
+      <linearGradient id="fBarPoo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A78BFA" stop-opacity=".55"/><stop offset="1" stop-color="#A78BFA" stop-opacity=".18"/></linearGradient>
     </defs>
     ${grid}${ylab}
     <line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="rgba(255,255,255,.14)"/>
     <line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="rgba(255,255,255,.14)"/>
-    ${bars(t,'#5EEAD4','tBar','TFSA',-1)}${bars(f,'#A78BFA','fBar','FHSA',1)}
+    ${bars(tA,tP,'#5EEAD4','tBar','TFSA',-1)}${bars(fA,fP,'#A78BFA','fBar','FHSA',1)}
     ${xlab}`;
   svg.querySelectorAll('.bar').forEach(b=>{
     const show=()=>{
@@ -3436,7 +3513,10 @@ function renderContribChart(){
       const bx=+b.getAttribute('x')+ +b.getAttribute('width')/2, by=+b.getAttribute('y');
       const sx=r.left+(bx/W)*r.width, sy=r.top+(by/H)*r.height;
       const wrap=tip.parentElement.getBoundingClientRect();
-      tip.innerHTML=`<b style="color:${b.dataset.col}">${b.dataset.acct}</b> ${b.dataset.year}<br>C$${(+b.dataset.val).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+      const fmt=n=>'C$'+(+n).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
+      tip.innerHTML=state.cWho==='ALL'
+        ? `<b style="color:${b.dataset.col}">${b.dataset.acct}</b> ${b.dataset.year}<br>${b.dataset.who} ${fmt(b.dataset.val)} · ${b.dataset.otherwho} ${fmt(b.dataset.other)}<br><b>Total ${fmt(b.dataset.total)}</b>`
+        : `<b style="color:${b.dataset.col}">${b.dataset.acct}</b> ${b.dataset.year}<br>${state.cWho} ${fmt(b.dataset.val)}`;
       tip.style.left=(sx-wrap.left)+'px'; tip.style.top=(sy-wrap.top-8)+'px'; tip.style.opacity='1';
       b.style.filter='brightness(1.25)';
     };

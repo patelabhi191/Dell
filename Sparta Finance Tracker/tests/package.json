@@ -8,6 +8,7 @@
     "test:regression": "node test-regression.js",
     "test:data": "node test-data.js",
     "test:ui": "node test-ui.js",
+    "test:contrib": "node test-contrib.js",
     "bench": "node bench.js ../Sparta\\ ap\\ stock\\ tracker.html 7",
     "bench:ab": "node ab.js 9"
   },

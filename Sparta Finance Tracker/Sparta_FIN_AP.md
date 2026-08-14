@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~260KB, ~4800 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-08-14a` (footer, bottom of page). **Bump the letter suffix on every change** (`...14a` → `...14b`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-08-14b` (footer, bottom of page). **Bump the letter suffix on every change** (`...14b` → `...14c`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why, and `tests/` for the 87-check suite that verifies it.
 
@@ -37,7 +37,7 @@ let state = {
   holdings, cash, history,              // Dashboard
   ccy, fx,                              // display currency + live USD→CAD rate
   contribs, limits, limitsY, yearly,    // Contributions
-  cYear, logYear,                       // Contributions: viewed year / log filter
+  cYear, logYear, cWho,                 // Contributions: viewed year / log filter / contributor filter ('ALL'|'Abi'|'Poo')
   fbOn, apiKey, updatedAt, bootStamp,   // sync + live prices + sync bookkeeping
   filter, range                         // Dashboard: account filter / chart range
 };
@@ -55,6 +55,9 @@ state.me = {...}      // Monthly Expense — see below (set ~line 4125)
 | **Archives** | *(none yet — placeholder)* | Should be **CAD only** if it touches money, consistent with Yearly/Monthly/Contributions |
 
 **Rule, stated explicitly because it was violated and fixed twice in this project:** Dashboard is the only tab that converts currency. Contributions, Yearly Finance, Monthly Expense, and (going forward) Archives must store and display amounts exactly as entered, in CAD, with zero multiplication by `state.fx`. A past bug stored Contributions in USD base and re-converted on every render, causing values to visibly drift whenever the exchange rate moved. Do not reintroduce this pattern.
+
+### Contributor tracking (Abi / Poo)
+Every `state.contribs` entry carries a `who: 'Abi'|'Poo'` field, hardcoded (not Settings-configurable) directly in the `<select>` markup — no `CONTRIBUTORS` constant, matching every other short account-style select in this file. `contributedBy(acct,y,who)` sums by contributor; `contributed(acct,y)` (unchanged) still sums the household total and remains the only thing the TFSA/FHSA hero cards, room-remaining bars, and CRA-limit math ever read. `state.yearly` draft rows carry 4 amounts (`tfsaAbi`/`tfsaPoo`/`fhsaAbi`/`fhsaPoo`) instead of 2. A tab-local `state.cWho` ('ALL'|'Abi'|'Poo', session-only — not in `persist()`, same as `state.filter`/`state.range`) drives an "All/Abi/Poo" `.seg` filter at the top of the Contributions tab; it scopes **only** the deposit log and the contribution chart (which stacks Abi-bottom/Poo-top per account) — never the hero cards, room bars, or the yearly backfill table, since CRA room is a single pooled per-year figure, not a per-person split. All deposits logged before this feature existed migrated to `who:'Abi'` (a non-destructive, idempotent default-fill at the same two sites as the existing id/year migration — no flag needed, unlike the flag-guarded `migrateContribCAD`).
 
 ### Full localStorage key inventory
 ```

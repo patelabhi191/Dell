@@ -12,6 +12,7 @@ npm install                 # playwright only
 |---|---|---|
 | `test-data.js` | Pure functions, table-driven: `meCategorise` waterfall, exclusions, dedup fingerprints, `limitFor`/`contributed`, `yfActual`, `parseCSV`, mixed-currency holdings math, the **CAD-only currency invariant**, and the one-time `migrateContribCAD` in all three branches | 45 |
 | `test-ui.js` | Real interaction flows: tab routing + theme/lock state, dashboard cash & holdings & sell modal & sorting, contributions deposit/log/edit modal, yearly transaction CRUD + categories + filters, monthly shared-ledger + popover, settings drawer + tab reorder, reload persistence, PIN gate | 72 |
+| `test-contrib.js` | Contributor (Abi/Poo) tracking: `depositContrib` defaults to Abi, migration on both branches (already-tagged entries untouched, untagged entries backfilled), the yearly-backfill zero-amount guard now split per contributor/account, the old-shape `{tfsa,fhsa}` yearly-draft fallback, stacked-chart segment totals vs. `contributed()`, and the All/Abi/Poo filter — confirms it scopes the chart + deposit log but leaves the TFSA/FHSA hero cards and room-remaining untouched | 28 |
 | `test-regression.js` | Diffs a **baseline snapshot** against the current file: rendered markup of all 5 tabs, 45 derived money values, post-boot `state`, and console errors | 15 |
 
 `test-regression.js` needs a pre-change snapshot:
