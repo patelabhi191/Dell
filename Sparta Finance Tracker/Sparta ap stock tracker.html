@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SPARTA AP — Portfolio</title>
+<link rel="icon" type="image/png" href="SpAPP.png">
+<!-- Brightened favicon: same SpAPP.png with a linear brightness boost applied
+     via an SVG filter, for browsers that support SVG favicons. Falls back to
+     the plain PNG above wherever this isn't supported or doesn't resolve. -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='64'%20height='64'%3E%3Cfilter%20id='b'%3E%3CfeComponentTransfer%3E%3CfeFuncR%20type='linear'%20slope='1.35'%20intercept='0.04'/%3E%3CfeFuncG%20type='linear'%20slope='1.35'%20intercept='0.04'/%3E%3CfeFuncB%20type='linear'%20slope='1.35'%20intercept='0.04'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Cimage%20href='SpAPP.png'%20width='64'%20height='64'%20filter='url%28%23b%29'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
@@ -3074,7 +3079,7 @@ function fbRefreshPanel(){
   } else {
     $('fbProject').textContent=FIREBASE_CONFIG.projectId||'Firebase project';
     const host=(FIREBASE_CONFIG.databaseURL||'').replace(/^https?:\/\//,'').split('/')[0];
-    $('fbTarget').textContent=host+' · sparta/'+SYNC_KEY;
+    $('fbTarget').textContent=host+' · sparta/'+SYNC_KEY.replace(/-chinku-rtdb-1910&08/,'-Joker2.0');
   }
 }
 $('fbToggle').onchange=async()=>{
