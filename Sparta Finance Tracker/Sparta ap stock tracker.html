@@ -362,6 +362,12 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 
 /* ===================== Mobile (iPhone) refinements ===================== */
 @media (max-width:560px){
+  /* The Dashboard column is wider than a phone screen (the holdings table's
+     min-content width sets the floor), and the page-level overflow-x:hidden
+     above clips it with no way to reach what's cut off. Keep the layout as
+     it is and let the page itself be swiped sideways instead. Tabs that
+     already fit stay put — there is nothing to scroll to. */
+  body{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .shell{padding:18px 14px 70px}
   /* header: keep it compact, don't let it eat the first screen */
   header{margin-bottom:12px;gap:10px}
