@@ -405,6 +405,18 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   .sym small{font-size:9.5px}
   .rm{padding:4px 6px}
 
+  /* Yearly Finance TRANSACTIONS header: title + month picker + the
+     All/Income/Expense filter cannot share one line on a phone, so the title
+     takes its own row and the two controls split the row beneath it. Headers
+     on the other tabs already fit, so wrapping never kicks in for them. */
+  .cash h3,.holdings h3,.formcard h3{flex-wrap:wrap;gap:10px}
+  .yf-txhead{width:100%;justify-content:space-between;gap:8px}
+  /* the picker already reads "All months"/"August 2026" — the label is noise here */
+  .yf-txhead label[for="yfTxMonth"]{display:none}
+  #yfTxMonth{min-width:0!important}   /* overrides the inline min-width:120px */
+  #yfFilterSeg{flex:1;min-width:0}
+  #yfFilterSeg button{flex:1;min-width:0;padding:8px 6px;font-size:12px}
+
   /* forms: 2-up inputs stay usable, buttons full width */
   .hform,.cashform{gap:8px}
   input,select{padding:10px 11px;font-size:13.5px}
@@ -416,6 +428,11 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 @media (max-width:380px){
   .tabbar .seg button{padding:8px 12px;font-size:12px}
   .hero .value{font-size:30px}
+}
+@media (max-width:360px){
+  /* Too narrow for the month picker and the transaction filter side by side,
+     so the filter drops onto its own full-width row under the picker. */
+  #yfFilterSeg{flex-basis:100%}
 }
 
 
@@ -1971,7 +1988,7 @@ select{color-scheme:dark}
     <!-- transactions -->
     <section class="panel cash">
       <h3 class="yf-h-neutral">TRANSACTIONS
-        <span style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-weight:500">
+        <span class="yf-txhead" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-weight:500">
         <span style="display:flex;gap:8px;align-items:center">
           <label for="yfTxMonth" style="margin:0;font-size:10.5px;white-space:nowrap">Month</label>
           <select id="yfTxMonth" style="width:auto;min-width:120px;padding:7px 30px 7px 11px;font-size:13px"></select>
