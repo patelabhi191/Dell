@@ -299,6 +299,18 @@ select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=
 label{font-size:11px;color:var(--text-faint);font-weight:600;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:6px}
 .duo{display:flex;gap:10px}
 .duo .btn{flex:1}
+/* Button rows with more actions than a phone can fit (the 5 cloud-sync buttons):
+   each button keeps its natural one-line pill shape and the row scrolls
+   sideways — same affordance the tab bar uses — instead of squeezing into
+   uneven wrapped blocks with the last button cropped off-screen. */
+@media (max-width:560px){
+  .duo.bscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);
+    mask-image:linear-gradient(90deg,#000 88%,transparent);
+    padding-right:24px}
+  .duo.bscroll::-webkit-scrollbar{display:none}
+  .duo.bscroll .btn{flex:0 0 auto;white-space:nowrap}
+}
 
 /* ---------- Holdings ---------- */
 .holdings{padding:22px}
@@ -1569,7 +1581,7 @@ select{color-scheme:dark}
         <input type="checkbox" id="fbToggle"><span class="track"><span class="knob"></span></span>
       </label>
     </div>
-    <div class="duo" style="margin-top:12px">
+    <div class="duo bscroll" style="margin-top:12px">
       <button class="btn" id="fbTest">Test connection</button>
       <button class="btn" id="fbPush">Push to cloud</button>
       <button class="btn" id="fbPull">Pull from cloud</button>
