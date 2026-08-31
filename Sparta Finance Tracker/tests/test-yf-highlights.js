@@ -80,6 +80,7 @@ const cards = page => page.evaluate(() =>
   };
   check(Object.values(fam).every(Boolean), 'all four highlight families make the 8-card cap',
     JSON.stringify(fam));
+  check(c.length === 8, 'suppressions do not over-fire on a real year (still 8 cards)', String(c.length));
   const big = c.find(x => x.title === 'Largest single expense');
   check(!!big && /7,200/.test(big.line) && /Reno/.test(big.line), 'largest single expense is the $7,200 Reno',
     big && big.line);
@@ -106,6 +107,61 @@ const cards = page => page.evaluate(() =>
   const hidden = await page.evaluate(() => getComputedStyle(document.getElementById('yfHiPanel')).display);
   check(hidden === 'none', 'a year with no transactions hides the panel entirely', hidden);
 
+  console.log('\n── 3b. averages use months logged, not months elapsed ──');
+  // one month only: $4,200 in / $2,710 out. Months elapsed would divide by the
+  // current month index and report a fraction of that.
+  await seed(page, [
+    { type: 'income',  date: `${YEAR}-01-01`, amt: 4200, desc: 'Pay',  cat: 'Paycheck', who: 'ABI' },
+    { type: 'expense', date: `${YEAR}-01-02`, amt: 2100, desc: 'Rent', cat: 'Home',     who: 'ABI' },
+    { type: 'expense', date: `${YEAR}-01-06`, amt: 610,  desc: 'Food', cat: 'Grocery',  who: 'ABI' },
+  ], {});
+  await page.waitForTimeout(250);
+  const rate1 = (await cards(page)).find(x => x.title === 'Savings rate');
+  check(!!rate1 && /\$4,200/.test(rate1.line) && /\$2,710/.test(rate1.line),
+    'one logged month averages to that month, not a twelfth of it', rate1 && rate1.line);
+  check(!!rate1 && /across the 1 month logged/.test(rate1.line),
+    'names the denominator, singular', rate1 && rate1.line);
+
+  await seed(page, [
+    { type: 'income',  date: `${YEAR}-01-01`, amt: 3000, desc: '', cat: 'Paycheck', who: 'ABI' },
+    { type: 'expense', date: `${YEAR}-01-02`, amt: 1000, desc: '', cat: 'Home',     who: 'ABI' },
+    { type: 'income',  date: `${YEAR}-02-01`, amt: 3000, desc: '', cat: 'Paycheck', who: 'ABI' },
+    { type: 'expense', date: `${YEAR}-02-02`, amt: 2000, desc: '', cat: 'Home',     who: 'ABI' },
+    { type: 'income',  date: `${YEAR}-03-01`, amt: 3000, desc: '', cat: 'Paycheck', who: 'ABI' },
+    { type: 'expense', date: `${YEAR}-03-02`, amt: 3000, desc: '', cat: 'Home',     who: 'ABI' },
+  ], {});
+  await page.waitForTimeout(250);
+  const c3 = await cards(page);
+  const rate3 = c3.find(x => x.title === 'Savings rate');
+  check(!!rate3 && /across the 3 months logged/.test(rate3.line), 'pluralises at 3 months',
+    rate3 && rate3.line);
+  check(!!rate3 && /\$3,000 in/.test(rate3.line), 'divides income by 3, not by months elapsed',
+    rate3 && rate3.line);
+
+  console.log('\n── 3c. cards that would state the obvious are suppressed ──');
+  // identical income every month -> no "best earning month" to crown
+  check(!c3.some(x => x.title === 'Best earning month'),
+    'identical monthly income produces no "Best earning month"',
+    JSON.stringify(c3.map(x => x.title)));
+  // ...but the varying expense side still gets its peak
+  check(c3.some(x => x.title === 'Biggest spending month'),
+    'varying monthly expense still produces "Biggest spending month"');
+  // single income category -> "100% of what came in" is not worth a card
+  check(!c3.some(x => x.title === 'Main income source'),
+    'a lone income category produces no share-of-total card');
+
+  await seed(page, [
+    { type: 'income',  date: `${YEAR}-01-01`, amt: 4200, desc: 'Pay',  cat: 'Paycheck', who: 'ABI' },
+    { type: 'expense', date: `${YEAR}-01-02`, amt: 2100, desc: 'Rent', cat: 'Home',     who: 'ABI' },
+  ], {});
+  await page.waitForTimeout(250);
+  const c1 = await cards(page);
+  check(!c1.some(x => x.title === 'Largest single expense'),
+    'a single expense produces no "Largest single expense" card',
+    JSON.stringify(c1.map(x => x.title)));
+  check(!c1.some(x => x.title === 'Biggest expense'),
+    'a lone expense category produces no share-of-total card');
+
   console.log('\n── 4. rotation + dots ──');
   await seed(page);
   await goYearly(page);
@@ -129,17 +185,31 @@ const cards = page => page.evaluate(() =>
 
   console.log('\n── 5. pause on hover ──');
   await page.mouse.move(0, 0);       // the dot click left the pointer inside the panel
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(250);
   await page.hover('#yfHiPanel');
-  await page.waitForTimeout(150);
-  const paused = await page.evaluate(() => ({ t: yfHiTimer, i: yfHiIdx }));
-  await page.waitForTimeout(5600);
-  const stillPaused = await page.evaluate(() => yfHiIdx);
-  check(paused.t === null && stillPaused === paused.i, 'hovering stops the rotation',
-    `timer=${paused.t} idx ${paused.i} -> ${stillPaused}`);
-  await page.mouse.move(0, 0);
   await page.waitForTimeout(200);
-  check(await page.evaluate(() => yfHiTimer !== null), 'leaving resumes it');
+  const hov = await page.evaluate(() => ({ hover: yfHiHover, timer: yfHiTimer }));
+  check(hov.hover === true && hov.timer === null, 'hovering flags hover and clears the timer',
+    JSON.stringify(hov));
+
+  // Prove the tick guard deterministically rather than racing the pointer:
+  // page.hover() can scroll the panel, and a stray mouseleave landing after the
+  // mouseenter would silently un-pause and make a wall-clock assertion flaky.
+  const guarded = await page.evaluate(async () => {
+    yfHiHover = true;
+    yfHiStart();                     // a live timer, but hover is set
+    const before = yfHiIdx;
+    await new Promise(r => setTimeout(r, 5600));
+    return { before, after: yfHiIdx, hadTimer: yfHiTimer !== null };
+  });
+  check(guarded.hadTimer && guarded.after === guarded.before,
+    'a running tick does not advance while hover is set', JSON.stringify(guarded));
+
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(250);
+  const left = await page.evaluate(() => ({ hover: yfHiHover, timer: yfHiTimer }));
+  check(left.hover === false && left.timer !== null, 'leaving clears the flag and resumes',
+    JSON.stringify(left));
 
   console.log('\n── 6. no timer leak (the main risk) ──');
   await page.click('#viewSeg button[data-view="monthly"]');

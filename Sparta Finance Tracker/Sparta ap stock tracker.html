@@ -3897,7 +3897,7 @@ const YF_HI_MAX=8;               // more dots than this stops being scannable
    Every card is guarded. A year with a single month of data must not claim a
    "highest month", and no branch may average over an empty set of months. */
 function yfHighlights(d){
-  const {mInc,mExp,totInc,totExp,nowMo,txns,planned,expCats}=d;
+  const {mInc,mExp,totInc,totExp,txns,planned,expCats}=d;
   const out=[];
   const all=[...Array(12).keys()];
   const expM=all.filter(i=>mExp[i]>0), incM=all.filter(i=>mInc[i]>0);
@@ -3906,22 +3906,25 @@ function yfHighlights(d){
   const mo=i=>YF_MONTHS[i];
   const over=(v,avg)=>avg>0?Math.round((v/avg-1)*100):0;
   const push=(key,tone,title,line)=>out.push({key,tone,title,line});
+  // naming a "biggest" or "leanest" month is meaningless when every month
+  // holds the same figure — it would just crown whichever one sorted first
+  const varied=(a,ix)=>ix.length>1&&Math.max(...ix.map(i=>a[i]))>Math.min(...ix.map(i=>a[i]));
 
   // ---- peaks & averages ----
   let peakExp=-1, peakInc=-1;
-  if(expM.length>=2){
+  if(expM.length>=2&&varied(mExp,expM)){
     peakExp=expM.reduce((a,b)=>mExp[b]>mExp[a]?b:a);
     const avg=avgOf(mExp,expM), o=over(mExp[peakExp],avg);
     push('peakExp','exp','Biggest spending month',
       mo(peakExp)+' — '+yf$2(mExp[peakExp])+(o>0?', '+o+'% above your '+yf$(avg)+' average month.':'.'));
   }
-  if(incM.length>=2){
+  if(incM.length>=2&&varied(mInc,incM)){
     peakInc=incM.reduce((a,b)=>mInc[b]>mInc[a]?b:a);
     const avg=avgOf(mInc,incM), o=over(mInc[peakInc],avg);
     push('peakInc','inc','Best earning month',
       mo(peakInc)+' — '+yf$2(mInc[peakInc])+(o>0?', '+o+'% above your '+yf$(avg)+' average month.':'.'));
   }
-  if(expM.length>=3){
+  if(expM.length>=3&&varied(mExp,expM)){
     const low=expM.reduce((a,b)=>mExp[b]<mExp[a]?b:a);
     push('lowExp','inc','Leanest month',mo(low)+' — you spent just '+yf$2(mExp[low])+'.');
   }
@@ -3930,10 +3933,16 @@ function yfHighlights(d){
     const net=mInc[best]-mExp[best];
     if(net>0) push('bestSave','inc','Best savings month',mo(best)+' — you kept '+yf$2(net)+' after expenses.');
   }
-  if(totInc>0&&nowMo>0){
+  if(totInc>0&&dataM.length){
     const rate=Math.round((totInc-totExp)/totInc*100);
+    // Deliberately divides by months that actually carry data, NOT by nowMo
+    // (months elapsed) the way the AVG INCOME / AVG EXPENSE cards below do:
+    // one month of records should read as that month, not as a twelfth of it.
+    // The wording names the denominator so the two do not look contradictory.
+    const n=dataM.length;
     push('rate','neutral','Savings rate',
-      'You are keeping '+rate+'% of what you earn — averaging '+yf$(totInc/nowMo)+' in and '+yf$(totExp/nowMo)+' out per month.');
+      'You are keeping '+rate+'% of what you earn — averaging '+yf$(totInc/n)+' in and '+yf$(totExp/n)+
+      ' out across the '+n+' month'+(n===1?'':'s')+' logged.');
   }
 
   // ---- anomalies (need a real baseline before calling anything unusual) ----
@@ -3984,12 +3993,13 @@ function yfHighlights(d){
   const topOf=m=>Object.keys(m).reduce((a,b)=>m[b]>(m[a]||0)?b:a,null);
   const ce=catTot('expense'), ci=catTot('income');
   const te=topOf(ce), ti=topOf(ci);
-  if(te&&totExp>0) push('topCatExp','exp','Biggest expense',
+  // a lone category is always 100% of the total, which tells you nothing
+  if(te&&totExp>0&&Object.keys(ce).length>1) push('topCatExp','exp','Biggest expense',
     te+' — '+yf$2(ce[te])+', '+Math.round(ce[te]/totExp*100)+'% of everything you spent.');
-  if(ti&&totInc>0) push('topCatInc','inc','Main income source',
+  if(ti&&totInc>0&&Object.keys(ci).length>1) push('topCatInc','inc','Main income source',
     ti+' — '+yf$2(ci[ti])+', '+Math.round(ci[ti]/totInc*100)+'% of what came in.');
   const exps=txns.filter(t=>t.type==='expense');
-  if(exps.length){
+  if(exps.length>1){                       // with one expense it is just the only expense
     const big=exps.reduce((a,b)=>b.amt>a.amt?b:a);
     push('bigTx','exp','Largest single expense',
       yf$2(big.amt)+(big.desc?' on '+big.desc:'')+' ('+big.cat+') — '+big.date+'.');
@@ -4019,8 +4029,7 @@ function yfHiBuild(){
     if(m>=0&&m<12){ if(t.type==='income') mInc[m]+=t.amt; else mExp[m]+=t.amt; }
   });
   const totInc=mInc.reduce((a,b)=>a+b,0), totExp=mExp.reduce((a,b)=>a+b,0);
-  const nowMo=(yr===new Date().getFullYear())?(new Date().getMonth()+1):12;
-  const cards=yfHighlights({mInc,mExp,totInc,totExp,nowMo,txns,
+  const cards=yfHighlights({mInc,mExp,totInc,totExp,txns,
     planned:(state.yf.planned||{})[yr]||{}, expCats:yfCats('expense')});
   yfHiN=cards.length;
   panel.style.display=cards.length?'':'none';
