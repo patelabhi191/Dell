@@ -614,6 +614,21 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .yf-catbtn{border:none;background:transparent;color:var(--text-faint);font-size:12px;padding:2px 5px;border-radius:6px;cursor:pointer}
 .yf-catbtn:hover{color:var(--teal);background:rgba(94,234,212,.1)}
 .yf-catbtn.del:hover{color:var(--rose);background:rgba(251,113,133,.1)}
+/* Highlights slideshow. Every slide sits in the SAME grid cell, so the panel
+   is as tall as the tallest card and its height never jumps mid-rotation. */
+.yf-hi-stage{display:grid}
+.yf-hi-slide{grid-area:1/1;opacity:0;visibility:hidden;transition:opacity .45s ease}
+.yf-hi-slide.on{opacity:1;visibility:visible}
+.yf-hi-t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:7px}
+.yf-hi-l{font-size:15px;line-height:1.5;font-family:var(--font-display);font-weight:600}
+.yf-hi-inc{color:var(--yf-inc)}
+.yf-hi-exp{color:var(--yf-exp)}
+.yf-hi-neutral{color:var(--text-dim)}
+.yf-hi-dots{display:flex;gap:7px;margin-top:14px}
+.yf-hi-dot{width:7px;height:7px;padding:0;border-radius:50%;border:none;cursor:pointer;
+  background:rgba(234,240,250,.25);transition:background .2s,transform .2s}
+.yf-hi-dot.on{background:var(--text);transform:scale(1.25)}
+@media (prefers-reduced-motion:reduce){.yf-hi-slide{transition:none}}
 .yf-addcat{display:flex;gap:8px;margin-top:10px}
 .yf-addcat input{flex:1;padding:8px 10px;font-size:12.5px}
 .yf-addcat .btn{padding:8px 14px;font-size:12px}
@@ -1939,6 +1954,13 @@ select{color-scheme:dark}
       </div>
     </div>
 
+    <!-- highlights -->
+    <section class="panel cash" id="yfHiPanel" style="display:none;margin-bottom:20px">
+      <h3 class="yf-h-neutral">HIGHLIGHTS</h3>
+      <div class="yf-hi-stage" id="yfHiSlides"></div>
+      <div class="yf-hi-dots" id="yfHiDots"></div>
+    </section>
+
     <!-- planned vs actual overview -->
     <div class="statrow">
       <section class="panel stat">
@@ -3029,6 +3051,8 @@ function applyView(view){
   $('cWhoSeg').style.display=contrib?'':'none';
   $('yfWhoSeg').style.display=view==='yearly'?'':'none';
   $('meWhoSeg').style.display=view==='monthly'?'':'none';
+  // the highlights only rotate while their own tab is on screen
+  if(typeof yfHiStart==='function'){ view==='yearly'?yfHiStart():yfHiStop(); }
   render();
 }
 $('viewSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>applyView(b.dataset.view));
@@ -3867,6 +3891,176 @@ function yfPlanned(cat){ const p=state.yf.planned[state.yfYear]||{}; return p[ca
 function yfActual(type,cat){
   return yfTxns().filter(t=>t.type===type&&(cat==null||t.cat===cat)).reduce((s,t)=>s+t.amt,0);
 }
+/* ---------- Yearly Finance highlights ---------- */
+const YF_HI_MAX=8;               // more dots than this stops being scannable
+/* Pure: turn one year's aggregates into the insight cards worth showing.
+   Every card is guarded. A year with a single month of data must not claim a
+   "highest month", and no branch may average over an empty set of months. */
+function yfHighlights(d){
+  const {mInc,mExp,totInc,totExp,nowMo,txns,planned,expCats}=d;
+  const out=[];
+  const all=[...Array(12).keys()];
+  const expM=all.filter(i=>mExp[i]>0), incM=all.filter(i=>mInc[i]>0);
+  const dataM=all.filter(i=>mInc[i]>0||mExp[i]>0);
+  const avgOf=(a,ix)=>ix.length?ix.reduce((s,i)=>s+a[i],0)/ix.length:0;
+  const mo=i=>YF_MONTHS[i];
+  const over=(v,avg)=>avg>0?Math.round((v/avg-1)*100):0;
+  const push=(key,tone,title,line)=>out.push({key,tone,title,line});
+
+  // ---- peaks & averages ----
+  let peakExp=-1, peakInc=-1;
+  if(expM.length>=2){
+    peakExp=expM.reduce((a,b)=>mExp[b]>mExp[a]?b:a);
+    const avg=avgOf(mExp,expM), o=over(mExp[peakExp],avg);
+    push('peakExp','exp','Biggest spending month',
+      mo(peakExp)+' — '+yf$2(mExp[peakExp])+(o>0?', '+o+'% above your '+yf$(avg)+' average month.':'.'));
+  }
+  if(incM.length>=2){
+    peakInc=incM.reduce((a,b)=>mInc[b]>mInc[a]?b:a);
+    const avg=avgOf(mInc,incM), o=over(mInc[peakInc],avg);
+    push('peakInc','inc','Best earning month',
+      mo(peakInc)+' — '+yf$2(mInc[peakInc])+(o>0?', '+o+'% above your '+yf$(avg)+' average month.':'.'));
+  }
+  if(expM.length>=3){
+    const low=expM.reduce((a,b)=>mExp[b]<mExp[a]?b:a);
+    push('lowExp','inc','Leanest month',mo(low)+' — you spent just '+yf$2(mExp[low])+'.');
+  }
+  if(dataM.length>=2){
+    const best=dataM.reduce((a,b)=>(mInc[b]-mExp[b])>(mInc[a]-mExp[a])?b:a);
+    const net=mInc[best]-mExp[best];
+    if(net>0) push('bestSave','inc','Best savings month',mo(best)+' — you kept '+yf$2(net)+' after expenses.');
+  }
+  if(totInc>0&&nowMo>0){
+    const rate=Math.round((totInc-totExp)/totInc*100);
+    push('rate','neutral','Savings rate',
+      'You are keeping '+rate+'% of what you earn — averaging '+yf$(totInc/nowMo)+' in and '+yf$(totExp/nowMo)+' out per month.');
+  }
+
+  // ---- anomalies (need a real baseline before calling anything unusual) ----
+  if(dataM.length>=3){
+    const aExp=avgOf(mExp,expM);
+    // skip the peak month: its own card already states how far above average it ran
+    const odd=expM.filter(i=>i!==peakExp&&aExp>0&&mExp[i]>=aExp*1.25);
+    if(odd.length){
+      const w=odd.reduce((a,b)=>mExp[b]>mExp[a]?b:a);
+      push('oddExp','exp','Unusual month',mo(w)+' ran '+over(mExp[w],aExp)+'% above your usual spend.');
+    }
+    const aInc=avgOf(mInc,incM);
+    const oddI=incM.filter(i=>i!==peakInc&&aInc>0&&mInc[i]>=aInc*1.25);
+    if(oddI.length){
+      const w=oddI.reduce((a,b)=>mInc[b]>mInc[a]?b:a);
+      push('oddInc','inc','Unusual month',mo(w)+' brought in '+over(mInc[w],aInc)+'% more than usual.');
+    }
+    const def=dataM.filter(i=>mExp[i]>mInc[i]);
+    if(def.length) push('deficit','exp','Spent more than you earned',
+      def.length+' month'+(def.length>1?'s':'')+' — '+def.map(mo).join(', ')+'.');
+    for(let i=2;i<12;i++){
+      if(mExp[i-2]>0&&mExp[i-1]>mExp[i-2]&&mExp[i]>mExp[i-1]){
+        push('climb','exp','Spending trend','Spending climbed three months straight — '+mo(i-2)+' to '+mo(i)+'.');
+        break;
+      }
+    }
+  }
+
+  // ---- budget vs reality (expense categories only) ----
+  const expSet=new Set(expCats||[]);
+  const planKeys=Object.keys(planned||{}).filter(k=>planned[k]>0&&expSet.has(k));
+  if(planKeys.length){
+    const act=c=>txns.filter(t=>t.type==='expense'&&t.cat===c).reduce((s,t)=>s+t.amt,0);
+    let hi=null, lo=null;
+    planKeys.forEach(c=>{
+      const a=act(c), diff=a-planned[c];
+      if(diff>0&&(!hi||diff>hi.d)) hi={c,d:diff,a};
+      if(diff<0&&(!lo||diff<lo.d)) lo={c,d:diff,a};
+    });
+    if(hi) push('over','exp','Over budget',
+      hi.c+': planned '+yf$(planned[hi.c])+', spent '+yf$2(hi.a)+' — '+yf$2(hi.d)+' over.');
+    if(lo) push('under','inc','Under budget',
+      lo.c+': planned '+yf$(planned[lo.c])+', used '+yf$2(lo.a)+' — '+yf$2(-lo.d)+' to spare.');
+  }
+
+  // ---- categories & contributors ----
+  const catTot=type=>{const m={};txns.filter(t=>t.type===type).forEach(t=>{m[t.cat]=(m[t.cat]||0)+t.amt});return m;};
+  const topOf=m=>Object.keys(m).reduce((a,b)=>m[b]>(m[a]||0)?b:a,null);
+  const ce=catTot('expense'), ci=catTot('income');
+  const te=topOf(ce), ti=topOf(ci);
+  if(te&&totExp>0) push('topCatExp','exp','Biggest expense',
+    te+' — '+yf$2(ce[te])+', '+Math.round(ce[te]/totExp*100)+'% of everything you spent.');
+  if(ti&&totInc>0) push('topCatInc','inc','Main income source',
+    ti+' — '+yf$2(ci[ti])+', '+Math.round(ci[ti]/totInc*100)+'% of what came in.');
+  const exps=txns.filter(t=>t.type==='expense');
+  if(exps.length){
+    const big=exps.reduce((a,b)=>b.amt>a.amt?b:a);
+    push('bigTx','exp','Largest single expense',
+      yf$2(big.amt)+(big.desc?' on '+big.desc:'')+' ('+big.cat+') — '+big.date+'.');
+  }
+  const abi=exps.filter(t=>(t.who||'ABI')==='ABI').reduce((s,t)=>s+t.amt,0);
+  const poo=exps.filter(t=>t.who==='POO').reduce((s,t)=>s+t.amt,0);
+  if(abi>0&&poo>0) push('who','neutral','Who spent what',
+    'ABI '+Math.round(abi/(abi+poo)*100)+'% ('+yf$2(abi)+') · POO '+Math.round(poo/(abi+poo)*100)+'% ('+yf$2(poo)+').');
+
+  // Fixed order, cycling peak -> anomaly -> budget -> category so all four
+  // families land inside the cap instead of one family crowding out the rest.
+  const ORDER=['peakExp','oddExp','over','topCatExp',
+               'peakInc','deficit','under','who',
+               'rate','oddInc','bigTx','bestSave',
+               'climb','topCatInc','lowExp'];
+  return out.sort((a,b)=>ORDER.indexOf(a.key)-ORDER.indexOf(b.key)).slice(0,YF_HI_MAX);
+}
+
+let yfHiIdx=0, yfHiTimer=null, yfHiN=0, yfHiHover=false;
+function yfHiBuild(){
+  const wrap=$('yfHiSlides'), dots=$('yfHiDots'), panel=$('yfHiPanel');
+  if(!wrap||!panel) return 0;
+  const yr=state.yfYear, txns=yfTxns();
+  const mInc=Array(12).fill(0), mExp=Array(12).fill(0);
+  txns.forEach(t=>{
+    const m=parseInt((t.date||'').slice(5,7),10)-1;
+    if(m>=0&&m<12){ if(t.type==='income') mInc[m]+=t.amt; else mExp[m]+=t.amt; }
+  });
+  const totInc=mInc.reduce((a,b)=>a+b,0), totExp=mExp.reduce((a,b)=>a+b,0);
+  const nowMo=(yr===new Date().getFullYear())?(new Date().getMonth()+1):12;
+  const cards=yfHighlights({mInc,mExp,totInc,totExp,nowMo,txns,
+    planned:(state.yf.planned||{})[yr]||{}, expCats:yfCats('expense')});
+  yfHiN=cards.length;
+  panel.style.display=cards.length?'':'none';
+  if(!cards.length){ yfHiStop(); wrap.innerHTML=''; dots.innerHTML=''; return 0; }
+  if(yfHiIdx>=cards.length) yfHiIdx=0;      // keep the reader's place, clamped
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  wrap.innerHTML=cards.map((c,i)=>
+    '<div class="yf-hi-slide'+(i===yfHiIdx?' on':'')+'"'+(i===yfHiIdx?'':' aria-hidden="true"')+'>'+
+      '<div class="yf-hi-t yf-hi-'+c.tone+'">'+esc(c.title)+'</div>'+
+      '<div class="yf-hi-l">'+esc(c.line)+'</div></div>').join('');
+  dots.innerHTML=cards.map((c,i)=>
+    '<button class="yf-hi-dot'+(i===yfHiIdx?' on':'')+'" data-i="'+i+'" aria-label="Highlight '+(i+1)+
+    ' of '+cards.length+'"'+(i===yfHiIdx?' aria-current="true"':'')+'></button>').join('');
+  return cards.length;
+}
+function yfHiShow(i){
+  const wrap=$('yfHiSlides'), dots=$('yfHiDots');
+  if(!wrap||!dots||!yfHiN) return;
+  yfHiIdx=((i%yfHiN)+yfHiN)%yfHiN;
+  [...wrap.children].forEach((el,n)=>{
+    el.classList.toggle('on',n===yfHiIdx);
+    if(n===yfHiIdx) el.removeAttribute('aria-hidden'); else el.setAttribute('aria-hidden','true');
+  });
+  [...dots.children].forEach((el,n)=>{
+    el.classList.toggle('on',n===yfHiIdx);
+    if(n===yfHiIdx) el.setAttribute('aria-current','true'); else el.removeAttribute('aria-current');
+  });
+}
+/* clearInterval first, always: renderYF() has many callers and a stacked
+   timer would rotate the panel several times a tick */
+function yfHiStop(){ clearInterval(yfHiTimer); yfHiTimer=null; }
+function yfHiStart(){
+  yfHiStop();
+  if(yfHiN<2) return;
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  // the tick re-checks hover: a stray leave/enter (a background scroll moving
+  // the panel out from under a stationary pointer) must never rotate the card
+  // out from under someone reading it
+  yfHiTimer=setInterval(()=>{ if(!yfHiHover) yfHiShow(yfHiIdx+1); },5000);
+}
 function renderYF(){
  try{
   if(!$('yfStartVal')) return;
@@ -4024,6 +4218,14 @@ function renderYF(){
       ? 'Nothing matches this filter \u2014 try All months or All.'
       : 'No transactions for this year yet \u2014 add your first one above.';
   }
+
+  // Rebuild the highlight cards, but never start a timer here — renderYF() is
+  // called from the cloud-sync and Monthly Expense paths while this tab is
+  // hidden. Only keep an already-running rotation alive; applyView() owns
+  // starting and stopping it.
+  const hiWasRunning=!!yfHiTimer;
+  yfHiBuild();
+  if(hiWasRunning) yfHiStart();
  }catch(e){ console.error('yf render:',e) }
 }
 
@@ -4199,6 +4401,24 @@ if($('yfYearSel')) $('yfYearSel').onchange=()=>{
 };
 if($('yfTxMonth')) $('yfTxMonth').onchange=()=>{ yfTxMonth=$('yfTxMonth').value; renderYF() };
 if($('yfTxCat')) $('yfTxCat').onchange=()=>{ yfTxCat=$('yfTxCat').value; renderYF() };
+if($('yfHiPanel')){
+  // bound once — renderYF() replaces the dots' innerHTML on every render, so
+  // the listener lives on the container, not the buttons
+  $('yfHiDots').addEventListener('click',e=>{
+    const b=e.target.closest('[data-i]'); if(!b) return;
+    yfHiShow(+b.dataset.i);
+    // restart the clock after a manual jump, unless the pointer is resting on
+    // the panel — rotating out from under the reader is exactly what the
+    // hover pause exists to prevent
+    if(!yfHiHover) yfHiStart();
+  });
+  const hiOff=()=>{ yfHiHover=true;  yfHiStop(); };
+  const hiOn =()=>{ yfHiHover=false; if($('yearlyView').style.display!=='none') yfHiStart(); };
+  $('yfHiPanel').addEventListener('mouseenter',hiOff);
+  $('yfHiPanel').addEventListener('mouseleave',hiOn);
+  $('yfHiPanel').addEventListener('focusin',hiOff);
+  $('yfHiPanel').addEventListener('focusout',hiOn);
+}
 $('yfType').onchange=yfFillCats;
 $('yfSave').onclick=yfSaveTx;
 $('yfCancelEdit').onclick=yfCancelEdit;
