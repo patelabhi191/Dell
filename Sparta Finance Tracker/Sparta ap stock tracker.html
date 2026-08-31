@@ -411,10 +411,13 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
      on the other tabs already fit, so wrapping never kicks in for them. */
   .cash h3,.holdings h3,.formcard h3{flex-wrap:wrap;gap:10px}
   .yf-txhead{width:100%;justify-content:space-between;gap:8px}
-  /* the picker already reads "All months"/"August 2026" — the label is noise here */
-  .yf-txhead label[for="yfTxMonth"]{display:none}
-  #yfTxMonth{min-width:0!important}   /* overrides the inline min-width:120px */
-  #yfFilterSeg{flex:1;min-width:0}
+  /* the pickers already read "All months"/"August 2026" and "All categories"/
+     "Rent" — the labels are noise at this width */
+  .yf-txhead label[for="yfTxMonth"],.yf-txhead label[for="yfTxCat"]{display:none}
+  #yfTxMonth,#yfTxCat{min-width:0!important}   /* overrides the inline min-width:120px */
+  /* three controls will not fit beside the title, so the two pickers share one
+     row and the All/Income/Expense filter gets the full width beneath them */
+  #yfFilterSeg{flex:1 0 100%;min-width:0}
   #yfFilterSeg button{flex:1;min-width:0;padding:8px 6px;font-size:12px}
 
   /* forms: 2-up inputs stay usable, buttons full width */
@@ -428,11 +431,6 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 @media (max-width:380px){
   .tabbar .seg button{padding:8px 12px;font-size:12px}
   .hero .value{font-size:30px}
-}
-@media (max-width:360px){
-  /* Too narrow for the month picker and the transaction filter side by side,
-     so the filter drops onto its own full-width row under the picker. */
-  #yfFilterSeg{flex-basis:100%}
 }
 
 
@@ -1989,6 +1987,10 @@ select{color-scheme:dark}
     <section class="panel cash">
       <h3 class="yf-h-neutral">TRANSACTIONS
         <span class="yf-txhead" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-weight:500">
+        <span style="display:flex;gap:8px;align-items:center">
+          <label for="yfTxCat" style="margin:0;font-size:10.5px;white-space:nowrap">Category</label>
+          <select id="yfTxCat" style="width:auto;min-width:120px;padding:7px 30px 7px 11px;font-size:13px"></select>
+        </span>
         <span style="display:flex;gap:8px;align-items:center">
           <label for="yfTxMonth" style="margin:0;font-size:10.5px;white-space:nowrap">Month</label>
           <select id="yfTxMonth" style="width:auto;min-width:120px;padding:7px 30px 7px 11px;font-size:13px"></select>
@@ -3855,7 +3857,7 @@ function normalizeYF(){
 normalizeYF();
 
 state.yfYear = new Date().getFullYear();
-let yfEditId=null, yfFilter='all', yfChartMode='both', yfTxMonth='all', yfWhoFilter='ALL';
+let yfEditId=null, yfFilter='all', yfChartMode='both', yfTxMonth='all', yfWhoFilter='ALL', yfTxCat='all';
 const yf$=v=>'$'+Math.round(v).toLocaleString('en-CA');
 const yf$2=v=>'$'+(v||0).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
 function yfPersist(){ store.set('sparta.yf.data', state.yf); if(typeof cloudSaveDebounced==='function') cloudSaveDebounced(); }
@@ -3995,17 +3997,19 @@ function renderYF(){
 
   // ----- transaction list -----
   yfFillTxMonth();                    // may reset yfTxMonth if that month is now empty
+  yfFillTxCat();                      // may reset yfTxCat if it is no longer reachable
   const list=txns
     .filter(t=>yfFilter==='all'||t.type===yfFilter)
     .filter(t=>yfTxMonth==='all'||(t.date||'').slice(5,7)===yfTxMonth)
     .filter(t=>yfWhoFilter==='ALL'||t.who===yfWhoFilter)
+    .filter(t=>yfTxCat==='all'||t.cat===yfTxCat)
     .slice().sort((a,b)=>b.date.localeCompare(a.date));
   const tb=$('yfTxBody'); tb.innerHTML='';
   list.forEach(t=>{
     const tr=document.createElement('tr');
     tr.innerHTML=`<td style="text-align:left">${t.date}</td>
       <td style="text-align:left"><span class="acct-tag ${t.type==='income'?'tag-inc':'tag-exp'}" style="margin:0">${t.type==='income'?'IN':'EXP'}</span></td>
-      <td class="${t.type==='income'?'yf-pos':''}" style="font-weight:600">${yf$2(t.amt)}</td>
+      <td class="${t.type==='income'?'yf-pos':'yf-neg'}" style="font-weight:600">${yf$2(t.amt)}</td>
       <td style="text-align:left;max-width:180px;overflow:hidden;text-overflow:ellipsis">${(t.desc||'').replace(/</g,'&lt;')}</td>
       <td style="text-align:left">${t.cat}</td>
       <td style="text-align:left"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
@@ -4015,7 +4019,7 @@ function renderYF(){
   $('yfTxTable').style.display=list.length?'table':'none';
   $('yfTxEmpty').style.display=list.length?'none':'block';
   if(!list.length){
-    const filtered=(yfTxMonth!=='all'||yfFilter!=='all');
+    const filtered=(yfTxMonth!=='all'||yfFilter!=='all'||yfTxCat!=='all'||yfWhoFilter!=='ALL');
     $('yfTxEmpty').textContent=filtered
       ? 'Nothing matches this filter \u2014 try All months or All.'
       : 'No transactions for this year yet \u2014 add your first one above.';
@@ -4141,6 +4145,22 @@ function yfFillTxMonth(){
     }).join('');
   sel.value=yfTxMonth;
 }
+function yfFillTxCat(){
+  const sel=$('yfTxCat'); if(!sel) return;
+  // Only categories that actually carry a transaction this year, narrowed to
+  // whichever side the Income/Expense filter is showing — offering a category
+  // that cannot appear would just render an empty table.
+  const have=[...new Set(yfTxns()
+    .filter(t=>yfFilter==='all'||t.type===yfFilter)
+    .map(t=>t.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  // the chosen category can fall out of reach when the type filter or year
+  // changes under it, so drop back to All rather than showing nothing
+  if(yfTxCat!=='all' && !have.includes(yfTxCat)) yfTxCat='all';
+  const q=c=>c.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  sel.innerHTML='<option value="all">All categories</option>'+
+    have.map(c=>`<option value="${q(c)}">${q(c)}</option>`).join('');
+  sel.value=yfTxCat;
+}
 function yfFillYearSel(){
   const sel=$('yfYearSel'); if(!sel) return;
   // every year that has a record, plus the current one, newest first
@@ -4178,6 +4198,7 @@ if($('yfYearSel')) $('yfYearSel').onchange=()=>{
   renderYF();
 };
 if($('yfTxMonth')) $('yfTxMonth').onchange=()=>{ yfTxMonth=$('yfTxMonth').value; renderYF() };
+if($('yfTxCat')) $('yfTxCat').onchange=()=>{ yfTxCat=$('yfTxCat').value; renderYF() };
 $('yfType').onchange=yfFillCats;
 $('yfSave').onclick=yfSaveTx;
 $('yfCancelEdit').onclick=yfCancelEdit;
