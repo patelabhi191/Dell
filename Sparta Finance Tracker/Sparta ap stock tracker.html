@@ -2428,6 +2428,14 @@ function money(n){return sym()+Math.abs(n*rate()).toLocaleString('en-CA',{minimu
 function signed(n){return (n>0?'+':n<0?'−':'')+money(n)}
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
 const uid=()=>Math.random().toString(36).slice(2,9);
+// Local calendar date as YYYY-MM-DD. Deliberately NOT toISOString(), which is
+// UTC: west of Greenwich it reads a day ahead for the last hours of every
+// evening (7pm+ in Toronto), so prefilling from it files records under the
+// wrong day — and on Dec 31, the wrong year.
+const isoLocal=(d=new Date())=>{
+  const p=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+};
 
 /* ============ derived values ============ */
 function inScope(h){ return state.filter==='ALL' || h.acct===state.filter }
@@ -4478,7 +4486,7 @@ if($('yfWhoSeg')){
     renderYF();
   });
 }
-$('yfDate').value=new Date().toISOString().slice(0,10);
+$('yfDate').value=isoLocal();
 yfFillCats(); yfFillYearSel();
 
 
@@ -4513,7 +4521,7 @@ function normalizeME(){
   return m;
 }
 normalizeME();   // merchant->category rules + dedup fingerprints
-let meMonth = new Date().toISOString().slice(0,7);            // 'YYYY-MM'
+let meMonth = isoLocal().slice(0,7);                          // 'YYYY-MM', local
 let mePending = [];
 let meWhoFilter='ALL';
 function mePersist(){ store.set('sparta.me', state.me); if(typeof cloudSaveDebounced==='function') cloudSaveDebounced() }
@@ -4750,7 +4758,7 @@ function renderME(){
   } else { $('meCompare').textContent='no previous month to compare'; $('meCompare').style.color=''; }
 
   // days elapsed (full month if in the past)
-  const now=new Date(), isCur=meMonth===now.toISOString().slice(0,7);
+  const now=new Date(), isCur=meMonth===isoLocal(now).slice(0,7);
   const days=isCur?now.getDate():new Date(y,m,0).getDate();
   $('meDaily').textContent=meMoney(days?total/days:0);
   $('meDays').textContent='over '+days+' day'+(days===1?'':'s');
@@ -4848,7 +4856,7 @@ function meParseDate(v){
   m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);       // assume MM/DD/YYYY (North American cards)
   if(m) return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
   const d=new Date(s);
-  return isNaN(d.getTime())?null:d.toISOString().slice(0,10);
+  return isNaN(d.getTime())?null:isoLocal(d);
 }
 function meRenderPreview(skippedPay,skippedDup){
   const tb=$('mePreviewBody'); tb.innerHTML='';
@@ -4910,7 +4918,7 @@ if($('meFile')){
   $('meApply').onclick=meApplyImport;
   $('meCancel').onclick=()=>{ mePending=[]; $('mePreviewWrap').style.display='none'; $('meDetect').style.display='none';
     $('meFile').value=''; $('meFileName').textContent='or click to choose a file' };
-  $('meDate').value=new Date().toISOString().slice(0,10);
+  $('meDate').value=isoLocal();
   $('meSave').onclick=meSaveTx;
   $('meCancelEdit').onclick=meCancelEdit;
   $('meGear').onclick=e=>{ e.stopPropagation(); $('mePop').classList.toggle('open') };
