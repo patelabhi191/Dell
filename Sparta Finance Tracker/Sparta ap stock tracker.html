@@ -470,9 +470,14 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 
 /* ---------- Yearly Finance ---------- */
 .yf-cards{display:grid;grid-template-columns:1fr;gap:8px}
-.yf-row2{display:grid;grid-template-columns:1.25fr 1.6fr 1.15fr 1fr;gap:8px;align-items:stretch}
+.yf-row2{display:grid;grid-template-columns:1.25fr 1.15fr 1.6fr 1fr;gap:8px;align-items:stretch}
 @media(max-width:1000px){.yf-row2{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.yf-row2{grid-template-columns:1fr}}
+.yf-toprow{display:grid;grid-template-columns:60% 1fr;gap:8px;align-items:stretch}
+/* Highlights hides itself on a year with too little to say; without a floor
+   the reserved panel would then collapse to a sliver instead of an empty slot. */
+.yf-toprow>#yfBlankPanel{min-height:145px}
+@media(max-width:900px){.yf-toprow{grid-template-columns:1fr}}
 .yf-two{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end}
 .yf-two>div{display:flex;flex-direction:column;align-items:center;text-align:center}
 .yf-statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;align-content:center;height:100%}
@@ -1913,6 +1918,15 @@ select{color-scheme:dark}
           </table>
         </div>
       </section>
+      <!-- highlights, with a reserved slot alongside -->
+      <div class="yf-toprow">
+        <section class="panel cash" id="yfHiPanel" style="display:none">
+          <h3 class="yf-h-neutral" style="margin-bottom:16px">HIGHLIGHTS</h3>
+          <div class="yf-hi-stage" id="yfHiSlides"></div>
+          <div class="yf-hi-dots" id="yfHiDots"></div>
+        </section>
+        <section class="panel cash" id="yfBlankPanel"></section>
+      </div>
       <div class="yf-row2">
       <section class="panel stat yf-card-bars">
         <div class="yf-two">
@@ -1928,14 +1942,6 @@ select{color-scheme:dark}
           </div>
         </div>
       </section>
-      <section class="panel stat yf-card-stats">
-        <div class="yf-statgrid">
-          <div class="cell c-inv"><span>INVESTED</span><b id="yfInvested">$0</b></div>
-          <div class="cell c-mov"><span>MOVED ELSE</span><b id="yfMoved">$0</b></div>
-          <div class="cell c-sav"><span>SAVED TOTAL</span><b id="yfSaved">$0</b></div>
-          <div class="cell c-off"><span>OFF PAPER SAV</span><b id="yfOffPaper">$0</b></div>
-        </div>
-      </section>
       <section class="panel stat yf-card-avg">
         <div class="yf-savings">
           <div class="num" id="yfAvgInc" style="font-size:26px;color:var(--yf-inc)">$0</div>
@@ -1943,6 +1949,14 @@ select{color-scheme:dark}
           <hr style="border:none;border-top:1px dashed rgba(255,255,255,.15);margin:12px 0">
           <div class="num" id="yfAvgExp" style="font-size:22px;color:var(--yf-exp)">$0</div>
           <div class="foot">AVG EXPENSE</div>
+        </div>
+      </section>
+      <section class="panel stat yf-card-stats">
+        <div class="yf-statgrid">
+          <div class="cell c-inv"><span>INVESTED</span><b id="yfInvested">$0</b></div>
+          <div class="cell c-mov"><span>MOVED ELSE</span><b id="yfMoved">$0</b></div>
+          <div class="cell c-sav"><span>SAVED TOTAL</span><b id="yfSaved">$0</b></div>
+          <div class="cell c-off"><span>OFF PAPER SAV</span><b id="yfOffPaper">$0</b></div>
         </div>
       </section>
         <section class="panel stat yf-savings-card">
@@ -1956,13 +1970,6 @@ select{color-scheme:dark}
         </section>
       </div>
     </div>
-
-    <!-- highlights -->
-    <section class="panel cash" id="yfHiPanel" style="display:none;margin:8px 0">
-      <h3 class="yf-h-neutral" style="margin-bottom:16px">HIGHLIGHTS</h3>
-      <div class="yf-hi-stage" id="yfHiSlides"></div>
-      <div class="yf-hi-dots" id="yfHiDots"></div>
-    </section>
 
     <!-- planned vs actual overview -->
     <div class="statrow">
