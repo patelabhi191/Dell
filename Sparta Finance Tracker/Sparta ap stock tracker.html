@@ -2164,37 +2164,38 @@ select{color-scheme:dark}
 
     <!-- add / edit -->
     <section class="skeu-panel" style="margin-top:8px">
-      <h3 class="skeu-h"><span id="meFormTitle">ADD EXPENSE</span></h3>
+      <h3 class="skeu-h"><span id="meFormTitle">ADD EXPENSE</span>
+        <span style="display:flex;gap:8px;align-items:center;font-weight:500">
+          <label for="meFormMonth" style="margin:0;font-size:10.5px;white-space:nowrap">Month</label>
+          <select id="meFormMonth" style="width:auto;min-width:130px;padding:7px 30px 7px 11px;font-size:13px"></select>
+        </span>
+      </h3>
       <div class="hform">
-        <div>
-          <label for="meFormMonth">Month</label>
-          <select id="meFormMonth"></select>
-        </div>
         <div>
           <label for="meAmt">Amount ($)</label>
           <input id="meAmt" type="number" step="0.01" placeholder="42.50">
         </div>
-        <div class="full">
+        <div>
           <label for="meAllot">Allot to</label>
           <select id="meAllot"></select>
-        </div>
-        <div class="full">
-          <label for="meCat">Category</label>
-          <select id="meCat"></select>
         </div>
         <div>
           <label for="meDesc">Description</label>
           <input id="meDesc" placeholder="Loblaws">
         </div>
         <div>
+          <label for="meCat">Category</label>
+          <select id="meCat"></select>
+        </div>
+        <div class="duo" style="align-self:end">
+          <button class="skeu-btn primary" id="meSave">Add expense</button>
+          <button class="skeu-btn" id="meCancelEdit" style="display:none">Cancel edit</button>
+        </div>
+        <div>
           <label for="meWho">Contributor</label>
           <select id="meWho"><option>ABI</option><option>POO</option></select>
         </div>
         <div class="full"><div class="note" id="meAllotNote" style="margin-top:0"></div></div>
-        <div class="duo full">
-          <button class="skeu-btn primary" id="meSave">Add expense</button>
-          <button class="skeu-btn" id="meCancelEdit" style="display:none">Cancel edit</button>
-        </div>
       </div>
       <p class="note" id="meFormNote">Edits made here also apply on the Yearly Finance tab — both read the same records.</p>
     </section>
@@ -4673,7 +4674,13 @@ const meFingerprint=t=>[t.date,Math.round(t.amt*100),meMerchantKey(t.desc)].join
 /* ---- palette: one distinct colour per category, tuned for the dark metal face ---- */
 const ME_COLORS={'Groceries':'#7FBF6A','Household supplies':'#C9A87C','Health/medical':'#D9705E',
   'General':'#6FA8DC','TV/Phone/Internet':'#63C7D6','Dining Out':'#E8B15C','Taxi':'#B5CC5E',
-  'Entertainment':'#A78BFA','Other':'#94A3B8','Rent':'#E58BB0','Maintenance':'#E8875C','Travel':'#5EEAD4'};
+  'Entertainment':'#A78BFA','Other':'#94A3B8','Rent':'#E58BB0','Maintenance':'#E8875C','Travel':'#5EEAD4',
+  // Yearly Finance ships its own expense categories; without entries here they
+  // all fall back to grey, which would wash out the rows that use them
+  'Food':'#F0956B','Credit Bill':'#8FA6E8','Home':'#C58BE0','Transportation':'#5FB8A8',
+  'Personal':'#D98BC4','Grocery':'#93C572','Misc':'#A6AFC0','Debt':'#CF5F7A',
+  'Education\\Tuition':'#7FB3E8','Custom category 2':'#B0A0D0','Investment':'#6EDCA8',
+  'Other Bank':'#C0B15E'};
 const meColor=c=>ME_COLORS[c]||'#94A3B8';
 const ME_DEFAULT_CHART=['Groceries','Entertainment','Health/medical','General'];
 
@@ -5005,10 +5012,13 @@ function renderME(){
   const tb=$('meBody'); tb.innerHTML='';
   listRows.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(t=>{
     const tr=document.createElement('tr');
+    // description, amount and category share the category's colour, so a row
+    // reads as one thing and matches the dot beside it in the matrix above
+    const cc=meColor(t.cat);
     tr.innerHTML=`<td style="text-align:left">${txDate(t)}</td>
-      <td style="text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis">${(t.desc||'').replace(/</g,'&lt;')}</td>
-      <td style="font-weight:600">${meMoney(t.amt)}</td>
-      <td style="text-align:left">${t.cat}${txTags(t)}</td>
+      <td style="text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis;color:${cc}">${(t.desc||'').replace(/</g,'&lt;')}</td>
+      <td style="font-weight:600;color:${cc}">${meMoney(t.amt)}</td>
+      <td style="text-align:left;color:${cc}">${t.cat}${txTags(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
       <td style="white-space:nowrap"><button class="yf-edit" data-meedit="${t.id}" title="Edit">\u270e</button><button class="rm" data-medel="${t.id}" title="Delete">\u2715</button></td>`;
     tb.appendChild(tr);

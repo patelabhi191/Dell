@@ -112,13 +112,36 @@ async function open(browser, url) {
   });
   check(yfPair, 'Yearly Finance: Contributor + Description same row (same top offset)');
 
+  // Monthly's form was later reorganised into three rows on request:
+  //   ADD EXPENSE | Month  /  Amount | Allot to  /  Description | Category  /  button | Contributor
+  // so Description now pairs with Category, and Contributor with the button.
   await go('monthly');
-  const mePair = await page.evaluate(() => {
-    const who = document.getElementById('meWho').closest('div');
-    const desc = document.getElementById('meDesc').closest('div');
-    return who.getBoundingClientRect().top === desc.getBoundingClientRect().top;
+  const meRows = await page.evaluate(() => {
+    const top = id => Math.round(document.getElementById(id).closest('div').getBoundingClientRect().top);
+    return {
+      amt: top('meAmt'), allot: top('meAllot'),
+      desc: top('meDesc'), cat: top('meCat'),
+      who: top('meWho'),
+      whoBottom: Math.round(document.getElementById('meWho').closest('div').getBoundingClientRect().bottom),
+      // compare grid CELLS: the button's cell has no label and is bottom-aligned,
+      // so the button element itself starts lower than the Contributor input's cell
+      save: Math.round(document.getElementById('meSave').closest('div.duo').getBoundingClientRect().top),
+      month: Math.round(document.getElementById('meFormMonth').getBoundingClientRect().top),
+      heading: Math.round(document.getElementById('meFormTitle').getBoundingClientRect().top),
+    };
   });
-  check(mePair, 'Monthly Expense: Contributor + Description same row (same top offset)');
+  check(meRows.amt === meRows.allot, 'Monthly form row 1: Amount + Allot to', JSON.stringify(meRows));
+  check(meRows.desc === meRows.cat, 'Monthly form row 2: Description + Category');
+  // align-self:end shrinks the button's cell to the bottom of its row track, so
+  // its top sits below the Contributor cell's; what matters is that it sits
+  // inside that row's vertical band
+  check(meRows.save >= meRows.who && meRows.save <= meRows.whoBottom,
+    'Monthly form row 3: button + Contributor',
+    `save-cell ${meRows.save} within ${meRows.who}..${meRows.whoBottom}`);
+  check(Math.abs(meRows.month - meRows.heading) < 20, 'Month sits on the heading line',
+    `month ${meRows.month} vs heading ${meRows.heading}`);
+  check(meRows.amt > meRows.heading && meRows.desc > meRows.amt && meRows.who > meRows.desc,
+    'and the three rows run in order under the heading');
 
   check(errs.length === 0, 'no page errors across the whole run', errs.length ? JSON.stringify(errs.slice(0, 5)) : '');
 
