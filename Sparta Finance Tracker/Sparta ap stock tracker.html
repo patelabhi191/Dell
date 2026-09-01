@@ -3896,8 +3896,28 @@ function yfPersist(){ store.set('sparta.yf.data', state.yf); if(typeof cloudSave
 function yfTxns(){ return state.yf.txns.filter(t=>t.date && t.date.slice(0,4)===String(state.yfYear)); }
 function yfCats(type){ return type==='income'?state.yf.cats.inc:state.yf.cats.exp; }
 function yfPlanned(cat){ const p=state.yf.planned[state.yfYear]||{}; return p[cat]||0; }
+/* ---------- bills & allocations ----------
+   An expense carrying `allot` is an ALLOCATION: part of a bill already recorded
+   under that category, itemised into a category of its own. The bill counted
+   that money once already, so an allocation must NEVER add to a total —
+   otherwise a $2,000 credit-card bill itemised into $100 of groceries reads as
+   $2,100 of spending that never happened.
+
+     spend       = sum of expenses that are NOT allocations
+     actual(cat) = everything filed under cat  -  everything itemised out of cat
+
+   Summing actual() over every category gives back spend exactly, because each
+   allocation adds itself once and subtracts itself once. tests/test-bills.js
+   pins that identity down. */
+const yfSpendOf=list=>list.reduce((s,t)=>s+(t.type==='expense'&&!t.allot?t.amt:0),0);
+function yfCatOf(list,cat){
+  return list.reduce((s,t)=>t.type!=='expense'?s
+    :s+(t.cat===cat?t.amt:0)-(t.allot===cat?t.amt:0),0);
+}
 function yfActual(type,cat){
-  return yfTxns().filter(t=>t.type===type&&(cat==null||t.cat===cat)).reduce((s,t)=>s+t.amt,0);
+  const list=yfTxns().filter(t=>t.type===type);
+  if(type!=='expense') return (cat==null?list:list.filter(t=>t.cat===cat)).reduce((s,t)=>s+t.amt,0);
+  return cat==null?yfSpendOf(list):yfCatOf(list,cat);
 }
 /* ---------- Yearly Finance highlights ---------- */
 const YF_HI_MAX=8;               // more dots than this stops being scannable
@@ -3997,7 +4017,15 @@ function yfHighlights(d){
   }
 
   // ---- categories & contributors ----
-  const catTot=type=>{const m={};txns.filter(t=>t.type===type).forEach(t=>{m[t.cat]=(m[t.cat]||0)+t.amt});return m;};
+  // expenses reclassify: an allocation lands in its own category and comes back
+  // out of the bill's, so the map still sums to the real spend
+  const catTot=type=>{const m={};
+    txns.filter(t=>t.type===type).forEach(t=>{
+      m[t.cat]=(m[t.cat]||0)+t.amt;
+      if(type==='expense'&&t.allot) m[t.allot]=(m[t.allot]||0)-t.amt;
+    });
+    Object.keys(m).forEach(k=>{ if(Math.abs(m[k])<0.005) delete m[k] });
+    return m;};
   const topOf=m=>Object.keys(m).reduce((a,b)=>m[b]>(m[a]||0)?b:a,null);
   const ce=catTot('expense'), ci=catTot('income');
   const te=topOf(ce), ti=topOf(ci);
@@ -4007,13 +4035,17 @@ function yfHighlights(d){
   if(ti&&totInc>0&&Object.keys(ci).length>1) push('topCatInc','inc','Main income source',
     ti+' — '+yf$2(ci[ti])+', '+Math.round(ci[ti]/totInc*100)+'% of what came in.');
   const exps=txns.filter(t=>t.type==='expense');
-  if(exps.length>1){                       // with one expense it is just the only expense
-    const big=exps.reduce((a,b)=>b.amt>a.amt?b:a);
+  // a derived bill is bookkeeping, not a purchase — never call it the largest expense
+  const realExp=exps.filter(t=>!t.derived);
+  if(realExp.length>1){                    // with one expense it is just the only expense
+    const big=realExp.reduce((a,b)=>b.amt>a.amt?b:a);
     push('bigTx','exp','Largest single expense',
       yf$2(big.amt)+(big.desc?' on '+big.desc:'')+' ('+big.cat+') — '+big.date+'.');
   }
-  const abi=exps.filter(t=>(t.who||'ABI')==='ABI').reduce((s,t)=>s+t.amt,0);
-  const poo=exps.filter(t=>t.who==='POO').reduce((s,t)=>s+t.amt,0);
+  // spend only: counting both a bill and its allocations would double the split
+  const spendTx=exps.filter(t=>!t.allot);
+  const abi=spendTx.filter(t=>(t.who||'ABI')==='ABI').reduce((s,t)=>s+t.amt,0);
+  const poo=spendTx.filter(t=>t.who==='POO').reduce((s,t)=>s+t.amt,0);
   if(abi>0&&poo>0) push('who','neutral','Who spent what',
     'ABI '+Math.round(abi/(abi+poo)*100)+'% ('+yf$2(abi)+') · POO '+Math.round(poo/(abi+poo)*100)+'% ('+yf$2(poo)+').');
 
@@ -4034,7 +4066,7 @@ function yfHiBuild(){
   const mInc=Array(12).fill(0), mExp=Array(12).fill(0);
   txns.forEach(t=>{
     const m=parseInt((t.date||'').slice(5,7),10)-1;
-    if(m>=0&&m<12){ if(t.type==='income') mInc[m]+=t.amt; else mExp[m]+=t.amt; }
+    if(m>=0&&m<12){ if(t.type==='income') mInc[m]+=t.amt; else if(!t.allot) mExp[m]+=t.amt; }
   });
   const totInc=mInc.reduce((a,b)=>a+b,0), totExp=mExp.reduce((a,b)=>a+b,0);
   const cards=yfHighlights({mInc,mExp,totInc,totExp,txns,
@@ -4090,7 +4122,8 @@ function renderYF(){
   const mInc=Array(12).fill(0), mExp=Array(12).fill(0);
   txns.forEach(t=>{
     const m=parseInt(t.date.slice(5,7),10)-1;
-    if(m>=0&&m<12){ if(t.type==='income') mInc[m]+=t.amt; else mExp[m]+=t.amt; }
+    // allocations are skipped: their money is already inside the bill they itemise
+    if(m>=0&&m<12){ if(t.type==='income') mInc[m]+=t.amt; else if(!t.allot) mExp[m]+=t.amt; }
   });
   const totInc=mInc.reduce((a,b)=>a+b,0), totExp=mExp.reduce((a,b)=>a+b,0);
   const start=state.yf.start[yr]||0;
@@ -4648,7 +4681,10 @@ function meMonthlyByCat(year){
     const m=parseInt(t.date.slice(5,7),10)-1;
     if(m<0||m>11) return;
     (out[t.cat]=out[t.cat]||Array(12).fill(0))[m]+=t.amt;
+    // ...and back out of the bill it was itemised from
+    if(t.allot) (out[t.allot]=out[t.allot]||Array(12).fill(0))[m]-=t.amt;
   });
+  Object.keys(out).forEach(c=>{ if(out[c].every(v=>Math.abs(v)<0.005)) delete out[c] });
   return out;
 }
 function meChartCats(){
@@ -4745,16 +4781,18 @@ function renderME(){
   normalizeYF(); normalizeME();
   meFillMonthSelect();
   const txns=meTxns();
-  const total=txns.reduce((s,t)=>s+t.amt,0);
+  // the list shows every entry, but only non-allocations are spend
+  const spend=txns.filter(t=>!t.allot);
+  const total=spend.reduce((s,t)=>s+t.amt,0);
   $('meTotal').textContent=meMoney(total);
   $('meCount').textContent=txns.length;
-  $('meAvg').textContent='avg '+meMoney(txns.length?total/txns.length:0);
+  $('meAvg').textContent='avg '+meMoney(spend.length?total/spend.length:0);
 
   // previous month comparison
   const [y,m]=meMonth.split('-').map(Number);
   const prev=new Date(y,m-2,1);
   const prevKey=prev.getFullYear()+'-'+String(prev.getMonth()+1).padStart(2,'0');
-  const prevTotal=(state.yf.txns||[]).filter(t=>t.type==='expense'&&(t.date||'').slice(0,7)===prevKey
+  const prevTotal=(state.yf.txns||[]).filter(t=>t.type==='expense'&&!t.allot&&(t.date||'').slice(0,7)===prevKey
     &&(meWhoFilter==='ALL'||t.who===meWhoFilter))
     .reduce((s,t)=>s+t.amt,0);
   if(prevTotal>0){
@@ -4771,7 +4809,11 @@ function renderME(){
 
   // category breakdown
   const byCat={};
-  txns.forEach(t=>{ byCat[t.cat]=(byCat[t.cat]||0)+t.amt });
+  txns.forEach(t=>{
+    byCat[t.cat]=(byCat[t.cat]||0)+t.amt;
+    if(t.allot) byCat[t.allot]=(byCat[t.allot]||0)-t.amt;
+  });
+  Object.keys(byCat).forEach(c=>{ if(Math.abs(byCat[c])<0.005) delete byCat[c] });
   const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
   $('meTopCat').textContent=cats.length?cats[0][0]:'\u2014';
   $('meTopAmt').textContent=cats.length?meMoney(cats[0][1]):meMoney(0);
