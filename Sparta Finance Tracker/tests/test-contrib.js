@@ -1,7 +1,7 @@
-/* Targeted functional verification for the Abi/Poo contributor feature:
+/* Targeted functional verification for the ABI/POO contributor feature:
    default contributor, migration (both branches), the yearly-backfill
    zero-amount guard now split per contributor/account, the old-shape yearly
-   draft fallback, chart stacking totals, and the All/Abi/Poo filter scoping
+   draft fallback, chart stacking totals, and the All/ABI/POO filter scoping
    (chart + deposit log only — hero cards/room must stay untouched). */
 const { serve, stub, launch } = require('./lib');
 const { APP } = require('./paths');
@@ -39,33 +39,33 @@ const YEAR = new Date().getFullYear();
   const browser = await launch();
 
   // ── Check 1: default contributor on a fresh deposit ──
-  console.log('\n── Check 1: depositContrib() defaults to Abi ──');
+  console.log('\n── Check 1: depositContrib() defaults to ABI ──');
   {
     const { ctx, page, errs } = await open(browser, url, {});
     await page.fill('#depAmtT', '500');
     await page.click('#depBtnT');
     await page.waitForTimeout(150);
     const who = await page.evaluate(() => state.contribs[state.contribs.length - 1].who);
-    check(who === 'Abi', 'new deposit defaults to who=Abi', `got ${who}`);
+    check(who === 'ABI', 'new deposit defaults to who=ABI', `got ${who}`);
     check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
     await ctx.close();
   }
 
   // ── Check 2: migration correctness + idempotency ──
-  console.log('\n── Check 2: migration — tagged entries untouched, untagged -> Abi ──');
+  console.log('\n── Check 2: migration — tagged entries untouched, untagged -> ABI ──');
   {
     const seed = {
       'sparta.contrib.entries': JSON.stringify([
-        { id: 'x1', t: Date.now(), y: YEAR, acct: 'TFSA', amt: 100, cad: true, who: 'Poo' },
+        { id: 'x1', t: Date.now(), y: YEAR, acct: 'TFSA', amt: 100, cad: true, who: 'POO' },
         { id: 'x2', t: Date.now(), y: YEAR, acct: 'TFSA', amt: 200, cad: true },  // no `who`
       ]),
     };
     const { ctx, page, errs } = await open(browser, url, seed);
     const res = await page.evaluate(() => state.contribs.map(c => ({ id: c.id, who: c.who })));
     const x1 = res.find(c => c.id === 'x1'), x2 = res.find(c => c.id === 'x2');
-    check(x1 && x1.who === 'Poo', 'already-tagged entry (Poo) untouched by migration', `got ${x1 && x1.who}`);
-    check(x2 && x2.who === 'Abi', 'untagged entry migrated to Abi', `got ${x2 && x2.who}`);
-    const onlyTwoValues = res.every(c => c.who === 'Abi' || c.who === 'Poo');
+    check(x1 && x1.who === 'POO', 'already-tagged entry (POO) untouched by migration', `got ${x1 && x1.who}`);
+    check(x2 && x2.who === 'ABI', 'untagged entry migrated to ABI', `got ${x2 && x2.who}`);
+    const onlyTwoValues = res.every(c => c.who === 'ABI' || c.who === 'POO');
     check(onlyTwoValues, 'no third contributor value ever appears');
     check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
     await ctx.close();
@@ -85,14 +85,14 @@ const YEAR = new Date().getFullYear();
     const after = await page.evaluate(() => state.contribs.length);
     check(after - before === 1, 'exactly one new contrib pushed (not four)', `before=${before} after=${after}`);
     const pushed = await page.evaluate(() => state.contribs[state.contribs.length - 1]);
-    check(pushed && pushed.acct === 'TFSA' && pushed.who === 'Abi' && pushed.amt === 1234,
-      'the pushed entry is TFSA/Abi/1234', `got ${JSON.stringify(pushed)}`);
+    check(pushed && pushed.acct === 'TFSA' && pushed.who === 'ABI' && pushed.amt === 1234,
+      'the pushed entry is TFSA/ABI/1234', `got ${JSON.stringify(pushed)}`);
     check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
     await ctx.close();
   }
 
   // ── Check 4: old-shape yearly draft fallback ──
-  console.log('\n── Check 4: old-shape {tfsa,fhsa} yearly draft folds into Abi ──');
+  console.log('\n── Check 4: old-shape {tfsa,fhsa} yearly draft folds into ABI ──');
   {
     const seed = { 'sparta.contrib.yearly': JSON.stringify([{ id: 'd1', y: 2024, tfsa: 500, fhsa: 200 }]) };
     const { ctx, page, errs } = await open(browser, url, seed);
@@ -109,8 +109,8 @@ const YEAR = new Date().getFullYear();
   {
     const seed = {
       'sparta.contrib.entries': JSON.stringify([
-        { id: 'a1', t: Date.now(), y: YEAR, acct: 'TFSA', amt: 100, cad: true, who: 'Abi' },
-        { id: 'p1', t: Date.now(), y: YEAR, acct: 'TFSA', amt: 50, cad: true, who: 'Poo' },
+        { id: 'a1', t: Date.now(), y: YEAR, acct: 'TFSA', amt: 100, cad: true, who: 'ABI' },
+        { id: 'p1', t: Date.now(), y: YEAR, acct: 'TFSA', amt: 50, cad: true, who: 'POO' },
       ]),
     };
     const { ctx, page, errs } = await open(browser, url, seed);
@@ -136,8 +136,8 @@ const YEAR = new Date().getFullYear();
   {
     const seed = {
       'sparta.contrib.entries': JSON.stringify([
-        { id: 'a1', t: Date.now(), y: YEAR, acct: 'TFSA', amt: 100, cad: true, who: 'Abi' },
-        { id: 'p1', t: Date.now(), y: YEAR, acct: 'TFSA', amt: 50, cad: true, who: 'Poo' },
+        { id: 'a1', t: Date.now(), y: YEAR, acct: 'TFSA', amt: 100, cad: true, who: 'ABI' },
+        { id: 'p1', t: Date.now(), y: YEAR, acct: 'TFSA', amt: 50, cad: true, who: 'POO' },
       ]),
     };
     const { ctx, page, errs } = await open(browser, url, seed);
@@ -148,7 +148,7 @@ const YEAR = new Date().getFullYear();
       rows: document.querySelectorAll('#cbody tr').length,
       bars: document.querySelectorAll(`#cChart .bar[data-acct="TFSA"][data-year="${YEAR}"]`).length,
     }), YEAR);
-    await page.click('#cWhoSeg button[data-who="Abi"]');
+    await page.click('#cWhoSeg button[data-who="ABI"]');
     await page.waitForTimeout(150);
     const after = await page.evaluate(() => ({
       hero: document.getElementById('cTfsaAmt').textContent,
@@ -162,8 +162,8 @@ const YEAR = new Date().getFullYear();
     check(before.hero === after.hero, 'hero TFSA value unchanged by filter', `${before.hero} -> ${after.hero}`);
     check(before.room === after.room, 'room-remaining text unchanged by filter', `${before.room} -> ${after.room}`);
     check(before.barWidth === after.barWidth, 'room progress bar width unchanged by filter');
-    check(after.rows === 1, 'deposit log shows only the Abi row', `got ${after.rows} rows`);
-    check(after.logWho.every(w => w === 'Abi'), 'every visible log row is Abi', `got ${JSON.stringify(after.logWho)}`);
+    check(after.rows === 1, 'deposit log shows only the ABI row', `got ${after.rows} rows`);
+    check(after.logWho.every(w => w === 'ABI'), 'every visible log row is ABI', `got ${JSON.stringify(after.logWho)}`);
     check(after.bars === 1, 'chart shows exactly 1 bar segment when filtered', `got ${after.bars}`);
     check(!after.separator, 'no separator line when filtered to one person');
     // click back to All
