@@ -162,6 +162,63 @@ const cards = page => page.evaluate(() =>
   check(!c1.some(x => x.title === 'Biggest expense'),
     'a lone expense category produces no share-of-total card');
 
+  console.log('\n── 3d. LEFTOVER row colours a surplus blue ──');
+  // JAN surplus (+2000), FEB shortfall (-1000), MAR empty, year total +1000
+  await seed(page, [
+    { type: 'income',  date: `${YEAR}-01-01`, amt: 5000, desc: '', cat: 'Paycheck', who: 'ABI' },
+    { type: 'expense', date: `${YEAR}-01-05`, amt: 3000, desc: '', cat: 'Home',     who: 'ABI' },
+    { type: 'income',  date: `${YEAR}-02-01`, amt: 2000, desc: '', cat: 'Paycheck', who: 'ABI' },
+    { type: 'expense', date: `${YEAR}-02-05`, amt: 3000, desc: '', cat: 'Food',     who: 'ABI' },
+  ], {});
+  await page.waitForTimeout(250);
+  const mt = await page.evaluate(() => {
+    const rows = {};
+    [...document.querySelectorAll('#yfMBody tr')].forEach(tr => {
+      const cells = [...tr.children];
+      rows[cells[0].textContent.trim()] = cells.slice(1).map(td => ({
+        text: td.textContent.trim(),
+        cls: td.className,
+        color: getComputedStyle(td).color,
+      }));
+    });
+    const probe = document.createElement('span');
+    document.body.appendChild(probe);
+    probe.style.color = 'var(--yf-inc)'; const blue = getComputedStyle(probe).color;
+    probe.style.color = 'var(--yf-exp)'; const orange = getComputedStyle(probe).color;
+    const plain = getComputedStyle(document.body).color;
+    probe.remove();
+    return { rows, blue, orange, plain };
+  });
+  const L = mt.rows.LEFTOVER, E = mt.rows.EXPENSE, M = mt.rows.MONTHENDS;
+  check(L[0].color === mt.blue && /yf-pos/.test(L[0].cls),
+    'JAN surplus is blue', `${L[0].text} ${L[0].cls} ${L[0].color}`);
+  check(L[1].color === mt.orange && /yf-neg/.test(L[1].cls),
+    'FEB shortfall is still orange', `${L[1].text} ${L[1].cls} ${L[1].color}`);
+  check(L[2].cls === '' && L[2].color !== mt.blue && L[2].color !== mt.orange,
+    'an empty month stays neutral', `${L[2].text} cls="${L[2].cls}"`);
+  check(L[12].color === mt.blue && /yf-pos/.test(L[12].cls),
+    'TOTAL is blue when the year is up', `${L[12].text} ${L[12].cls}`);
+
+  // scoping: the flag must not leak onto the other rows
+  check(E.slice(0, 2).every(c => !/yf-pos/.test(c.cls) && c.color !== mt.blue),
+    'EXPENSE positives are NOT blue', JSON.stringify(E.slice(0, 2).map(c => c.text + ':' + c.cls)));
+  check(M.slice(0, 2).every(c => !/yf-pos/.test(c.cls) && c.color !== mt.blue),
+    'MONTHENDS positives are NOT blue', JSON.stringify(M.slice(0, 2).map(c => c.text + ':' + c.cls)));
+
+  // and a down year turns the TOTAL orange
+  await seed(page, [
+    { type: 'income',  date: `${YEAR}-01-01`, amt: 1000, desc: '', cat: 'Paycheck', who: 'ABI' },
+    { type: 'expense', date: `${YEAR}-01-05`, amt: 4000, desc: '', cat: 'Home',     who: 'ABI' },
+  ], {});
+  await page.waitForTimeout(250);
+  const down = await page.evaluate(() => {
+    const tr = [...document.querySelectorAll('#yfMBody tr')].find(r => /LEFTOVER/.test(r.children[0].textContent));
+    const td = [...tr.children][13];
+    return { text: td.textContent.trim(), cls: td.className, color: getComputedStyle(td).color };
+  });
+  check(/yf-neg/.test(down.cls), 'TOTAL is orange when the year is down',
+    `${down.text} ${down.cls}`);
+
   console.log('\n── 4. rotation + dots ──');
   await seed(page);
   await goYearly(page);

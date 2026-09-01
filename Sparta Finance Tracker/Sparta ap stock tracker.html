@@ -4161,17 +4161,23 @@ function renderYF(){
   let run=start; const monthEnds=leftover.map(l=>run+=l);
   // totals bold at far right; INCOME/EXPENSE totals take their own colour;
   // LEFTOVER and MONTHENDS rows fully bold
+  // opt.signed colours a surplus blue as well as a shortfall orange. Opt-in per
+  // row: every EXPENSE value is positive, so a blanket rule would paint that
+  // whole row blue, and MONTHENDS is a running balance, not a surplus. Zero is
+  // neither, so it stays neutral rather than lighting up empty months.
+  const signCls=(v,on)=>v<0?'yf-neg':(on&&v>0?'yf-pos':'');
   const rowHTML=(name,arr,cls,tot,opt)=>{
     opt=opt||{};
-    const totCls='tot'+(opt.totCls?' '+opt.totCls:'');
+    const sg=!!opt.signed;
+    const totCls=('tot'+(opt.totCls?' '+opt.totCls:'')+(sg?' '+signCls(tot,true):'')).trim();
     return `<tr class="${opt.bold?'bold':''}"><td class="${cls}">${name}</td>`+
-      arr.map(v=>`<td class="${v<0?'yf-neg':''}">${yf$(v)}</td>`).join('')+
+      arr.map(v=>`<td class="${signCls(v,sg)}">${yf$(v)}</td>`).join('')+
       (tot!=null?`<td class="${totCls}">${yf$(tot)}</td>`:'<td></td>')+'</tr>';
   };
   $('yfMBody').innerHTML=
     rowHTML('INCOME',mInc,'t-inc',totInc,{totCls:'t-inc'})+
     rowHTML('EXPENSE',mExp,'t-exp',totExp,{totCls:'t-exp'})+
-    rowHTML('LEFTOVER',leftover,'',totInc-totExp,{bold:true})+
+    rowHTML('LEFTOVER',leftover,'',totInc-totExp,{bold:true,signed:true})+
     rowHTML('MONTHENDS',monthEnds,'',null,{bold:true});
 
   // ----- planned vs actual overview -----
