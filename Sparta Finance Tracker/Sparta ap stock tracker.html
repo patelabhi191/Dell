@@ -2127,6 +2127,11 @@ select{color-scheme:dark}
             <option value="neg">Negative numbers</option>
           </select>
         </div>
+        <div class="full">
+          <label for="meImpAllot">Allot all to</label>
+          <select id="meImpAllot"></select>
+        </div>
+        <div class="full"><div class="note" id="meImpAllotNote" style="margin-top:0"></div></div>
       </div>
 
       <div id="meDetect" class="skeu-inset" style="display:none">
@@ -4672,20 +4677,8 @@ function meSaveTx(){
     $('meAmt').value=''; $('meDesc').value='';
   }
   if(!state.yf.cats.exp.includes(cat)) state.yf.cats.exp.push(cat);
-  // allotting with no bill on record starts one that simply tracks what is itemised
-  if(allot && !yfFindBill(allot,meMonth)){
-    state.yf.txns.push({id:uid(),type:'expense',date:meMonth+'-15',amt:0,
-      desc:allot+' (from itemised)',cat:allot,who,derived:true});
-  }
-  yfSyncDerivedBills();
-  // a fixed bill that no longer covers what has been itemised into it is worth saying out loud
-  if(allot){
-    const bill=yfFindBill(allot,meMonth);
-    if(bill && !bill.derived){
-      const used=(state.yf.txns||[]).reduce((s,t)=>s+(t.allot===allot&&t.allotM===meMonth?t.amt:0),0);
-      if(used>bill.amt+0.005) toast('Over-allotted '+meMoney(used-bill.amt)+' past the '+allot);
-    }
-  }
+  const over=yfAttachAllot(allot,meMonth,who);
+  if(over) toast('Over-allotted '+meMoney(over)+' past the '+allot);
   yfPersist(); renderME(); if(typeof renderYF==='function') renderYF();
 }
 /* Every bill created by allotting (rather than typed in) carries derived:true
@@ -4703,13 +4696,40 @@ function yfSyncDerivedBills(){
 function yfFindBill(cat,month){
   return (state.yf.txns||[]).find(t=>t.type==='expense'&&!t.allot&&t.cat===cat&&(t.date||'').slice(0,7)===month);
 }
+/* Everything that has to happen after money is allotted to a bill: start the
+   bill if there isn't one, bring derived bills back in step, and report a fixed
+   bill that no longer covers what has been itemised into it. Manual entry and
+   CSV import both need all three, and two copies would drift — which here means
+   silently wrong figures rather than an error. Returns the overage, or 0. */
+function yfAttachAllot(cat,month,who){
+  if(!cat) return 0;
+  if(!yfFindBill(cat,month)){
+    state.yf.txns.push({id:uid(),type:'expense',date:month+'-15',amt:0,
+      desc:cat+' (from itemised)',cat,who:who||'ABI',derived:true});
+  }
+  yfSyncDerivedBills();
+  const bill=yfFindBill(cat,month);
+  if(!bill||bill.derived) return 0;
+  const used=(state.yf.txns||[]).reduce((s,t)=>s+(t.allot===cat&&t.allotM===month?t.amt:0),0);
+  return used>bill.amt+0.005?+(used-bill.amt).toFixed(2):0;
+}
 function meFillAllotSelect(){
-  const sel=$('meAllot'); if(!sel) return;
-  const cur=sel.value;
-  sel.innerHTML='<option value="">\u2014 none \u2014</option>'+
-    (state.yf.cats.exp||[]).map(c=>'<option>'+c.replace(/</g,'&lt;')+'</option>').join('');
-  if(cur) sel.value=cur;
-  meAllotNote();
+  [['meAllot',meAllotNote],['meImpAllot',meImpAllotNote]].forEach(([id,note])=>{
+    const sel=$(id); if(!sel) return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">\u2014 none \u2014</option>'+
+      (state.yf.cats.exp||[]).map(c=>'<option>'+c.replace(/</g,'&lt;')+'</option>').join('');
+    if(cur) sel.value=cur;
+    note();
+  });
+}
+function meImpAllotNote(){
+  const el=$('meImpAllotNote'); if(!el) return;
+  const v=$('meImpAllot')?$('meImpAllot').value:'';
+  el.textContent=v
+    ? ('Every imported row joins '+meMonthName(meMonth)+"'s "+v+
+       ' \u2014 rows keep their own dates but will not add to the total.')
+    : 'Leave as none to import rows as ordinary expenses on their own dates.';
 }
 function meAllotNote(){
   const el=$('meAllotNote'); if(!el) return;
@@ -5007,9 +5027,12 @@ function meApplyImport(){
   const chosen=mePending.filter(p=>p.include);
   if(!chosen.length){ toast('Nothing selected'); return }
   let learned=0;
+  const impAllot=($('meImpAllot')?$('meImpAllot').value:'')||'';
   chosen.forEach(p=>{
     // a statement's own dates are kept; allotM is what files it under this month
-    state.yf.txns.push({id:uid(),type:'expense',date:p.date,amt:p.amt,desc:p.desc,cat:p.cat,who:'ABI'});
+    const row={id:uid(),type:'expense',date:p.date,amt:p.amt,desc:p.desc,cat:p.cat,who:'ABI'};
+    if(impAllot){ row.allot=impAllot; row.allotM=meMonth }
+    state.yf.txns.push(row);
     state.me.imported.push(p.fp);
     if(p.changed||p.why==='none'){                        // teach the categoriser
       const key=meMerchantKey(p.desc);
@@ -5018,10 +5041,13 @@ function meApplyImport(){
     if(!state.yf.cats.exp.includes(p.cat)) state.yf.cats.exp.push(p.cat);
   });
   if(state.me.imported.length>5000) state.me.imported=state.me.imported.slice(-5000);
+  // same three steps manual entry takes: start the bill, resync, report an overage
+  const impOver=yfAttachAllot(impAllot,meMonth,'ABI');
   mePending=[]; $('mePreviewWrap').style.display='none'; $('meDetect').style.display='none';
   $('meFile').value=''; $('meFileName').textContent='or click to choose a file';
   yfPersist(); mePersist(); renderME(); if(typeof renderYF==='function') renderYF();
   toast(`Added ${chosen.length} expense${chosen.length===1?'':'s'}${learned?` — learned ${learned} rule${learned===1?'':'s'}`:''}`);
+  if(impOver) setTimeout(()=>toast('Over-allotted '+meMoney(impOver)+' past the '+impAllot),1200);
 }
 function meReadFile(f){
   if(!f) return;
@@ -5050,6 +5076,7 @@ if($('meFile')){
   $('mePopNone').onclick=()=>{ state.me.chartCats=[]; mePersist(); renderMEChart(); renderMEGear() };
   $('meMonthSel').onchange=()=>{ meMonth=$('meMonthSel').value; renderME() };
   if($('meAllot')) $('meAllot').onchange=meAllotNote;
+  if($('meImpAllot')) $('meImpAllot').onchange=meImpAllotNote;
   if($('meWhoSeg')){
     $('meWhoSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
       meWhoFilter=b.dataset.who;

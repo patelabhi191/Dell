@@ -282,6 +282,90 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(Math.abs(inv.sum - inv.spend) < 0.005, 'invariant still holds with cross-month allocations',
     `Σactual ${inv.sum.toFixed(2)} vs spend ${inv.spend.toFixed(2)}`);
 
+  // ───────────────────────── Phase 3A: import allotment ─────────────────────────
+  // Drive the real import path: seed mePending the way the parser would, then apply.
+  const importRows = (month, allot, rows) => page.evaluate(([m, al, rs]) => {
+    meMonth = m; renderME();
+    mePending = rs.map((r, i) => ({ include: true, date: r.d, amt: r.a, desc: r.desc,
+      cat: r.c, why: 'rule', changed: false, fp: 'fp' + Math.random() + i }));
+    meFillAllotSelect();
+    document.getElementById('meImpAllot').value = al || '';
+    meApplyImport();
+    return true;
+  }, [month, allot, rows]);
+  const STMT = [
+    { d: `${YEAR}-07-20`, a: 100, desc: 'Loblaws', c: 'Grocery' },
+    { d: `${YEAR}-07-28`, a: 58, desc: 'Bell', c: 'Home' },
+    { d: `${YEAR}-08-10`, a: 40, desc: 'Taco Bell', c: 'Food' },
+  ];
+
+  console.log('\n── 14. importing a statement allotted to a bill ──');
+  await reset();
+  await page.evaluate(([y]) => {
+    state.yf.txns = [{ id: 'bill', type: 'expense', date: `${y}-08-20`, amt: 2000,
+      desc: 'Aug statement', cat: 'Credit Bill', who: 'ABI' }];
+    render();
+  }, [YEAR]);
+  await importRows(`${YEAR}-08`, 'Credit Bill', STMT);
+  const imp = await page.evaluate(() => state.yf.txns.filter(t => t.allot).map(t => ({ d: t.date, m: t.allotM, a: t.amt })));
+  check(imp.length === 3 && imp.every(r => r.m === `${YEAR}-08`),
+    'every imported row is allotted to August', JSON.stringify(imp.map(r => r.m)));
+  check(imp.some(r => r.d === `${YEAR}-07-20`), 'rows keep their own statement dates',
+    JSON.stringify(imp.map(r => r.d)));
+  const impJul = await rows(`${YEAR}-07`), impAug = await rows(`${YEAR}-08`);
+  check(impJul.length === 0, 'nothing lands under July', JSON.stringify(impJul.map(r => r.desc)));
+  check(impAug.length === 4, 'all three plus the bill show under August', String(impAug.length));
+  const impTot = await page.evaluate(() => ({ spend: yfActual('expense', null), cb: yfActual('expense', 'Credit Bill') }));
+  check(impTot.spend === 2000 && impTot.cb === 1802, 'total stays $2,000, Credit Bill $1,802',
+    JSON.stringify(impTot));
+
+  console.log('\n── 15. importing with no bill on record starts one ──');
+  await reset();
+  await importRows(`${YEAR}-09`, 'Credit Bill', STMT);
+  const dbill = await page.evaluate(() => state.yf.txns.find(t => t.derived));
+  check(!!dbill && dbill.amt === 198 && dbill.date === `${YEAR}-09-15`,
+    'derived bill created at $198 on the 15th', JSON.stringify(dbill && { a: dbill.amt, d: dbill.date }));
+  const sc = await page.evaluate(() => ({ spend: yfActual('expense', null), cb: yfActual('expense', 'Credit Bill') }));
+  check(sc.spend === 198 && sc.cb === 0, 'total $198, Credit Bill nets to zero', JSON.stringify(sc));
+
+  console.log('\n── 16. importing past a fixed bill warns ──');
+  await reset();
+  await page.evaluate(([y]) => {
+    state.yf.txns = [{ id: 'b', type: 'expense', date: `${y}-08-20`, amt: 100,
+      desc: 'small bill', cat: 'Credit Bill', who: 'ABI' }];
+    render();
+  }, [YEAR]);
+  await importRows(`${YEAR}-08`, 'Credit Bill', STMT);
+  const warned = await page.evaluate(async () => {
+    await new Promise(r => setTimeout(r, 1500));
+    return document.getElementById('toast').textContent;
+  });
+  check(/Over-allotted/.test(warned), 'overage is reported, import still succeeds', JSON.stringify(warned));
+  check(await page.evaluate(() => state.yf.txns.filter(t => t.allot).length) === 3,
+    'all three rows imported despite the overage');
+
+  console.log('\n── 17. REGRESSION: leaving it on none behaves as before ──');
+  await reset();
+  await importRows(`${YEAR}-08`, '', STMT);
+  const plainImp = await page.evaluate(() => state.yf.txns.map(t => ({ d: t.date, allot: t.allot || null, a: t.amt })));
+  check(plainImp.length === 3 && plainImp.every(r => r.allot === null),
+    'rows import as ordinary expenses, no allot', JSON.stringify(plainImp.map(r => r.allot)));
+  check(await page.evaluate(() => yfActual('expense', null)) === 198,
+    'they add to the total the old way', '198');
+  const pJul = await rows(`${YEAR}-07`), pAug = await rows(`${YEAR}-08`);
+  check(pJul.length === 2 && pAug.length === 1,
+    'and group by their own dates — 2 in July, 1 in August',
+    JSON.stringify({ jul: pJul.length, aug: pAug.length }));
+
+  console.log('\n── 18. invariant over an imported ledger ──');
+  const impInv = await page.evaluate(() => {
+    const cats = state.yf.cats.exp;
+    const sum = cats.reduce((s, c) => s + yfActual('expense', c), 0);
+    return { sum, spend: yfActual('expense', null) };
+  });
+  check(Math.abs(impInv.sum - impInv.spend) < 0.005, 'still holds after importing',
+    `Σactual ${impInv.sum.toFixed(2)} vs spend ${impInv.spend.toFixed(2)}`);
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nBILLS & ALLOCATIONS: ${pass} passed, ${fail} failed`);
