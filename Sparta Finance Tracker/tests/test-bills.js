@@ -366,6 +366,60 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(Math.abs(impInv.sum - impInv.spend) < 0.005, 'still holds after importing',
     `Σactual ${impInv.sum.toFixed(2)} vs spend ${impInv.spend.toFixed(2)}`);
 
+  // ───────────────────────── Phase 3B/C: legibility ─────────────────────────
+  console.log('\n── 19. allocations and derived bills are visibly different ──');
+  await reset();
+  await page.evaluate(([y]) => {
+    state.yf.txns = [
+      { id: 'b', type: 'expense', date: `${y}-08-20`, amt: 2000, desc: 'Aug statement', cat: 'Credit Bill', who: 'ABI' },
+      { id: 'g', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'Loblaws', cat: 'Grocery', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
+      { id: 'p', type: 'expense', date: `${y}-08-04`, amt: 45, desc: 'Cash lunch', cat: 'Food', who: 'ABI' },
+      { id: 'd', type: 'expense', date: `${y}-08-15`, amt: 0, desc: 'Other Bank (from itemised)', cat: 'Other Bank', who: 'ABI', derived: true }];
+    meMonth = `${y}-08`; render(); renderYF(); renderME();
+  }, [YEAR]);
+  const pills = await page.evaluate(() => {
+    const out = {};
+    [...document.querySelectorAll('#meBody tr')].forEach(tr => {
+      out[tr.children[1].textContent.trim()] = tr.children[3].innerHTML;
+    });
+    return out;
+  });
+  check(/→ Credit Bill/.test(pills['Loblaws'] || ''), 'an allocation carries a "→ Credit Bill" pill',
+    (pills['Loblaws'] || '').slice(0, 90));
+  check(!/acct-tag/.test(pills['Cash lunch'] || ''), 'ordinary spending carries no pill');
+  check(/auto/.test(pills['Other Bank (from itemised)'] || ''), 'a derived bill is marked auto');
+  const yfPills = await page.evaluate(() => {
+    const tr = [...document.querySelectorAll('#yfTxBody tr')].find(r => /Loblaws/.test(r.textContent));
+    return tr ? tr.children[4].innerHTML : '';
+  });
+  check(/→ Credit Bill/.test(yfPills), 'the Yearly list shows it too', yfPills.slice(0, 90));
+
+  console.log('\n── 20. bill rows say what was billed and itemised ──');
+  const note = await page.evaluate(() => {
+    const row = n => {
+      const tr = [...document.querySelectorAll('#yfExpBody tr')].find(r => r.children[0].textContent.trim().startsWith(n));
+      return tr ? tr.children[0].innerHTML : '';
+    };
+    return { cb: row('Credit Bill'), food: row('Food') };
+  });
+  check(/2,000 billed/.test(note.cb) && /100 itemised/.test(note.cb),
+    'Credit Bill reads "$2,000 billed · $100 itemised"', note.cb.replace(/<[^>]*>/g, ' ').trim());
+  check(!/billnote/.test(note.food), 'a category with nothing itemised has no sub-line');
+
+  console.log('\n── 21. over-allotment is named, not left as a bare negative ──');
+  await page.evaluate(([y]) => {
+    state.yf.txns = [
+      { id: 'b', type: 'expense', date: `${y}-08-20`, amt: 100, desc: 'small', cat: 'Credit Bill', who: 'ABI' },
+      { id: 'g', type: 'expense', date: `${y}-08-04`, amt: 250, desc: 'big buy', cat: 'Grocery', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` }];
+    renderYF();
+  }, [YEAR]);
+  const overNote = await page.evaluate(() => {
+    const tr = [...document.querySelectorAll('#yfExpBody tr')].find(r => r.children[0].textContent.trim().startsWith('Credit Bill'));
+    return tr ? tr.children[0].innerHTML : '';
+  });
+  check(/150 over/.test(overNote) && /over/.test(overNote), 'names the $150 overage',
+    overNote.replace(/<[^>]*>/g, ' ').trim());
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nBILLS & ALLOCATIONS: ${pass} passed, ${fail} failed`);

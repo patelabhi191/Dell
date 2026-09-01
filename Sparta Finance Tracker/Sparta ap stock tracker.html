@@ -629,6 +629,9 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   background:rgba(234,240,250,.25);transition:background .2s,transform .2s}
 .yf-hi-dot.on{background:var(--text);transform:scale(1.25)}
 @media (prefers-reduced-motion:reduce){.yf-hi-slide{transition:none}}
+/* under a bill's name in the category table: what was billed vs itemised out */
+.yf-billnote{font-size:10px;color:var(--text-faint);font-weight:500;letter-spacing:0;margin-top:2px}
+.yf-billnote.over{color:var(--yf-exp)}
 .yf-addcat{display:flex;gap:8px;margin-top:10px}
 .yf-addcat input{flex:1;padding:8px 10px;font-size:12.5px}
 .yf-addcat .btn{padding:8px 14px;font-size:12px}
@@ -4238,8 +4241,20 @@ function renderYF(){
   const esc=c=>c.replace(/"/g,'&quot;');
   const catRow=(cat,type,withMonthly)=>{
     const plan=yfPlanned(cat), act=yfActual(type,cat), diff=plan-act;
+    // a category money has been itemised out of shows what it was billed and how
+    // much of that is accounted for; the bare remainder alone reads as a mystery
+    let note='';
+    if(type==='expense'){
+      const billed=txns.reduce((s,t)=>s+(t.type==='expense'&&t.cat===cat&&!t.allot?t.amt:0),0);
+      const itemised=txns.reduce((s,t)=>s+(t.allot===cat?t.amt:0),0);
+      if(itemised>0){
+        const over=itemised-billed;
+        note=`<div class="yf-billnote${over>0.005?' over':''}">${yf$(billed)} billed \u00b7 ${yf$(itemised)} itemised`+
+             (over>0.005?` \u00b7 ${yf$(over)} over`:'')+`</div>`;
+      }
+    }
     return `<tr>
-      <td style="text-align:left">${cat}</td>
+      <td style="text-align:left">${cat}${note}</td>
       <td><input class="yf-plan-in" data-cat="${esc(cat)}" type="number" step="1" min="0" value="${plan||''}" placeholder="0"></td>
       <td>${yf$(act)}</td>
       <td class="${diff<0?'yf-neg':diff>0?'yf-pos':''}">${diff>0?'+':''}${yf$(Math.abs(diff)).replace('$',diff<0?'\u2212$':'$')}</td>
@@ -4270,7 +4285,7 @@ function renderYF(){
       <td style="text-align:left"><span class="acct-tag ${t.type==='income'?'tag-inc':'tag-exp'}" style="margin:0">${t.type==='income'?'IN':'EXP'}</span></td>
       <td class="${t.type==='income'?'yf-pos':'yf-neg'}" style="font-weight:600">${yf$2(t.amt)}</td>
       <td style="text-align:left;max-width:180px;overflow:hidden;text-overflow:ellipsis">${(t.desc||'').replace(/</g,'&lt;')}</td>
-      <td style="text-align:left">${t.cat}</td>
+      <td style="text-align:left">${t.cat}${txTags(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
       <td style="white-space:nowrap"><button class="yf-edit" data-eid="${t.id}" title="Edit">\u270e</button><button class="rm" data-did="${t.id}" title="Delete">\u2715</button></td>`;
     tb.appendChild(tr);
@@ -4599,6 +4614,11 @@ function meFillMonthSelect(){
 // purchase on the August statement belongs to August, not July.
 const meMonthOf=t=>t.allot?(t.allotM||(t.date||'').slice(0,7)):(t.date||'').slice(0,7);
 // month-only entries never had a day chosen, so showing one would invent a fact
+// An allocation is not extra spending and a derived bill was never typed by
+// anyone — both look exactly like ordinary rows otherwise, so say so.
+const txTags=t=>(t.allot?'<span class="acct-tag tag-other" style="margin:0 0 0 6px">\u2192 '+
+    String(t.allot).replace(/</g,'&lt;')+'</span>':'')+
+  (t.derived?'<span class="acct-tag tag-other" style="margin:0 0 0 6px">auto</span>':'');
 const txDate=t=>{
   if(!t.mOnly) return t.date||'';
   const m=parseInt((t.date||'').slice(5,7),10)-1;
@@ -4925,7 +4945,7 @@ function renderME(){
     tr.innerHTML=`<td style="text-align:left">${txDate(t)}</td>
       <td style="text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis">${(t.desc||'').replace(/</g,'&lt;')}</td>
       <td style="font-weight:600">${meMoney(t.amt)}</td>
-      <td style="text-align:left">${t.cat}</td>
+      <td style="text-align:left">${t.cat}${txTags(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
       <td style="white-space:nowrap"><button class="yf-edit" data-meedit="${t.id}" title="Edit">\u270e</button><button class="rm" data-medel="${t.id}" title="Delete">\u2715</button></td>`;
     tb.appendChild(tr);
