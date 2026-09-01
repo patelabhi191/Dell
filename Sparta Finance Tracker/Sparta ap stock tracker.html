@@ -2159,12 +2159,12 @@ select{color-scheme:dark}
       <h3 class="skeu-h"><span id="meFormTitle">ADD EXPENSE</span></h3>
       <div class="hform">
         <div>
-          <label for="meDate">Date</label>
-          <input id="meDate" type="date">
-        </div>
-        <div>
           <label for="meAmt">Amount ($)</label>
           <input id="meAmt" type="number" step="0.01" placeholder="42.50">
+        </div>
+        <div>
+          <label for="meAllot">Allot to</label>
+          <select id="meAllot"></select>
         </div>
         <div class="full">
           <label for="meCat">Category</label>
@@ -2178,6 +2178,7 @@ select{color-scheme:dark}
           <label for="meWho">Contributor</label>
           <select id="meWho"><option>ABI</option><option>POO</option></select>
         </div>
+        <div class="full"><div class="note" id="meAllotNote" style="margin-top:0"></div></div>
         <div class="duo full">
           <button class="skeu-btn primary" id="meSave">Add expense</button>
           <button class="skeu-btn" id="meCancelEdit" style="display:none">Cancel edit</button>
@@ -3884,6 +3885,9 @@ function normalizeYF(){
   // default any transaction logged before contributor-tracking existed to ABI;
   // ABI/POO are hardcoded directly in each <select>, matching the Contributions tab.
   y.txns.forEach(t=>{ if(!t.who) t.who='ABI'; });
+  // an allocation always knows which month's bill it belongs to; fall back to
+  // its own date for anything written before allotM existed
+  y.txns.forEach(t=>{ if(t.allot && !t.allotM) t.allotM=(t.date||'').slice(0,7); });
   return y;
 }
 normalizeYF();
@@ -4257,7 +4261,7 @@ function renderYF(){
   const tb=$('yfTxBody'); tb.innerHTML='';
   list.forEach(t=>{
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td style="text-align:left">${t.date}</td>
+    tr.innerHTML=`<td style="text-align:left">${txDate(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.type==='income'?'tag-inc':'tag-exp'}" style="margin:0">${t.type==='income'?'IN':'EXP'}</span></td>
       <td class="${t.type==='income'?'yf-pos':'yf-neg'}" style="font-weight:600">${yf$2(t.amt)}</td>
       <td style="text-align:left;max-width:180px;overflow:hidden;text-overflow:ellipsis">${(t.desc||'').replace(/</g,'&lt;')}</td>
@@ -4585,8 +4589,18 @@ function meFillMonthSelect(){
   sel.value=meMonth;
 }
 // expenses live in the SAME store as Yearly Finance - one dataset, two views
+// The month an entry belongs to. An allocation follows the bill it was itemised
+// into, which is the whole point of a 18th-to-17th billing cycle: a 20 July
+// purchase on the August statement belongs to August, not July.
+const meMonthOf=t=>t.allot?(t.allotM||(t.date||'').slice(0,7)):(t.date||'').slice(0,7);
+// month-only entries never had a day chosen, so showing one would invent a fact
+const txDate=t=>{
+  if(!t.mOnly) return t.date||'';
+  const m=parseInt((t.date||'').slice(5,7),10)-1;
+  return (YF_MONTHS[m]||'')+' '+(t.date||'').slice(0,4);
+};
 function meTxns(){
-  return (state.yf.txns||[]).filter(t=>t.type==='expense' && (t.date||'').slice(0,7)===meMonth
+  return (state.yf.txns||[]).filter(t=>t.type==='expense' && meMonthOf(t)===meMonth
     && (meWhoFilter==='ALL'||t.who===meWhoFilter));
 }
 
@@ -4635,28 +4649,81 @@ function meFillCatSelect(){
 function meSaveTx(){
   markUserEdit();
   normalizeYF(); normalizeME();
-  const date=$('meDate').value, amt=parseFloat($('meAmt').value),
-        cat=$('meCat').value, desc=$('meDesc').value.trim(), who=$('meWho').value||'ABI';
-  if(!date){ toast('Pick a date'); return }
+  const amt=parseFloat($('meAmt').value),
+        cat=$('meCat').value, desc=$('meDesc').value.trim(), who=$('meWho').value||'ABI',
+        allot=($('meAllot')?$('meAllot').value:'')||'';
   if(!(amt>0)){ toast('Enter an amount greater than 0'); return }
+  // no date field: the month on screen is the month this belongs to
+  const date=meMonth+'-15';
   if(meEditId){
     const t=(state.yf.txns||[]).find(x=>x.id===meEditId);
-    if(t){ t.date=date; t.amt=+amt.toFixed(2); t.cat=cat; t.desc=desc; t.who=who; toast('Expense updated') }
+    if(t){
+      t.amt=+amt.toFixed(2); t.cat=cat; t.desc=desc; t.who=who;
+      if(t.mOnly) t.date=date;                   // keep a real imported date intact
+      if(allot){ t.allot=allot; t.allotM=meMonth } else { delete t.allot; delete t.allotM }
+      toast('Expense updated');
+    }
     meCancelEdit();
   } else {
-    state.yf.txns.push({id:uid(),type:'expense',date,amt:+amt.toFixed(2),desc,cat,who});
+    const row={id:uid(),type:'expense',date,amt:+amt.toFixed(2),desc,cat,who,mOnly:true};
+    if(allot){ row.allot=allot; row.allotM=meMonth }
+    state.yf.txns.push(row);
     toast('Added '+meMoney(amt)+' \u2014 '+cat);
     $('meAmt').value=''; $('meDesc').value='';
   }
   if(!state.yf.cats.exp.includes(cat)) state.yf.cats.exp.push(cat);
-  meMonth=date.slice(0,7);                       // follow the record you just touched
+  // allotting with no bill on record starts one that simply tracks what is itemised
+  if(allot && !yfFindBill(allot,meMonth)){
+    state.yf.txns.push({id:uid(),type:'expense',date:meMonth+'-15',amt:0,
+      desc:allot+' (from itemised)',cat:allot,who,derived:true});
+  }
+  yfSyncDerivedBills();
+  // a fixed bill that no longer covers what has been itemised into it is worth saying out loud
+  if(allot){
+    const bill=yfFindBill(allot,meMonth);
+    if(bill && !bill.derived){
+      const used=(state.yf.txns||[]).reduce((s,t)=>s+(t.allot===allot&&t.allotM===meMonth?t.amt:0),0);
+      if(used>bill.amt+0.005) toast('Over-allotted '+meMoney(used-bill.amt)+' past the '+allot);
+    }
+  }
   yfPersist(); renderME(); if(typeof renderYF==='function') renderYF();
+}
+/* Every bill created by allotting (rather than typed in) carries derived:true
+   and simply equals what has been itemised into it. Recomputed after any change
+   to a transaction; typing a real amount clears the flag and fixes the bill. */
+function yfSyncDerivedBills(){
+  const all=state.yf.txns||[];
+  all.forEach(b=>{
+    if(!b.derived) return;
+    const m=(b.date||'').slice(0,7);
+    b.amt=+all.reduce((s,t)=>s+(t.allot===b.cat&&t.allotM===m?t.amt:0),0).toFixed(2);
+  });
+}
+// the bill an allocation lands on: same category, same bill month, not itself an allocation
+function yfFindBill(cat,month){
+  return (state.yf.txns||[]).find(t=>t.type==='expense'&&!t.allot&&t.cat===cat&&(t.date||'').slice(0,7)===month);
+}
+function meFillAllotSelect(){
+  const sel=$('meAllot'); if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">\u2014 none \u2014</option>'+
+    (state.yf.cats.exp||[]).map(c=>'<option>'+c.replace(/</g,'&lt;')+'</option>').join('');
+  if(cur) sel.value=cur;
+  meAllotNote();
+}
+function meAllotNote(){
+  const el=$('meAllotNote'); if(!el) return;
+  const v=$('meAllot')?$('meAllot').value:'';
+  el.textContent=v?('Itemised out of '+meMonthName(meMonth)+"'s "+v+' \u2014 it will not add to the total.')
+                  :('Recorded under '+meMonthName(meMonth)+'.');
 }
 function meStartEdit(id){
   const t=(state.yf.txns||[]).find(x=>x.id===id); if(!t) return;
   meEditId=id;
   meFillCatSelect();
-  $('meDate').value=t.date; $('meAmt').value=t.amt; $('meDesc').value=t.desc||'';
+  meFillAllotSelect();
+  $('meAmt').value=t.amt; $('meDesc').value=t.desc||'';
+  if($('meAllot')) $('meAllot').value=t.allot||'';
   $('meCat').value=t.cat;
   $('meWho').value=t.who||'ABI';
   $('meFormTitle').textContent='EDIT EXPENSE';
@@ -4670,6 +4737,8 @@ function meCancelEdit(){
   $('meSave').textContent='Add expense';
   $('meCancelEdit').style.display='none';
   $('meAmt').value=''; $('meDesc').value='';
+  if($('meAllot')) $('meAllot').value='';
+  meAllotNote();
 }
 
 /* ---- 12 month trend + matrix ---- */
@@ -4677,8 +4746,10 @@ function meYear(){ return meMonth.slice(0,4) }
 function meMonthlyByCat(year){
   const out={};                                  // cat -> [12 monthly totals]
   (state.yf.txns||[]).forEach(t=>{
-    if(t.type!=='expense'||!t.date||t.date.slice(0,4)!==year) return;
-    const m=parseInt(t.date.slice(5,7),10)-1;
+    if(t.type!=='expense'||!t.date) return;
+    const key=meMonthOf(t);                      // allocations follow their bill month
+    if(key.slice(0,4)!==year) return;
+    const m=parseInt(key.slice(5,7),10)-1;
     if(m<0||m>11) return;
     (out[t.cat]=out[t.cat]||Array(12).fill(0))[m]+=t.amt;
     // ...and back out of the bill it was itemised from
@@ -4785,7 +4856,8 @@ function renderME(){
   const spend=txns.filter(t=>!t.allot);
   const total=spend.reduce((s,t)=>s+t.amt,0);
   $('meTotal').textContent=meMoney(total);
-  $('meCount').textContent=txns.length;
+  const itemised=txns.reduce((s,t)=>s+(t.allot?t.amt:0),0);
+  $('meCount').textContent=txns.length+(itemised>0?' \u00b7 '+meMoney(itemised)+' itemised':'');
   $('meAvg').textContent='avg '+meMoney(spend.length?total/spend.length:0);
 
   // previous month comparison
@@ -4830,7 +4902,7 @@ function renderME(){
   const tb=$('meBody'); tb.innerHTML='';
   txns.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(t=>{
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td style="text-align:left">${t.date}</td>
+    tr.innerHTML=`<td style="text-align:left">${txDate(t)}</td>
       <td style="text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis">${(t.desc||'').replace(/</g,'&lt;')}</td>
       <td style="font-weight:600">${meMoney(t.amt)}</td>
       <td style="text-align:left">${t.cat}</td>
@@ -4842,7 +4914,7 @@ function renderME(){
   $('meEmpty').style.display=txns.length?'none':'block';
   const n=Object.keys(state.me.rules).length;
   $('meRuleCount').textContent=n?n+' merchant rule'+(n===1?'':'s')+' learned':'no rules learned yet';
-  meFillCatSelect(); renderMEChart(); renderMEMatrix(); renderMEGear();
+  meFillCatSelect(); meFillAllotSelect(); renderMEChart(); renderMEMatrix(); renderMEGear();
  }catch(e){ console.error('me render:',e) }
 }
 
@@ -4936,6 +5008,7 @@ function meApplyImport(){
   if(!chosen.length){ toast('Nothing selected'); return }
   let learned=0;
   chosen.forEach(p=>{
+    // a statement's own dates are kept; allotM is what files it under this month
     state.yf.txns.push({id:uid(),type:'expense',date:p.date,amt:p.amt,desc:p.desc,cat:p.cat,who:'ABI'});
     state.me.imported.push(p.fp);
     if(p.changed||p.why==='none'){                        // teach the categoriser
@@ -4966,7 +5039,6 @@ if($('meFile')){
   $('meApply').onclick=meApplyImport;
   $('meCancel').onclick=()=>{ mePending=[]; $('mePreviewWrap').style.display='none'; $('meDetect').style.display='none';
     $('meFile').value=''; $('meFileName').textContent='or click to choose a file' };
-  $('meDate').value=isoLocal();
   $('meSave').onclick=meSaveTx;
   $('meCancelEdit').onclick=meCancelEdit;
   $('meGear').onclick=e=>{ e.stopPropagation(); $('mePop').classList.toggle('open') };
@@ -4977,6 +5049,7 @@ if($('meFile')){
   $('mePopAll').onclick=()=>{ state.me.chartCats=meAllCats().slice(); mePersist(); renderMEChart(); renderMEGear() };
   $('mePopNone').onclick=()=>{ state.me.chartCats=[]; mePersist(); renderMEChart(); renderMEGear() };
   $('meMonthSel').onchange=()=>{ meMonth=$('meMonthSel').value; renderME() };
+  if($('meAllot')) $('meAllot').onchange=meAllotNote;
   if($('meWhoSeg')){
     $('meWhoSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
       meWhoFilter=b.dataset.who;

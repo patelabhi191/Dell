@@ -45,7 +45,6 @@ const fakeClock = ms => `(()=>{const R=Date;let cur=${ms};
       cYear: state.cYear, yfYear: state.yfYear,
       yrT: document.getElementById('yrT').textContent,
       yfDate: document.getElementById('yfDate').value,
-      meDate: document.getElementById('meDate').value,
       meMonth,
     };
   });
@@ -58,7 +57,6 @@ const fakeClock = ms => `(()=>{const R=Date;let cur=${ms};
   check(s.localYear === 2026 && s.cYear === 2026 && s.yfYear === 2026,
     'year selectors correctly still on 2026', `${s.yrT}`);
   check(s.yfDate === '2026-12-31', 'Yearly Finance prefills 2026-12-31, not next year', s.yfDate);
-  check(s.meDate === '2026-12-31', 'Monthly Expense prefills 2026-12-31', s.meDate);
   check(s.meMonth === '2026-12', 'Monthly Expense opens on 2026-12', s.meMonth);
   await ctx.close();
 

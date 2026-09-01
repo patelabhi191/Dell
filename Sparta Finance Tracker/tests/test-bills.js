@@ -148,7 +148,139 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(/2,000/.test(parity.monthlyTotal) && /2,000/.test(parity.yearlyChartSept),
     'Monthly total and Yearly September EXPENSE both read $2,000',
     `${parity.monthlyTotal} / ${parity.yearlyChartSept}`);
-  check(parity.monthlyCount === '4', 'Monthly still lists all 4 entries', parity.monthlyCount);
+  // phase 2 appends the itemised figure to this field, on purpose
+  check(/^4\b/.test(parity.monthlyCount) && /198/.test(parity.monthlyCount),
+    'Monthly lists all 4 entries and names the $198 itemised', parity.monthlyCount);
+
+  // ───────────────────────── Phase 2 ─────────────────────────
+  const addVia = (month, amt, cat, desc, allot) => page.evaluate(([m, a, c, d, al]) => {
+    meMonth = m; renderME();
+    document.getElementById('meAmt').value = a;
+    meFillCatSelect(); meFillAllotSelect();
+    document.getElementById('meCat').value = c;
+    document.getElementById('meDesc').value = d;
+    document.getElementById('meAllot').value = al || '';
+    meSaveTx();
+    return true;
+  }, [month, amt, cat, desc, allot]);
+  const reset = () => page.evaluate(y => { state.yfYear = y; state.yf.txns = []; render(); renderYF(); }, YEAR);
+  const rows = month => page.evaluate(m => {
+    meMonth = m; renderME();
+    return [...document.querySelectorAll('#meBody tr')].map(tr => ({
+      date: tr.children[0].textContent.trim(),
+      desc: tr.children[1].textContent.trim(),
+      amt: tr.children[2].textContent.trim(),
+    }));
+  }, month);
+
+  console.log('\n── 7. the form has no date field ──');
+  check(await page.evaluate(() => !document.getElementById('meDate')), 'Date input removed');
+  check(await page.evaluate(() => !!document.getElementById('meAllot')), '"Allot to" select present');
+
+  console.log('\n── 8. month-only entry ──');
+  await reset();
+  await addVia(`${YEAR}-08`, '100', 'Grocery', 'Lablows', '');
+  const mo = await page.evaluate(() => state.yf.txns.map(t => ({ d: t.date, mOnly: !!t.mOnly })));
+  check(mo[0].d === `${YEAR}-08-15` && mo[0].mOnly, 'stored as the 15th, flagged month-only',
+    JSON.stringify(mo[0]));
+  const augRows = await rows(`${YEAR}-08`);
+  check(augRows[0].date === `AUG ${YEAR}`, 'list shows the month, not an invented day', augRows[0].date);
+
+  console.log("\n── 9. the user's 18th-to-17th cycle ──");
+  await reset();
+  // the August statement, entered in August, plus purchases from 20 Jul onward
+  await page.evaluate(([y]) => {
+    state.yf.txns = [{ id: 'bill', type: 'expense', date: `${y}-08-20`, amt: 2000,
+      desc: 'Aug statement', cat: 'Credit Bill', who: 'ABI' }];
+    render();
+  }, [YEAR]);
+  // imported rows keep real July dates but are allotted to August
+  await page.evaluate(([y]) => {
+    state.yf.txns.push(
+      { id: 'j1', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'Loblaws', cat: 'Grocery', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
+      { id: 'j2', type: 'expense', date: `${y}-07-28`, amt: 58, desc: 'Bell', cat: 'Home', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
+      { id: 'a1', type: 'expense', date: `${y}-08-10`, amt: 40, desc: 'Taco Bell', cat: 'Food', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` });
+    renderYF(); renderME();
+  }, [YEAR]);
+  const jul = await rows(`${YEAR}-07`), aug = await rows(`${YEAR}-08`);
+  check(jul.length === 0, 'nothing shows under July', JSON.stringify(jul.map(r => r.desc)));
+  check(aug.length === 4, 'all three purchases plus the bill show under August',
+    JSON.stringify(aug.map(r => r.desc)));
+  check(aug.some(r => r.date === `${YEAR}-07-20`), 'the 20 July purchase keeps its real date',
+    JSON.stringify(aug.map(r => r.date)));
+  const cyc = await page.evaluate(() => ({ spend: yfActual('expense', null), cb: yfActual('expense', 'Credit Bill') }));
+  check(cyc.spend === 2000, 'year total still $2,000', String(cyc.spend));
+  check(cyc.cb === 1802, 'Credit Bill nets to $1,802', String(cyc.cb));
+
+  console.log('\n── 10. allotting with no bill creates one that tracks ──');
+  await reset();
+  await addVia(`${YEAR}-09`, '100', 'Grocery', 'Loblaws', 'Credit Bill');
+  let bill = await page.evaluate(() => state.yf.txns.find(t => t.derived));
+  check(!!bill && bill.date === `${YEAR}-09-15` && bill.amt === 100,
+    'bill auto-created on the 15th at $100', JSON.stringify(bill && { d: bill.date, a: bill.amt }));
+  await addVia(`${YEAR}-09`, '58', 'Home', 'Bell', 'Credit Bill');
+  bill = await page.evaluate(() => state.yf.txns.find(t => t.derived));
+  check(bill.amt === 158, 'it grows to $158 as more is itemised', String(bill.amt));
+  const sc1 = await page.evaluate(() => ({ spend: yfActual('expense', null), cb: yfActual('expense', 'Credit Bill') }));
+  check(sc1.spend === 158 && sc1.cb === 0, 'total is $158 and Credit Bill nets to zero',
+    JSON.stringify(sc1));
+
+  console.log('\n── 11. typing a total fixes the bill, overage warns ──');
+  await page.evaluate(([y]) => {
+    const b = state.yf.txns.find(t => t.derived);
+    b.amt = 2000; delete b.derived;            // what typing an amount does
+    yfSyncDerivedBills(); renderYF();
+  }, [YEAR]);
+  await addVia(`${YEAR}-09`, '40', 'Food', 'Taco Bell', 'Credit Bill');
+  const fixed = await page.evaluate(() => {
+    const b = state.yf.txns.find(t => t.cat === 'Credit Bill' && !t.allot);
+    return { amt: b.amt, derived: !!b.derived, cb: yfActual('expense', 'Credit Bill'), spend: yfActual('expense', null) };
+  });
+  check(fixed.amt === 2000 && !fixed.derived, 'bill holds at $2,000 and no longer tracks',
+    JSON.stringify(fixed));
+  check(fixed.cb === 1802 && fixed.spend === 2000, 'remainder $1,802, total $2,000', JSON.stringify(fixed));
+  const over = await page.evaluate(async ([y]) => {
+    meMonth = `${y}-09`; renderME();
+    document.getElementById('meAmt').value = '5000';
+    meFillCatSelect(); meFillAllotSelect();
+    document.getElementById('meCat').value = 'Travel';
+    document.getElementById('meDesc').value = 'Flights';
+    document.getElementById('meAllot').value = 'Credit Bill';
+    meSaveTx();
+    await new Promise(r => setTimeout(r, 80));
+    return document.getElementById('toast').textContent;
+  }, [YEAR]);
+  check(/Over-allotted/.test(over), 'over-allotting warns rather than blocking', JSON.stringify(over));
+
+  console.log('\n── 12. trend follows the bill month ──');
+  await reset();
+  await page.evaluate(([y]) => {
+    state.yf.txns = [
+      { id: 'b', type: 'expense', date: `${y}-08-20`, amt: 2000, desc: 'Aug', cat: 'Credit Bill', who: 'ABI' },
+      { id: 'g', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'Loblaws', cat: 'Grocery', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` }];
+    renderYF(); renderME();
+  }, [YEAR]);
+  const trend = await page.evaluate(y => meMonthlyByCat(String(y)), YEAR);
+  check(trend['Grocery'][7] === 100 && trend['Grocery'][6] === 0,
+    'the 20 July purchase is charted under August', JSON.stringify({ jul: trend['Grocery'][6], aug: trend['Grocery'][7] }));
+
+  console.log('\n── 13. backfill + invariant hold after all of it ──');
+  const back = await page.evaluate(([y]) => {
+    state.yf.txns = [{ id: 'x', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'old', cat: 'Grocery', who: 'ABI', allot: 'Credit Bill' }];
+    normalizeYF();
+    return state.yf.txns[0].allotM;
+  }, [YEAR]);
+  check(back === `${YEAR}-07`, 'an allocation without allotM takes it from its date', back);
+
+  const inv = await load(page, [
+    { date: `${YEAR}-08-20`, amt: 2000, cat: 'Credit Bill' },
+    { date: `${YEAR}-07-20`, amt: 100, cat: 'Grocery', allot: 'Credit Bill', allotM: `${YEAR}-08` },
+    { date: `${YEAR}-09-15`, amt: 158, cat: 'Credit Bill', derived: true },
+    { date: `${YEAR}-09-02`, amt: 158, cat: 'Food', allot: 'Credit Bill', allotM: `${YEAR}-09` },
+    { date: `${YEAR}-05-04`, amt: 75, cat: 'Travel' },
+  ].map(tx));
+  check(Math.abs(inv.sum - inv.spend) < 0.005, 'invariant still holds with cross-month allocations',
+    `Σactual ${inv.sum.toFixed(2)} vs spend ${inv.spend.toFixed(2)}`);
 
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
