@@ -2167,10 +2167,14 @@ select{color-scheme:dark}
       <h3 class="skeu-h"><span id="meFormTitle">ADD EXPENSE</span></h3>
       <div class="hform">
         <div>
+          <label for="meFormMonth">Month</label>
+          <select id="meFormMonth"></select>
+        </div>
+        <div>
           <label for="meAmt">Amount ($)</label>
           <input id="meAmt" type="number" step="0.01" placeholder="42.50">
         </div>
-        <div>
+        <div class="full">
           <label for="meAllot">Allot to</label>
           <select id="meAllot"></select>
         </div>
@@ -4273,6 +4277,10 @@ function renderYF(){
   yfFillTxMonth();                    // may reset yfTxMonth if that month is now empty
   yfFillTxCat();                      // may reset yfTxCat if it is no longer reachable
   const list=txns
+    // Yearly lists money that left the bank. An allotted row is a breakdown of
+    // a bill already listed here, so showing it too would read as double entry;
+    // its category still carries the amount in the table above.
+    .filter(t=>!t.allot)
     .filter(t=>yfFilter==='all'||t.type===yfFilter)
     .filter(t=>yfTxMonth==='all'||(t.date||'').slice(5,7)===yfTxMonth)
     .filter(t=>yfWhoFilter==='ALL'||t.who===yfWhoFilter)
@@ -4678,26 +4686,28 @@ function meSaveTx(){
         cat=$('meCat').value, desc=$('meDesc').value.trim(), who=$('meWho').value||'ABI',
         allot=($('meAllot')?$('meAllot').value:'')||'';
   if(!(amt>0)){ toast('Enter an amount greater than 0'); return }
-  // no date field: the month on screen is the month this belongs to
-  const date=meMonth+'-15';
+  // no date field: the month picked on the form is the month this belongs to
+  const month=meFormMonth();
+  const date=month+'-15';
   if(meEditId){
     const t=(state.yf.txns||[]).find(x=>x.id===meEditId);
     if(t){
       t.amt=+amt.toFixed(2); t.cat=cat; t.desc=desc; t.who=who;
       if(t.mOnly) t.date=date;                   // keep a real imported date intact
-      if(allot){ t.allot=allot; t.allotM=meMonth } else { delete t.allot; delete t.allotM }
+      if(allot){ t.allot=allot; t.allotM=month } else { delete t.allot; delete t.allotM }
       toast('Expense updated');
     }
     meCancelEdit();
   } else {
     const row={id:uid(),type:'expense',date,amt:+amt.toFixed(2),desc,cat,who,mOnly:true};
-    if(allot){ row.allot=allot; row.allotM=meMonth }
+    if(allot){ row.allot=allot; row.allotM=month }
     state.yf.txns.push(row);
     toast('Added '+meMoney(amt)+' \u2014 '+cat);
     $('meAmt').value=''; $('meDesc').value='';
   }
   if(!state.yf.cats.exp.includes(cat)) state.yf.cats.exp.push(cat);
-  const over=yfAttachAllot(allot,meMonth,who);
+  const over=yfAttachAllot(allot,month,who);
+  meMonth=month; meFormMonthPicked=false;         // show the month just written to
   if(over) toast('Over-allotted '+meMoney(over)+' past the '+allot);
   yfPersist(); renderME(); if(typeof renderYF==='function') renderYF();
 }
@@ -4743,6 +4753,24 @@ function meFillAllotSelect(){
     note();
   });
 }
+/* Whether the picker holds a month the user deliberately chose. Without this
+   the picker cannot tell a real choice from a leftover default, and switching
+   the tab to another month would leave the form still filing into the old one. */
+let meFormMonthPicked=false;
+function meFillFormMonth(){
+  const sel=$('meFormMonth'); if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML=meMonthOptions().map(m=>`<option value="${m}">${meMonthName(m)}</option>`).join('');
+  const keep=meFormMonthPicked&&cur&&[...sel.options].some(o=>o.value===cur);
+  sel.value=keep?cur:meMonth;          // otherwise follow the month being viewed
+  meAllotNote();
+}
+// the month this entry is being filed under: the form's own picker, which
+// starts on the month in view but can be pointed at an older one
+const meFormMonth=()=>{
+  const sel=$('meFormMonth');
+  return (sel&&sel.value)||meMonth;
+};
 function meImpAllotNote(){
   const el=$('meImpAllotNote'); if(!el) return;
   const v=$('meImpAllot')?$('meImpAllot').value:'';
@@ -4754,14 +4782,16 @@ function meImpAllotNote(){
 function meAllotNote(){
   const el=$('meAllotNote'); if(!el) return;
   const v=$('meAllot')?$('meAllot').value:'';
-  el.textContent=v?('Itemised out of '+meMonthName(meMonth)+"'s "+v+' \u2014 it will not add to the total.')
-                  :('Recorded under '+meMonthName(meMonth)+'.');
+  const m=meFormMonth();
+  el.textContent=v?('Itemised out of '+meMonthName(m)+"'s "+v+' \u2014 it will not add to the total.')
+                  :('Recorded under '+meMonthName(m)+'.');
 }
 function meStartEdit(id){
   const t=(state.yf.txns||[]).find(x=>x.id===id); if(!t) return;
   meEditId=id;
   meFillCatSelect();
-  meFillAllotSelect();
+  meFillAllotSelect(); meFillFormMonth();
+  if($('meFormMonth')) $('meFormMonth').value=t.allot?(t.allotM||meMonth):(t.date||'').slice(0,7);
   $('meAmt').value=t.amt; $('meDesc').value=t.desc||'';
   if($('meAllot')) $('meAllot').value=t.allot||'';
   $('meCat').value=t.cat;
@@ -4954,7 +4984,7 @@ function renderME(){
   $('meEmpty').style.display=txns.length?'none':'block';
   const n=Object.keys(state.me.rules).length;
   $('meRuleCount').textContent=n?n+' merchant rule'+(n===1?'':'s')+' learned':'no rules learned yet';
-  meFillCatSelect(); meFillAllotSelect(); renderMEChart(); renderMEMatrix(); renderMEGear();
+  meFillCatSelect(); meFillAllotSelect(); meFillFormMonth(); renderMEChart(); renderMEMatrix(); renderMEGear();
  }catch(e){ console.error('me render:',e) }
 }
 
@@ -5094,8 +5124,10 @@ if($('meFile')){
   });
   $('mePopAll').onclick=()=>{ state.me.chartCats=meAllCats().slice(); mePersist(); renderMEChart(); renderMEGear() };
   $('mePopNone').onclick=()=>{ state.me.chartCats=[]; mePersist(); renderMEChart(); renderMEGear() };
-  $('meMonthSel').onchange=()=>{ meMonth=$('meMonthSel').value; renderME() };
+  // moving to another month clears any stale pick so the form follows the view
+  $('meMonthSel').onchange=()=>{ meMonth=$('meMonthSel').value; meFormMonthPicked=false; renderME() };
   if($('meAllot')) $('meAllot').onchange=meAllotNote;
+  if($('meFormMonth')) $('meFormMonth').onchange=()=>{ meFormMonthPicked=true; meAllotNote() };
   if($('meImpAllot')) $('meImpAllot').onchange=meImpAllotNote;
   if($('meWhoSeg')){
     $('meWhoSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{

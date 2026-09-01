@@ -388,11 +388,20 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     (pills['Loblaws'] || '').slice(0, 90));
   check(!/acct-tag/.test(pills['Cash lunch'] || ''), 'ordinary spending carries no pill');
   check(/auto/.test(pills['Other Bank (from itemised)'] || ''), 'a derived bill is marked auto');
+  // Allotted rows are deliberately absent from the Yearly log now (see 22), so
+  // there is no allocation pill to find there — but a derived bill does appear
+  // in Yearly, and still needs its "auto" marking.
   const yfPills = await page.evaluate(() => {
-    const tr = [...document.querySelectorAll('#yfTxBody tr')].find(r => /Loblaws/.test(r.textContent));
-    return tr ? tr.children[4].innerHTML : '';
+    const rowFor = re => [...document.querySelectorAll('#yfTxBody tr')].find(r => re.test(r.textContent));
+    return {
+      alloc: !!rowFor(/Loblaws/),
+      derivedTags: (rowFor(/from itemised/) || { children: [] }).children[4]
+        ? rowFor(/from itemised/).children[4].innerHTML : '',
+    };
   });
-  check(/→ Credit Bill/.test(yfPills), 'the Yearly list shows it too', yfPills.slice(0, 90));
+  check(yfPills.alloc === false, 'the Yearly log has no allotted row to tag');
+  check(/auto/.test(yfPills.derivedTags), 'a derived bill in the Yearly log is marked auto',
+    yfPills.derivedTags.slice(0, 90));
 
   console.log('\n── 20. bill rows say what was billed and itemised ──');
   const note = await page.evaluate(() => {
@@ -419,6 +428,72 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   });
   check(/150 over/.test(overNote) && /over/.test(overNote), 'names the $150 overage',
     overNote.replace(/<[^>]*>/g, ' ').trim());
+
+  // ───────── Yearly log excludes allotted rows; Monthly picks its own month ─────────
+  console.log('\n── 22. Yearly lists bank movements, not the breakdown ──');
+  await reset();
+  await page.evaluate(([y]) => {
+    state.yf.txns = [
+      { id: 'b', type: 'expense', date: `${y}-08-20`, amt: 2000, desc: 'Aug statement', cat: 'Credit Bill', who: 'ABI' },
+      { id: 'g', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'Loblaws', cat: 'Grocery', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
+      { id: 'c', type: 'expense', date: `${y}-08-04`, amt: 45, desc: 'Cash lunch', cat: 'Food', who: 'ABI' }];
+    meMonth = `${y}-08`; render(); renderYF(); renderME();
+  }, [YEAR]);
+  const yfDescs = await page.evaluate(() =>
+    [...document.querySelectorAll('#yfTxBody tr')].map(tr => tr.children[3].textContent.trim()));
+  check(!yfDescs.includes('Loblaws'), 'the allotted row is not in the Yearly log', JSON.stringify(yfDescs));
+  check(yfDescs.includes('Aug statement') && yfDescs.includes('Cash lunch'),
+    'the bill and ordinary spending still are', JSON.stringify(yfDescs));
+  const meDescs = await page.evaluate(() =>
+    [...document.querySelectorAll('#meBody tr')].map(tr => tr.children[1].textContent.trim()));
+  check(meDescs.includes('Loblaws'), 'but Monthly still shows it', JSON.stringify(meDescs));
+  const stillRight = await page.evaluate(() => ({
+    spend: yfActual('expense', null), grocery: yfActual('expense', 'Grocery'),
+    cb: yfActual('expense', 'Credit Bill') }));
+  check(stillRight.spend === 2045 && stillRight.grocery === 100 && stillRight.cb === 1900,
+    'hiding it changes no figure — Grocery still carries its $100', JSON.stringify(stillRight));
+
+  console.log('\n── 23. adding an older transaction from the Month picker ──');
+  await reset();
+  const addInMonth = (viewing, pick, amt, cat, desc, allot) => page.evaluate(([v, pm, a, c, d, al]) => {
+    meMonth = v; renderME();
+    meFillFormMonth();
+    document.getElementById('meFormMonth').value = pm;
+    document.getElementById('meAmt').value = a;
+    meFillCatSelect(); meFillAllotSelect();
+    document.getElementById('meCat').value = c;
+    document.getElementById('meDesc').value = d;
+    document.getElementById('meAllot').value = al || '';
+    meSaveTx();
+    return true;
+  }, [viewing, pick, amt, cat, desc, allot]);
+
+  check(await page.evaluate(() => !!document.getElementById('meFormMonth')), 'Month picker present on the form');
+  // sitting in August, file a March expense against March's Credit Bill
+  await addInMonth(`${YEAR}-08`, `${YEAR}-03`, '250', 'Grocery', 'Old March buy', 'Credit Bill');
+  const filed = await page.evaluate(() => state.yf.txns.find(t => t.desc === 'Old March buy'));
+  check(filed && filed.date === `${YEAR}-03-15` && filed.allotM === `${YEAR}-03`,
+    'filed against March, not the month being viewed', JSON.stringify({ d: filed && filed.date, m: filed && filed.allotM }));
+  const marchBill = await page.evaluate(() =>
+    state.yf.txns.find(t => t.derived && t.cat === 'Credit Bill'));
+  check(marchBill && marchBill.date === `${YEAR}-03-15` && marchBill.amt === 250,
+    "March's Credit Bill was created and updated", JSON.stringify(marchBill && { d: marchBill.date, a: marchBill.amt }));
+  check(await page.evaluate(() => meMonth) === `${YEAR}-03`,
+    'the tab follows the month just written to');
+  const marchRows = await rows(`${YEAR}-03`);
+  check(marchRows.some(r => r.desc === 'Old March buy'), 'and it shows under March',
+    JSON.stringify(marchRows.map(r => r.desc)));
+
+  // a second one into the same month tops the same bill up
+  await addInMonth(`${YEAR}-03`, `${YEAR}-03`, '150', 'Food', 'More March', 'Credit Bill');
+  const topped = await page.evaluate(() => state.yf.txns.find(t => t.derived && t.cat === 'Credit Bill').amt);
+  check(topped === 400, "March's bill grows to $400, not a second bill", String(topped));
+  const inv23 = await page.evaluate(() => {
+    const sum = state.yf.cats.exp.reduce((s, c) => s + yfActual('expense', c), 0);
+    return { sum, spend: yfActual('expense', null) };
+  });
+  check(Math.abs(inv23.sum - inv23.spend) < 0.005, 'invariant holds across months',
+    `Σactual ${inv23.sum.toFixed(2)} vs spend ${inv23.spend.toFixed(2)}`);
 
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
