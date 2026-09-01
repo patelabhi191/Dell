@@ -2236,6 +2236,16 @@ select{color-scheme:dark}
     <!-- month transactions -->
     <section class="skeu-panel" style="margin-top:8px">
       <h3 class="skeu-h">THIS MONTH
+        <span class="yf-txhead" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-weight:500">
+        <span style="display:flex;gap:8px;align-items:center">
+          <label for="meTxCat" style="margin:0;font-size:10.5px;white-space:nowrap">Category</label>
+          <select id="meTxCat" style="width:auto;min-width:120px;padding:7px 30px 7px 11px;font-size:13px"></select>
+        </span>
+        <span style="display:flex;gap:8px;align-items:center">
+          <label for="meTxMonth" style="margin:0;font-size:10.5px;white-space:nowrap">Month</label>
+          <select id="meTxMonth" style="width:auto;min-width:120px;padding:7px 30px 7px 11px;font-size:13px"></select>
+        </span>
+        </span>
         <span class="skeu-sub" id="meRuleCount"></span>
       </h3>
       <div class="tscroll" style="max-height:420px;overflow-y:auto">
@@ -4593,6 +4603,7 @@ function normalizeME(){
 }
 normalizeME();   // merchant->category rules + dedup fingerprints
 let meMonth = isoLocal().slice(0,7);                          // 'YYYY-MM', local
+let meTxCat='all';                    // table-only category filter, not persisted
 let mePending = [];
 let meWhoFilter='ALL';
 function mePersist(){ store.set('sparta.me', state.me); if(typeof cloudSaveDebounced==='function') cloudSaveDebounced() }
@@ -4771,6 +4782,22 @@ const meFormMonth=()=>{
   const sel=$('meFormMonth');
   return (sel&&sel.value)||meMonth;
 };
+function meFillTxMonth(){
+  const sel=$('meTxMonth'); if(!sel) return;
+  sel.innerHTML=meMonthOptions().map(m=>`<option value="${m}">${meMonthName(m)}</option>`).join('');
+  sel.value=meMonth;                   // always mirrors the month in view
+}
+function meFillTxCat(){
+  const sel=$('meTxCat'); if(!sel) return;
+  // only categories actually present this month — offering one that cannot
+  // appear would just empty the table
+  const have=[...new Set(meTxns().map(t=>t.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  if(meTxCat!=='all' && !have.includes(meTxCat)) meTxCat='all';   // no longer reachable
+  const q=c=>c.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  sel.innerHTML='<option value="all">All categories</option>'+
+    have.map(c=>`<option value="${q(c)}">${q(c)}</option>`).join('');
+  sel.value=meTxCat;
+}
 function meImpAllotNote(){
   const el=$('meImpAllotNote'); if(!el) return;
   const v=$('meImpAllot')?$('meImpAllot').value:'';
@@ -4969,8 +4996,14 @@ function renderME(){
   $('meBarsEmpty').style.display=cats.length?'none':'block';
 
   // transaction list
+  // populate first: this also drops a category the month cannot show back to
+  // All, and it has to happen before the table is filtered
+  meFillTxMonth(); meFillTxCat();
+  // the category filter scopes this table only, leaving the figures above
+  // describing the whole month — same rule as the Yearly transaction filter
+  const listRows=txns.filter(t=>meTxCat==='all'||t.cat===meTxCat);
   const tb=$('meBody'); tb.innerHTML='';
-  txns.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(t=>{
+  listRows.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(t=>{
     const tr=document.createElement('tr');
     tr.innerHTML=`<td style="text-align:left">${txDate(t)}</td>
       <td style="text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis">${(t.desc||'').replace(/</g,'&lt;')}</td>
@@ -4980,8 +5013,11 @@ function renderME(){
       <td style="white-space:nowrap"><button class="yf-edit" data-meedit="${t.id}" title="Edit">\u270e</button><button class="rm" data-medel="${t.id}" title="Delete">\u2715</button></td>`;
     tb.appendChild(tr);
   });
-  $('meTable').style.display=txns.length?'table':'none';
-  $('meEmpty').style.display=txns.length?'none':'block';
+  $('meTable').style.display=listRows.length?'table':'none';
+  $('meEmpty').style.display=listRows.length?'none':'block';
+  $('meEmpty').textContent=(!listRows.length&&txns.length)
+    ? 'Nothing in this category this month \u2014 try All categories.'
+    : 'Nothing here yet \u2014 import a statement above, or add expenses on the Yearly Finance tab.';
   const n=Object.keys(state.me.rules).length;
   $('meRuleCount').textContent=n?n+' merchant rule'+(n===1?'':'s')+' learned':'no rules learned yet';
   meFillCatSelect(); meFillAllotSelect(); meFillFormMonth(); renderMEChart(); renderMEMatrix(); renderMEGear();
@@ -5125,7 +5161,11 @@ if($('meFile')){
   $('mePopAll').onclick=()=>{ state.me.chartCats=meAllCats().slice(); mePersist(); renderMEChart(); renderMEGear() };
   $('mePopNone').onclick=()=>{ state.me.chartCats=[]; mePersist(); renderMEChart(); renderMEGear() };
   // moving to another month clears any stale pick so the form follows the view
-  $('meMonthSel').onchange=()=>{ meMonth=$('meMonthSel').value; meFormMonthPicked=false; renderME() };
+  const meGoMonth=m=>{ meMonth=m; meFormMonthPicked=false; meTxCat='all'; renderME() };
+  $('meMonthSel').onchange=()=>meGoMonth($('meMonthSel').value);
+  // the filter down by the table drives the same month as the one up top
+  if($('meTxMonth')) $('meTxMonth').onchange=()=>meGoMonth($('meTxMonth').value);
+  if($('meTxCat')) $('meTxCat').onchange=()=>{ meTxCat=$('meTxCat').value; renderME() };
   if($('meAllot')) $('meAllot').onchange=meAllotNote;
   if($('meFormMonth')) $('meFormMonth').onchange=()=>{ meFormMonthPicked=true; meAllotNote() };
   if($('meImpAllot')) $('meImpAllot').onchange=meImpAllotNote;

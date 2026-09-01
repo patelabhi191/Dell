@@ -495,6 +495,69 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(Math.abs(inv23.sum - inv23.spend) < 0.005, 'invariant holds across months',
     `Σactual ${inv23.sum.toFixed(2)} vs spend ${inv23.spend.toFixed(2)}`);
 
+  // ───────── Monthly's own Month + Category filters ─────────
+  console.log('\n── 24. filters at the bottom of Monthly ──');
+  await reset();
+  await page.evaluate(([y]) => {
+    state.yf.txns = [
+      { id: '1', type: 'expense', date: `${y}-08-04`, amt: 100, desc: 'Loblaws', cat: 'Grocery', who: 'ABI' },
+      { id: '2', type: 'expense', date: `${y}-08-06`, amt: 58, desc: 'Bell', cat: 'Home', who: 'ABI' },
+      { id: '3', type: 'expense', date: `${y}-08-09`, amt: 40, desc: 'More food', cat: 'Grocery', who: 'POO' },
+      { id: '4', type: 'expense', date: `${y}-03-11`, amt: 75, desc: 'March buy', cat: 'Travel', who: 'ABI' }];
+    meMonth = `${y}-08`; meTxCat = 'all'; render(); renderYF(); renderME();
+  }, [YEAR]);
+  check(await page.evaluate(() => !!document.getElementById('meTxMonth')), 'Month filter present');
+  check(await page.evaluate(() => !!document.getElementById('meTxCat')), 'Category filter present');
+
+  const opts = await page.evaluate(() => [...document.getElementById('meTxCat').options].map(o => o.text));
+  check(JSON.stringify(opts) === JSON.stringify(['All categories', 'Grocery', 'Home']),
+    'lists only the categories present this month, sorted', JSON.stringify(opts));
+
+  const filtered = await page.evaluate(async () => {
+    const s = document.getElementById('meTxCat');
+    s.value = 'Grocery'; s.dispatchEvent(new Event('change'));
+    await new Promise(r => setTimeout(r, 150));
+    return {
+      rows: [...document.querySelectorAll('#meBody tr')].map(tr => tr.children[1].textContent.trim()),
+      total: document.getElementById('meTotal').textContent,
+    };
+  });
+  check(filtered.rows.length === 2 && filtered.rows.every(r => /Loblaws|More food/.test(r)),
+    'the table narrows to the 2 Grocery rows', JSON.stringify(filtered.rows));
+  check(/198/.test(filtered.total),
+    'the month total above still describes the whole month', filtered.total);
+
+  console.log('\n── 25. the bottom month filter drives the same month as the top ──');
+  const moved = await page.evaluate(async ([y]) => {
+    const s = document.getElementById('meTxMonth');
+    s.value = `${y}-03`; s.dispatchEvent(new Event('change'));
+    await new Promise(r => setTimeout(r, 200));
+    return {
+      meMonth,
+      topSel: document.getElementById('meMonthSel').value,
+      bottomSel: document.getElementById('meTxMonth').value,
+      rows: [...document.querySelectorAll('#meBody tr')].map(tr => tr.children[1].textContent.trim()),
+      cat: meTxCat,
+    };
+  }, [YEAR]);
+  check(moved.meMonth === `${YEAR}-03`, 'it moved the view to March', moved.meMonth);
+  check(moved.topSel === `${YEAR}-03` && moved.bottomSel === `${YEAR}-03`,
+    'both selectors agree afterwards', JSON.stringify({ top: moved.topSel, bottom: moved.bottomSel }));
+  check(moved.rows.length === 1 && moved.rows[0] === 'March buy', 'and shows March',
+    JSON.stringify(moved.rows));
+  check(moved.cat === 'all', 'the category filter resets when the month changes', moved.cat);
+
+  console.log('\n── 26. an unreachable category falls back ──');
+  const fallback = await page.evaluate(async ([y]) => {
+    meTxCat = 'Grocery';                 // not present in March
+    meMonth = `${y}-03`; renderME();
+    return { cat: meTxCat, sel: document.getElementById('meTxCat').value,
+             rows: document.querySelectorAll('#meBody tr').length };
+  }, [YEAR]);
+  check(fallback.cat === 'all' && fallback.sel === 'all',
+    'a category with nothing in this month drops back to All', JSON.stringify(fallback));
+  check(fallback.rows === 1, 'so the table is not left empty', String(fallback.rows));
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nBILLS & ALLOCATIONS: ${pass} passed, ${fail} failed`);
