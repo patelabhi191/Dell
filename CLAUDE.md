@@ -196,7 +196,23 @@ never one flat mark pasted across every theme.
 
 ---
 
-## Design directions (decision pending)
+## The app
+
+`index.html` at the repo root is the working site: one self-contained file, no
+build step, no dependencies. Open it directly or serve it anywhere static.
+
+- Storage is `LocalStore` (this device's `localStorage`) by default.
+  `FirestoreStore` implements the same interface and takes over as soon as
+  `FIREBASE_CONFIG` is filled in at the top of the file. **Shared live sync is
+  not active until those keys exist** — until then every device keeps its own copy.
+- Routes: `#/` home, `#/new`, `#/session/<id>`, `#/archives`, `#/players`, `#/admin`.
+- The 86 theme tokens are generated from `design/admin-theming/tokens.mjs`; never
+  hand-edit them in `index.html`, edit the table and re-inject.
+- Text that sits on the page ground (not on a panel) must use `--ground-ink` /
+  `--ground-muted` on a `--ground-plate`. `--muted` is tuned for panels and is
+  unreadable on a saturated ground — this is why the plate exists.
+
+## Design directions (superseded by the app)
 
 The live set is `design/home-final/` — four skins of the terminal layout,
 carrying the real games and the presentation motion:
