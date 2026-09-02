@@ -14,7 +14,7 @@ history.
 | Decision | Choice |
 | --- | --- |
 | Structure | **Single page** app, not one HTML page per game |
-| Games | 3 custom house games + a 4th **Archives** tile = 4 tiles on screen |
+| Games | **Fixed**: 1 · 3 of Spade · 2 · KaChuFull · 3 · More Coming Soon · 4 · Archives |
 | Scoring | Highest total wins; round-by-round entry with running totals |
 | Backend | **Firebase Firestore**, live updates so every phone sees the same scores |
 | Access | Anyone with the link — no login |
@@ -122,14 +122,25 @@ from a web dashboard. Every screen that lists things follows it:
   fanned cards, a chip stack, a felt table — drawn in CSS and inline SVG.
 - **Tap prompt and carousel dots** under the row. The dots say more games can be
   added without redesigning anything.
-- **A persistent status strip along the bottom.** This is where the terminal put
-  the wallet balance, and it is where the **live session** goes: live indicator,
-  game and round, every player's running score, target, and a Resume button.
-  Resuming is always one tap away, from anywhere on the page.
-- Standings and recent results sit between the tile row and the strip.
+- **The live session bar sits at the TOP**, directly under the plaque and above
+  the tile row: live indicator, game and round, every player's running score,
+  target, and the Resume button. Resuming is always one tap away.
+- Standings and recent results sit at the foot, below the tile row and prompt.
 
-The strip is the load-bearing idea. Scores get entered on a phone mid-game, so
-the thing that must never be more than one tap away is the game in progress.
+That bar is the load-bearing idea. Scores get entered on a phone mid-game, so the
+thing that must never be more than one tap away is the game in progress.
+
+## The games and their logos
+
+| # | Game | Logo |
+| --- | --- | --- |
+| 1 | **3 of Spade** | The numeral **3** beside a solid black **spade**, on three fanned cards |
+| 2 | **KaChuFull** | A **diagonal saltire cross** carrying all four suits on its arms, hub monogram at the centre |
+| 3 | **More Coming Soon** | An intentional **ghost tile** — dashed frame, muted panel, plus mark. It reads as a slot waiting to be filled, never as a broken tile |
+| 4 | **Archives** | Box-and-papers, inverted band, visually distinct from the game tiles |
+
+Both game logos are redrawn per skin so each one belongs to its own palette —
+never one flat mark pasted across every theme.
 
 ## Iconography
 
@@ -148,27 +159,26 @@ the thing that must never be more than one tap away is the game in progress.
 
 ## Design directions (decision pending)
 
-Three rounds of home-page directions are drafted and published as design
-canvases. Round three — `design/home-terminal/`, the live set — applies the
-casino terminal layout above.
+The live set is `design/home-final/` — four skins of the terminal layout,
+carrying the real games and the presentation motion:
 
-| File | Direction |
+| File | Skin |
 | --- | --- |
-| `Main.dc.html` | 1 · Jackpot Terminal — yellow chrome, black hexagon plaque |
-| `TerminalClassic.dc.html` | 2 · Terminal Classic — charcoal, faithful to the reference photo |
-| `FeltTerminal.dc.html` | 3 · Felt Terminal — table green, brass trim, arched plaque |
-| `RetroTerminal.dc.html` | 4 · Retro Terminal — motel marquee plaque with bulbs |
-| `CandyTerminal.dc.html` | 5 · Candy Terminal — cream, pill plaque, glossy chips |
-| `NeonTerminal.dc.html` | 6 · Neon Terminal — indigo, neon-tube plaque and frames |
+| `Main.dc.html` | A · Terminal Classic — charcoal, trapezoid plaque, condensed caps |
+| `SlotTerminal.dc.html` | B · Slot Machine — red carnival, marquee bulbs, confetti |
+| `NeonTerminal.dc.html` | C · Neon Terminal — indigo, flickering neon tube plaque |
+| `TropicalTerminal.dc.html` | D · Tropical Table — turquoise felt, arched plaque, coral |
 
-Superseded, kept only as a record: `design/home-directions/` (round one, rejected
-as too dark and too luxury) and `design/home-directions-v2/` (round two, bright
-and playful but on the old dashboard layout). Do not build from either.
+Superseded, kept only as a record — do not build from any of them:
+`design/home-directions/` (round one, too dark and too luxury),
+`design/home-directions-v2/` (round two, bright but on the dashboard layout),
+`design/home-terminal/` (round three, terminal layout with placeholder games).
 
 **Active direction: not yet chosen.** Once picked, record it here and build the
 real palette tokens from that artboard.
 
 ## Sample data used in mockups
 
-Players Abhi, Priya, Rahul, Nikhil, Sneha. Games Rummy, Judgement, Bluff — all
-placeholders until the real house games are named.
+Players Abhi, Priya, Rahul, Nikhil, Sneha are placeholder names. The games are
+real and fixed (see above); the live session shown is 3 of Spade, round 7,
+first to 500.

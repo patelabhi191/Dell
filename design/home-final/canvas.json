@@ -1,0 +1,16 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",             "title": "A · Terminal Classic",  "x": 0,    "y": 0,    "w": 1280, "h": 1000 },
+    { "file": "SlotTerminal.dc.html",     "title": "B · Slot Machine",      "x": 1380, "y": 0,    "w": 1280, "h": 1000 },
+    { "file": "NeonTerminal.dc.html",     "title": "C · Neon Terminal",     "x": 0,    "y": 1160, "w": 1280, "h": 1000 },
+    { "file": "TropicalTerminal.dc.html", "title": "D · Tropical Table",    "x": 1380, "y": 1160, "w": 1280, "h": 1000 }
+  ],
+  "annotations": [
+    { "id": "brief", "x": 0, "y": -320, "w": 2660, "text": "FINAL FOUR — one layout, four skins. Resume bar now sits at the TOP, under the plaque. Games are fixed: 3 of Spade (numeral 3 + black spade), KaChuFull (diagonal saltire carrying all four suits), More Coming Soon (an intentional ghost tile, not a broken one), Archives. Both game logos are drawn per skin so each belongs to its own palette. Hover the tiles: they lift, the art scales inside the frame, a sheen crosses it, and each logo animates - the spade pulses, the KaChuFull suits spin." },
+    { "id": "a", "x": 0,    "y": -170, "w": 1280, "text": "A · TERMINAL CLASSIC — charcoal chrome, trapezoid plaque, condensed caps. The faithful read of your reference photo." },
+    { "id": "b", "x": 1380, "y": -170, "w": 1280, "text": "B · SLOT MACHINE — red carnival ground, marquee plaque with chasing bulbs, hard offset shadows, confetti falling behind the page." },
+    { "id": "c", "x": 0,    "y": 990,  "w": 1280, "text": "C · NEON TERMINAL — indigo, neon-tube plaque that flickers, glowing tile frames. The online-casino read." },
+    { "id": "d", "x": 1380, "y": 990,  "w": 1280, "text": "D · TROPICAL TABLE — turquoise felt with a shimmer, arched white plaque, coral and sunshine accents, fully rounded strip." }
+  ],
+  "launch": { "view": "canvas" }
+}
