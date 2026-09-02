@@ -198,7 +198,7 @@ never one flat mark pasted across every theme.
 
 ## The app
 
-`index.html` at the repo root is the working site: one self-contained file, no
+`AP-CardGames.html` at the repo root is the working site: one self-contained file, no
 build step, no dependencies. Open it directly or serve it anywhere static.
 
 - Storage is `LocalStore` (this device's `localStorage`) by default.
@@ -207,7 +207,7 @@ build step, no dependencies. Open it directly or serve it anywhere static.
   not active until those keys exist** — until then every device keeps its own copy.
 - Routes: `#/` home, `#/new`, `#/session/<id>`, `#/archives`, `#/players`, `#/admin`.
 - The 86 theme tokens are generated from `design/admin-theming/tokens.mjs`; never
-  hand-edit them in `index.html`, edit the table and re-inject.
+  hand-edit them in `AP-CardGames.html`, edit the table and re-inject.
 - Text that sits on the page ground (not on a panel) must use `--ground-ink` /
   `--ground-muted` on a `--ground-plate`. `--muted` is tuned for panels and is
   unreadable on a saturated ground — this is why the plate exists.
