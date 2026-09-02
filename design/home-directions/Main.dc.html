@@ -1,0 +1,277 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500;600&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #c9a227; } a:hover { color: #e8cd7a; }
+
+    @keyframes dcRise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes dcDeal { from { opacity: 0; transform: translateY(28px) rotate(-3.5deg); } to { opacity: 1; transform: translateY(0) rotate(0deg); } }
+    @keyframes dcDot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.45); opacity: 0.45; } }
+    @keyframes dcSweep { 0% { transform: translateX(-140%) skewX(-18deg); } 55%, 100% { transform: translateX(380%) skewX(-18deg); } }
+    @keyframes dcSpin { to { transform: rotate(360deg); } }
+    @keyframes dcBulb { 0%, 100% { opacity: 1; box-shadow: 0 0 9px rgba(232,205,122,0.9); } 50% { opacity: 0.22; box-shadow: 0 0 0 rgba(0,0,0,0); } }
+    @keyframes dcFlicker { 0%, 16%, 20%, 48%, 52%, 100% { opacity: 1; } 18%, 50% { opacity: 0.42; } }
+    @keyframes dcBreathe { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.9; } }
+
+    .tile { animation: dcRise 0.7s cubic-bezier(0.2, 0.7, 0.3, 1) both; transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease; }
+    .tile:nth-of-type(1) { animation-delay: 0.06s; }
+    .tile:nth-of-type(2) { animation-delay: 0.14s; }
+    .tile:nth-of-type(3) { animation-delay: 0.22s; }
+    .tile:nth-of-type(4) { animation-delay: 0.30s; }
+    .tile:hover { transform: translateY(-7px); box-shadow: 0 18px 40px rgba(0,0,0,0.55); border-color: rgba(201,162,39,0.7); }
+
+    .banner { position: relative; overflow: hidden; animation: dcRise 0.6s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+    .halo { position: absolute; inset: -70%; pointer-events: none; background: conic-gradient(from 0deg, rgba(201,162,39,0) 0deg, rgba(201,162,39,0.16) 32deg, rgba(201,162,39,0) 72deg, rgba(201,162,39,0) 186deg, rgba(201,162,39,0.11) 222deg, rgba(201,162,39,0) 262deg); animation: dcSpin 26s linear infinite; }
+
+    .resume { position: relative; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .resume:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 30px rgba(201,162,39,0.42); }
+    .resume::after { content: ""; position: absolute; top: 0; left: 0; width: 32%; height: 100%; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.6), rgba(255,255,255,0)); animation: dcSweep 3.6s ease-in-out infinite; pointer-events: none; }
+
+    .livedot { animation: dcDot 1.6s ease-in-out infinite; }
+
+    .bulbs { position: absolute; top: 7px; left: 22px; right: 22px; display: flex; justify-content: space-between; pointer-events: none; }
+    .bulbs span { width: 6px; height: 6px; border-radius: 50%; background: #e8cd7a; animation: dcBulb 1.5s ease-in-out infinite; }
+    .bulbs span:nth-child(2n) { animation-delay: 0.25s; }
+    .bulbs span:nth-child(3n) { animation-delay: 0.5s; }
+    .bulbs span:nth-child(5n) { animation-delay: 0.75s; }
+
+    .wordmark { animation: dcFlicker 7s steps(1, end) infinite; }
+    .row { transition: background 0.2s ease; }
+    .row:hover { background: rgba(201,162,39,0.09); }
+  </style>
+</helmet>
+
+<div style="width: 1280px; height: 1000px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 26px; font-family: 'Jost', 'Avenir Next', sans-serif; color: #f1ead6; background-color: #081611; background-image: radial-gradient(110% 80% at 50% -10%, #164034 0%, #0b2019 55%, #081611 100%);">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div style="width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(201,162,39,0.55); display: flex; align-items: center; justify-content: center; color: #c9a227; background: rgba(201,162,39,0.08);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5c3 4 8.5 6.6 8.5 11a4.6 4.6 0 0 1-7.3 3.7c.2 1.6.8 3 1.8 4.3H9c1-1.3 1.6-2.7 1.8-4.3A4.6 4.6 0 0 1 3.5 13.5c0-4.4 5.5-7 8.5-11z"/></svg>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 32px; font-weight: 600; letter-spacing: 0.2em; color: #e8cd7a; line-height: 1; text-shadow: 0 0 26px rgba(232,205,122,0.55);" class="wordmark">NAME TBA</div>
+        <div style="font-size: 11px; letter-spacing: 0.24em; color: #7d9186; text-transform: uppercase;">Placeholder wordmark</div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="padding: 10px 18px; border: 1px solid rgba(241,234,214,0.16); border-radius: 999px; font-size: 13px; letter-spacing: 0.08em; color: #cbd8cf;">Players</div>
+      <div style="padding: 10px 18px; border: 1px solid rgba(241,234,214,0.16); border-radius: 999px; font-size: 13px; letter-spacing: 0.08em; color: #cbd8cf;">Settings</div>
+    </div>
+  </div>
+
+  <div class="banner" style="padding-top: 30px; border: 1px solid rgba(201,162,39,0.28); border-radius: 4px; background: linear-gradient(180deg, rgba(201,162,39,0.10) 0%, rgba(255,255,255,0.02) 100%); padding: 24px 28px; display: flex; align-items: center; gap: 28px;">
+    <div class="halo"></div>
+    <div class="bulbs"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <div style="display: flex; flex-direction: column; gap: 10px; min-width: 260px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: #d9455a; box-shadow: 0 0 0 4px rgba(217,69,90,0.18);" class="livedot"></span>
+        <span style="font-size: 11px; letter-spacing: 0.28em; color: #d9455a; text-transform: uppercase;">Live now</span>
+      </div>
+      <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 40px; font-weight: 600; line-height: 1; color: #f6efdc;">Rummy</div>
+      <div style="font-size: 13px; color: #9fb3a7; letter-spacing: 0.04em;">Round 7 &middot; first to 500 &middot; 4 players</div>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; gap: 10px;">
+      <div style="flex-grow: 1; border: 1px solid rgba(201,162,39,0.45); border-radius: 3px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; background: rgba(201,162,39,0.10);">
+        <span style="font-size: 12px; letter-spacing: 0.1em; color: #e8cd7a;">Abhi</span>
+        <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 30px; line-height: 1; color: #f6efdc;">412</span>
+      </div>
+      <div style="flex-grow: 1; border: 1px solid rgba(241,234,214,0.12); border-radius: 3px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-size: 12px; letter-spacing: 0.1em; color: #9fb3a7;">Priya</span>
+        <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 30px; line-height: 1; color: #dfe7e0;">388</span>
+      </div>
+      <div style="flex-grow: 1; border: 1px solid rgba(241,234,214,0.12); border-radius: 3px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-size: 12px; letter-spacing: 0.1em; color: #9fb3a7;">Rahul</span>
+        <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 30px; line-height: 1; color: #dfe7e0;">355</span>
+      </div>
+      <div style="flex-grow: 1; border: 1px solid rgba(241,234,214,0.12); border-radius: 3px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-size: 12px; letter-spacing: 0.1em; color: #9fb3a7;">Nikhil</span>
+        <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 30px; line-height: 1; color: #dfe7e0;">340</span>
+      </div>
+    </div>
+
+    <div class="resume" style="display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 26px; border-radius: 3px; background: linear-gradient(180deg, #e8cd7a 0%, #c9a227 100%); color: #10231b; font-size: 15px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>
+      Resume
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px;">
+
+    <div class="tile" style="height: 208px; box-sizing: border-box; border: 1px solid rgba(241,234,214,0.14); border-radius: 4px; background: rgba(255,255,255,0.03); padding: 22px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+        <div style="color: #c9a227;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l7 10-7 10-7-10z"/></svg>
+        </div>
+        <span style="font-size: 11px; letter-spacing: 0.16em; color: #d9455a; text-transform: uppercase;">Live</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 28px; line-height: 1; color: #f6efdc;">Rummy</div>
+        <div style="font-size: 12px; color: #8ea296; letter-spacing: 0.04em;">Last played 2 days ago</div>
+      </div>
+      <div style="font-size: 12px; letter-spacing: 0.16em; color: #c9a227; text-transform: uppercase;">New session</div>
+    </div>
+
+    <div class="tile" style="height: 208px; box-sizing: border-box; border: 1px solid rgba(241,234,214,0.14); border-radius: 4px; background: rgba(255,255,255,0.03); padding: 22px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div style="color: #c9a227;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5c3 4 8.5 6.6 8.5 11a4.6 4.6 0 0 1-7.3 3.7c.2 1.6.8 3 1.8 4.3H9c1-1.3 1.6-2.7 1.8-4.3A4.6 4.6 0 0 1 3.5 13.5c0-4.4 5.5-7 8.5-11z"/></svg>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 28px; line-height: 1; color: #f6efdc;">Judgement</div>
+        <div style="font-size: 12px; color: #8ea296; letter-spacing: 0.04em;">Last played 6 days ago</div>
+      </div>
+      <div style="font-size: 12px; letter-spacing: 0.16em; color: #c9a227; text-transform: uppercase;">New session</div>
+    </div>
+
+    <div class="tile" style="height: 208px; box-sizing: border-box; border: 1px solid rgba(241,234,214,0.14); border-radius: 4px; background: rgba(255,255,255,0.03); padding: 22px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div style="color: #c9a227;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.7-9.4-9.2C1 8.3 3 4.8 6.4 4.5 8.6 4.3 10.6 5.4 12 7.2c1.4-1.8 3.4-2.9 5.6-2.7C21 4.8 23 8.3 21.4 11.8 19.5 16.3 12 21 12 21z"/></svg>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 28px; line-height: 1; color: #f6efdc;">Bluff</div>
+        <div style="font-size: 12px; color: #8ea296; letter-spacing: 0.04em;">Last played 12 days ago</div>
+      </div>
+      <div style="font-size: 12px; letter-spacing: 0.16em; color: #c9a227; text-transform: uppercase;">New session</div>
+    </div>
+
+    <div class="tile" style="height: 208px; box-sizing: border-box; border-radius: 4px; background: linear-gradient(160deg, #e8cd7a 0%, #b8931f 100%); color: #10231b; padding: 22px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4"/><path d="M5 8v12h14V8"/><path d="M10 12h4"/></svg>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 28px; line-height: 1;">Archives</div>
+        <div style="font-size: 12px; letter-spacing: 0.04em; opacity: 0.72;">142 sessions on record</div>
+      </div>
+      <div style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 600;">Browse all</div>
+    </div>
+
+  </div>
+
+  <div style="flex-grow: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px;">
+
+    <div style="border: 1px solid rgba(241,234,214,0.14); border-radius: 4px; background: rgba(255,255,255,0.03); padding: 22px 24px; display: flex; flex-direction: column; gap: 16px; overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 24px; color: #f6efdc; letter-spacing: 0.04em;">All-time standings</div>
+        <div style="font-size: 11px; letter-spacing: 0.16em; color: #7d9186; text-transform: uppercase;">Win rate</div>
+      </div>
+      <div style="height: 1px; background: rgba(201,162,39,0.28);"></div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 2px 6px; border-radius: 4px;">
+          <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 20px; color: #c9a227; width: 20px;">1</span>
+          <span style="width: 92px; font-size: 15px; color: #f1ead6;">Abhi</span>
+          <span style="width: 118px; font-size: 12px; color: #8ea296;">42 sessions</span>
+          <div style="flex-grow: 1; height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden;"><div style="width: 36%; height: 100%; background: #c9a227;"></div></div>
+          <span style="width: 62px; text-align: right; font-size: 14px; color: #e8cd7a;">36%</span>
+        </div>
+
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 2px 6px; border-radius: 4px;">
+          <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 20px; color: #8ea296; width: 20px;">2</span>
+          <span style="width: 92px; font-size: 15px; color: #f1ead6;">Priya</span>
+          <span style="width: 118px; font-size: 12px; color: #8ea296;">40 sessions</span>
+          <div style="flex-grow: 1; height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden;"><div style="width: 30%; height: 100%; background: rgba(201,162,39,0.7);"></div></div>
+          <span style="width: 62px; text-align: right; font-size: 14px; color: #dfe7e0;">30%</span>
+        </div>
+
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 2px 6px; border-radius: 4px;">
+          <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 20px; color: #8ea296; width: 20px;">3</span>
+          <span style="width: 92px; font-size: 15px; color: #f1ead6;">Rahul</span>
+          <span style="width: 118px; font-size: 12px; color: #8ea296;">38 sessions</span>
+          <div style="flex-grow: 1; height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden;"><div style="width: 21%; height: 100%; background: rgba(201,162,39,0.55);"></div></div>
+          <span style="width: 62px; text-align: right; font-size: 14px; color: #dfe7e0;">21%</span>
+        </div>
+
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 2px 6px; border-radius: 4px;">
+          <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 20px; color: #8ea296; width: 20px;">4</span>
+          <span style="width: 92px; font-size: 15px; color: #f1ead6;">Nikhil</span>
+          <span style="width: 118px; font-size: 12px; color: #8ea296;">41 sessions</span>
+          <div style="flex-grow: 1; height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden;"><div style="width: 12%; height: 100%; background: rgba(201,162,39,0.45);"></div></div>
+          <span style="width: 62px; text-align: right; font-size: 14px; color: #dfe7e0;">12%</span>
+        </div>
+
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 2px 6px; border-radius: 4px;">
+          <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 20px; color: #8ea296; width: 20px;">5</span>
+          <span style="width: 92px; font-size: 15px; color: #f1ead6;">Sneha</span>
+          <span style="width: 118px; font-size: 12px; color: #8ea296;">22 sessions</span>
+          <div style="flex-grow: 1; height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden;"><div style="width: 9%; height: 100%; background: rgba(201,162,39,0.35);"></div></div>
+          <span style="width: 62px; text-align: right; font-size: 14px; color: #dfe7e0;">9%</span>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="border: 1px solid rgba(241,234,214,0.14); border-radius: 4px; background: rgba(255,255,255,0.03); padding: 22px 24px; display: flex; flex-direction: column; gap: 16px; overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 24px; color: #f6efdc; letter-spacing: 0.04em;">Recent results</div>
+        <div style="font-size: 11px; letter-spacing: 0.16em; color: #c9a227; text-transform: uppercase;">See all</div>
+      </div>
+      <div style="height: 1px; background: rgba(201,162,39,0.28);"></div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+
+        <div class="row" style="display: flex; align-items: baseline; gap: 12px; padding: 2px 6px; border-radius: 4px;">
+          <span style="width: 108px; font-size: 15px; color: #f1ead6;">Judgement</span>
+          <span style="width: 74px; font-size: 12px; color: #8ea296;">28 Aug</span>
+          <span style="flex-grow: 1; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #e8cd7a;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M9 21h6"/><path d="M12 13v8"/></svg>
+            Priya
+          </span>
+          <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; color: #f6efdc;">176</span>
+        </div>
+
+        <div class="row" style="display: flex; align-items: baseline; gap: 12px; padding: 2px 6px; border-radius: 4px;">
+          <span style="width: 108px; font-size: 15px; color: #f1ead6;">Rummy</span>
+          <span style="width: 74px; font-size: 12px; color: #8ea296;">24 Aug</span>
+          <span style="flex-grow: 1; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #e8cd7a;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M9 21h6"/><path d="M12 13v8"/></svg>
+            Abhi
+          </span>
+          <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; color: #f6efdc;">503</span>
+        </div>
+
+        <div class="row" style="display: flex; align-items: baseline; gap: 12px; padding: 2px 6px; border-radius: 4px;">
+          <span style="width: 108px; font-size: 15px; color: #f1ead6;">Bluff</span>
+          <span style="width: 74px; font-size: 12px; color: #8ea296;">21 Aug</span>
+          <span style="flex-grow: 1; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #e8cd7a;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M9 21h6"/><path d="M12 13v8"/></svg>
+            Rahul
+          </span>
+          <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; color: #f6efdc;">240</span>
+        </div>
+
+        <div class="row" style="display: flex; align-items: baseline; gap: 12px; padding: 2px 6px; border-radius: 4px;">
+          <span style="width: 108px; font-size: 15px; color: #f1ead6;">Rummy</span>
+          <span style="width: 74px; font-size: 12px; color: #8ea296;">17 Aug</span>
+          <span style="flex-grow: 1; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #e8cd7a;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M9 21h6"/><path d="M12 13v8"/></svg>
+            Priya
+          </span>
+          <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; color: #f6efdc;">512</span>
+        </div>
+
+        <div class="row" style="display: flex; align-items: baseline; gap: 12px; padding: 2px 6px; border-radius: 4px;">
+          <span style="width: 108px; font-size: 15px; color: #f1ead6;">Judgement</span>
+          <span style="width: 74px; font-size: 12px; color: #8ea296;">12 Aug</span>
+          <span style="flex-grow: 1; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #e8cd7a;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M9 21h6"/><path d="M12 13v8"/></svg>
+            Abhi
+          </span>
+          <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; color: #f6efdc;">168</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

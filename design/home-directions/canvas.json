@@ -1,0 +1,19 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",         "title": "A · Felt & Gold",     "x": 0,    "y": 0,    "w": 1280, "h": 1000 },
+    { "file": "NeonNoir.dc.html",     "title": "B · Neon Noir",       "x": 1380, "y": 0,    "w": 1280, "h": 1000 },
+    { "file": "HighRoller.dc.html",   "title": "C · High Roller",     "x": 2760, "y": 0,    "w": 1280, "h": 1000 },
+    { "file": "DecoBrass.dc.html",    "title": "D · Deco Brass",      "x": 0,    "y": 1160, "w": 1280, "h": 1000 },
+    { "file": "SuitMotif.dc.html",    "title": "E · Suit Motif",      "x": 1380, "y": 1160, "w": 1280, "h": 1000 },
+    { "file": "MinimalTable.dc.html", "title": "F · Velvet Minimal",  "x": 2760, "y": 1160, "w": 1280, "h": 1000 }
+  ],
+  "annotations": [
+    { "id": "dir-a", "x": 0,    "y": -170, "w": 1280, "text": "A · FELT & GOLD — deep felt, gold foil, serif display. The safest casino read; also the most expected." },
+    { "id": "dir-b", "x": 1380, "y": -170, "w": 1280, "text": "B · NEON NOIR — midnight blue and magenta glow, mono numerals, neon flicker. Striking; glow fights dense score tables." },
+    { "id": "dir-c", "x": 2760, "y": -170, "w": 1280, "text": "C · HIGH ROLLER — black and signal red, oversized type, marquee bulbs. Loudest and most confident; least cosy." },
+    { "id": "dir-d", "x": 0,    "y": 990,  "w": 1280, "text": "D · DECO BRASS — art-deco symmetry, brass linework, Roman numerals. Most characterful; ornament costs vertical space." },
+    { "id": "dir-e", "x": 1380, "y": 990,  "w": 1280, "text": "E · SUIT MOTIF — the four tiles ARE the suits, tiles deal in like cards. Light theme; the outlier of the set." },
+    { "id": "dir-f", "x": 2760, "y": 990,  "w": 1280, "text": "F · VELVET MINIMAL — velvet plum and champagne, restrained motion. Best for reading scores fast; least loud." }
+  ],
+  "launch": { "view": "canvas" }
+}
