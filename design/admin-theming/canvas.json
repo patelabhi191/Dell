@@ -1,0 +1,12 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",       "title": "Home screen · live theme switch", "x": 0,    "y": 0, "w": 1280, "h": 1064 },
+    { "file": "AdminTheme.dc.html", "title": "Admin · Appearance",              "x": 1400, "y": 0, "w": 1100, "h": 900 }
+  ],
+  "annotations": [
+    { "id": "how", "x": 0, "y": -260, "w": 2500, "text": "BOTH ARTBOARDS ARE WORKING PROTOTYPES — click them.\n\nLEFT: the home screen. The dark strip on top is preview scaffolding, not a shipped feature — click a chip and the whole screen re-skins. Palette, plaque shape, corner radius, shadow language and the ambient effect all change together: confetti on Slot Machine, neon flicker on Neon, felt shimmer on Tropical, none on Terminal Classic.\n\nRIGHT: Admin. PIN is 2468 — try a wrong one first. Once in, pick a theme and press Apply; the admin chrome itself re-skins to whatever is live." },
+    { "id": "arch", "x": 0, "y": 1120, "w": 1280, "text": "HOW IT WORKS — 83 CSS custom properties, defined four times over as [data-theme=\"terminal\" | \"slot\" | \"neon\" | \"tropical\"]. Switching sets one attribute on the root; a 240ms transition carries the change. Every colour in the page resolves through a var(), so this is the real implementation architecture, not a mockup of one." },
+    { "id": "adm", "x": 1400, "y": 960, "w": 1100, "text": "Theme is a single global setting — settings/site.theme in Firestore, read with onSnapshot, so a change reaches every open phone without a reload. The PIN gate is a deterrent against accidental changes, not a security boundary: it is checked in the browser and anyone can read it in the page source. That is proportionate, since anyone with the link can already edit the scores themselves." }
+  ],
+  "launch": { "view": "canvas" }
+}

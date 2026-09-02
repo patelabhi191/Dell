@@ -107,6 +107,45 @@ Rules:
   are wrong for this register.
 - Scores are the largest type on any screen after the game name.
 
+## Theming: all four skins ship
+
+The four skins are **not** alternatives to choose between — all four ship, and the
+active one is set from Admin.
+
+- **83 CSS custom properties**, defined four times over as `[data-theme="terminal"]`,
+  `"slot"`, `"neon"`, `"tropical"`. Every colour, border, radius and shadow in the
+  app resolves through a `var(--token)`; no themed literal survives in markup.
+- Switching sets **one attribute on the root**. A 240ms transition on background,
+  colour, border and shadow carries the change so it reads as a re-skin, not a flash.
+- Four things are **structural, not colour**, and are rules keyed on the theme
+  attribute rather than tokens: plaque shape, ambient effect (confetti on Slot,
+  flicker on Neon, felt shimmer on Tropical, none on Terminal), shadow language
+  (hard offset / soft / glow) and corner-radius language.
+- The token table lives in one place — `design/admin-theming/tokens.mjs` — so the
+  skins cannot drift apart. Any new token must be added to **all four** themes.
+- `--acc3` is deliberately unused today: it is reserved for the third game when
+  **More Coming Soon** becomes real.
+
+### The setting
+
+`settings/site` in Firestore: `{ theme: 'terminal' | 'slot' | 'neon' | 'tropical' }`.
+One global setting for the whole group, read with `onSnapshot` so a change reaches
+every open phone without a reload. Falls back to `terminal` when the document is
+missing or unreadable.
+
+### Admin access
+
+Admin is gated by a **4-digit PIN**. Be honest about what that is: a PIN checked
+in the browser is a **deterrent, not a security boundary** — anyone can read it in
+the page source. It stops accidental and casual changes, which is its job here.
+
+This is proportionate rather than sloppy: the site is already open to anyone with
+the link for entering and editing scores, so the theme setting is a lower-value
+target than the data itself. If real enforcement is ever wanted, the upgrade path
+is Firebase Anonymous Auth plus a Cloud Function that validates the PIN and sets
+an `admin` custom claim, with Firestore rules requiring it — that needs the Blaze
+plan. Do not describe the PIN as securing anything.
+
 ## Layout: the casino terminal
 
 The house layout is taken from a physical casino terminal (Interblock G4), not
