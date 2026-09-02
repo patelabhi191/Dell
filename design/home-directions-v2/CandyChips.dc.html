@@ -1,0 +1,234 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #ff5d8f; } a:hover { color: #22c1a4; }
+
+    @keyframes dcPop { from { opacity: 0; transform: translateY(24px) scale(0.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes dcDot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.4; } }
+    @keyframes dcSweep { 0% { transform: translateX(-140%) skewX(-20deg); } 55%, 100% { transform: translateX(400%) skewX(-20deg); } }
+    @keyframes dcBulb { 0%, 100% { opacity: 1; box-shadow: 0 0 10px rgba(255,93,143,0.8); } 50% { opacity: 0.2; box-shadow: 0 0 0 rgba(0,0,0,0); } }
+    @keyframes dcConfetti { 0% { transform: translateY(-40px) rotate(0deg); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateY(220px) rotate(420deg); opacity: 0; } }
+    @keyframes dcCoin { 0%, 100% { transform: rotateY(0deg); } 50% { transform: rotateY(180deg); } }
+    @keyframes dcReel { 0%, 82%, 100% { transform: translateY(0); } 86% { transform: translateY(-8px); } 92% { transform: translateY(5px); } }
+    @keyframes dcTwinkle { 0%, 100% { opacity: 0.25; transform: scale(0.7) rotate(0deg); } 50% { opacity: 1; transform: scale(1) rotate(20deg); } }
+    @keyframes dcJiggle { 0%, 100% { transform: rotate(0deg); } 30% { transform: rotate(-1.6deg); } 70% { transform: rotate(1.6deg); } }
+    @keyframes dcSpin { to { transform: rotate(360deg); } }
+
+    .tile { animation: dcPop 0.62s cubic-bezier(0.34, 1.56, 0.64, 1) both; transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.24s ease; }
+    .tile:nth-of-type(1) { animation-delay: 0.06s; }
+    .tile:nth-of-type(2) { animation-delay: 0.14s; }
+    .tile:nth-of-type(3) { animation-delay: 0.22s; }
+    .tile:nth-of-type(4) { animation-delay: 0.30s; }
+    .tile:hover { transform: translateY(-8px); box-shadow: 0 18px 34px rgba(58,42,63,0.20); }
+    .tile:hover .tilesuit { animation: dcJiggle 0.5s ease; }
+
+    .banner { position: relative; overflow: hidden; animation: dcPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .resume { position: relative; overflow: hidden; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease; }
+    .resume:hover { transform: translateY(-3px) scale(1.03); }
+    .resume::after { content: ""; position: absolute; top: 0; left: 0; width: 30%; height: 100%; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.65), rgba(255,255,255,0)); animation: dcSweep 3.2s ease-in-out infinite; pointer-events: none; }
+
+    .livedot { animation: dcDot 1.5s ease-in-out infinite; }
+    .bulbs { position: absolute; left: 14px; right: 14px; display: flex; justify-content: space-between; pointer-events: none; }
+    .bulbs span { width: 7px; height: 7px; border-radius: 50%; background: #ff5d8f; animation: dcBulb 1.5s ease-in-out infinite; }
+    .bulbs span:nth-child(2n) { animation-delay: 0.25s; }
+    .bulbs span:nth-child(3n) { animation-delay: 0.5s; }
+    .bulbs span:nth-child(5n) { animation-delay: 0.78s; }
+    .confetti span { position: absolute; width: 8px; height: 12px; border-radius: 2px; animation: dcConfetti 4.6s linear infinite; }
+    .twinkle { animation: dcTwinkle 2.2s ease-in-out infinite; }
+    .twinkle:nth-of-type(2) { animation-delay: 0.6s; }
+    .twinkle:nth-of-type(3) { animation-delay: 1.2s; }
+    .reelnum { display: inline-block; animation: dcReel 5s ease-in-out infinite; }
+    .row { transition: background 0.18s ease, transform 0.18s ease; }
+    .row:hover { background: #ff5d8f14; transform: translateX(3px); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 1280px; height: 1000px; box-sizing: border-box; padding: 34px 36px 36px; display: flex; flex-direction: column; gap: 20px; overflow: hidden; font-family: 'Nunito', 'Helvetica Neue', sans-serif; color: #3a2a3f; background-color: #fff4e6; background-image: radial-gradient(circle at 12% 8%, #ffd9e8 0%, transparent 34%), radial-gradient(circle at 88% 4%, #d6f5ff 0%, transparent 32%);">
+  
+
+  <div style="position: relative; display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+    <div style="display: flex; align-items: center; gap: 13px;">
+      <div style="width: 46px; height: 46px; border-radius: 50%; background: #ff5d8f; border: 4px dashed #ffffff; box-shadow: 0 6px 0 rgba(58,42,63,0.14); display: flex; align-items: center; justify-content: center; color: #ffffff;"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.7-9.4-9.2C1 8.3 3 4.8 6.4 4.5 8.6 4.3 10.6 5.4 12 7.2c1.4-1.8 3.4-2.9 5.6-2.7C21 4.8 23 8.3 21.4 11.8 19.5 16.3 12 21 12 21z"/></svg></div>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 31px; line-height: 1; color: #3a2a3f;">NAME TBA</div>
+        <div style="font-size: 10px; font-weight: 700; letter-spacing: 0.18em; color: #9b8aa3; text-transform: uppercase;">Placeholder wordmark</div>
+      </div>
+      
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;">
+      <div style="padding: 10px 18px; border-radius: 999px; background: #ffffff; color: #6b5a73; border: 2px solid #f4e6ee;">Players</div>
+      <div style="padding: 10px 18px; border-radius: 999px; background: #ffffff; color: #6b5a73; border: 2px solid #f4e6ee;">Settings</div>
+    </div>
+  </div>
+
+  <div class="banner" style="background: #ffffff; border: 2px solid #f4e6ee; border-radius: 16px; box-shadow: 0 8px 22px rgba(58,42,63,0.10); padding: 26px 26px 22px; display: flex; align-items: center; gap: 26px; color: #3a2a3f;">
+    <div class="bulbs" style="top: 8px;"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div class="confetti" style="position: absolute; inset: 0; pointer-events: none; overflow: hidden;"><span style="left: 3%; top: -20px; background: #ff5d8f; transform: rotate(0deg); animation-delay: 0.00s;"></span><span style="left: 9.1%; top: -20px; background: #22c1a4; transform: rotate(23deg); animation-delay: 0.29s;"></span><span style="left: 15.2%; top: -20px; background: #7c4dff; transform: rotate(46deg); animation-delay: 0.58s;"></span><span style="left: 21.299999999999997%; top: -20px; background: #ffb703; transform: rotate(9deg); animation-delay: 0.87s;"></span><span style="left: 27.4%; top: -20px; background: #ff5d8f; transform: rotate(32deg); animation-delay: 1.16s;"></span><span style="left: 33.5%; top: -20px; background: #ff5d8f; transform: rotate(55deg); animation-delay: 1.45s;"></span><span style="left: 39.599999999999994%; top: -20px; background: #22c1a4; transform: rotate(18deg); animation-delay: 1.74s;"></span><span style="left: 45.699999999999996%; top: -20px; background: #7c4dff; transform: rotate(41deg); animation-delay: 2.03s;"></span><span style="left: 51.8%; top: -20px; background: #ffb703; transform: rotate(4deg); animation-delay: 2.32s;"></span><span style="left: 57.9%; top: -20px; background: #ff5d8f; transform: rotate(27deg); animation-delay: 2.61s;"></span><span style="left: 64%; top: -20px; background: #ff5d8f; transform: rotate(50deg); animation-delay: 2.90s;"></span><span style="left: 70.1%; top: -20px; background: #22c1a4; transform: rotate(13deg); animation-delay: 3.19s;"></span><span style="left: 76.19999999999999%; top: -20px; background: #7c4dff; transform: rotate(36deg); animation-delay: 3.48s;"></span><span style="left: 82.3%; top: -20px; background: #ffb703; transform: rotate(59deg); animation-delay: 3.77s;"></span><span style="left: 88.39999999999999%; top: -20px; background: #ff5d8f; transform: rotate(22deg); animation-delay: 4.06s;"></span><span style="left: 94.5%; top: -20px; background: #ff5d8f; transform: rotate(45deg); animation-delay: 4.35s;"></span></div>
+    <div style="position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 236px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="livedot" style="width: 8px; height: 8px; border-radius: 50%; background: #ff5d8f;"></span>
+        <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.2em; color: #ff5d8f; text-transform: uppercase;">Live now</span>
+      </div>
+      <div style="font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 36px; line-height: 1; color: #3a2a3f;">Rummy</div>
+      <div style="font-size: 13px; font-weight: 500; color: #9b8aa3;">Round 7 &middot; first to 500 &middot; 4 players</div>
+    </div>
+
+    <div style="position: relative; flex-grow: 1; display: flex; gap: 10px;">
+        <div style="flex-grow: 1; border-radius: 12px; padding: 11px 14px; background: #ff5d8f; border: none; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 12px; font-weight: 600; color: #ffffff;">Abhi</span>
+          <span class="reelnum" style="font-family: 'Baloo 2', cursive; font-size: 28px; line-height: 1; color: #ffffff;">412</span>
+        </div>
+        <div style="flex-grow: 1; border-radius: 12px; padding: 11px 14px; background: #faf5fb; border: none; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 12px; font-weight: 600; color: #9b8aa3;">Priya</span>
+          <span class="" style="font-family: 'Baloo 2', cursive; font-size: 28px; line-height: 1; color: #3a2a3f;">388</span>
+        </div>
+        <div style="flex-grow: 1; border-radius: 12px; padding: 11px 14px; background: #faf5fb; border: none; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 12px; font-weight: 600; color: #9b8aa3;">Rahul</span>
+          <span class="" style="font-family: 'Baloo 2', cursive; font-size: 28px; line-height: 1; color: #3a2a3f;">355</span>
+        </div>
+        <div style="flex-grow: 1; border-radius: 12px; padding: 11px 14px; background: #faf5fb; border: none; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 12px; font-weight: 600; color: #9b8aa3;">Nikhil</span>
+          <span class="" style="font-family: 'Baloo 2', cursive; font-size: 28px; line-height: 1; color: #3a2a3f;">340</span>
+        </div>
+    </div>
+
+    <div class="resume" style="position: relative; display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 26px; border-radius: 12px; background: #22c1a4; color: #ffffff; border: none; box-shadow: 0 8px 0 #16957e; font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 15px; letter-spacing: 0.04em;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg> RESUME
+    </div>
+  </div>
+
+  <div style="position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;">
+      <div class="tile" style="height: 196px; box-sizing: border-box; background: #ffffff; border: 2px solid #f0e2ea; border-radius: 16px; box-shadow: 0 8px 20px rgba(58,42,63,0.12); padding: 16px 18px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center;">
+      <div class="tilesuit" style="width: 68px; height: 68px; border-radius: 50%; background: #ff5d8f; border: 4px dashed rgba(255,255,255,0.85); box-shadow: 0 6px 0 rgba(0,0,0,0.14), inset 0 3px 8px rgba(255,255,255,0.45); color: #fffdf7; display: flex; align-items: center; justify-content: center;"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l7 10-7 10-7-10z"/></svg></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 21px; line-height: 1.05; color: #3a2a3f;">Rummy</div>
+        <div style="font-size: 12px; color: #9b8aa3;">Last played 2 days ago</div>
+      </div>
+      <div style="font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 12px; color: #ff5d8f;">New session &middot; live</div>
+    </div>
+      <div class="tile" style="height: 196px; box-sizing: border-box; background: #ffffff; border: 2px solid #f0e2ea; border-radius: 16px; box-shadow: 0 8px 20px rgba(58,42,63,0.12); padding: 16px 18px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center;">
+      <div class="tilesuit" style="width: 68px; height: 68px; border-radius: 50%; background: #22c1a4; border: 4px dashed rgba(255,255,255,0.85); box-shadow: 0 6px 0 rgba(0,0,0,0.14), inset 0 3px 8px rgba(255,255,255,0.45); color: #fffdf7; display: flex; align-items: center; justify-content: center;"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5c3 4 8.5 6.6 8.5 11a4.6 4.6 0 0 1-7.3 3.7c.2 1.6.8 3 1.8 4.3H9c1-1.3 1.6-2.7 1.8-4.3A4.6 4.6 0 0 1 3.5 13.5c0-4.4 5.5-7 8.5-11z"/></svg></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 21px; line-height: 1.05; color: #3a2a3f;">Judgement</div>
+        <div style="font-size: 12px; color: #9b8aa3;">Last played 6 days ago</div>
+      </div>
+      <div style="font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 12px; color: #22c1a4;">New session</div>
+    </div>
+      <div class="tile" style="height: 196px; box-sizing: border-box; background: #ffffff; border: 2px solid #f0e2ea; border-radius: 16px; box-shadow: 0 8px 20px rgba(58,42,63,0.12); padding: 16px 18px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center;">
+      <div class="tilesuit" style="width: 68px; height: 68px; border-radius: 50%; background: #7c4dff; border: 4px dashed rgba(255,255,255,0.85); box-shadow: 0 6px 0 rgba(0,0,0,0.14), inset 0 3px 8px rgba(255,255,255,0.45); color: #fffdf7; display: flex; align-items: center; justify-content: center;"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.7-9.4-9.2C1 8.3 3 4.8 6.4 4.5 8.6 4.3 10.6 5.4 12 7.2c1.4-1.8 3.4-2.9 5.6-2.7C21 4.8 23 8.3 21.4 11.8 19.5 16.3 12 21 12 21z"/></svg></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 21px; line-height: 1.05; color: #3a2a3f;">Bluff</div>
+        <div style="font-size: 12px; color: #9b8aa3;">Last played 12 days ago</div>
+      </div>
+      <div style="font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 12px; color: #7c4dff;">New session</div>
+    </div>
+      <div class="tile" style="height: 196px; box-sizing: border-box; background: #ffffff; border: 2px solid #f0e2ea; border-radius: 16px; box-shadow: 0 8px 20px rgba(58,42,63,0.12); padding: 16px 18px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center;">
+      <div class="tilesuit" style="width: 68px; height: 68px; border-radius: 50%; background: #3a2a3f; border: 4px dashed rgba(255,255,255,0.85); box-shadow: 0 6px 0 rgba(0,0,0,0.14), inset 0 3px 8px rgba(255,255,255,0.45); color: #fffdf7; display: flex; align-items: center; justify-content: center;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4.5" rx="1.4"/><path d="M5 8.5v11.5h14V8.5"/><path d="M10 12.5h4"/></svg></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 21px; line-height: 1.05; color: #3a2a3f;">Archives</div>
+        <div style="font-size: 12px; color: #9b8aa3;">142 sessions on record</div>
+      </div>
+      <div style="font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 12px; color: #3a2a3f;">Browse all</div>
+    </div>
+  </div>
+
+  <div style="position: relative; flex-grow: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+    <div style="background: #ffffff; border: 2px solid #f4e6ee; border-radius: 16px; box-shadow: 0 8px 22px rgba(58,42,63,0.10); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <div style="font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 19px; color: #3a2a3f;">All-time standings</div>
+        <div style="font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #9b8aa3; text-transform: uppercase;">played / won / rate</div>
+      </div>
+      <div style="display: flex; flex-direction: column;">
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 26px; height: 26px; border-radius: 50%; background: #ff5d8f; color: #fffdf7; font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 12px; display: flex; align-items: center; justify-content: center;">1</span>
+          <span style="flex-grow: 1; font-size: 15px; font-weight: 600; color: #3a2a3f;">Abhi</span>
+          <span style="width: 42px; text-align: right; font-size: 14px; color: #9b8aa3;">42</span>
+          <span style="width: 38px; text-align: right; font-size: 14px; font-weight: 700; color: #3a2a3f;">15</span>
+          <span style="width: 56px; text-align: right; font-family: 'Baloo 2', cursive; font-size: 17px; color: #ff5d8f;">36%</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 26px; height: 26px; border-radius: 50%; background: #f0e7f5; color: #9b8aa3; font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 12px; display: flex; align-items: center; justify-content: center;">2</span>
+          <span style="flex-grow: 1; font-size: 15px; font-weight: 600; color: #3a2a3f;">Priya</span>
+          <span style="width: 42px; text-align: right; font-size: 14px; color: #9b8aa3;">40</span>
+          <span style="width: 38px; text-align: right; font-size: 14px; font-weight: 700; color: #3a2a3f;">12</span>
+          <span style="width: 56px; text-align: right; font-family: 'Baloo 2', cursive; font-size: 17px; color: #3a2a3f;">30%</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 26px; height: 26px; border-radius: 50%; background: #f0e7f5; color: #9b8aa3; font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 12px; display: flex; align-items: center; justify-content: center;">3</span>
+          <span style="flex-grow: 1; font-size: 15px; font-weight: 600; color: #3a2a3f;">Rahul</span>
+          <span style="width: 42px; text-align: right; font-size: 14px; color: #9b8aa3;">38</span>
+          <span style="width: 38px; text-align: right; font-size: 14px; font-weight: 700; color: #3a2a3f;">8</span>
+          <span style="width: 56px; text-align: right; font-family: 'Baloo 2', cursive; font-size: 17px; color: #3a2a3f;">21%</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 26px; height: 26px; border-radius: 50%; background: #f0e7f5; color: #9b8aa3; font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 12px; display: flex; align-items: center; justify-content: center;">4</span>
+          <span style="flex-grow: 1; font-size: 15px; font-weight: 600; color: #3a2a3f;">Nikhil</span>
+          <span style="width: 42px; text-align: right; font-size: 14px; color: #9b8aa3;">41</span>
+          <span style="width: 38px; text-align: right; font-size: 14px; font-weight: 700; color: #3a2a3f;">5</span>
+          <span style="width: 56px; text-align: right; font-family: 'Baloo 2', cursive; font-size: 17px; color: #3a2a3f;">12%</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 26px; height: 26px; border-radius: 50%; background: #f0e7f5; color: #9b8aa3; font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 12px; display: flex; align-items: center; justify-content: center;">5</span>
+          <span style="flex-grow: 1; font-size: 15px; font-weight: 600; color: #3a2a3f;">Sneha</span>
+          <span style="width: 42px; text-align: right; font-size: 14px; color: #9b8aa3;">22</span>
+          <span style="width: 38px; text-align: right; font-size: 14px; font-weight: 700; color: #3a2a3f;">2</span>
+          <span style="width: 56px; text-align: right; font-family: 'Baloo 2', cursive; font-size: 17px; color: #3a2a3f;">9%</span>
+        </div>
+      </div>
+    </div>
+    <div style="background: #ffffff; border: 2px solid #f4e6ee; border-radius: 16px; box-shadow: 0 8px 22px rgba(58,42,63,0.10); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <div style="font-family: 'Baloo 2', 'Trebuchet MS', cursive; font-size: 19px; color: #3a2a3f;">Recent results</div>
+        <div style="font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #9b8aa3; text-transform: uppercase;">see all</div>
+      </div>
+      <div style="display: flex; flex-direction: column;">
+        <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 92px; font-size: 14px; font-weight: 600; color: #3a2a3f;">Judgement</span>
+          <span style="width: 62px; font-size: 12px; color: #9b8aa3;">28 Aug</span>
+          <span style="flex-grow: 1; font-size: 14px; font-weight: 700; color: #22c1a4;">Priya</span>
+          <span style="font-family: 'Baloo 2', cursive; font-size: 18px; color: #3a2a3f;">176</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 92px; font-size: 14px; font-weight: 600; color: #3a2a3f;">Rummy</span>
+          <span style="width: 62px; font-size: 12px; color: #9b8aa3;">24 Aug</span>
+          <span style="flex-grow: 1; font-size: 14px; font-weight: 700; color: #22c1a4;">Abhi</span>
+          <span style="font-family: 'Baloo 2', cursive; font-size: 18px; color: #3a2a3f;">503</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 92px; font-size: 14px; font-weight: 600; color: #3a2a3f;">Bluff</span>
+          <span style="width: 62px; font-size: 12px; color: #9b8aa3;">21 Aug</span>
+          <span style="flex-grow: 1; font-size: 14px; font-weight: 700; color: #22c1a4;">Rahul</span>
+          <span style="font-family: 'Baloo 2', cursive; font-size: 18px; color: #3a2a3f;">240</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 92px; font-size: 14px; font-weight: 600; color: #3a2a3f;">Rummy</span>
+          <span style="width: 62px; font-size: 12px; color: #9b8aa3;">17 Aug</span>
+          <span style="flex-grow: 1; font-size: 14px; font-weight: 700; color: #22c1a4;">Priya</span>
+          <span style="font-family: 'Baloo 2', cursive; font-size: 18px; color: #3a2a3f;">512</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 92px; font-size: 14px; font-weight: 600; color: #3a2a3f;">Judgement</span>
+          <span style="width: 62px; font-size: 12px; color: #9b8aa3;">12 Aug</span>
+          <span style="flex-grow: 1; font-size: 14px; font-weight: 700; color: #22c1a4;">Abhi</span>
+          <span style="font-family: 'Baloo 2', cursive; font-size: 18px; color: #3a2a3f;">168</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

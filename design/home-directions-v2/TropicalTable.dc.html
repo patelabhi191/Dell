@@ -1,0 +1,254 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #12b0a0; } a:hover { color: #ff6f59; }
+
+    @keyframes dcPop { from { opacity: 0; transform: translateY(24px) scale(0.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes dcDot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.4; } }
+    @keyframes dcSweep { 0% { transform: translateX(-140%) skewX(-20deg); } 55%, 100% { transform: translateX(400%) skewX(-20deg); } }
+    @keyframes dcBulb { 0%, 100% { opacity: 1; box-shadow: 0 0 10px rgba(255,183,3,0.85); } 50% { opacity: 0.2; box-shadow: 0 0 0 rgba(0,0,0,0); } }
+    @keyframes dcConfetti { 0% { transform: translateY(-40px) rotate(0deg); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateY(220px) rotate(420deg); opacity: 0; } }
+    @keyframes dcCoin { 0%, 100% { transform: rotateY(0deg); } 50% { transform: rotateY(180deg); } }
+    @keyframes dcReel { 0%, 82%, 100% { transform: translateY(0); } 86% { transform: translateY(-8px); } 92% { transform: translateY(5px); } }
+    @keyframes dcTwinkle { 0%, 100% { opacity: 0.25; transform: scale(0.7) rotate(0deg); } 50% { opacity: 1; transform: scale(1) rotate(20deg); } }
+    @keyframes dcJiggle { 0%, 100% { transform: rotate(0deg); } 30% { transform: rotate(-1.6deg); } 70% { transform: rotate(1.6deg); } }
+    @keyframes dcSpin { to { transform: rotate(360deg); } }
+
+    .tile { animation: dcPop 0.62s cubic-bezier(0.34, 1.56, 0.64, 1) both; transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.24s ease; }
+    .tile:nth-of-type(1) { animation-delay: 0.06s; }
+    .tile:nth-of-type(2) { animation-delay: 0.14s; }
+    .tile:nth-of-type(3) { animation-delay: 0.22s; }
+    .tile:nth-of-type(4) { animation-delay: 0.30s; }
+    .tile:hover { transform: translateY(-8px); box-shadow: 0 18px 30px rgba(15,61,56,0.20); }
+    .tile:hover .tilesuit { animation: dcJiggle 0.5s ease; }
+
+    .banner { position: relative; overflow: hidden; animation: dcPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .resume { position: relative; overflow: hidden; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease; }
+    .resume:hover { transform: translateY(-3px) scale(1.03); }
+    .resume::after { content: ""; position: absolute; top: 0; left: 0; width: 30%; height: 100%; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.65), rgba(255,255,255,0)); animation: dcSweep 3.2s ease-in-out infinite; pointer-events: none; }
+
+    .livedot { animation: dcDot 1.5s ease-in-out infinite; }
+    .bulbs { position: absolute; left: 14px; right: 14px; display: flex; justify-content: space-between; pointer-events: none; }
+    .bulbs span { width: 7px; height: 7px; border-radius: 50%; background: #ffb703; animation: dcBulb 1.5s ease-in-out infinite; }
+    .bulbs span:nth-child(2n) { animation-delay: 0.25s; }
+    .bulbs span:nth-child(3n) { animation-delay: 0.5s; }
+    .bulbs span:nth-child(5n) { animation-delay: 0.78s; }
+    .confetti span { position: absolute; width: 8px; height: 12px; border-radius: 2px; animation: dcConfetti 4.6s linear infinite; }
+    .twinkle { animation: dcTwinkle 2.2s ease-in-out infinite; }
+    .twinkle:nth-of-type(2) { animation-delay: 0.6s; }
+    .twinkle:nth-of-type(3) { animation-delay: 1.2s; }
+    .reelnum { display: inline-block; animation: dcReel 5s ease-in-out infinite; }
+    .row { transition: background 0.18s ease, transform 0.18s ease; }
+    .row:hover { background: #12b0a018; transform: translateX(3px); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 1280px; height: 1000px; box-sizing: border-box; padding: 34px 36px 36px; display: flex; flex-direction: column; gap: 20px; overflow: hidden; font-family: 'Quicksand', 'Helvetica Neue', sans-serif; color: #0f3d38; background-color: #e6fbf6; background-image: radial-gradient(circle at 92% 6%, #ffe0b2 0%, transparent 30%), radial-gradient(circle at 6% 92%, #b9f0e2 0%, transparent 34%);">
+  
+
+  <div style="position: relative; display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+    <div style="display: flex; align-items: center; gap: 13px;">
+      <div style="width: 46px; height: 46px; border-radius: 16px; background: #12b0a0; box-shadow: 0 6px 0 #0c7d71; display: flex; align-items: center; justify-content: center; color: #ffffff;"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5c3 4 8.5 6.6 8.5 11a4.6 4.6 0 0 1-7.3 3.7c.2 1.6.8 3 1.8 4.3H9c1-1.3 1.6-2.7 1.8-4.3A4.6 4.6 0 0 1 3.5 13.5c0-4.4 5.5-7 8.5-11z"/></svg></div>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 31px; line-height: 1; color: #0f3d38;">NAME TBA</div>
+        <div style="font-size: 10px; font-weight: 700; letter-spacing: 0.18em; color: #5c8c85; text-transform: uppercase;">Placeholder wordmark</div>
+      </div>
+      
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;">
+      <div style="padding: 10px 18px; border-radius: 999px; background: #ffffff; color: #0f3d38; border: 2px solid #d6f2ec;">Players</div>
+      <div style="padding: 10px 18px; border-radius: 999px; background: #ffffff; color: #0f3d38; border: 2px solid #d6f2ec;">Settings</div>
+    </div>
+  </div>
+
+  <div class="banner" style="background: #0f8c80; border: none; border-radius: 20px; box-shadow: 0 8px 20px rgba(15,61,56,0.10); padding: 26px 26px 22px; display: flex; align-items: center; gap: 26px; color: #ffffff;">
+    <div class="bulbs" style="top: 8px;"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <div style="position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 236px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="livedot" style="width: 8px; height: 8px; border-radius: 50%; background: #ff6f59;"></span>
+        <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.2em; color: #ff6f59; text-transform: uppercase;">Live now</span>
+      </div>
+      <div style="font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 36px; line-height: 1; color: #ffffff;">Rummy</div>
+      <div style="font-size: 13px; font-weight: 500; color: #b6e6df;">Round 7 &middot; first to 500 &middot; 4 players</div>
+    </div>
+
+    <div style="position: relative; flex-grow: 1; display: flex; gap: 10px;">
+        <div style="flex-grow: 1; border-radius: 14px; padding: 11px 14px; background: #ffb703; border: none; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 12px; font-weight: 600; color: #0f3d38;">Abhi</span>
+          <span class="reelnum" style="font-family: 'Fredoka', sans-serif; font-size: 28px; line-height: 1; color: #0f3d38;">412</span>
+        </div>
+        <div style="flex-grow: 1; border-radius: 14px; padding: 11px 14px; background: rgba(255,255,255,0.14); border: none; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 12px; font-weight: 600; color: #5c8c85;">Priya</span>
+          <span class="" style="font-family: 'Fredoka', sans-serif; font-size: 28px; line-height: 1; color: #0f3d38;">388</span>
+        </div>
+        <div style="flex-grow: 1; border-radius: 14px; padding: 11px 14px; background: rgba(255,255,255,0.14); border: none; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 12px; font-weight: 600; color: #5c8c85;">Rahul</span>
+          <span class="" style="font-family: 'Fredoka', sans-serif; font-size: 28px; line-height: 1; color: #0f3d38;">355</span>
+        </div>
+        <div style="flex-grow: 1; border-radius: 14px; padding: 11px 14px; background: rgba(255,255,255,0.14); border: none; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 12px; font-weight: 600; color: #5c8c85;">Nikhil</span>
+          <span class="" style="font-family: 'Fredoka', sans-serif; font-size: 28px; line-height: 1; color: #0f3d38;">340</span>
+        </div>
+    </div>
+
+    <div class="resume" style="position: relative; display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 26px; border-radius: 14px; background: #ff6f59; color: #ffffff; border: none; box-shadow: 0 7px 0 #c9503e; font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 15px; letter-spacing: 0.04em;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg> RESUME
+    </div>
+  </div>
+
+  <div style="position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;">
+      <div class="tile" style="height: 196px; box-sizing: border-box; background: #ffffff; border-radius: 20px; box-shadow: 0 8px 18px rgba(15,61,56,0.12); overflow: hidden; display: flex; flex-direction: column;">
+      <div style="height: 74px; background: #12b0a0; border-radius: 0 0 60% 60% / 0 0 26px 26px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; color: #fffdf7;">
+        <span class="tilesuit" style="display: inline-flex;"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l7 10-7 10-7-10z"/></svg></span>
+        <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.12em; background: rgba(255,255,255,0.25); padding: 4px 9px; border-radius: 999px;">LIVE</span>
+      </div>
+      <div style="flex-grow: 1; padding: 12px 18px 16px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <div style="font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 21px; color: #0f3d38;">Rummy</div>
+          <div style="font-size: 12px; color: #5c8c85;">Last played 2 days ago</div>
+        </div>
+        <div style="font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 13px; color: #12b0a0;">New session &rarr;</div>
+      </div>
+    </div>
+      <div class="tile" style="height: 196px; box-sizing: border-box; background: #ffffff; border-radius: 20px; box-shadow: 0 8px 18px rgba(15,61,56,0.12); overflow: hidden; display: flex; flex-direction: column;">
+      <div style="height: 74px; background: #ff6f59; border-radius: 0 0 60% 60% / 0 0 26px 26px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; color: #fffdf7;">
+        <span class="tilesuit" style="display: inline-flex;"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5c3 4 8.5 6.6 8.5 11a4.6 4.6 0 0 1-7.3 3.7c.2 1.6.8 3 1.8 4.3H9c1-1.3 1.6-2.7 1.8-4.3A4.6 4.6 0 0 1 3.5 13.5c0-4.4 5.5-7 8.5-11z"/></svg></span>
+        
+      </div>
+      <div style="flex-grow: 1; padding: 12px 18px 16px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <div style="font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 21px; color: #0f3d38;">Judgement</div>
+          <div style="font-size: 12px; color: #5c8c85;">Last played 6 days ago</div>
+        </div>
+        <div style="font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 13px; color: #ff6f59;">New session &rarr;</div>
+      </div>
+    </div>
+      <div class="tile" style="height: 196px; box-sizing: border-box; background: #ffffff; border-radius: 20px; box-shadow: 0 8px 18px rgba(15,61,56,0.12); overflow: hidden; display: flex; flex-direction: column;">
+      <div style="height: 74px; background: #ffb703; border-radius: 0 0 60% 60% / 0 0 26px 26px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; color: #fffdf7;">
+        <span class="tilesuit" style="display: inline-flex;"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.7-9.4-9.2C1 8.3 3 4.8 6.4 4.5 8.6 4.3 10.6 5.4 12 7.2c1.4-1.8 3.4-2.9 5.6-2.7C21 4.8 23 8.3 21.4 11.8 19.5 16.3 12 21 12 21z"/></svg></span>
+        
+      </div>
+      <div style="flex-grow: 1; padding: 12px 18px 16px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <div style="font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 21px; color: #0f3d38;">Bluff</div>
+          <div style="font-size: 12px; color: #5c8c85;">Last played 12 days ago</div>
+        </div>
+        <div style="font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 13px; color: #ffb703;">New session &rarr;</div>
+      </div>
+    </div>
+      <div class="tile" style="height: 196px; box-sizing: border-box; background: #ffffff; border-radius: 20px; box-shadow: 0 8px 18px rgba(15,61,56,0.12); overflow: hidden; display: flex; flex-direction: column;">
+      <div style="height: 74px; background: #0f3d38; border-radius: 0 0 60% 60% / 0 0 26px 26px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; color: #fffdf7;">
+        <span class="tilesuit" style="display: inline-flex;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4.5" rx="1.4"/><path d="M5 8.5v11.5h14V8.5"/><path d="M10 12.5h4"/></svg></span>
+        
+      </div>
+      <div style="flex-grow: 1; padding: 12px 18px 16px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <div style="font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 21px; color: #0f3d38;">Archives</div>
+          <div style="font-size: 12px; color: #5c8c85;">142 sessions on record</div>
+        </div>
+        <div style="font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 13px; color: #0f3d38;">Browse all &rarr;</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="position: relative; flex-grow: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+    <div style="background: #ffffff; border: 2px solid #d6f2ec; border-radius: 20px; box-shadow: 0 8px 20px rgba(15,61,56,0.10); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <div style="font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 19px; color: #0f3d38;">All-time standings</div>
+        <div style="font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #5c8c85; text-transform: uppercase;">played / won / rate</div>
+      </div>
+      <div style="display: flex; flex-direction: column;">
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 26px; height: 26px; border-radius: 50%; background: #12b0a0; color: #fffdf7; font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 12px; display: flex; align-items: center; justify-content: center;">1</span>
+          <span style="flex-grow: 1; font-size: 15px; font-weight: 600; color: #0f3d38;">Abhi</span>
+          <span style="width: 42px; text-align: right; font-size: 14px; color: #5c8c85;">42</span>
+          <span style="width: 38px; text-align: right; font-size: 14px; font-weight: 700; color: #0f3d38;">15</span>
+          <span style="width: 56px; text-align: right; font-family: 'Fredoka', sans-serif; font-size: 17px; color: #12b0a0;">36%</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 26px; height: 26px; border-radius: 50%; background: #d4f0ea; color: #5c8c85; font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 12px; display: flex; align-items: center; justify-content: center;">2</span>
+          <span style="flex-grow: 1; font-size: 15px; font-weight: 600; color: #0f3d38;">Priya</span>
+          <span style="width: 42px; text-align: right; font-size: 14px; color: #5c8c85;">40</span>
+          <span style="width: 38px; text-align: right; font-size: 14px; font-weight: 700; color: #0f3d38;">12</span>
+          <span style="width: 56px; text-align: right; font-family: 'Fredoka', sans-serif; font-size: 17px; color: #0f3d38;">30%</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 26px; height: 26px; border-radius: 50%; background: #d4f0ea; color: #5c8c85; font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 12px; display: flex; align-items: center; justify-content: center;">3</span>
+          <span style="flex-grow: 1; font-size: 15px; font-weight: 600; color: #0f3d38;">Rahul</span>
+          <span style="width: 42px; text-align: right; font-size: 14px; color: #5c8c85;">38</span>
+          <span style="width: 38px; text-align: right; font-size: 14px; font-weight: 700; color: #0f3d38;">8</span>
+          <span style="width: 56px; text-align: right; font-family: 'Fredoka', sans-serif; font-size: 17px; color: #0f3d38;">21%</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 26px; height: 26px; border-radius: 50%; background: #d4f0ea; color: #5c8c85; font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 12px; display: flex; align-items: center; justify-content: center;">4</span>
+          <span style="flex-grow: 1; font-size: 15px; font-weight: 600; color: #0f3d38;">Nikhil</span>
+          <span style="width: 42px; text-align: right; font-size: 14px; color: #5c8c85;">41</span>
+          <span style="width: 38px; text-align: right; font-size: 14px; font-weight: 700; color: #0f3d38;">5</span>
+          <span style="width: 56px; text-align: right; font-family: 'Fredoka', sans-serif; font-size: 17px; color: #0f3d38;">12%</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 14px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 26px; height: 26px; border-radius: 50%; background: #d4f0ea; color: #5c8c85; font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 12px; display: flex; align-items: center; justify-content: center;">5</span>
+          <span style="flex-grow: 1; font-size: 15px; font-weight: 600; color: #0f3d38;">Sneha</span>
+          <span style="width: 42px; text-align: right; font-size: 14px; color: #5c8c85;">22</span>
+          <span style="width: 38px; text-align: right; font-size: 14px; font-weight: 700; color: #0f3d38;">2</span>
+          <span style="width: 56px; text-align: right; font-family: 'Fredoka', sans-serif; font-size: 17px; color: #0f3d38;">9%</span>
+        </div>
+      </div>
+    </div>
+    <div style="background: #ffffff; border: 2px solid #d6f2ec; border-radius: 20px; box-shadow: 0 8px 20px rgba(15,61,56,0.10); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <div style="font-family: 'Fredoka', 'Trebuchet MS', sans-serif; font-size: 19px; color: #0f3d38;">Recent results</div>
+        <div style="font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #5c8c85; text-transform: uppercase;">see all</div>
+      </div>
+      <div style="display: flex; flex-direction: column;">
+        <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 92px; font-size: 14px; font-weight: 600; color: #0f3d38;">Judgement</span>
+          <span style="width: 62px; font-size: 12px; color: #5c8c85;">28 Aug</span>
+          <span style="flex-grow: 1; font-size: 14px; font-weight: 700; color: #ff6f59;">Priya</span>
+          <span style="font-family: 'Fredoka', sans-serif; font-size: 18px; color: #0f3d38;">176</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 92px; font-size: 14px; font-weight: 600; color: #0f3d38;">Rummy</span>
+          <span style="width: 62px; font-size: 12px; color: #5c8c85;">24 Aug</span>
+          <span style="flex-grow: 1; font-size: 14px; font-weight: 700; color: #ff6f59;">Abhi</span>
+          <span style="font-family: 'Fredoka', sans-serif; font-size: 18px; color: #0f3d38;">503</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 92px; font-size: 14px; font-weight: 600; color: #0f3d38;">Bluff</span>
+          <span style="width: 62px; font-size: 12px; color: #5c8c85;">21 Aug</span>
+          <span style="flex-grow: 1; font-size: 14px; font-weight: 700; color: #ff6f59;">Rahul</span>
+          <span style="font-family: 'Fredoka', sans-serif; font-size: 18px; color: #0f3d38;">240</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 92px; font-size: 14px; font-weight: 600; color: #0f3d38;">Rummy</span>
+          <span style="width: 62px; font-size: 12px; color: #5c8c85;">17 Aug</span>
+          <span style="flex-grow: 1; font-size: 14px; font-weight: 700; color: #ff6f59;">Priya</span>
+          <span style="font-family: 'Fredoka', sans-serif; font-size: 18px; color: #0f3d38;">512</span>
+        </div>
+        <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;">
+          <span style="width: 92px; font-size: 14px; font-weight: 600; color: #0f3d38;">Judgement</span>
+          <span style="width: 62px; font-size: 12px; color: #5c8c85;">12 Aug</span>
+          <span style="flex-grow: 1; font-size: 14px; font-weight: 700; color: #ff6f59;">Abhi</span>
+          <span style="font-family: 'Fredoka', sans-serif; font-size: 18px; color: #0f3d38;">168</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

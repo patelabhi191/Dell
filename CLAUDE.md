@@ -34,56 +34,77 @@ sound of the copy, and every component built from here on. Apply it without
 being asked, on every screen, every new feature, every fix. If a change would
 make the site look more like a generic dashboard, it is wrong.
 
+## The register: playful, not luxury
+
+**Bright, colourful, high-energy — the casino floor, not the private salon.**
+This is the single most important line in this file. Aim at what is common and
+trending at casinos and casino apps: saturated colour, glossy chips, marquee
+bulbs, jackpot celebration, chunky rounded type. Do **not** aim at gold-foil,
+felt-and-serif restraint. If a screen reads expensive and hushed, it is wrong.
+
 ## The lighting model
 
-A casino room is dark with bright sources in it. Build every screen that way:
+A casino floor is **lit up**, not dim. Build every screen that way:
 
-- A **dark ground** with light pooled where the action is, never flat fill.
-- A **halo** — a slow conic sweep behind the live session banner, like light
-  turning over a table. 26s, linear, infinite.
-- A **lamp** — a soft radial glow above the fold, breathing at ~6s.
-- **Marquee bulbs** along the top edge of the hero, chasing at ~1.5s with
-  staggered delays so they never blink in unison.
-- **Glow** belongs to the accent only. Text shadow on the wordmark, box shadow
-  on the primary action. Never on body copy or score tables.
+- **Bright grounds are the default** — cream, sunny yellow, turquoise, red.
+  A deep ground is allowed only when the direction is genuinely neon, and then it
+  must carry saturated colour, not muted metal.
+- **Marquee bulbs** along the edge of the hero, chasing at ~1.5s with staggered
+  delays so they never blink in unison.
+- **Confetti** drifting behind the live session banner — the room celebrates.
+- **Glossy highlights** on chips and buttons: inset light from above, a solid
+  drop shadow below. Depth comes from hard offset shadows or fat soft ones,
+  never from a decorative gradient wash.
+- **Sweep** a light bar across the primary action so it never sits still.
 
 ## Motion vocabulary
 
-Named animations, reused everywhere. Do not invent a seventh without reason.
+Named animations, reused everywhere. Do not invent a new one without reason.
 
 | Name | What it does | Where |
 | --- | --- | --- |
-| `dcRise` | fade + 20px lift | tiles, banner, panels entering |
-| `dcDeal` | fade + lift + slight rotate, like a card landing | card-shaped tiles |
-| `dcDot` | scale + fade pulse, 1.6s | the LIVE indicator |
-| `dcSweep` | a light bar crossing left to right, 3.6s | primary action button |
-| `dcSpin` | 26s rotation | the halo behind the hero |
+| `dcPop` | scale overshoot entrance, bouncy | tiles, chips, badges, banner |
+| `dcJiggle` | small rotate wobble | tile suit icon on hover |
+| `dcDot` | scale + fade pulse, 1.5s | the LIVE indicator |
+| `dcSweep` | a light bar crossing left to right, 3.2s | primary action button |
 | `dcBulb` | opacity + glow blink, 1.5s | marquee bulbs |
-| `dcFlicker` | irregular neon stutter, 7s steps | wordmark, neon direction only |
+| `dcConfetti` | pieces drifting down, 4.6s | live session banner |
+| `dcTwinkle` | staggered sparkle stars, 2.2s | around the wordmark |
+| `dcCoin` | coin flip | win badges |
+| `dcReel` | slot-reel settle on a numeral | the leader's live score |
 
 Rules:
 
 - Entrances **stagger** — 0.06s, 0.14s, 0.22s, 0.30s across the four tiles.
-- Easing is `cubic-bezier(0.2, 0.7, 0.3, 1)` for entrances, `ease` for hovers.
-- Hover on a tile **lifts it like a chip**: `translateY(-7px)` plus a deeper
-  shadow and a brightened border, 0.28s.
-- Rows highlight on hover with a 9%-alpha accent wash, 0.2s.
-- Ambient loops (halo, bulbs, lamp) run forever. Entrance animations run once.
-- **Respect `prefers-reduced-motion`**: keep colour, lighting and glow, drop the
-  loops and entrance transforms.
+- Easing has **overshoot**: `cubic-bezier(0.34, 1.56, 0.64, 1)` for entrances and
+  hovers. A linear glide reads corporate; the bounce is the point.
+- Hover on a tile **lifts it like a chip**: `translateY(-8px)` plus a deeper
+  shadow, 0.24s, and the suit icon jiggles.
+- Rows highlight on hover with an accent wash and a 3px nudge right.
+- Ambient loops (bulbs, confetti, twinkle, sweep) run forever. Entrances run once.
+- **Respect `prefers-reduced-motion`**: keep every colour and every light, drop
+  all animation and transition.
 
 ## Palette rules
 
-- Dark ground, one metallic or neon accent, one alert red for live state.
-- Accents share chroma and lightness and vary only in hue.
-- Whites and blacks are tinted toward the room, never pure `#fff` / `#000`.
-- Score numerals get the accent; labels stay muted. Never colour a whole table.
+- A **multi-hue chip palette of 4-6 saturated colours** — red, teal, blue,
+  yellow, pink, lime. Not one metallic accent on a dark ground.
+- **Each game tile owns a colour.** The four tiles are four different colours;
+  that colour identifies the game everywhere else it appears.
+- Grounds may be cream, saturated, or deep-vivid. Never grey.
+- One clear alert colour for live state, distinct from the game colours.
+- Whites and blacks are tinted warm, never pure `#fff` / `#000`.
+- Score numerals get the display face and full contrast; labels stay muted.
+  Never colour a whole table.
 
 ## Typography
 
-- A **display face** for game names, scores and the wordmark, paired with a
-  clean body face. Numerals may be a third, monospaced face.
-- Banned: Inter, Roboto, Arial, Fraunces.
+- A **chunky display face** for game names, scores and the wordmark, paired with
+  a clean rounded body face. Proven pairings: Bungee + Rubik, Baloo 2 + Nunito,
+  Titan One + Mulish, Fredoka + Quicksand, Alfa Slab One + DM Sans,
+  Monoton + Outfit.
+- Banned: Inter, Roboto, Arial, Fraunces. Thin weights and high-contrast serifs
+  are wrong for this register.
 - Scores are the largest type on any screen after the game name.
 
 ## Iconography
@@ -103,17 +124,25 @@ Rules:
 
 ## Design directions (decision pending)
 
-Six home-page directions are drafted and published as a design canvas. Working
-sources live in `design/home-directions/`.
+Two rounds of home-page directions are drafted and published as design canvases.
+Round one (dark/luxury, rejected as "all look dark") lives in
+`design/home-directions/`. Round two — bright and playful, the live set — lives in
+`design/home-directions-v2/`.
+
+Round two — `design/home-directions-v2/`, the live set:
 
 | File | Direction |
 | --- | --- |
-| `Main.dc.html` | A · Felt & Gold — felt green, gold foil, serif display |
-| `NeonNoir.dc.html` | B · Neon Noir — midnight blue + magenta, neon flicker |
-| `HighRoller.dc.html` | C · High Roller — black + signal red, oversized type |
-| `DecoBrass.dc.html` | D · Deco Brass — art-deco symmetry, brass linework |
-| `SuitMotif.dc.html` | E · Suit Motif — tiles are the four suits, light theme |
-| `MinimalTable.dc.html` | F · Velvet Minimal — velvet plum + champagne, restrained |
+| `Main.dc.html` | 1 · Jackpot Pop — sunny yellow, cherry red + teal, bulbs, confetti |
+| `CandyChips.dc.html` | 2 · Candy Chips — cream, glossy chip discs as the tiles |
+| `SlotMachine.dc.html` | 3 · Slot Machine — red/white/blue, reel-window tiles |
+| `RetroVegas.dc.html` | 4 · Retro Vegas — 60s motel signage, arched tiles, starbursts |
+| `TropicalTable.dc.html` | 5 · Tropical Table — turquoise felt, coral, sunshine yellow |
+| `NeonArcade.dc.html` | 6 · Neon Arcade — indigo with pink/cyan/lime neon (the one dark one) |
+
+Round one — `design/home-directions/`, superseded: Felt & Gold, Neon Noir,
+High Roller, Deco Brass, Suit Motif, Velvet Minimal. Kept only as a record of
+what "too dark" looked like; do not build from these.
 
 **Active direction: not yet chosen.** Once picked, record it here and build the
 real palette tokens from that artboard.

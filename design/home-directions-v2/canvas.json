@@ -1,0 +1,19 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",          "title": "1 · Jackpot Pop",    "x": 0,    "y": 0,    "w": 1280, "h": 1000 },
+    { "file": "CandyChips.dc.html",    "title": "2 · Candy Chips",    "x": 1380, "y": 0,    "w": 1280, "h": 1000 },
+    { "file": "SlotMachine.dc.html",   "title": "3 · Slot Machine",   "x": 2760, "y": 0,    "w": 1280, "h": 1000 },
+    { "file": "RetroVegas.dc.html",    "title": "4 · Retro Vegas",    "x": 0,    "y": 1160, "w": 1280, "h": 1000 },
+    { "file": "TropicalTable.dc.html", "title": "5 · Tropical Table", "x": 1380, "y": 1160, "w": 1280, "h": 1000 },
+    { "file": "NeonArcade.dc.html",    "title": "6 · Neon Arcade",    "x": 2760, "y": 1160, "w": 1280, "h": 1000 }
+  ],
+  "annotations": [
+    { "id": "b1", "x": 0,    "y": -170, "w": 1280, "text": "1 · JACKPOT POP — sunny yellow ground, cherry red and teal, marquee bulbs and confetti. The loudest and most celebratory; least calm for a long score table." },
+    { "id": "b2", "x": 1380, "y": -170, "w": 1280, "text": "2 · CANDY CHIPS — cream ground, glossy poker chips as the tile system, soft shadows. Friendliest; can read closer to a game app than a casino." },
+    { "id": "b3", "x": 2760, "y": -170, "w": 1280, "text": "3 · SLOT MACHINE — fairground red, white and royal blue, tiles as reel windows, hard offset shadows. Clearest casino read; busiest ground." },
+    { "id": "b4", "x": 0,    "y": 990,  "w": 1280, "text": "4 · RETRO VEGAS — 60s motel signage: cream, burnt orange, turquoise, cherry, arched tiles and starbursts. Most distinctive; retro can date faster." },
+    { "id": "b5", "x": 1380, "y": 990,  "w": 1280, "text": "5 · TROPICAL TABLE — turquoise felt, coral and sunshine yellow, rounded and breezy. Colourful without shouting; least obviously a casino." },
+    { "id": "b6", "x": 2760, "y": 990,  "w": 1280, "text": "6 · NEON ARCADE — deep indigo with hot pink, cyan and lime neon. The trending online-casino look, and the only dark one of the six." }
+  ],
+  "launch": { "view": "canvas" }
+}
