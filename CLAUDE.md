@@ -107,6 +107,30 @@ Rules:
   are wrong for this register.
 - Scores are the largest type on any screen after the game name.
 
+## Layout: the casino terminal
+
+The house layout is taken from a physical casino terminal (Interblock G4), not
+from a web dashboard. Every screen that lists things follows it:
+
+- **Centred plaque header.** The wordmark sits in a plaque — hexagon, trapezoid,
+  arch, pill or marquee — centred on a hairline rule that runs the full width and
+  passes behind it. A small mark sits at the far right where an operator logo
+  would go.
+- **One row of portrait tiles.** Games are ~3:4 portrait tiles in a single row,
+  never a squat grid of cards. Each tile is a framed **art panel** with the game
+  name in a solid **footer band** across its foot. The art is the game itself —
+  fanned cards, a chip stack, a felt table — drawn in CSS and inline SVG.
+- **Tap prompt and carousel dots** under the row. The dots say more games can be
+  added without redesigning anything.
+- **A persistent status strip along the bottom.** This is where the terminal put
+  the wallet balance, and it is where the **live session** goes: live indicator,
+  game and round, every player's running score, target, and a Resume button.
+  Resuming is always one tap away, from anywhere on the page.
+- Standings and recent results sit between the tile row and the strip.
+
+The strip is the load-bearing idea. Scores get entered on a phone mid-game, so
+the thing that must never be more than one tap away is the game in progress.
+
 ## Iconography
 
 - Suits (♠ ♥ ♦ ♣) are the icon system, drawn as **inline SVG paths** on a 24px
@@ -124,25 +148,22 @@ Rules:
 
 ## Design directions (decision pending)
 
-Two rounds of home-page directions are drafted and published as design canvases.
-Round one (dark/luxury, rejected as "all look dark") lives in
-`design/home-directions/`. Round two — bright and playful, the live set — lives in
-`design/home-directions-v2/`.
-
-Round two — `design/home-directions-v2/`, the live set:
+Three rounds of home-page directions are drafted and published as design
+canvases. Round three — `design/home-terminal/`, the live set — applies the
+casino terminal layout above.
 
 | File | Direction |
 | --- | --- |
-| `Main.dc.html` | 1 · Jackpot Pop — sunny yellow, cherry red + teal, bulbs, confetti |
-| `CandyChips.dc.html` | 2 · Candy Chips — cream, glossy chip discs as the tiles |
-| `SlotMachine.dc.html` | 3 · Slot Machine — red/white/blue, reel-window tiles |
-| `RetroVegas.dc.html` | 4 · Retro Vegas — 60s motel signage, arched tiles, starbursts |
-| `TropicalTable.dc.html` | 5 · Tropical Table — turquoise felt, coral, sunshine yellow |
-| `NeonArcade.dc.html` | 6 · Neon Arcade — indigo with pink/cyan/lime neon (the one dark one) |
+| `Main.dc.html` | 1 · Jackpot Terminal — yellow chrome, black hexagon plaque |
+| `TerminalClassic.dc.html` | 2 · Terminal Classic — charcoal, faithful to the reference photo |
+| `FeltTerminal.dc.html` | 3 · Felt Terminal — table green, brass trim, arched plaque |
+| `RetroTerminal.dc.html` | 4 · Retro Terminal — motel marquee plaque with bulbs |
+| `CandyTerminal.dc.html` | 5 · Candy Terminal — cream, pill plaque, glossy chips |
+| `NeonTerminal.dc.html` | 6 · Neon Terminal — indigo, neon-tube plaque and frames |
 
-Round one — `design/home-directions/`, superseded: Felt & Gold, Neon Noir,
-High Roller, Deco Brass, Suit Motif, Velvet Minimal. Kept only as a record of
-what "too dark" looked like; do not build from these.
+Superseded, kept only as a record: `design/home-directions/` (round one, rejected
+as too dark and too luxury) and `design/home-directions-v2/` (round two, bright
+and playful but on the old dashboard layout). Do not build from either.
 
 **Active direction: not yet chosen.** Once picked, record it here and build the
 real palette tokens from that artboard.

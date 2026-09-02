@@ -1,0 +1,230 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #e63946; } a:hover { color: #0ead9b; }
+
+    @keyframes dcPop { from { opacity: 0; transform: translateY(26px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes dcDot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.4; } }
+    @keyframes dcSweep { 0% { transform: translateX(-150%) skewX(-20deg); } 55%, 100% { transform: translateX(420%) skewX(-20deg); } }
+    @keyframes dcBulb { 0%, 100% { opacity: 1; box-shadow: 0 0 9px rgba(255,246,214,0.95); } 50% { opacity: 0.2; box-shadow: 0 0 0 rgba(0,0,0,0); } }
+    @keyframes dcJiggle { 0%, 100% { transform: rotate(0deg) scale(1); } 30% { transform: rotate(-2deg) scale(1.03); } 70% { transform: rotate(2deg) scale(1.03); } }
+    @keyframes dcTwinkle { 0%, 100% { opacity: 0.3; transform: scale(0.75); } 50% { opacity: 1; transform: scale(1); } }
+
+    .tile { animation: dcPop 0.62s cubic-bezier(0.34, 1.56, 0.64, 1) both; transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.24s ease, border-color 0.24s ease; }
+    .tile:nth-of-type(1) { animation-delay: 0.06s; }
+    .tile:nth-of-type(2) { animation-delay: 0.14s; }
+    .tile:nth-of-type(3) { animation-delay: 0.22s; }
+    .tile:nth-of-type(4) { animation-delay: 0.30s; }
+    .tile:hover { transform: translateY(-9px); box-shadow: 9px 12px 0 #1d1508; }
+    .tile:hover .art { animation: dcJiggle 0.55s ease; }
+
+    .resume { position: relative; overflow: hidden; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .resume:hover { transform: scale(1.06); }
+    .resume::after { content: ""; position: absolute; top: 0; left: 0; width: 34%; height: 100%; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.62), rgba(255,255,255,0)); animation: dcSweep 3.2s ease-in-out infinite; pointer-events: none; }
+
+    .livedot { animation: dcDot 1.5s ease-in-out infinite; }
+    .bulbs { position: absolute; left: 16px; right: 16px; display: flex; justify-content: space-between; pointer-events: none; }
+    .bulbs span { width: 6px; height: 6px; border-radius: 50%; background: #fff6d6; animation: dcBulb 1.5s ease-in-out infinite; }
+    .bulbs span:nth-child(2n) { animation-delay: 0.25s; }
+    .bulbs span:nth-child(3n) { animation-delay: 0.55s; }
+    .dot0 { animation: dcTwinkle 2.4s ease-in-out infinite; }
+    .row { transition: background 0.18s ease, transform 0.18s ease; }
+    .row:hover { background: #ffd23f44; transform: translateX(3px); }
+    .strip { animation: dcPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.36s both; }
+
+    @media (prefers-reduced-motion: reduce) { *, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 1280px; height: 1000px; box-sizing: border-box; padding: 30px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; font-family: 'Rubik', 'Helvetica Neue', sans-serif; color: #1d1508; background-color: #ffd23f; background-image: radial-gradient(#1d150822 1.4px, transparent 1.5px);">
+
+  <div style="position: relative; height: 92px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+    <div style="position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #1d150833;"></div>
+    <div style="position: relative;"><div style="position: relative; width: 350px; height: 88px; background: #1d1508; border: 3px solid #1d1508; clip-path: polygon(9% 0, 91% 0, 100% 50%, 91% 100%, 9% 100%, 0 50%); padding: 0 30px; box-sizing: border-box; box-shadow: 5px 5px 0 rgba(29,21,8,0.25);"><div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;"><div style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 27px; line-height: 1; color: #ffd23f;">NAME TBA</div>
+        <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.28em; color: #a08f60; text-transform: uppercase; margin-top: 5px;">Placeholder wordmark</div></div></div></div>
+    <div style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px; color: #1d1508;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.6a3.7 3.7 0 0 0-3.1 5.7 3.8 3.8 0 1 0-1.3 7.3c1.2 0 2.3-.6 3-1.5-.1 2-.8 3.8-2 5.3h6.8c-1.2-1.5-1.9-3.3-2-5.3.7.9 1.8 1.5 3 1.5a3.8 3.8 0 1 0-1.3-7.3A3.7 3.7 0 0 0 12 2.6z"/></svg>
+      <span style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 14px; letter-spacing: 0.04em;">card night</span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; flex-shrink: 0;">
+      <div class="tile" style="height: 386px; box-sizing: border-box; display: flex; flex-direction: column; border: 4px solid #e63946; border-radius: 16px; overflow: hidden; background: #fffdf5; box-shadow: 5px 5px 0 #1d1508;">
+        <div class="art" style="position: relative; flex-grow: 1; overflow: hidden; background: #e6394622;">
+          <div style="position: absolute; left: 50%; top: 50%; width: 78px; height: 108px; margin: -48px 0 0 -91px; background: #fffdf8; border-radius: 7px; box-shadow: 0 5px 12px rgba(29,21,8,0.28); transform: rotate(-18deg); display: flex; align-items: center; justify-content: center; color: #d02b3a;"><svg width="33" height="33" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.7-9.4-9.2C1 8.3 3 4.8 6.4 4.5 8.6 4.3 10.6 5.4 12 7.2c1.4-1.8 3.4-2.9 5.6-2.7C21 4.8 23 8.3 21.4 11.8 19.5 16.3 12 21 12 21z"/></svg><span style="position: absolute; top: 5px; left: 7px; font-size: 12px; font-weight: 800;">A</span></div><div style="position: absolute; left: 50%; top: 50%; width: 78px; height: 108px; margin: -56px 0 0 -57px; background: #fffdf8; border-radius: 7px; box-shadow: 0 5px 12px rgba(29,21,8,0.28); transform: rotate(-6deg); display: flex; align-items: center; justify-content: center; color: #1a1a1a;"><svg width="33" height="33" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5c3 4 8.5 6.6 8.5 11a4.6 4.6 0 0 1-7.3 3.7c.2 1.6.8 3 1.8 4.3H9c1-1.3 1.6-2.7 1.8-4.3A4.6 4.6 0 0 1 3.5 13.5c0-4.4 5.5-7 8.5-11z"/></svg><span style="position: absolute; top: 5px; left: 7px; font-size: 12px; font-weight: 800;">A</span></div><div style="position: absolute; left: 50%; top: 50%; width: 78px; height: 108px; margin: -56px 0 0 -21px; background: #fffdf8; border-radius: 7px; box-shadow: 0 5px 12px rgba(29,21,8,0.28); transform: rotate(7deg); display: flex; align-items: center; justify-content: center; color: #d02b3a;"><svg width="33" height="33" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l7 10-7 10-7-10z"/></svg><span style="position: absolute; top: 5px; left: 7px; font-size: 12px; font-weight: 800;">A</span></div><div style="position: absolute; left: 50%; top: 50%; width: 78px; height: 108px; margin: -48px 0 0 13px; background: #fffdf8; border-radius: 7px; box-shadow: 0 5px 12px rgba(29,21,8,0.28); transform: rotate(19deg); display: flex; align-items: center; justify-content: center; color: #1a1a1a;"><svg width="33" height="33" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.6a3.7 3.7 0 0 0-3.1 5.7 3.8 3.8 0 1 0-1.3 7.3c1.2 0 2.3-.6 3-1.5-.1 2-.8 3.8-2 5.3h6.8c-1.2-1.5-1.9-3.3-2-5.3.7.9 1.8 1.5 3 1.5a3.8 3.8 0 1 0-1.3-7.3A3.7 3.7 0 0 0 12 2.6z"/></svg><span style="position: absolute; top: 5px; left: 7px; font-size: 12px; font-weight: 800;">A</span></div>
+          <span style="position: absolute; top: 12px; right: 12px; font-size: 10px; font-weight: 800; letter-spacing: 0.14em; background: #e63946; color: #fff; padding: 5px 10px; border-radius: 999px;">LIVE</span>
+          <span style="position: absolute; top: 12px; left: 12px; font-size: 11px; font-weight: 700; color: #1d1508; background: rgba(255,253,245,0.82); padding: 4px 9px; border-radius: 999px;">2 days ago</span>
+        </div>
+        <div style="height: 56px; flex-shrink: 0; background: #e63946; color: #fffdf5; display: flex; align-items: center; justify-content: center; font-family: 'Bungee', 'Impact', sans-serif; font-size: 20px; letter-spacing: 0.04em;">RUMMY</div>
+      </div>
+      <div class="tile" style="height: 386px; box-sizing: border-box; display: flex; flex-direction: column; border: 4px solid #0ead9b; border-radius: 16px; overflow: hidden; background: #fffdf5; box-shadow: 5px 5px 0 #1d1508;">
+        <div class="art" style="position: relative; flex-grow: 1; overflow: hidden; background: #0ead9b22;">
+          <div style="position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -7px 0 0 -75px; border-radius: 50%; background: #e63946; border: 6px dashed #fffdf8; box-shadow: 0 4px 0 rgba(0,0,0,0.22), inset 0 3px 7px rgba(255,255,255,0.4);"></div><div style="position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -23px 0 0 -75px; border-radius: 50%; background: #0ead9b; border: 6px dashed #fffdf8; box-shadow: 0 4px 0 rgba(0,0,0,0.22), inset 0 3px 7px rgba(255,255,255,0.4);"></div><div style="position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -39px 0 0 -75px; border-radius: 50%; background: #3d5afe; border: 6px dashed #fffdf8; box-shadow: 0 4px 0 rgba(0,0,0,0.22), inset 0 3px 7px rgba(255,255,255,0.4);"></div><div style="position: absolute; left: 50%; top: 50%; width: 74px; height: 102px; margin: -57px 0 0 3px; background: #fffdf8; border-radius: 7px; box-shadow: 0 5px 12px rgba(29,21,8,0.28); transform: rotate(9deg); display: flex; align-items: center; justify-content: center; color: #1a1a1a;"><svg width="31" height="31" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5c3 4 8.5 6.6 8.5 11a4.6 4.6 0 0 1-7.3 3.7c.2 1.6.8 3 1.8 4.3H9c1-1.3 1.6-2.7 1.8-4.3A4.6 4.6 0 0 1 3.5 13.5c0-4.4 5.5-7 8.5-11z"/></svg><span style="position: absolute; top: 5px; left: 7px; font-size: 12px; font-weight: 800;">A</span></div><div style="position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: 18px 0 0 22px; border-radius: 50%; background: #ff8c42; border: 5px dashed #fffdf8; box-shadow: 0 4px 0 rgba(0,0,0,0.22), inset 0 3px 7px rgba(255,255,255,0.4);"></div>
+          
+          <span style="position: absolute; top: 12px; left: 12px; font-size: 11px; font-weight: 700; color: #1d1508; background: rgba(255,253,245,0.82); padding: 4px 9px; border-radius: 999px;">6 days ago</span>
+        </div>
+        <div style="height: 56px; flex-shrink: 0; background: #0ead9b; color: #fffdf5; display: flex; align-items: center; justify-content: center; font-family: 'Bungee', 'Impact', sans-serif; font-size: 20px; letter-spacing: 0.04em;">JUDGEMENT</div>
+      </div>
+      <div class="tile" style="height: 386px; box-sizing: border-box; display: flex; flex-direction: column; border: 4px solid #3d5afe; border-radius: 16px; overflow: hidden; background: #fffdf5; box-shadow: 5px 5px 0 #1d1508;">
+        <div class="art" style="position: relative; flex-grow: 1; overflow: hidden; background: #3d5afe22;">
+          <div style="position: absolute; left: 50%; bottom: -46px; width: 232px; height: 150px; margin-left: -116px; border-radius: 116px 116px 0 0; background: #0ead9b; border: 5px solid #1d1508; box-shadow: inset 0 8px 22px rgba(0,0,0,0.28);"></div><div style="position: absolute; left: 50%; top: 50%; width: 70px; height: 96px; margin: -66px 0 0 -69px; background: #fffdf8; border-radius: 7px; box-shadow: 0 5px 12px rgba(29,21,8,0.28); transform: rotate(-12deg); display: flex; align-items: center; justify-content: center; color: #d02b3a;"><svg width="29" height="29" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.7-9.4-9.2C1 8.3 3 4.8 6.4 4.5 8.6 4.3 10.6 5.4 12 7.2c1.4-1.8 3.4-2.9 5.6-2.7C21 4.8 23 8.3 21.4 11.8 19.5 16.3 12 21 12 21z"/></svg><span style="position: absolute; top: 5px; left: 7px; font-size: 12px; font-weight: 800;">A</span></div><div style="position: absolute; left: 50%; top: 50%; width: 70px; height: 96px; margin: -66px 0 0 -5px; background: #fffdf8; border-radius: 7px; box-shadow: 0 5px 12px rgba(29,21,8,0.28); transform: rotate(11deg); display: flex; align-items: center; justify-content: center; color: #d02b3a;"><svg width="29" height="29" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.7-9.4-9.2C1 8.3 3 4.8 6.4 4.5 8.6 4.3 10.6 5.4 12 7.2c1.4-1.8 3.4-2.9 5.6-2.7C21 4.8 23 8.3 21.4 11.8 19.5 16.3 12 21 12 21z"/></svg><span style="position: absolute; top: 5px; left: 7px; font-size: 12px; font-weight: 800;">A</span></div><div style="position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: 24px 0 0 -88px; border-radius: 50%; background: #e63946; border: 4px dashed #fffdf8; box-shadow: 0 4px 0 rgba(0,0,0,0.22), inset 0 3px 7px rgba(255,255,255,0.4);"></div><div style="position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: 24px 0 0 46px; border-radius: 50%; background: #0ead9b; border: 4px dashed #fffdf8; box-shadow: 0 4px 0 rgba(0,0,0,0.22), inset 0 3px 7px rgba(255,255,255,0.4);"></div>
+          
+          <span style="position: absolute; top: 12px; left: 12px; font-size: 11px; font-weight: 700; color: #1d1508; background: rgba(255,253,245,0.82); padding: 4px 9px; border-radius: 999px;">12 days ago</span>
+        </div>
+        <div style="height: 56px; flex-shrink: 0; background: #3d5afe; color: #fffdf5; display: flex; align-items: center; justify-content: center; font-family: 'Bungee', 'Impact', sans-serif; font-size: 20px; letter-spacing: 0.04em;">BLUFF</div>
+      </div>
+      <div class="tile" style="height: 386px; box-sizing: border-box; display: flex; flex-direction: column; border: 4px solid #1d1508; border-radius: 16px; overflow: hidden; background: #fffdf5; box-shadow: 5px 5px 0 #1d1508;">
+        <div class="art" style="position: relative; flex-grow: 1; overflow: hidden; background: #efe4c4;">
+          <div style="position: absolute; left: 50%; top: 50%; width: 168px; height: 126px; margin: -52px 0 0 -84px;">
+      <div style="position: absolute; left: 14px; top: -16px; width: 140px; height: 26px; background: #fffdf8; border-radius: 4px; box-shadow: 0 5px 12px rgba(29,21,8,0.28); transform: rotate(-4deg);"></div>
+      <div style="position: absolute; left: 20px; top: -6px; width: 128px; height: 24px; background: #f1e9d8; border-radius: 4px; box-shadow: 0 5px 12px rgba(29,21,8,0.28); transform: rotate(3deg);"></div>
+      <div style="position: absolute; left: 0; top: 14px; width: 168px; height: 34px; background: #ff8c42; border-radius: 7px; border: 3px solid #1d1508;"></div>
+      <div style="position: absolute; left: 10px; top: 48px; width: 148px; height: 74px; background: #ff8c42; border-radius: 0 0 8px 8px; border: 3px solid #1d1508; border-top: none; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 52px; height: 8px; border-radius: 4px; background: #1d1508; opacity: 0.55;"></div>
+      </div>
+    </div>
+          
+          <span style="position: absolute; top: 12px; left: 12px; font-size: 11px; font-weight: 700; color: #1d1508; background: rgba(255,253,245,0.82); padding: 4px 9px; border-radius: 999px;">142 sessions</span>
+        </div>
+        <div style="height: 56px; flex-shrink: 0; background: #1d1508; color: #fffdf5; display: flex; align-items: center; justify-content: center; font-family: 'Bungee', 'Impact', sans-serif; font-size: 20px; letter-spacing: 0.04em;">ARCHIVES</div>
+      </div>
+  </div>
+
+  <div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 9px;">
+    <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.26em; color: #8a7434; text-transform: uppercase;">Tap a game to start scoring</div>
+    <div style="display: flex; gap: 7px;">
+      <span class="dot0" style="width: 7px; height: 7px; border-radius: 50%; background: #e63946;"></span>
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #1d150833;"></span>
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #1d150833;"></span>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+        <div style="background: #fffdf5; border: 3px solid #1d1508; border-radius: 14px; box-shadow: 4px 4px 0 #1d1508; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; overflow: hidden;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 9px 6px; border-bottom: 1px solid #e7d5a0;">
+            <div style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 16px; color: #1d1508;">All-time standings</div>
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.14em; color: #8a7434; text-transform: uppercase;">played / won / rate</div>
+          </div>
+          <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 7px 9px; border-radius: 8px;">
+            <span style="width: 22px; height: 22px; border-radius: 50%; background: #e63946; color: #fff; font-family: 'Bungee', 'Impact', sans-serif; font-size: 11px; display: flex; align-items: center; justify-content: center;">1</span>
+            <span style="flex-grow: 1; font-size: 14px; font-weight: 600; color: #1d1508;">Abhi</span>
+            <span style="width: 36px; text-align: right; font-size: 13px; color: #8a7434;">42</span>
+            <span style="width: 32px; text-align: right; font-size: 13px; font-weight: 700; color: #1d1508;">15</span>
+            <span style="width: 50px; text-align: right; font-family: 'Bungee', 'Impact', sans-serif; font-size: 15px; color: #e63946;">36%</span>
+          </div>
+          <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 7px 9px; border-radius: 8px;">
+            <span style="width: 22px; height: 22px; border-radius: 50%; background: #efe4c4; color: #8a7434; font-family: 'Bungee', 'Impact', sans-serif; font-size: 11px; display: flex; align-items: center; justify-content: center;">2</span>
+            <span style="flex-grow: 1; font-size: 14px; font-weight: 600; color: #1d1508;">Priya</span>
+            <span style="width: 36px; text-align: right; font-size: 13px; color: #8a7434;">40</span>
+            <span style="width: 32px; text-align: right; font-size: 13px; font-weight: 700; color: #1d1508;">12</span>
+            <span style="width: 50px; text-align: right; font-family: 'Bungee', 'Impact', sans-serif; font-size: 15px; color: #1d1508;">30%</span>
+          </div>
+          <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 7px 9px; border-radius: 8px;">
+            <span style="width: 22px; height: 22px; border-radius: 50%; background: #efe4c4; color: #8a7434; font-family: 'Bungee', 'Impact', sans-serif; font-size: 11px; display: flex; align-items: center; justify-content: center;">3</span>
+            <span style="flex-grow: 1; font-size: 14px; font-weight: 600; color: #1d1508;">Rahul</span>
+            <span style="width: 36px; text-align: right; font-size: 13px; color: #8a7434;">38</span>
+            <span style="width: 32px; text-align: right; font-size: 13px; font-weight: 700; color: #1d1508;">8</span>
+            <span style="width: 50px; text-align: right; font-family: 'Bungee', 'Impact', sans-serif; font-size: 15px; color: #1d1508;">21%</span>
+          </div>
+          <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 7px 9px; border-radius: 8px;">
+            <span style="width: 22px; height: 22px; border-radius: 50%; background: #efe4c4; color: #8a7434; font-family: 'Bungee', 'Impact', sans-serif; font-size: 11px; display: flex; align-items: center; justify-content: center;">4</span>
+            <span style="flex-grow: 1; font-size: 14px; font-weight: 600; color: #1d1508;">Nikhil</span>
+            <span style="width: 36px; text-align: right; font-size: 13px; color: #8a7434;">41</span>
+            <span style="width: 32px; text-align: right; font-size: 13px; font-weight: 700; color: #1d1508;">5</span>
+            <span style="width: 50px; text-align: right; font-family: 'Bungee', 'Impact', sans-serif; font-size: 15px; color: #1d1508;">12%</span>
+          </div>
+          <div class="row" style="display: flex; align-items: center; gap: 12px; padding: 7px 9px; border-radius: 8px;">
+            <span style="width: 22px; height: 22px; border-radius: 50%; background: #efe4c4; color: #8a7434; font-family: 'Bungee', 'Impact', sans-serif; font-size: 11px; display: flex; align-items: center; justify-content: center;">5</span>
+            <span style="flex-grow: 1; font-size: 14px; font-weight: 600; color: #1d1508;">Sneha</span>
+            <span style="width: 36px; text-align: right; font-size: 13px; color: #8a7434;">22</span>
+            <span style="width: 32px; text-align: right; font-size: 13px; font-weight: 700; color: #1d1508;">2</span>
+            <span style="width: 50px; text-align: right; font-family: 'Bungee', 'Impact', sans-serif; font-size: 15px; color: #1d1508;">9%</span>
+          </div>
+        </div>
+        <div style="background: #fffdf5; border: 3px solid #1d1508; border-radius: 14px; box-shadow: 4px 4px 0 #1d1508; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; overflow: hidden;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 9px 6px; border-bottom: 1px solid #e7d5a0;">
+            <div style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 16px; color: #1d1508;">Recent results</div>
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.14em; color: #8a7434; text-transform: uppercase;">see all</div>
+          </div>
+          <div class="row" style="display: flex; align-items: center; gap: 10px; padding: 7px 9px; border-radius: 8px;">
+            <span style="width: 84px; font-size: 14px; font-weight: 600; color: #1d1508;">Judgement</span>
+            <span style="width: 56px; font-size: 12px; color: #8a7434;">28 Aug</span>
+            <span style="flex-grow: 1; font-size: 13px; font-weight: 700; color: #0ead9b;">Priya</span>
+            <span style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 16px; color: #1d1508;">176</span>
+          </div>
+          <div class="row" style="display: flex; align-items: center; gap: 10px; padding: 7px 9px; border-radius: 8px;">
+            <span style="width: 84px; font-size: 14px; font-weight: 600; color: #1d1508;">Rummy</span>
+            <span style="width: 56px; font-size: 12px; color: #8a7434;">24 Aug</span>
+            <span style="flex-grow: 1; font-size: 13px; font-weight: 700; color: #0ead9b;">Abhi</span>
+            <span style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 16px; color: #1d1508;">503</span>
+          </div>
+          <div class="row" style="display: flex; align-items: center; gap: 10px; padding: 7px 9px; border-radius: 8px;">
+            <span style="width: 84px; font-size: 14px; font-weight: 600; color: #1d1508;">Bluff</span>
+            <span style="width: 56px; font-size: 12px; color: #8a7434;">21 Aug</span>
+            <span style="flex-grow: 1; font-size: 13px; font-weight: 700; color: #0ead9b;">Rahul</span>
+            <span style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 16px; color: #1d1508;">240</span>
+          </div>
+          <div class="row" style="display: flex; align-items: center; gap: 10px; padding: 7px 9px; border-radius: 8px;">
+            <span style="width: 84px; font-size: 14px; font-weight: 600; color: #1d1508;">Rummy</span>
+            <span style="width: 56px; font-size: 12px; color: #8a7434;">17 Aug</span>
+            <span style="flex-grow: 1; font-size: 13px; font-weight: 700; color: #0ead9b;">Priya</span>
+            <span style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 16px; color: #1d1508;">512</span>
+          </div>
+          <div class="row" style="display: flex; align-items: center; gap: 10px; padding: 7px 9px; border-radius: 8px;">
+            <span style="width: 84px; font-size: 14px; font-weight: 600; color: #1d1508;">Judgement</span>
+            <span style="width: 56px; font-size: 12px; color: #8a7434;">12 Aug</span>
+            <span style="flex-grow: 1; font-size: 13px; font-weight: 700; color: #0ead9b;">Abhi</span>
+            <span style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 16px; color: #1d1508;">168</span>
+          </div>
+        </div>
+  </div>
+
+  <div class="strip" style="height: 76px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: center; gap: 16px; padding: 0 16px 0 18px; background: #1d1508; border: 3px solid #1d1508; border-radius: 14px; box-shadow: 4px 4px 0 rgba(29,21,8,0.25);">
+    <div style="width: 42px; height: 42px; border-radius: 50%; background: rgba(255,210,63,0.16); display: flex; align-items: center; justify-content: center; color: #ffd23f;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l7 10-7 10-7-10z"/></svg></div>
+    <div style="display: flex; flex-direction: column; gap: 2px; min-width: 168px;">
+      <div style="display: flex; align-items: center; gap: 7px;">
+        <span class="livedot" style="width: 7px; height: 7px; border-radius: 50%; background: #e63946;"></span>
+        <span style="font-size: 10px; font-weight: 800; letter-spacing: 0.18em; color: #e63946; text-transform: uppercase;">Live now</span>
+      </div>
+      <div style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 18px; color: #fffdf5;">Rummy &middot; Round 7</div>
+    </div>
+    <div style="flex-grow: 1; display: flex; align-items: center; justify-content: flex-end;">
+          <div style="display: flex; flex-direction: column; gap: 1px; padding: 0 14px; ">
+            <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: #ffd23f; text-transform: uppercase;">Abhi</span>
+            <span style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 21px; line-height: 1.1; color: #ffd23f;">412</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 1px; padding: 0 14px; border-left: 1px solid rgba(255,253,245,0.2);">
+            <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: #a08f60; text-transform: uppercase;">Priya</span>
+            <span style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 21px; line-height: 1.1; color: #fffdf5;">388</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 1px; padding: 0 14px; border-left: 1px solid rgba(255,253,245,0.2);">
+            <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: #a08f60; text-transform: uppercase;">Rahul</span>
+            <span style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 21px; line-height: 1.1; color: #fffdf5;">355</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 1px; padding: 0 14px; border-left: 1px solid rgba(255,253,245,0.2);">
+            <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: #a08f60; text-transform: uppercase;">Nikhil</span>
+            <span style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 21px; line-height: 1.1; color: #fffdf5;">340</span>
+          </div>
+    </div>
+    <div style="padding-left: 16px; margin-left: 4px; border-left: 1px solid rgba(255,253,245,0.2); display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
+      <span style="font-size: 9px; font-weight: 700; letter-spacing: 0.14em; color: #a08f60; text-transform: uppercase;">First to</span>
+      <span style="font-family: 'Bungee', 'Impact', sans-serif; font-size: 18px; color: #fffdf5;">500</span>
+    </div>
+    <div class="resume" style="height: 52px; padding: 0 24px; border-radius: 10px; background: #ffd23f; color: #1d1508; border: 3px solid #fffdf5; box-shadow: none; display: flex; align-items: center; gap: 9px; font-family: 'Bungee', 'Impact', sans-serif; font-size: 15px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg> RESUME
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

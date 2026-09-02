@@ -1,0 +1,20 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",            "title": "1 · Jackpot Terminal", "x": 0,    "y": 0,    "w": 1280, "h": 1000 },
+    { "file": "TerminalClassic.dc.html", "title": "2 · Terminal Classic", "x": 1380, "y": 0,    "w": 1280, "h": 1000 },
+    { "file": "FeltTerminal.dc.html",    "title": "3 · Felt Terminal",    "x": 2760, "y": 0,    "w": 1280, "h": 1000 },
+    { "file": "RetroTerminal.dc.html",   "title": "4 · Retro Terminal",   "x": 0,    "y": 1160, "w": 1280, "h": 1000 },
+    { "file": "CandyTerminal.dc.html",   "title": "5 · Candy Terminal",   "x": 1380, "y": 1160, "w": 1280, "h": 1000 },
+    { "file": "NeonTerminal.dc.html",    "title": "6 · Neon Terminal",    "x": 2760, "y": 1160, "w": 1280, "h": 1000 }
+  ],
+  "annotations": [
+    { "id": "t0", "x": 0, "y": -300, "w": 2660, "text": "THE TERMINAL LAYOUT — taken from the Interblock G4 photo: centred plaque on a hairline rule, ONE row of portrait tiles with the name in a footer band, a tap prompt with carousel dots, and a persistent status strip along the bottom. The strip is where the wallet balance sat on the terminal; here it holds the live session, so resuming is always one tap away. Tile art is drawn in CSS and SVG - there are no photographs available." },
+    { "id": "t1", "x": 0,    "y": -170, "w": 1280, "text": "1 · JACKPOT TERMINAL — yellow chrome, black hexagon plaque, hard offset shadows. The saved bright theme on the terminal skeleton." },
+    { "id": "t2", "x": 1380, "y": -170, "w": 1280, "text": "2 · TERMINAL CLASSIC — the faithful translation: charcoal chrome, trapezoid plaque, thin coloured tile frames, condensed caps. Closest to your photo, and the darkest of the six." },
+    { "id": "t3", "x": 2760, "y": -170, "w": 1280, "text": "3 · FELT TERMINAL — bright table green with brass trim and an arched plaque. Reads as a card room rather than a slot floor." },
+    { "id": "t4", "x": 0,    "y": 990,  "w": 1280, "text": "4 · RETRO TERMINAL — motel marquee plaque with chasing bulbs, arched tile tops, cream and turquoise. Most characterful." },
+    { "id": "t5", "x": 1380, "y": 990,  "w": 1280, "text": "5 · CANDY TERMINAL — cream chrome, pill plaque, glossy chips, fully rounded strip. Softest and friendliest." },
+    { "id": "t6", "x": 2760, "y": 990,  "w": 1280, "text": "6 · NEON TERMINAL — indigo chrome, neon-tube plaque and tile frames. The trending online-casino read." }
+  ],
+  "launch": { "view": "canvas" }
+}
