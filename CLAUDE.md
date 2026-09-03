@@ -203,8 +203,8 @@ never one flat mark pasted across every theme.
 Card values, for reference only (never entered): A/K/Q/J/10 are 10 each, the
 **3 of Spades is 30**, each 5 is 5 — **250 points in one deck**, 500 in two.
 
-Set once per session: the players, **how many decks** (1 or 2, which caps every
-bid at 250 or 500), and **how many partners the bidder calls** (1, 2 or 3 —
+Set once per session: the players, **how many decks** (1, 2 or 3, which caps every
+bid at 250, 500 or 750), and **how many partners the bidder calls** (1 to 5 —
 asked separately from the deck count, since either deck size can be played with
 any of them).
 

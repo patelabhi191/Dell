@@ -540,6 +540,7 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .sheet tbody td { border-bottom: 1px solid var(--hair); }
 .sheet tfoot td { padding-top: 12px; font-family: var(--font-display); font-size: 19px; }
 .sheet tfoot td.lead { color: var(--acc1); }
+.sheet tbody tr.pending td { opacity: .55; }
 .cell { width: 68px; min-height: 42px; padding: 0 8px; text-align: right; border-radius: 8px; border: 1px solid var(--hair);
   background: var(--rank-bg); color: var(--ink); font-family: var(--font-display); font-size: 16px; }
 .cell:focus { outline: 2px solid var(--acc1); outline-offset: 1px; }
@@ -816,7 +817,12 @@ function gameById(id) {
 function isBid(s) { return s.roundType === 'bid'; }
 
 /* One deck 250, two decks 500. Caps the bid. */
-function deckMax(s) { return (Number(s.deckCount) === 2 ? 2 : 1) * DECK_POINTS; }
+function deckMax(s) {
+  var n = Number(s.deckCount) || 1;
+  if (n < 1) n = 1;
+  if (n > 3) n = 3;
+  return n * DECK_POINTS;
+}
 
 /* Who is on the bidder's side this hand, and how many shares each holds.
    The bidder holds one share for bidding; a called-card holder holds one
@@ -1071,7 +1077,7 @@ function viewHome() {
     html += '<div class="bar skin">' +
       '<div class="bar-icon">' + icon('spade', 21) + '</div>' +
       '<div class="bar-id"><div class="kicker"><span class="livedot"></span>Live now &middot; ' +
-        plural(live.rounds.length, 'hand') + '</div>' +
+        plural(live.rounds.length, 'round') + '</div>' +
       '<div class="bar-game">' + esc(g.name) + '</div></div>' +
       '<div class="bar-scores">' + scores + '</div>' +
       '<button class="btn-resume" data-go="/session/' + live.id + '">' + icon('play', 14) + ' RESUME</button>' +
@@ -1121,7 +1127,7 @@ function viewHome() {
       '<span class="grow" style="max-width:110px;font-weight:600">' + esc(gameById(s.gameId).name) + '</span>' +
       '<span class="dim" style="width:56px">' + fmtDate(s.finishedAt) + '</span>' +
       '<span class="grow" style="font-weight:700;color:var(--acc2)">' + esc(playerName(s.winnerId)) + '</span>' +
-      '<span class="num">' + plural(s.rounds.length, 'hand') + '</span></button>';
+      '<span class="num">' + plural(s.rounds.length, 'round') + '</span></button>';
   }).join('') : '<div class="empty">Nothing in the archive yet.</div>';
 
   html += '<div class="grid2">' +
@@ -1169,11 +1175,14 @@ function viewNew(query) {
       '<div class="field"><label>How many decks</label><div class="chipsel" id="decksel">' +
         '<button data-deck="1" aria-pressed="true">1 deck</button>' +
         '<button data-deck="2" aria-pressed="false">2 decks</button>' +
+        '<button data-deck="3" aria-pressed="false">3 decks</button>' +
       '</div><p class="hint" id="deckhint">Bids can go up to 250.</p></div>' +
       '<div class="field"><label>Partners the bidder calls</label><div class="chipsel" id="partsel">' +
         '<button data-part="1" aria-pressed="true">1</button>' +
         '<button data-part="2" aria-pressed="false">2</button>' +
         '<button data-part="3" aria-pressed="false">3</button>' +
+        '<button data-part="4" aria-pressed="false">4</button>' +
+        '<button data-part="5" aria-pressed="false">5</button>' +
       '</div><p class="hint">One card is asked for per partner. Either deck size can be played with any of these.</p></div>';
   }
 
@@ -1218,7 +1227,7 @@ function bidHandRow(s, r, idx) {
 
   return '<div class="hand' + (pending ? ' pending' : '') + '">' +
     '<div class="hand-head">' +
-      '<span class="hand-no">H' + (idx + 1) + '</span>' +
+      '<span class="hand-no">R' + (idx + 1) + '</span>' +
       '<span class="hand-bid"><b>' + esc(playerName(r.bidderId)) + '</b> bid <b>' + r.bid + '</b></span>' +
       '<span class="hand-sir">sir ' + sirChip(r.sir) + '</span>' +
       (pending ? '<span class="badge-pend">awaiting reveal</span>'
@@ -1228,7 +1237,7 @@ function bidHandRow(s, r, idx) {
     '<div class="hand-calls">' + calls + '</div>' +
     '<div class="hand-pts">' + line + '</div>' +
     (pending ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" data-reveal="' + idx + '">Reveal partners &amp; result</button>' +
-               '<button class="btn btn-ghost" data-cancelhand="' + idx + '">Discard hand</button></div>' : '') +
+               '<button class="btn btn-ghost" data-cancelhand="' + idx + '">Discard round</button></div>' : '') +
     '</div>';
 }
 
@@ -1242,23 +1251,27 @@ function bidAddForm(s) {
   }).join('');
   var cards = '';
   for (var i = 0; i < (s.partnerCount || 1); i++) {
-    cards += '<div class="cardpick"><label>Card asked for ' + (i + 1) + '</label>' +
+    /* stagger the defaults (A-S, K-H, Q-D, ...) so pickers never start on
+       the same card — real duplicates are still caught live, on change */
+    var defRank = RANKS[i % RANKS.length];
+    var defSuit = SUITS[i % SUITS.length].id;
+    cards += '<div class="cardpick" data-pick="' + i + '"><label>Card asked for ' + (i + 1) + '</label>' +
       '<select class="input" data-rank="' + i + '">' +
-        RANKS.map(function (rk) { return '<option value="' + rk + '">' + rk + '</option>'; }).join('') +
+        RANKS.map(function (rk) { return '<option value="' + rk + '"' + (rk === defRank ? ' selected' : '') + '>' + rk + '</option>'; }).join('') +
       '</select>' +
       '<select class="input" data-suit="' + i + '">' +
-        SUITS.map(function (su) { return '<option value="' + su.id + '">' + su.glyph + ' ' + su.name + '</option>'; }).join('') +
+        SUITS.map(function (su) { return '<option value="' + su.id + '"' + (su.id === defSuit ? ' selected' : '') + '>' + su.glyph + ' ' + su.name + '</option>'; }).join('') +
       '</select></div>';
   }
   return '<div class="panel skin formpanel">' +
-    '<div class="panel-head"><h2>New hand</h2><span>before the cards are played</span></div>' +
+    '<div class="panel-head"><h2>New round</h2><span>before the cards are played</span></div>' +
     '<div class="stack" style="padding-top:6px">' +
       '<div class="field"><label>Who won the bid</label><div class="chipsel" id="biddersel">' + players + '</div></div>' +
       '<div class="field" style="max-width:220px"><label>Bid amount &mdash; up to ' + deckMax(s) + '</label>' +
         '<input class="input" id="bidamt" type="number" inputmode="numeric" min="1" max="' + deckMax(s) + '" placeholder="150"></div>' +
       '<div class="field"><label>Sir &mdash; the trump suit</label><div class="chipsel" id="sirsel">' + suits + '</div></div>' +
       '<div class="field"><label>Cards asked for</label><div class="cardpicks">' + cards + '</div></div>' +
-      '<div class="btn-row"><button class="btn btn-primary" id="savehand">Save hand</button>' +
+      '<div class="btn-row"><button class="btn btn-primary" id="savehand">Save round</button>' +
         '<button class="btn btn-ghost" id="cancelhand">Cancel</button></div>' +
     '</div></div>';
 }
@@ -1273,15 +1286,38 @@ function bidRevealForm(s, r, idx) {
       '<div class="chipsel holdersel" data-hrow="' + ci + '">' + opts + '</div></div>';
   }).join('');
   return '<div class="panel skin formpanel">' +
-    '<div class="panel-head"><h2>Reveal</h2><span>after the hand</span></div>' +
+    '<div class="panel-head"><h2>Reveal</h2><span>after the round</span></div>' +
     '<div class="stack" style="padding-top:6px">' +
       rows +
-      '<p class="hint">Pick the same player twice if both called cards were in one hand &mdash; they score double.</p>' +
-      '<div class="field"><label>Who won the hand</label>' +
+      '<p class="hint">Pick the same player twice if both called cards were in one round &mdash; they score double.</p>' +
+      '<div class="field"><label>Who won the round</label>' +
         '<div class="btn-row"><button class="btn btn-primary" data-win="bidding" data-ridx="' + idx + '">Bidder&rsquo;s team won</button>' +
         '<button class="btn btn-danger" data-win="opposition" data-ridx="' + idx + '">Opponents won</button></div></div>' +
       '<div class="btn-row"><button class="btn btn-ghost" id="cancelreveal">Not yet</button></div>' +
     '</div></div>';
+}
+
+function bidStandingsSheet(s) {
+  var t = totals(s);
+  var st = standings(s);
+  var leader = st[0];
+  var head = '<tr><th>Round</th>' + s.playerIds.map(function (pid) {
+    return '<th>' + esc(playerName(pid)) + '</th>';
+  }).join('') + '</tr>';
+  var body = s.rounds.map(function (r, ri) {
+    var pts = roundPoints(s, r);
+    var pending = r.stage !== 'done';
+    return '<tr' + (pending ? ' class="pending"' : '') + '><td class="rnum">Round ' + (ri + 1) + '</td>' +
+      s.playerIds.map(function (pid) {
+        return '<td>' + (pending ? '&mdash;' : '+' + pts[pid]) + '</td>';
+      }).join('') + '</tr>';
+  }).join('');
+  var foot = '<tr><td class="rnum">Total</td>' + s.playerIds.map(function (pid) {
+    return '<td class="' + (leader && pid === leader.id ? 'lead' : '') + '">' + t[pid] + '</td>';
+  }).join('') + '</tr>';
+  return '<section class="panel skin"><div class="panel-head"><h2>Standings</h2><span>this session</span></div>' +
+    '<div class="sheetwrap"><table class="sheet"><thead>' + head + '</thead><tbody>' + body +
+    '</tbody><tfoot>' + foot + '</tfoot></table></div></section>';
 }
 
 function viewSession(id) {
@@ -1294,29 +1330,23 @@ function viewSession(id) {
   var st = standings(s);
 
   var sub = readonly
-    ? 'Finished ' + fmtDate(s.finishedAt) + ' &middot; won by ' + esc(playerName(s.winnerId)) + ' &middot; ' + plural(s.rounds.length, 'hand')
-    : plural(s.rounds.length, 'hand') + ' played &middot; ' + plural(s.playerIds.length, 'player') +
+    ? 'Finished ' + fmtDate(s.finishedAt) + ' &middot; won by ' + esc(playerName(s.winnerId)) + ' &middot; ' + plural(s.rounds.length, 'round')
+    : plural(s.rounds.length, 'round') + ' played &middot; ' + plural(s.playerIds.length, 'player') +
       (isBid(s) ? ' &middot; ' + plural(Number(s.deckCount) || 1, 'deck') + ' &middot; ' +
         plural(s.partnerCount || 1, 'partner') : '');
 
   var html = header({ back: readonly ? '/archives' : '/' }) +
     '<div class="pagehead"><h1 class="title">' + esc(g.name) + '</h1><p class="sub">' + sub + '</p></div>';
 
-  /* standings strip — same for both game shapes */
-  html += '<section class="panel skin"><div class="panel-head"><h2>Standings</h2><span>this session</span></div>' +
-    st.map(function (r, i) {
-      return '<div class="row"><span class="rank' + (i === 0 ? ' top' : '') + '">' + (i + 1) + '</span>' +
-        '<span class="grow" style="font-weight:600">' + esc(r.name) + '</span>' +
-        '<span class="num" style="' + (i === 0 ? 'color:var(--acc1)' : '') + '">' + r.total + '</span></div>';
-    }).join('') + '</section>';
-
   if (isBid(s)) {
+    /* names across one row, each round's points below as Round 1, Round 2, ... */
+    html += bidStandingsSheet(s);
     var pend = pendingRound(s);
     html += '<section class="panel skin" style="margin-top:14px">' +
-      '<div class="panel-head"><h2>Hands</h2><span>' + plural(s.rounds.length, 'hand') + '</span></div>' +
+      '<div class="panel-head"><h2>Rounds</h2><span>' + plural(s.rounds.length, 'round') + '</span></div>' +
       (s.rounds.length
         ? s.rounds.map(function (r, i) { return bidHandRow(s, r, i); }).join('')
-        : '<div class="empty">No hands yet &mdash; add one when the bidding is done.</div>') +
+        : '<div class="empty">No rounds yet &mdash; add one when the bidding is done.</div>') +
       '</section>';
 
     if (!readonly) {
@@ -1324,17 +1354,24 @@ function viewSession(id) {
       else if (addingHand) html += bidAddForm(s);
       else {
         html += '<div class="btn-row" style="margin-top:14px">' +
-          (pend ? '' : '<button class="btn btn-primary" id="addhand">Add hand</button>') +
+          (pend ? '' : '<button class="btn btn-primary" id="addhand">Add round</button>') +
           (s.rounds.length ? '<button class="btn btn-danger" id="finish">Finish session</button>' : '') +
           '</div>';
-        if (pend) html += '<p class="hint" style="margin-top:10px">Reveal the partners on hand ' +
+        if (pend) html += '<p class="hint" style="margin-top:10px">Reveal the partners on round ' +
           (s.rounds.indexOf(pend) + 1) + ' before starting the next one.</p>';
       }
     }
     return html;
   }
 
-  /* numeric games — unchanged one-number-per-player grid */
+  /* numeric games — unchanged one-number-per-player grid, plus its own standings list */
+  html += '<section class="panel skin"><div class="panel-head"><h2>Standings</h2><span>this session</span></div>' +
+    st.map(function (r, i) {
+      return '<div class="row"><span class="rank' + (i === 0 ? ' top' : '') + '">' + (i + 1) + '</span>' +
+        '<span class="grow" style="font-weight:600">' + esc(r.name) + '</span>' +
+        '<span class="num" style="' + (i === 0 ? 'color:var(--acc1)' : '') + '">' + r.total + '</span></div>';
+    }).join('') + '</section>';
+
   var t = totals(s);
   var leader = st[0];
   var head = '<tr><th>Round</th>' + s.playerIds.map(function (pid) {
@@ -1536,6 +1573,7 @@ function render() {
 
   window.scrollTo(0, 0);
   buildConfetti();
+  if (addingHand) syncCardPickers();
 }
 
 function buildConfetti() {
@@ -1574,6 +1612,48 @@ function updatePinDots(err) {
   var hint = $('#pinhint');
   if (hint) hint.textContent = err ? 'That PIN was not recognised \u2014 try again' : 'Four digits';
 }
+
+/* Each called card is two independent selects (rank, suit), so a "card" is a
+   pair across two controls — live duplicate prevention has to consider both
+   together. After any picker changes, disable the suit option in every OTHER
+   picker that would recreate an already-used rank+suit pair for that
+   picker's own current rank; if a picker's own selection was just made
+   invalid by someone else's edit, nudge it to the first free suit rather
+   than leave a silent duplicate selected. The submit-time check in
+   'savehand' stays as a safety net for whatever this can't reach. */
+function syncCardPickers() {
+  var rows = $$('.cardpick');
+  var n = rows.length;
+  if (!n) return;
+  var combos = [];
+  for (var i = 0; i < n; i++) {
+    combos[i] = { rankSel: $('[data-rank="' + i + '"]'), suitSel: $('[data-suit="' + i + '"]') };
+    combos[i].rank = combos[i].rankSel ? combos[i].rankSel.value : null;
+    combos[i].suit = combos[i].suitSel ? combos[i].suitSel.value : null;
+  }
+  for (var j = 0; j < n; j++) {
+    var mySel = combos[j].suitSel;
+    if (!mySel) continue;
+    var myRank = combos[j].rank;
+    $$('option', mySel).forEach(function (opt) {
+      var conflict = false;
+      for (var k = 0; k < n; k++) {
+        if (k === j) continue;
+        if (combos[k].rank === myRank && combos[k].suit === opt.value) { conflict = true; break; }
+      }
+      opt.disabled = conflict;
+    });
+    var curOpt = mySel.querySelector('option[value="' + combos[j].suit + '"]');
+    if (curOpt && curOpt.disabled) {
+      var fallback = mySel.querySelector('option:not(:disabled)');
+      if (fallback) mySel.value = fallback.value;
+    }
+  }
+}
+
+document.addEventListener('change', function (e) {
+  if (e.target.closest && e.target.closest('.cardpicks')) syncCardPickers();
+});
 
 document.addEventListener('click', function (e) {
   var t = e.target.closest('[data-go]');
@@ -1637,7 +1717,7 @@ document.addEventListener('click', function (e) {
     var seen = {};
     for (var k = 0; k < calls.length; k++) {
       var key = calls[k].card.rank + calls[k].card.suit;
-      if (seen[key]) { alert('The same card cannot be asked for twice in one hand.'); return; }
+      if (seen[key]) { alert('The same card cannot be asked for twice in one round.'); return; }
       seen[key] = true;
     }
     s1.rounds.push({ stage: 'bid', bidderId: bidderId, bid: amt,
@@ -1652,7 +1732,7 @@ document.addEventListener('click', function (e) {
   var disc = e.target.closest('[data-cancelhand]');
   if (disc) {
     var s2 = currentSession(); if (!s2) return;
-    if (!confirm('Discard this hand? Nothing has been scored from it yet.')) return;
+    if (!confirm('Discard this round? Nothing has been scored from it yet.')) return;
     s2.rounds.splice(Number(disc.getAttribute('data-cancelhand')), 1);
     revealingIdx = -1; save(); render(); return;
   }
@@ -1699,7 +1779,7 @@ document.addEventListener('click', function (e) {
 
   if (e.target.id === 'finish') {
     var s7 = currentSession(); if (!s7) return;
-    if (pendingRound(s7)) { alert('Finish revealing the last hand before closing the session.'); return; }
+    if (pendingRound(s7)) { alert('Finish revealing the last round before closing the session.'); return; }
     var winr = standings(s7)[0];
     if (!confirm('Finish this session? ' + winr.name + ' wins with ' + winr.total + '.')) return;
     s7.status = 'finished'; s7.finishedAt = Date.now(); s7.winnerId = winr.id;
