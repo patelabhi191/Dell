@@ -18,7 +18,7 @@ history.
 | Scoring | Highest total wins; round-by-round entry with running totals |
 | Backend | **Firebase Firestore**, live updates so every phone sees the same scores |
 | Access | Anyone with the link — no login |
-| Site name | **TBA** — use a placeholder wordmark until it is chosen |
+| Site name | **AP Card Games Night** — wordmark `AP CARD GAMES`, plaque sub `Night` |
 | Entry device | A phone, at the table, mid-game. Mobile-first is not optional |
 
 Home page priority order: live session banner → 4 tiles → all-time leaderboard →
@@ -72,6 +72,15 @@ Named animations, reused everywhere. Do not invent a new one without reason.
 | `dcTwinkle` | staggered sparkle stars, 2.2s | around the wordmark |
 | `dcCoin` | coin flip | win badges |
 | `dcReel` | slot-reel settle on a numeral | the leader's live score |
+| `dcRise` | fade up, one-shot | desk head, rail, console, ledger, sheet |
+| `dcDeal` | drops in rotated, like a dealt card | a round landing in the ledger |
+| `dcFlip` | card turns on its Y axis | a called card being revealed |
+| `dcStamp` | slams down oversized, settles | the win/loss verdict on a round |
+| `dcDelta` | a `+N` chip floats up and fades | each player's gain during the reveal |
+| `dcCrownIn` | crown drops on, overshoots | the new leader after a swap |
+| `dcShock` | ring pulses outward, twice | behind the newly crowned leader |
+| `dcThrone` | scale bounce | the pod taking first place |
+| `dcBurst` | confetti flung radially | a change of leader |
 
 Rules:
 
@@ -169,6 +178,52 @@ from a web dashboard. Every screen that lists things follows it:
 That bar is the load-bearing idea. Scores get entered on a phone mid-game, so the
 thing that must never be more than one tap away is the game in progress.
 
+## Inside a game: the desk
+
+A session screen is a **desk**, not a document. It runs on the wide shell
+(`.wrap.wide`, 1520px) because the console needs the room:
+
+- **Desk head** — game name and the session's facts as chips (live, rounds,
+  players, decks and cap, partners), Finish at the far right.
+- **Left rail, sticky: the podium.** One pod per player, ranked, big numeral,
+  the leader outlined in `--acc1`. This is also the stage the reveal plays on —
+  every animated element is keyed by player id so it survives a re-render.
+- **Main column: the console, then the ledger, then the scoresheet.**
+
+### The console is always open
+
+There is no "Add round" button to press first. The console for the next round is
+on screen the moment the session loads, and when a round is waiting on its
+reveal the same console flips to the reveal instead. Numbered steps run down the
+left; the step number turns green as each is answered.
+
+**One tap, one value — never a dropdown.** Bidder, sir, rank and suit are all
+chips. Ranks are a 13-wide grid rack that regrids to 7 then 5 columns as the
+screen narrows, so a wrapped last row keeps its column width. The bid takes
+quick chips scaled to the deck cap, a ±5 stepper, and a number field. Each
+called card shows a live card-face preview at the end of its row.
+
+The draft round lives in memory (`draft`), not in storage, so a tap repaints
+chips in place (`paintConsole`) instead of re-rendering and throwing away focus,
+scroll and animation. Duplicate called cards are resolved in the model — suit
+first, then rank, since five pickers cannot fit in one rank's four suits.
+
+### The reveal is the point of the screen
+
+Tapping a winner changes the board and may change who is winning, so it is
+staged rather than swapped silently (`playReveal`):
+
+1. The verdict **stamps** onto the round and its called cards **flip**.
+2. Every score **counts up** from its old total, with a `+N` floating off each pod.
+3. The podium **re-orders itself** — FLIP, measured before the re-render and
+   released after, so rows travel rather than jump; the movers lift and shadow.
+4. If the lead changed hands, the new leader is **crowned**, ringed by a
+   shockwave, and given a confetti burst.
+
+The board is locked while it plays and a tap anywhere fast-forwards to the end
+state. Under `prefers-reduced-motion` the sequence is skipped outright — the
+scores just land.
+
 ## The games and their logos
 
 | # | Game | Logo |
@@ -243,6 +298,8 @@ build step, no dependencies. Open it directly or serve it anywhere static.
   `FIREBASE_CONFIG` is filled in at the top of the file. **Shared live sync is
   not active until those keys exist** — until then every device keeps its own copy.
 - Routes: `#/` home, `#/new`, `#/session/<id>`, `#/archives`, `#/players`, `#/admin`.
+  `#/new` and `#/session/<id>` render on the wide shell; everything else on the
+  1240px floor.
 - The 86 theme tokens are generated from `design/admin-theming/tokens.mjs`; never
   hand-edit them in `AP-CardGames.html`, edit the table and re-inject.
 - Text that sits on the page ground (not on a panel) must use `--ground-ink` /

@@ -400,9 +400,9 @@ a { color: var(--acc1); }
 .rule { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--rule); animation: dcRule .7s cubic-bezier(.22,1,.36,1) .1s both; }
 .plaque { position: relative; animation: dcPlaque .62s cubic-bezier(.34,1.56,.64,1) both; }
 .pshape { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 320px; max-width: 74vw; height: 80px; padding: 0 22px;
+  width: 430px; max-width: 88vw; height: 80px; padding: 0 22px;
   background: var(--plaque-bg); border: var(--plaque-border); box-shadow: var(--plaque-shadow); }
-.wordmark { font-family: var(--word-family); font-size: var(--word-size); letter-spacing: var(--word-track);
+.wordmark { font-family: var(--word-family); font-size: calc(var(--word-size) * .76); letter-spacing: var(--word-track);
   font-weight: var(--word-weight); text-shadow: var(--word-shadow); line-height: 1; color: var(--plaque-ink); white-space: nowrap; }
 .plaque-sub { font-size: 9px; font-weight: 700; letter-spacing: .28em; color: var(--plaque-sub); text-transform: uppercase; margin-top: 5px; }
 .opmark { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 7px;
@@ -504,6 +504,7 @@ a { color: var(--acc1); }
   transition: transform .18s cubic-bezier(.34,1.56,.64,1), filter .18s ease; }
 .btn:hover { transform: translateY(-2px); }
 .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+.btn.small { min-height: 38px; padding: 0 15px; font-size: 13px; }
 .btn-primary { background: var(--resume-bg); color: var(--resume-ink); border: var(--resume-border); box-shadow: var(--resume-shadow);
   border-radius: var(--resume-radius); }
 .btn-ghost { background: transparent; border: 1px solid var(--hair); color: var(--muted); }
@@ -530,8 +531,9 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .sheetwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .sheet { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 340px; }
 .sheet th, .sheet td { padding: 7px 8px; text-align: right; white-space: nowrap; }
-.sheet th:first-child, .sheet td:first-child { text-align: left; position: sticky; left: 0; background: var(--panel);
-  z-index: 1; padding-left: 4px; }
+.sheet th:first-child, .sheet td:first-child { text-align: left; position: sticky; left: 0;
+  background: var(--rank-bg); border-right: 1px solid var(--hair); z-index: 1;
+  width: 118px; padding-left: 10px; border-radius: 7px 0 0 7px; }
 .sheet thead th { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
   border-bottom: 1px solid var(--hair); }
 .sheet tbody td { border-bottom: 1px solid var(--hair); }
@@ -580,7 +582,8 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
   .art { height: 196px; }
   .band { font-size: 15px; min-height: 44px; }
   .head { height: 74px; }
-  .pshape { height: 70px; width: 260px; }
+  .pshape { height: 70px; width: 330px; }
+  .wordmark { font-size: calc(var(--word-size) * .58); }
   .opmark span { display: none; }
 }
 
@@ -633,16 +636,236 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .ptcell.won i { color: var(--acc1); }
 
 .formpanel { margin-top: 14px; }
-.cardpicks { display: flex; flex-direction: column; gap: 12px; }
-.cardpick { display: grid; grid-template-columns: 1fr 90px 1fr; gap: 8px; align-items: center; }
-.cardpick label { font-size: 10px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--muted); }
 .chipsel button.redsuit { color: var(--live); }
 .holdersel { gap: 8px; }
 
 @media (max-width: 520px) {
-  .cardpick { grid-template-columns: 1fr; gap: 6px; }
   .lockedtag { margin-left: 0; width: 100%; }
+}
+
+/* ============================ the desk ============================ */
+/* Game screens run wider than the home floor — the console needs the room. */
+.wrap.wide { max-width: 1520px; }
+
+.deskhead { display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 16px; margin-bottom: 14px; border-radius: 14px; background: var(--ground-plate);
+  animation: dcRise .5s cubic-bezier(.34,1.56,.64,1) both; }
+.deskhead h1 { margin: 0; font-family: var(--font-display); font-size: 24px; font-weight: 400;
+  color: var(--ground-ink); line-height: 1.1; }
+.deskmeta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.mchip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px;
+  background: var(--rank-bg); color: var(--ink); font-size: 11.5px; font-weight: 700;
+  letter-spacing: .04em; white-space: nowrap; }
+.mchip.livechip { background: var(--live); color: #fff; }
+.deskacts { margin-left: auto; display: flex; gap: 9px; flex-wrap: wrap; }
+
+.desk { display: grid; grid-template-columns: 322px minmax(0,1fr); gap: 14px; align-items: start; }
+.rail { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 12px; }
+.deskmain { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+/* ---------------- podium: the live standing, and the reveal stage ------------- */
+.podwrap { background: var(--panel); border: var(--panel-border); border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow); padding: 12px 13px 14px;
+  animation: dcRise .55s cubic-bezier(.34,1.56,.64,1) .06s both; }
+.podium { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pod { position: relative; display: grid; grid-template-columns: 30px minmax(0,1fr) auto; align-items: center;
+  gap: 11px; padding: 11px 13px; border-radius: 13px; background: var(--rank-bg);
+  border: 2px solid transparent; will-change: transform;
+  transition: background .28s ease, border-color .28s ease, box-shadow .28s ease; }
+.pod .podrank { width: 26px; height: 26px; border-radius: 50%; background: var(--panel); color: var(--muted);
+  font-family: var(--font-display); font-size: 12px; display: flex; align-items: center; justify-content: center;
+  transition: background .28s ease, color .28s ease, transform .28s cubic-bezier(.34,1.56,.64,1); }
+.podname { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.podscore { font-family: var(--font-display); font-size: 25px; line-height: 1; letter-spacing: .01em;
+  transition: font-size .3s cubic-bezier(.34,1.56,.64,1), color .28s ease; }
+.pod.first { background: var(--row-hover); border-color: var(--acc1); }
+.pod.first .podrank { background: var(--acc1); color: #fff; }
+.pod.first .podscore { color: var(--acc1); font-size: 30px; }
+.pod.mover { z-index: 4; box-shadow: 0 14px 30px rgba(0,0,0,.30); transform-origin: 50% 50%; }
+.podcrown { position: absolute; left: 6px; top: -13px; color: var(--acc1); opacity: 0;
+  transform: scale(.3) rotate(-40deg); pointer-events: none; }
+.pod.crowned .podcrown { animation: dcCrownIn .8s cubic-bezier(.34,1.56,.64,1) forwards; }
+.pod.crowned { animation: dcThrone .9s cubic-bezier(.34,1.56,.64,1); }
+.podshock { position: absolute; inset: -3px; border-radius: 15px; border: 2px solid var(--acc1);
+  opacity: 0; pointer-events: none; }
+.pod.crowned .podshock { animation: dcShock 1s ease-out .08s 2; }
+.poddelta { position: absolute; right: 14px; top: 4px; font-family: var(--font-display); font-size: 15px;
+  color: var(--acc2); opacity: 0; pointer-events: none; }
+.poddelta.up { animation: dcDelta 1.25s cubic-bezier(.22,1,.36,1) forwards; }
+.podfoot { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--hair); font-size: 11.5px; color: var(--muted); }
+
+/* ---------------- the entry console ------------- */
+.console { background: var(--panel); border: var(--panel-border); border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow); overflow: hidden;
+  animation: dcRise .55s cubic-bezier(.34,1.56,.64,1) .1s both; }
+.console-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px; border-bottom: 1px solid var(--hair); background: var(--rank-bg); }
+.console-head h2 { margin: 0; font-family: var(--font-display); font-size: 17px; font-weight: 400; color: var(--ink); }
+.console-head .tag { font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--muted); }
+.console-head .tag.hot { color: var(--live); }
+
+.step { display: grid; grid-template-columns: 128px minmax(0,1fr); gap: 16px; align-items: start;
+  padding: 13px 16px; border-bottom: 1px solid var(--hair); }
+.step:last-of-type { border-bottom: none; }
+.steplab { display: flex; align-items: center; gap: 9px; padding-top: 9px; }
+.stepno { width: 23px; height: 23px; flex-shrink: 0; border-radius: 50%; background: var(--rank-bg);
+  color: var(--muted); font-family: var(--font-display); font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .24s ease, color .24s ease, transform .24s cubic-bezier(.34,1.56,.64,1); }
+.step.done .stepno { background: var(--acc2); color: #fff; transform: scale(1.08); }
+.steplab b { font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--muted); line-height: 1.35; }
+.stepbody { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; }
+.stepbody .hint { width: 100%; margin: 2px 0 0; }
+
+/* one tap, one value — every choice on this screen is a chip, never a dropdown */
+.pick { min-height: 42px; padding: 0 15px; border-radius: 999px; border: 2px solid var(--hair);
+  background: transparent; color: var(--ink); font-size: 14px; font-weight: 600; white-space: nowrap;
+  transition: transform .16s cubic-bezier(.34,1.56,.64,1), background .18s ease, border-color .18s ease, color .18s ease; }
+.pick:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--acc1); }
+.pick:active:not(:disabled) { transform: translateY(0) scale(.96); }
+.pick[aria-pressed="true"] { background: var(--acc1); border-color: var(--acc1); color: #fff; }
+.pick:disabled { opacity: .26; cursor: not-allowed; }
+.pick.sq { min-width: 44px; padding: 0 9px; border-radius: 11px; font-family: var(--font-display); font-size: 15px; }
+.pick.suitpick { min-width: 54px; font-size: 18px; font-family: var(--font-display); }
+.pick.suitpick.red { color: var(--suit-red); }
+.pick.suitpick.red[aria-pressed="true"] { background: var(--live); border-color: var(--live); color: #fff; }
+.pick.small { min-height: 36px; padding: 0 12px; font-size: 13px; }
+
+.bidbox { display: flex; align-items: center; gap: 9px; }
+.stepbtn { width: 46px; height: 46px; border-radius: 13px; background: var(--rank-bg); color: var(--ink);
+  font-family: var(--font-display); font-size: 17px;
+  transition: transform .16s cubic-bezier(.34,1.56,.64,1), background .18s ease; }
+.stepbtn:hover { transform: scale(1.09); background: var(--row-hover); }
+.stepbtn:active { transform: scale(.94); }
+.bidnum { width: 116px; height: 46px; text-align: center; border-radius: 13px; border: 2px solid var(--hair);
+  background: var(--rank-bg); color: var(--ink); font-family: var(--font-display); font-size: 23px; }
+.bidnum:focus { outline: none; border-color: var(--acc1); }
+.bidcap { font-size: 11.5px; color: var(--muted); }
+
+.callrow { display: grid; grid-template-columns: 58px minmax(0,1fr) 56px; gap: 10px; align-items: center;
+  padding: 9px 0; border-top: 1px dashed var(--hair); }
+.callrow:first-child { border-top: none; padding-top: 2px; }
+.callno { font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.callpick { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.prow { display: grid; grid-template-columns: repeat(13, minmax(0,1fr)); gap: 5px; }
+.prow.suits { grid-template-columns: repeat(4, minmax(0,108px)); gap: 6px;
+  padding-top: 6px; border-top: 1px dashed var(--hair); }
+.callface { justify-self: end; display: flex; align-items: center; justify-content: center;
+  width: 52px; height: 66px; border-radius: 9px; background: var(--card-face); color: var(--suit-dark);
+  border: 1px solid var(--hair); font-family: var(--font-display); font-size: 19px;
+  box-shadow: 0 3px 0 rgba(0,0,0,.22);
+  backface-visibility: hidden; }
+.callface.red { color: var(--suit-red); }
+.callface.flip { animation: dcFlip .42s cubic-bezier(.22,1,.36,1); }
+
+.saverow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 13px 16px;
+  background: var(--rank-bg); border-top: 1px solid var(--hair); }
+.saverow .grow { flex-grow: 1; }
+.readout { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.readout b { color: var(--ink); font-weight: 700; }
+
+.winrow { display: flex; gap: 12px; flex-wrap: wrap; }
+.winbtn { position: relative; overflow: hidden; flex: 1 1 220px; min-height: 62px; border-radius: 14px;
+  font-family: var(--font-display); font-size: 16px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px; color: #fff;
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1), filter .18s ease; }
+.winbtn small { font-family: var(--font-body); font-size: 11px; font-weight: 600; opacity: .85; letter-spacing: .04em; }
+.winbtn:hover { transform: translateY(-3px) scale(1.01); filter: brightness(1.06); }
+.winbtn:active { transform: scale(.98); }
+.winbtn.bid { background: var(--acc2); }
+.winbtn.opp { background: var(--live); }
+.winbtn::after { content: ""; position: absolute; top: 0; left: 0; width: 30%; height: 100%; pointer-events: none;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.45), rgba(255,255,255,0));
+  animation: dcSweep 3.4s ease-in-out infinite; }
+
+/* ---------------- the ledger of played rounds ------------- */
+.ledger { background: var(--panel); border: var(--panel-border); border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow); overflow: hidden;
+  animation: dcRise .55s cubic-bezier(.34,1.56,.64,1) .16s both; }
+.lrow { display: grid; grid-template-columns: 42px 168px minmax(0,1fr) auto; gap: 13px; align-items: center;
+  padding: 11px 15px; border-top: 1px solid var(--hair);
+  transition: background .18s ease, transform .18s ease; }
+.lrow:hover { background: var(--row-hover); }
+.lrow.pending { background: var(--row-hover); }
+.lrow.dealt { animation: dcDeal .5s cubic-bezier(.34,1.56,.64,1) both; }
+.lno { font-family: var(--font-display); font-size: 12px; color: var(--muted); background: var(--rank-bg);
+  border-radius: 7px; padding: 5px 0; text-align: center; }
+.lbid { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lbid b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lbid span { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+.lcards { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; min-width: 0; }
+.lcall { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px;
+  background: var(--rank-bg); }
+.lcard { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 25px;
+  padding: 0 6px; border-radius: 6px; background: var(--card-face); color: var(--suit-dark);
+  border: 1px solid var(--hair); font-family: var(--font-display); font-size: 12.5px;
+  backface-visibility: hidden; }
+.lcard.red { color: var(--suit-red); }
+.lcard.flip { animation: dcFlip .5s cubic-bezier(.22,1,.36,1) both; }
+.lheld { font-size: 12px; color: var(--muted); }
+.lheld.named { color: var(--ink); font-weight: 600; }
+.lpts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.ptcell { display: inline-flex; align-items: baseline; gap: 6px; padding: 5px 10px; border-radius: 8px;
+  background: var(--rank-bg); }
+.ptcell b { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.ptcell i { font-style: normal; font-family: var(--font-display); font-size: 14px; }
+.ptcell.won { background: var(--row-hover); }
+.ptcell.won i { color: var(--acc1); }
+.lstamp { font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  padding: 5px 10px; border-radius: 999px; color: #fff; white-space: nowrap; }
+.lstamp.won { background: var(--acc2); }
+.lstamp.lost { background: var(--live); }
+.lstamp.wait { background: var(--rank-bg); color: var(--muted); }
+.lstamp.stamped { animation: dcStamp .6s cubic-bezier(.34,1.56,.64,1) both; }
+
+/* ---------------- the wide scoresheet ------------- */
+.sheetpanel { background: var(--panel); border: var(--panel-border); border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow); padding: 13px 15px 15px;
+  animation: dcRise .55s cubic-bezier(.34,1.56,.64,1) .12s both; }
+.sheet td.lead { color: var(--acc1); }
+.sheet tbody tr { transition: background .18s ease; }
+.sheet tbody tr:hover { background: var(--row-hover); }
+
+/* ---------------- new-session setup ------------- */
+.setup { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.06fr); gap: 14px; align-items: stretch; }
+.setpanel { display: flex; flex-direction: column; }
+.setbody { flex: 1 1 auto; }
+.setpanel { background: var(--panel); border: var(--panel-border); border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow); padding: 0; overflow: hidden;
+  animation: dcRise .55s cubic-bezier(.34,1.56,.64,1) both; }
+.setpanel + .setpanel { margin-top: 14px; }
+.setgrid { display: flex; flex-wrap: wrap; gap: 9px; }
+
+/* the reveal locks the board while it plays; a tap anywhere skips to the end */
+body.revealing .console, body.revealing .deskacts { pointer-events: none; }
+body.revealing .skiphint { opacity: 1; }
+.skiphint { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 40;
+  padding: 8px 16px; border-radius: 999px; background: var(--ground-plate); color: var(--ground-ink);
+  font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  opacity: 0; transition: opacity .3s ease; pointer-events: none; }
+.burst { position: fixed; width: 9px; height: 13px; border-radius: 2px; z-index: 45; pointer-events: none;
+  animation: dcBurst .95s cubic-bezier(.22,1,.36,1) forwards; }
+
+@media (max-width: 1080px) {
+  .desk { grid-template-columns: minmax(0,1fr); }
+  .rail { position: static; }
+  .setup { grid-template-columns: minmax(0,1fr); }
+  .lrow { grid-template-columns: 40px minmax(0,1fr); row-gap: 9px; }
+  .lrow .lcards, .lrow .lpts { grid-column: 1 / -1; justify-content: flex-start; }
+}
+@media (max-width: 760px) { .prow { grid-template-columns: repeat(7, minmax(0,1fr)); } }
+@media (max-width: 430px) { .prow { grid-template-columns: repeat(5, minmax(0,1fr)); } }
+@media (max-width: 620px) {
+  .step { grid-template-columns: minmax(0,1fr); gap: 8px; padding: 12px 13px; }
+  .steplab { padding-top: 0; }
+  .callrow { grid-template-columns: minmax(0,1fr) 52px; }
+  .callno { grid-column: 1 / -1; }
+  .deskacts { margin-left: 0; width: 100%; }
+  .pick { min-height: 40px; padding: 0 13px; }
+  .pick.sq { min-width: 40px; }
 }
 
 /* ============================ motion ============================ */
@@ -663,6 +886,18 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 @keyframes dcFlicker { 0%,15%,19%,47%,51%,100%{opacity:1} 17%,49%{opacity:.45} }
 @keyframes dcConf { 0%{transform:translateY(-30px) rotate(0);opacity:0} 12%{opacity:1} 100%{transform:translateY(1400px) rotate(500deg);opacity:0} }
 @keyframes dcShimmer { 0%,100%{opacity:.28;transform:translateX(-4%)} 50%{opacity:.55;transform:translateX(4%)} }
+@keyframes dcRise { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+@keyframes dcDeal { from{opacity:0;transform:translateY(-18px) rotate(-1.6deg) scale(.97)} to{opacity:1;transform:none} }
+@keyframes dcFlip { 0%{transform:rotateY(0) scale(1)} 45%{transform:rotateY(90deg) scale(1.18)} 100%{transform:rotateY(0) scale(1)} }
+@keyframes dcStamp { 0%{opacity:0;transform:scale(2.6) rotate(-15deg)} 55%{opacity:1;transform:scale(.9) rotate(3deg)} 100%{opacity:1;transform:none} }
+@keyframes dcDelta { 0%{opacity:0;transform:translateY(8px) scale(.6)} 22%{opacity:1;transform:translateY(-2px) scale(1.15)}
+  70%{opacity:1;transform:translateY(-12px) scale(1)} 100%{opacity:0;transform:translateY(-26px) scale(.9)} }
+@keyframes dcCrownIn { 0%{opacity:0;transform:scale(.3) rotate(-45deg) translateY(14px)}
+  60%{opacity:1;transform:scale(1.3) rotate(9deg) translateY(-2px)} 100%{opacity:1;transform:scale(1) rotate(-6deg)} }
+@keyframes dcShock { 0%{opacity:.85;transform:scale(1)} 100%{opacity:0;transform:scale(1.3)} }
+@keyframes dcThrone { 0%{transform:scale(1)} 30%{transform:scale(1.11)} 62%{transform:scale(.985)} 100%{transform:scale(1)} }
+@keyframes dcBurst { 0%{opacity:1;transform:translate(0,0) rotate(0) scale(1)}
+  100%{opacity:0;transform:translate(var(--bx),var(--by)) rotate(420deg) scale(.35)} }
 .conf { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
 .conf i { position: absolute; top: -30px; width: 9px; height: 14px; border-radius: 2px; animation: dcConf 6.4s linear infinite; }
 .felt { position: fixed; inset: -10%; pointer-events: none; z-index: 0; animation: dcShimmer 9s ease-in-out infinite;
@@ -676,7 +911,9 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
    opacity:1/transform:none rest state it starts from, so turning it off
    here is visually silent, it just stops the replay */
 body.settled .rule, body.settled .plaque, body.settled .bar,
-body.settled .tile, body.settled .prompt, body.settled .panel {
+body.settled .tile, body.settled .prompt, body.settled .panel,
+body.settled .deskhead, body.settled .podwrap, body.settled .console,
+body.settled .ledger, body.settled .sheetpanel, body.settled .setpanel {
   animation: none !important;
 }
 
@@ -953,7 +1190,8 @@ var PATHS = {
   heart: 'M12 21s-7.5-4.7-9.4-9.2C1 8.3 3 4.8 6.4 4.5 8.6 4.3 10.6 5.4 12 7.2c1.4-1.8 3.4-2.9 5.6-2.7C21 4.8 23 8.3 21.4 11.8 19.5 16.3 12 21 12 21z',
   diamond: 'M12 2l7 10-7 10-7-10z',
   club: 'M12 2.6a3.7 3.7 0 0 0-3.1 5.7 3.8 3.8 0 1 0-1.3 7.3c1.2 0 2.3-.6 3-1.5-.1 2-.8 3.8-2 5.3h6.8c-1.2-1.5-1.9-3.3-2-5.3.7.9 1.8 1.5 3 1.5a3.8 3.8 0 1 0-1.3-7.3A3.7 3.7 0 0 0 12 2.6z',
-  play: 'M8 5l11 7-11 7z'
+  play: 'M8 5l11 7-11 7z',
+  crown: 'M3 7.6l4.3 3.2L12 3.4l4.7 7.4L21 7.6 19.3 19H4.7L3 7.6z'
 };
 function icon(k, size, color) {
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="' + (color || 'currentColor') +
@@ -1054,10 +1292,10 @@ function header(opts) {
     '<div class="plaque"><div class="pshape skin">' +
       '<div class="bulbs" style="top:6px;display:none">' + bulbs + '</div>' +
       '<div class="bulbs" style="bottom:6px;display:none">' + bulbs + '</div>' +
-      '<div class="wordmark">' + esc(opts.title || 'NAME TBA') + '</div>' +
-      '<div class="plaque-sub">' + esc(opts.sub || 'Placeholder wordmark') + '</div>' +
+      '<div class="wordmark">' + esc(opts.title || 'AP CARD GAMES') + '</div>' +
+      '<div class="plaque-sub">' + esc(opts.sub || 'Night') + '</div>' +
     '</div></div>' +
-    (opts.back ? '' : '<a class="opmark" href="#/admin">' + icon('club', 16) + '<span>card night</span></a>') +
+    (opts.back ? '' : '<a class="opmark" href="#/admin">' + icon('club', 16) + '<span>ap card games</span></a>') +
   '</div>';
 }
 
@@ -1065,9 +1303,7 @@ function header(opts) {
    7. VIEWS
    ------------------------------------------------------------------ */
 
-/* transient form state — never persisted */
-var addingHand = false;
-var revealingIdx = -1;
+/* transient view state — never persisted */
 
 function viewHome() {
   var live = liveSession();
@@ -1171,141 +1407,300 @@ function viewNew(query) {
   }
 
   var people = active.map(function (p) {
-    return '<button data-player="' + p.id + '" aria-pressed="true">' + esc(p.name) + '</button>';
+    return '<button class="pick" data-player="' + p.id + '" aria-pressed="true">' + esc(p.name) + '</button>';
   }).join('');
 
   var bidBits = '';
   if (g.roundType === 'bid') {
     bidBits =
-      '<div class="field"><label>How many decks</label><div class="chipsel" id="decksel">' +
-        '<button data-deck="1" aria-pressed="true">1 deck</button>' +
-        '<button data-deck="2" aria-pressed="false">2 decks</button>' +
-        '<button data-deck="3" aria-pressed="false">3 decks</button>' +
-      '</div><p class="hint" id="deckhint">Bids can go up to 250.</p></div>' +
-      '<div class="field"><label>Partners the bidder calls</label><div class="chipsel" id="partsel">' +
-        '<button data-part="1" aria-pressed="true">1</button>' +
-        '<button data-part="2" aria-pressed="false">2</button>' +
-        '<button data-part="3" aria-pressed="false">3</button>' +
-        '<button data-part="4" aria-pressed="false">4</button>' +
-        '<button data-part="5" aria-pressed="false">5</button>' +
-      '</div><p class="hint">One card is asked for per partner. Either deck size can be played with any of these.</p></div>';
+      '<div class="step done"><span class="steplab"><span class="stepno">1</span><b>How many<br>decks</b></span>' +
+        '<span class="stepbody" id="decksel">' +
+          '<button class="pick" data-deck="1" aria-pressed="true">1 deck</button>' +
+          '<button class="pick" data-deck="2" aria-pressed="false">2 decks</button>' +
+          '<button class="pick" data-deck="3" aria-pressed="false">3 decks</button>' +
+          '<p class="hint" id="deckhint">Bids can go up to 250.</p></span></div>' +
+      '<div class="step done"><span class="steplab"><span class="stepno">2</span><b>Partners the<br>bidder calls</b></span>' +
+        '<span class="stepbody" id="partsel">' +
+          '<button class="pick sq" data-part="1" aria-pressed="true">1</button>' +
+          '<button class="pick sq" data-part="2" aria-pressed="false">2</button>' +
+          '<button class="pick sq" data-part="3" aria-pressed="false">3</button>' +
+          '<button class="pick sq" data-part="4" aria-pressed="false">4</button>' +
+          '<button class="pick sq" data-part="5" aria-pressed="false">5</button>' +
+          '<p class="hint">One card is asked for per partner. Any deck size plays with any of these.</p></span></div>';
   }
 
   return header({ back: '/' }) +
-    '<div class="pagehead"><h1 class="title">New session</h1>' +
-    '<p class="sub">Game is set from the tile you tapped &mdash; go Back to change it.</p></div>' +
-    '<div class="stack">' +
-      '<div class="lockedgame skin"><span class="lockedmark">' + icon(g.id === 'spade3' ? 'spade' : 'club', 18) + '</span>' +
-        '<span class="lockedname">' + esc(g.name) + '</span>' +
-        '<span class="lockedtag">locked for this session</span></div>' +
-      '<div class="field"><label>Players &mdash; tap to include</label><div class="chipsel" id="playersel">' + people + '</div></div>' +
-      bidBits +
-      '<div class="btn-row"><button class="btn btn-primary" id="start" data-game="' + g.id + '">Start session</button>' +
-        '<button class="btn btn-ghost" data-go="/">Cancel</button></div>' +
+    '<div class="deskhead"><h1>New session</h1>' +
+      '<div class="deskmeta"><span class="mchip">' + esc(g.name) + '</span>' +
+        '<span class="mchip">' + lockIcon(12) + ' locked for this session</span></div></div>' +
+    '<div class="setup">' +
+      '<section class="setpanel">' +
+        '<div class="console-head"><h2>Who is playing</h2>' +
+          '<span class="tag">tap to drop anyone sitting out</span></div>' +
+        '<div class="step setbody" style="grid-template-columns:minmax(0,1fr);border-bottom:none;align-content:start">' +
+          '<span class="stepbody" id="playersel">' + people + '</span></div>' +
+        '<div class="saverow"><span class="readout" id="playercount">' +
+            '<b>' + active.length + '</b> at the table</span><span class="grow"></span>' +
+          '<button class="btn btn-ghost small" data-allplayers="1">All</button>' +
+          '<button class="btn btn-ghost small" data-allplayers="0">None</button></div>' +
+      '</section>' +
+      '<div style="display:flex;flex-direction:column">' +
+        '<section class="setpanel" style="flex:1">' +
+          '<div class="console-head"><h2>The game</h2><span class="tag">fixed once you start</span></div>' +
+          '<div class="lockedgame" style="border:none;box-shadow:none;background:transparent">' +
+            '<span class="lockedmark">' + icon(g.id === 'spade3' ? 'spade' : 'club', 18) + '</span>' +
+            '<span class="lockedname">' + esc(g.name) + '</span>' +
+            '<span class="lockedtag">go Back to change it</span></div>' +
+          bidBits +
+          '<div class="saverow"><span class="grow"></span>' +
+            '<button class="btn btn-ghost" data-go="/">Cancel</button>' +
+            '<button class="btn btn-primary" id="start" data-game="' + g.id + '">Start session</button></div>' +
+        '</section>' +
+      '</div>' +
     '</div>';
 }
 
-/* ---------- scoresheet ---------- */
+/* ---------- shared pieces ---------- */
 
 function sirChip(sid) {
   var su = suitById(sid);
   return '<span class="suitmark' + (su.red ? ' red' : '') + '">' + su.glyph + '</span>';
 }
-function cardChip(c) {
-  return '<span class="cardchip' + (cardIsRed(c) ? ' red' : '') + '">' + (c ? esc(c.rank) : '?') +
-    (c ? suitById(c.suit).glyph : '') + '</span>';
+
+/* The rail: who is ahead, right now. This is also the stage the reveal plays
+   on — every element the sequence animates lives here and is keyed by pid. */
+function podiumHtml(s) {
+  var st = standings(s);
+  var rows = st.map(function (r, i) {
+    return '<li class="pod' + (i === 0 ? ' first' : '') + '" data-pid="' + r.id + '">' +
+      '<span class="podshock"></span>' +
+      '<span class="podcrown">' + icon('crown', 20) + '</span>' +
+      '<span class="poddelta" data-delta="' + r.id + '"></span>' +
+      '<span class="podrank">' + (i + 1) + '</span>' +
+      '<span class="podname">' + esc(r.name) + '</span>' +
+      '<span class="podscore" data-score="' + r.id + '">' + r.total + '</span>' +
+    '</li>';
+  }).join('');
+  var played = s.rounds.filter(function (r) { return r.stage !== 'bid'; }).length;
+  return '<div class="podwrap">' +
+    '<div class="panel-head"><h2>Standing</h2><span>live</span></div>' +
+    '<ol class="podium" id="podium">' + rows + '</ol>' +
+    '<div class="podfoot"><span>' + plural(played, 'round') + ' scored</span>' +
+      '<span>' + plural(s.playerIds.length, 'player') + '</span></div>' +
+  '</div>';
 }
 
-function bidHandRow(s, r, idx) {
+function deskHead(s, g, readonly) {
+  var meta = '';
+  if (!readonly) meta += '<span class="mchip livechip">' + icon('play', 11) + ' Live</span>';
+  else meta += '<span class="mchip">Finished ' + fmtDate(s.finishedAt) + '</span>';
+  meta += '<span class="mchip">' + plural(s.rounds.length, 'round') + '</span>';
+  meta += '<span class="mchip">' + plural(s.playerIds.length, 'player') + '</span>';
+  if (isBid(s)) {
+    meta += '<span class="mchip">' + plural(Number(s.deckCount) || 1, 'deck') + ' &middot; up to ' + deckMax(s) + '</span>';
+    meta += '<span class="mchip">' + plural(s.partnerCount || 1, 'partner') + '</span>';
+  }
+  if (readonly) meta += '<span class="mchip">Won by ' + esc(playerName(s.winnerId)) + '</span>';
+  return '<div class="deskhead"><h1>' + esc(g.name) + '</h1><div class="deskmeta">' + meta + '</div>' +
+    (readonly ? '' : '<div class="deskacts">' +
+      (s.rounds.length ? '<button class="btn btn-danger" id="finish">Finish session</button>' : '') +
+    '</div>') + '</div>';
+}
+
+/* ---------- the round ledger ---------- */
+
+function ledgerRow(s, r, idx) {
   var pts = roundPoints(s, r);
   var pending = r.stage !== 'done';
-  var calls = (r.calls || []).map(function (c) {
-    return '<span class="callpair">' + cardChip(c.card) +
-      '<span class="callto">' + (c.holderId ? esc(playerName(c.holderId)) : 'not revealed') + '</span></span>';
+  var cards = (r.calls || []).map(function (c, ci) {
+    return '<span class="lcall">' +
+      '<span class="lcard' + (cardIsRed(c.card) ? ' red' : '') + '" data-lcard="' + ci + '">' +
+        esc(c.card.rank) + suitById(c.card.suit).glyph + '</span>' +
+      '<span class="lheld' + (c.holderId ? ' named' : '') + '">' +
+        (c.holderId ? esc(playerName(c.holderId)) : 'not revealed') + '</span></span>';
   }).join('');
-
-  var line = s.playerIds.map(function (pid) {
+  var pill = s.playerIds.map(function (pid) {
     var v = pts[pid];
     return '<span class="ptcell' + (v > 0 ? ' won' : '') + '"><b>' + esc(playerName(pid)) + '</b>' +
       '<i>' + (pending ? '&mdash;' : '+' + v) + '</i></span>';
   }).join('');
+  var stamp = pending
+    ? '<span class="lstamp wait">awaiting reveal</span>'
+    : '<span class="lstamp ' + (r.winner === 'bidding' ? 'won' : 'lost') + '">' +
+      (r.winner === 'bidding' ? 'bidders won' : 'opponents won') + '</span>';
+  return '<div class="lrow' + (pending ? ' pending' : '') + '" data-round="' + idx + '">' +
+    '<span class="lno">R' + (idx + 1) + '</span>' +
+    '<span class="lbid"><b>' + esc(playerName(r.bidderId)) + ' &middot; ' + r.bid + '</b>' +
+      '<span>sir ' + sirChip(r.sir) + '</span></span>' +
+    '<span class="lcards">' + cards + '</span>' +
+    '<span class="lpts">' + pill + stamp + '</span>' +
+  '</div>';
+}
 
-  return '<div class="hand' + (pending ? ' pending' : '') + '">' +
-    '<div class="hand-head">' +
-      '<span class="hand-no">R' + (idx + 1) + '</span>' +
-      '<span class="hand-bid"><b>' + esc(playerName(r.bidderId)) + '</b> bid <b>' + r.bid + '</b></span>' +
-      '<span class="hand-sir">sir ' + sirChip(r.sir) + '</span>' +
-      (pending ? '<span class="badge-pend">awaiting reveal</span>'
-               : '<span class="badge-res ' + (r.winner === 'bidding' ? 'won' : 'lost') + '">' +
-                 (r.winner === 'bidding' ? "bidder's team won" : 'opponents won') + '</span>') +
-    '</div>' +
-    '<div class="hand-calls">' + calls + '</div>' +
-    '<div class="hand-pts">' + line + '</div>' +
-    (pending ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" data-reveal="' + idx + '">Reveal partners &amp; result</button>' +
-               '<button class="btn btn-ghost" data-cancelhand="' + idx + '">Discard round</button></div>' : '') +
+function ledgerHtml(s) {
+  return '<section class="ledger">' +
+    '<div class="console-head"><h2>Rounds</h2><span class="tag">' + plural(s.rounds.length, 'round') + '</span></div>' +
+    (s.rounds.length
+      ? s.rounds.map(function (r, i) { return ledgerRow(s, r, i); }).join('')
+      : '<div class="empty">No rounds yet &mdash; fill the console above and save the first one.</div>') +
+  '</section>';
+}
+
+/* ---------- the entry console: everything on one screen, one tap per value ---------- */
+
+function quickBids(s) {
+  var max = deckMax(s);
+  var out = [];
+  [0.4, 0.56, 0.68, 0.8, 1].forEach(function (f) {
+    var v = Math.round(max * f / 5) * 5;
+    if (out.indexOf(v) === -1) out.push(v);
+  });
+  return out;
+}
+
+function bidConsole(s) {
+  var d = draftFor(s);
+
+  var bidders = s.playerIds.map(function (pid) {
+    return '<button class="pick" data-bidder="' + pid + '" aria-pressed="' + (d.bidderId === pid) + '">' +
+      esc(playerName(pid)) + '</button>';
+  }).join('');
+
+  var quick = quickBids(s).map(function (v) {
+    return '<button class="pick sq" data-bidset="' + v + '" aria-pressed="' + (d.bid === v) + '">' + v + '</button>';
+  }).join('');
+
+  var sirs = SUITS.map(function (su) {
+    return '<button class="pick suitpick' + (su.red ? ' red' : '') + '" data-sir="' + su.id + '" ' +
+      'aria-pressed="' + (d.sir === su.id) + '" title="' + su.name + '">' + su.glyph + '</button>';
+  }).join('');
+
+  var calls = d.calls.map(function (c, i) {
+    var ranks = RANKS.map(function (rk) {
+      var dead = SUITS.every(function (su) { return callTaken(i, rk, su.id); });
+      return '<button class="pick sq" data-crank="' + i + '" data-rk="' + rk + '"' +
+        (dead ? ' disabled' : '') + ' aria-pressed="' + (c.rank === rk) + '">' + rk + '</button>';
+    }).join('');
+    var suits = SUITS.map(function (su) {
+      return '<button class="pick suitpick' + (su.red ? ' red' : '') + '" data-csuit="' + i + '" data-st="' + su.id + '"' +
+        (callTaken(i, c.rank, su.id) ? ' disabled' : '') + ' aria-pressed="' + (c.suit === su.id) + '">' +
+        su.glyph + '</button>';
+    }).join('');
+    return '<div class="callrow">' +
+      '<span class="callno">Card ' + (i + 1) + '</span>' +
+      '<span class="callpick"><span class="prow">' + ranks + '</span>' +
+        '<span class="prow suits">' + suits + '</span></span>' +
+      '<span class="callface' + (cardIsRed(c) ? ' red' : '') + '" data-cface="' + i + '">' +
+        esc(c.rank) + suitById(c.suit).glyph + '</span>' +
     '</div>';
+  }).join('');
+
+  var ready = !!d.bidderId && !!d.bid;
+  return '<section class="console" id="console">' +
+    '<div class="console-head"><h2>New round</h2><span class="tag">before the cards are played</span></div>' +
+
+    '<div class="step' + (d.bidderId ? ' done' : '') + '" data-step="bidder">' +
+      '<span class="steplab"><span class="stepno">1</span><b>Who won<br>the bid</b></span>' +
+      '<span class="stepbody">' + bidders + '</span></div>' +
+
+    '<div class="step' + (d.bid ? ' done' : '') + '" data-step="bid">' +
+      '<span class="steplab"><span class="stepno">2</span><b>Bid<br>amount</b></span>' +
+      '<span class="stepbody"><span class="bidbox">' +
+        '<button class="stepbtn" data-bidstep="-5">&minus;</button>' +
+        '<input class="bidnum" id="bidamt" type="number" inputmode="numeric" min="1" max="' + deckMax(s) +
+          '" value="' + (d.bid || '') + '" placeholder="0">' +
+        '<button class="stepbtn" data-bidstep="5">+</button></span>' +
+        quick + '<span class="bidcap">max ' + deckMax(s) + '</span></span></div>' +
+
+    '<div class="step done" data-step="sir">' +
+      '<span class="steplab"><span class="stepno">3</span><b>Sir &mdash;<br>the trump</b></span>' +
+      '<span class="stepbody">' + sirs + '</span></div>' +
+
+    '<div class="step done" data-step="cards">' +
+      '<span class="steplab"><span class="stepno">4</span><b>Cards<br>asked for</b></span>' +
+      '<span class="stepbody" style="display:block">' + calls + '</span></div>' +
+
+    '<div class="saverow">' +
+      '<span class="readout" id="readout">' + consoleReadout(s, d) + '</span>' +
+      '<span class="grow"></span>' +
+      '<button class="btn btn-primary" id="savehand"' + (ready ? '' : ' disabled') + '>Save round</button>' +
+    '</div>' +
+  '</section>';
 }
 
-function bidAddForm(s) {
-  var players = s.playerIds.map(function (pid) {
-    return '<button data-pickbidder="' + pid + '" aria-pressed="false">' + esc(playerName(pid)) + '</button>';
-  }).join('');
-  var suits = SUITS.map(function (su) {
-    return '<button data-picksir="' + su.id + '" aria-pressed="' + (su.id === 'S') + '" class="' + (su.red ? 'redsuit' : '') + '">' +
-      su.glyph + ' ' + su.name + '</button>';
-  }).join('');
-  var cards = '';
-  for (var i = 0; i < (s.partnerCount || 1); i++) {
-    /* stagger the defaults (A-S, K-H, Q-D, ...) so pickers never start on
-       the same card — real duplicates are still caught live, on change */
-    var defRank = RANKS[i % RANKS.length];
-    var defSuit = SUITS[i % SUITS.length].id;
-    cards += '<div class="cardpick" data-pick="' + i + '"><label>Card asked for ' + (i + 1) + '</label>' +
-      '<select class="input" data-rank="' + i + '">' +
-        RANKS.map(function (rk) { return '<option value="' + rk + '"' + (rk === defRank ? ' selected' : '') + '>' + rk + '</option>'; }).join('') +
-      '</select>' +
-      '<select class="input" data-suit="' + i + '">' +
-        SUITS.map(function (su) { return '<option value="' + su.id + '"' + (su.id === defSuit ? ' selected' : '') + '>' + su.glyph + ' ' + su.name + '</option>'; }).join('') +
-      '</select></div>';
-  }
-  return '<div class="panel skin formpanel">' +
-    '<div class="panel-head"><h2>New round</h2><span>before the cards are played</span></div>' +
-    '<div class="stack" style="padding-top:6px">' +
-      '<div class="field"><label>Who won the bid</label><div class="chipsel" id="biddersel">' + players + '</div></div>' +
-      '<div class="field" style="max-width:220px"><label>Bid amount &mdash; up to ' + deckMax(s) + '</label>' +
-        '<input class="input" id="bidamt" type="number" inputmode="numeric" min="1" max="' + deckMax(s) + '" placeholder="150"></div>' +
-      '<div class="field"><label>Sir &mdash; the trump suit</label><div class="chipsel" id="sirsel">' + suits + '</div></div>' +
-      '<div class="field"><label>Cards asked for</label><div class="cardpicks">' + cards + '</div></div>' +
-      '<div class="btn-row"><button class="btn btn-primary" id="savehand">Save round</button>' +
-        '<button class="btn btn-ghost" id="cancelhand">Cancel</button></div>' +
-    '</div></div>';
+function consoleReadout(s, d) {
+  if (!d.bidderId) return 'Pick the bidder to start.';
+  if (!d.bid) return '<b>' + esc(playerName(d.bidderId)) + '</b> &mdash; now the bid.';
+  return '<b>' + esc(playerName(d.bidderId)) + '</b> bid <b>' + d.bid + '</b> on ' + sirChip(d.sir) +
+    ' for ' + d.calls.map(function (c) {
+      return '<b>' + esc(c.rank) + suitById(c.suit).glyph + '</b>';
+    }).join(', ');
 }
 
-function bidRevealForm(s, r, idx) {
+/* the reveal console — same shape, so the eye does not have to relearn it */
+function revealConsole(s, r, idx) {
   var rows = (r.calls || []).map(function (c, ci) {
     var opts = s.playerIds.filter(function (pid) { return pid !== r.bidderId; }).map(function (pid) {
-      return '<button data-holder="' + ci + '" data-hp="' + pid + '" aria-pressed="' +
+      return '<button class="pick" data-holder="' + ci + '" data-hp="' + pid + '" aria-pressed="' +
         (c.holderId === pid) + '">' + esc(playerName(pid)) + '</button>';
     }).join('');
-    return '<div class="field"><label>Who held ' + cardLabel(c.card) + '</label>' +
-      '<div class="chipsel holdersel" data-hrow="' + ci + '">' + opts + '</div></div>';
+    return '<div class="step' + (c.holderId ? ' done' : '') + '" data-hstep="' + ci + '">' +
+      '<span class="steplab"><span class="stepno">' + (ci + 1) + '</span><b>Who held<br>' +
+        '<span class="callface' + (cardIsRed(c.card) ? ' red' : '') + '" style="width:38px;height:48px;font-size:15px;margin-top:5px">' +
+        esc(c.card.rank) + suitById(c.card.suit).glyph + '</span></b></span>' +
+      '<span class="stepbody">' + opts + '</span></div>';
   }).join('');
-  return '<div class="panel skin formpanel">' +
-    '<div class="panel-head"><h2>Reveal</h2><span>after the round</span></div>' +
-    '<div class="stack" style="padding-top:6px">' +
-      rows +
-      '<p class="hint">Pick the same player twice if both called cards were in one round &mdash; they score double.</p>' +
-      '<div class="field"><label>Who won the round</label>' +
-        '<div class="btn-row"><button class="btn btn-primary" data-win="bidding" data-ridx="' + idx + '">Bidder&rsquo;s team won</button>' +
-        '<button class="btn btn-danger" data-win="opposition" data-ridx="' + idx + '">Opponents won</button></div></div>' +
-      '<div class="btn-row"><button class="btn btn-ghost" id="cancelreveal">Not yet</button></div>' +
-    '</div></div>';
+  var allHeld = (r.calls || []).every(function (c) { return !!c.holderId; });
+  return '<section class="console" id="console">' +
+    '<div class="console-head"><h2>Round ' + (idx + 1) + ' &mdash; reveal</h2>' +
+      '<span class="tag hot">' + esc(playerName(r.bidderId)) + ' bid ' + r.bid + ' on ' +
+      suitById(r.sir).glyph + '</span></div>' +
+    rows +
+    '<div class="step" data-step="won">' +
+      '<span class="steplab"><span class="stepno">' + ((r.calls || []).length + 1) + '</span><b>Who won<br>the round</b></span>' +
+      '<span class="stepbody" style="display:block"><span class="winrow">' +
+        '<button class="winbtn bid" data-win="bidding" data-ridx="' + idx + '"' + (allHeld ? '' : ' disabled') + '>' +
+          'Bidder&rsquo;s team won<small>they take the bid, each share over</small></button>' +
+        '<button class="winbtn opp" data-win="opposition" data-ridx="' + idx + '"' + (allHeld ? '' : ' disabled') + '>' +
+          'Opponents won<small>every opponent takes the bid, flat</small></button>' +
+      '</span>' +
+      '<p class="hint">Name the same player twice if both called cards were in one hand &mdash; they score double.</p>' +
+      '</span></div>' +
+    '<div class="saverow"><span class="readout">Scores land the moment you tap a winner.</span>' +
+      '<span class="grow"></span>' +
+      '<button class="btn btn-ghost" data-cancelhand="' + idx + '">Discard round</button></div>' +
+  '</section>';
 }
 
-function bidStandingsSheet(s) {
+/* ---------- session ---------- */
+
+function viewSession(id) {
+  var s = null;
+  for (var i = 0; i < state.sessions.length; i++) if (state.sessions[i].id === id) s = state.sessions[i];
+  if (!s) return header({ back: '/' }) + '<div class="panel skin"><div class="empty">That session no longer exists.</div></div>';
+
+  var g = gameById(s.gameId);
+  var readonly = s.status === 'finished';
+  var html = header({ back: readonly ? '/archives' : '/' }) + deskHead(s, g, readonly);
+
+  html += '<div class="desk"><div class="rail">' + podiumHtml(s) + '</div><div class="deskmain">';
+
+  if (isBid(s)) {
+    var pend = pendingRound(s);
+    if (!readonly) html += pend ? revealConsole(s, pend, s.rounds.indexOf(pend)) : bidConsole(s);
+    html += ledgerHtml(s);
+    html += bidSheetHtml(s);
+  } else {
+    html += numericSheetHtml(s, readonly);
+  }
+
+  return html + '</div></div>';
+}
+
+/* names in one row, each round below as Round 1, Round 2, ... */
+function bidSheetHtml(s) {
   var t = totals(s);
-  var st = standings(s);
-  var leader = st[0];
+  var leader = standings(s)[0];
   var head = '<tr><th>Round</th>' + s.playerIds.map(function (pid) {
     return '<th>' + esc(playerName(pid)) + '</th>';
   }).join('') + '</tr>';
@@ -1320,70 +1715,20 @@ function bidStandingsSheet(s) {
   var foot = '<tr><td class="rnum">Total</td>' + s.playerIds.map(function (pid) {
     return '<td class="' + (leader && pid === leader.id ? 'lead' : '') + '">' + t[pid] + '</td>';
   }).join('') + '</tr>';
-  return '<section class="panel skin"><div class="panel-head"><h2>Standings</h2><span>this session</span></div>' +
+  return '<section class="sheetpanel">' +
+    '<div class="panel-head"><h2>Scoresheet</h2><span>this session</span></div>' +
     '<div class="sheetwrap"><table class="sheet"><thead>' + head + '</thead><tbody>' + body +
     '</tbody><tfoot>' + foot + '</tfoot></table></div></section>';
 }
 
-function viewSession(id) {
-  var s = null;
-  for (var i = 0; i < state.sessions.length; i++) if (state.sessions[i].id === id) s = state.sessions[i];
-  if (!s) return header({ back: '/' }) + '<div class="panel skin"><div class="empty">That session no longer exists.</div></div>';
-
-  var g = gameById(s.gameId);
-  var readonly = s.status === 'finished';
-  var st = standings(s);
-
-  var sub = readonly
-    ? 'Finished ' + fmtDate(s.finishedAt) + ' &middot; won by ' + esc(playerName(s.winnerId)) + ' &middot; ' + plural(s.rounds.length, 'round')
-    : plural(s.rounds.length, 'round') + ' played &middot; ' + plural(s.playerIds.length, 'player') +
-      (isBid(s) ? ' &middot; ' + plural(Number(s.deckCount) || 1, 'deck') + ' &middot; ' +
-        plural(s.partnerCount || 1, 'partner') : '');
-
-  var html = header({ back: readonly ? '/archives' : '/' }) +
-    '<div class="pagehead"><h1 class="title">' + esc(g.name) + '</h1><p class="sub">' + sub + '</p></div>';
-
-  if (isBid(s)) {
-    /* names across one row, each round's points below as Round 1, Round 2, ... */
-    html += bidStandingsSheet(s);
-    var pend = pendingRound(s);
-    html += '<section class="panel skin" style="margin-top:14px">' +
-      '<div class="panel-head"><h2>Rounds</h2><span>' + plural(s.rounds.length, 'round') + '</span></div>' +
-      (s.rounds.length
-        ? s.rounds.map(function (r, i) { return bidHandRow(s, r, i); }).join('')
-        : '<div class="empty">No rounds yet &mdash; add one when the bidding is done.</div>') +
-      '</section>';
-
-    if (!readonly) {
-      if (revealingIdx >= 0 && s.rounds[revealingIdx]) html += bidRevealForm(s, s.rounds[revealingIdx], revealingIdx);
-      else if (addingHand) html += bidAddForm(s);
-      else {
-        html += '<div class="btn-row" style="margin-top:14px">' +
-          (pend ? '' : '<button class="btn btn-primary" id="addhand">Add round</button>') +
-          (s.rounds.length ? '<button class="btn btn-danger" id="finish">Finish session</button>' : '') +
-          '</div>';
-        if (pend) html += '<p class="hint" style="margin-top:10px">Reveal the partners on round ' +
-          (s.rounds.indexOf(pend) + 1) + ' before starting the next one.</p>';
-      }
-    }
-    return html;
-  }
-
-  /* numeric games — unchanged one-number-per-player grid, plus its own standings list */
-  html += '<section class="panel skin"><div class="panel-head"><h2>Standings</h2><span>this session</span></div>' +
-    st.map(function (r, i) {
-      return '<div class="row"><span class="rank' + (i === 0 ? ' top' : '') + '">' + (i + 1) + '</span>' +
-        '<span class="grow" style="font-weight:600">' + esc(r.name) + '</span>' +
-        '<span class="num" style="' + (i === 0 ? 'color:var(--acc1)' : '') + '">' + r.total + '</span></div>';
-    }).join('') + '</section>';
-
+function numericSheetHtml(s, readonly) {
   var t = totals(s);
-  var leader = st[0];
+  var leader = standings(s)[0];
   var head = '<tr><th>Round</th>' + s.playerIds.map(function (pid) {
     return '<th>' + esc(playerName(pid)) + '</th>';
   }).join('') + '</tr>';
   var body = s.rounds.map(function (r, ri) {
-    return '<tr><td class="rnum">R' + (ri + 1) + '</td>' + s.playerIds.map(function (pid) {
+    return '<tr><td class="rnum">Round ' + (ri + 1) + '</td>' + s.playerIds.map(function (pid) {
       var v = ((r.scores || {})[pid] === undefined) ? '' : r.scores[pid];
       return '<td>' + (readonly
         ? '<span class="num">' + (v === '' ? '&mdash;' : v) + '</span>'
@@ -1394,20 +1739,18 @@ function viewSession(id) {
   var foot = '<tr><td class="rnum">Total</td>' + s.playerIds.map(function (pid) {
     return '<td class="' + (leader && pid === leader.id ? 'lead' : '') + '">' + t[pid] + '</td>';
   }).join('') + '</tr>';
-
-  html += '<section class="panel skin" style="margin-top:14px"><div class="sheetwrap"><table class="sheet">' +
-      '<thead>' + head + '</thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot>' +
-    '</table></div>';
-  if (!readonly) {
-    if (!s.rounds.length) html += '<div class="empty">No rounds yet.</div>';
-    html += '<div class="btn-row" style="margin-top:14px">' +
-      '<button class="btn btn-primary" id="addround">Add round</button>' +
-      (s.rounds.length ? '<button class="btn btn-ghost" id="delround">Delete last round</button>' : '') +
-      (s.rounds.length ? '<button class="btn btn-danger" id="finish">Finish session</button>' : '') +
-      '</div>';
-  }
-  html += '</section>';
-  return html;
+  return '<section class="sheetpanel">' +
+    '<div class="panel-head"><h2>Scoresheet</h2><span>' +
+      (readonly ? 'final' : 'tab or enter moves along the row') + '</span></div>' +
+    '<div class="sheetwrap"><table class="sheet"><thead>' + head + '</thead><tbody>' + body +
+    '</tbody><tfoot>' + foot + '</tfoot></table></div>' +
+    (readonly ? '' :
+      (s.rounds.length ? '' : '<div class="empty">No rounds yet.</div>') +
+      '<div class="btn-row" style="margin-top:14px">' +
+        '<button class="btn btn-primary" id="addround">Add round</button>' +
+        (s.rounds.length ? '<button class="btn btn-ghost" id="delround">Delete last round</button>' : '') +
+      '</div>') +
+  '</section>';
 }
 
 function viewArchives() {
@@ -1562,6 +1905,7 @@ function applyTheme() {
 }
 
 var firstRender = true;
+var lastPath = null;
 
 function render() {
   applyTheme();
@@ -1574,6 +1918,8 @@ function render() {
   var path = hash.split('?')[0];
   var query = hash.slice(path.length);
   var app = $('#app');
+  /* the console and the rail need the room; the home floor does not */
+  app.className = 'wrap' + (path === '/new' || path.indexOf('/session/') === 0 ? ' wide' : '');
 
   if (path === '/') app.innerHTML = viewHome();
   else if (path === '/new') app.innerHTML = viewNew(query);
@@ -1583,9 +1929,8 @@ function render() {
   else if (path === '/admin') app.innerHTML = viewAdmin();
   else app.innerHTML = viewHome();
 
-  window.scrollTo(0, 0);
+  if (path !== lastPath) { window.scrollTo(0, 0); lastPath = path; }
   buildConfetti();
-  if (addingHand) syncCardPickers();
   firstRender = false;
 }
 
@@ -1610,6 +1955,13 @@ function currentSession() {
 }
 
 /* pick-one chip rows: press the tapped one, release its siblings */
+function paintPlayerCount() {
+  var out = $('#playercount');
+  if (!out) return;
+  var n = $$('#playersel button[aria-pressed="true"]').length;
+  out.innerHTML = '<b>' + n + '</b> at the table';
+}
+
 function pickOne(row, btn) {
   $$('button', row).forEach(function (x) { x.setAttribute('aria-pressed', String(x === btn)); });
 }
@@ -1634,65 +1986,271 @@ function updatePinDots(err) {
    invalid by someone else's edit, nudge it to the first free suit rather
    than leave a silent duplicate selected. The submit-time check in
    'savehand' stays as a safety net for whatever this can't reach. */
-function syncCardPickers() {
-  var rows = $$('.cardpick');
-  var n = rows.length;
-  if (!n) return;
+/* ------------------------------------------------------------------
+   THE CONSOLE DRAFT — the round being typed in, never persisted.
+   Held in memory so a tap can repaint a chip in place instead of
+   re-rendering the view and losing focus, animation and scroll.
+   ------------------------------------------------------------------ */
 
-  var combos = [];
+var draft = null;
+
+function newDraft(s) {
+  var d = { sid: s.id, bidderId: null, bid: null, sir: 'S', calls: [] };
+  var n = s.partnerCount || 1;
   for (var i = 0; i < n; i++) {
-    var rankSel = $('[data-rank="' + i + '"]');
-    var suitSel = $('[data-suit="' + i + '"]');
-    combos.push({
-      rankSel: rankSel, suitSel: suitSel,
-      rank: rankSel ? rankSel.value : null,
-      suit: suitSel ? suitSel.value : null
-    });
+    d.calls.push({ rank: RANKS[i % RANKS.length], suit: SUITS[i % SUITS.length].id });
   }
+  draft = d;
+  resolveCallClashes();
+  return d;
+}
 
-  function takenElsewhere(idx, rank, suit) {
-    for (var k = 0; k < n; k++) {
-      if (k === idx) continue;
-      if (combos[k].rank === rank && combos[k].suit === suit) return true;
+function draftFor(s) {
+  if (!draft || draft.sid !== s.id || draft.calls.length !== (s.partnerCount || 1)) return newDraft(s);
+  return draft;
+}
+
+/* is this exact card already asked for by a different picker? */
+function callTaken(idx, rank, suit) {
+  if (!draft) return false;
+  for (var i = 0; i < draft.calls.length; i++) {
+    if (i === idx) continue;
+    if (draft.calls[i].rank === rank && draft.calls[i].suit === suit) return true;
+  }
+  return false;
+}
+
+/* Walk any picker sitting on a card another picker holds onto the nearest
+   free one — suit first, then rank, since five pickers cannot all fit in
+   the four suits of a single rank. */
+function resolveCallClashes() {
+  for (var i = 0; i < draft.calls.length; i++) {
+    var c = draft.calls[i];
+    if (!callTaken(i, c.rank, c.suit)) continue;
+    var placed = false;
+    for (var su = 0; su < SUITS.length && !placed; su++) {
+      if (!callTaken(i, c.rank, SUITS[su].id)) { c.suit = SUITS[su].id; placed = true; }
     }
-    return false;
-  }
-
-  /* Pass one: nudge any picker that now duplicates another off the clash,
-     writing the new value straight back into combos so the next picker sees
-     where this one actually landed rather than where it used to be. */
-  for (var j = 0; j < n; j++) {
-    var c = combos[j];
-    if (!c.suitSel || !takenElsewhere(j, c.rank, c.suit)) continue;
-    var opts = $$('option', c.suitSel);
-    for (var o = 0; o < opts.length; o++) {
-      if (takenElsewhere(j, c.rank, opts[o].value)) continue;
-      c.suitSel.value = opts[o].value;
-      c.suit = opts[o].value;
-      break;
+    for (var rk = 0; rk < RANKS.length && !placed; rk++) {
+      for (var su2 = 0; su2 < SUITS.length && !placed; su2++) {
+        if (!callTaken(i, RANKS[rk], SUITS[su2].id)) { c.rank = RANKS[rk]; c.suit = SUITS[su2].id; placed = true; }
+      }
     }
-  }
-
-  /* Pass two: grey out the suits that would recreate a pair someone else
-     holds, now that every picker's value is final. */
-  for (var m = 0; m < n; m++) {
-    var cm = combos[m];
-    if (!cm.suitSel) continue;
-    (function (idx, rank) {
-      $$('option', combos[idx].suitSel).forEach(function (opt) {
-        opt.disabled = takenElsewhere(idx, rank, opt.value);
-      });
-    })(m, cm.rank);
   }
 }
 
-document.addEventListener('change', function (e) {
-  if (e.target.closest && e.target.closest('.cardpicks')) syncCardPickers();
-});
+/* Repaint the console from the draft without touching the DOM tree — chips
+   flip state, dead cards grey out, the readout and Save button follow. */
+function paintConsole(s) {
+  var d = draft;
+  if (!d) return;
+  $$('[data-bidder]').forEach(function (b) {
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-bidder') === d.bidderId));
+  });
+  $$('[data-sir]').forEach(function (b) {
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-sir') === d.sir));
+  });
+  $$('[data-bidset]').forEach(function (b) {
+    b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-bidset')) === d.bid));
+  });
+  var amt = $('#bidamt');
+  if (amt && Number(amt.value) !== d.bid) amt.value = d.bid || '';
+
+  d.calls.forEach(function (c, i) {
+    $$('[data-crank="' + i + '"]').forEach(function (b) {
+      var rk = b.getAttribute('data-rk');
+      b.setAttribute('aria-pressed', String(c.rank === rk));
+      b.disabled = SUITS.every(function (su) { return callTaken(i, rk, su.id); });
+    });
+    $$('[data-csuit="' + i + '"]').forEach(function (b) {
+      var st = b.getAttribute('data-st');
+      b.setAttribute('aria-pressed', String(c.suit === st));
+      b.disabled = callTaken(i, c.rank, st);
+    });
+    var face = $('[data-cface="' + i + '"]');
+    if (face) {
+      var txt = c.rank + suitById(c.suit).glyph;
+      if (face.textContent !== txt) {
+        face.textContent = txt;
+        face.className = 'callface' + (cardIsRed(c) ? ' red' : '');
+        face.classList.remove('flip');
+        void face.offsetWidth;
+        face.classList.add('flip');
+      }
+    }
+  });
+
+  var stepB = $('[data-step="bidder"]'); if (stepB) stepB.classList.toggle('done', !!d.bidderId);
+  var stepA = $('[data-step="bid"]');    if (stepA) stepA.classList.toggle('done', !!d.bid);
+  var out = $('#readout'); if (out) out.innerHTML = consoleReadout(s, d);
+  var save = $('#savehand'); if (save) save.disabled = !(d.bidderId && d.bid);
+}
+
+/* ------------------------------------------------------------------
+   THE REVEAL — the point of the whole screen. Tapping a winner scores
+   the round, so the board is about to change and possibly change hands.
+   Stamp the result, flip the called cards, count every score up, then
+   slide the podium into its new order and crown whoever came out on top.
+   ------------------------------------------------------------------ */
+
+var revealTimers = [];
+var revealEnd = null;
+
+function reducedMotion() {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function at(ms, fn) { revealTimers.push(setTimeout(fn, ms)); }
+
+function clearReveal() {
+  revealTimers.forEach(clearTimeout);
+  revealTimers = [];
+}
+
+function skipReveal() {
+  if (!revealEnd) return;
+  clearReveal();
+  var fn = revealEnd;
+  revealEnd = null;
+  fn();
+}
+
+function countUp(el, from, to, ms) {
+  if (from === to) { el.textContent = to; return; }
+  var t0 = performance.now();
+  (function step(now) {
+    var p = Math.min(1, (now - t0) / ms);
+    var e = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(from + (to - from) * e);
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = to;
+  })(performance.now());
+}
+
+function burstFrom(el) {
+  var box = el.getBoundingClientRect();
+  var cols = ['#ffe066', '#ff4d6d', '#2ec4b6', '#4d96ff', '#c77dff'];
+  for (var i = 0; i < 22; i++) {
+    var b = document.createElement('i');
+    b.className = 'burst';
+    b.style.background = cols[i % cols.length];
+    b.style.left = (box.left + box.width / 2) + 'px';
+    b.style.top = (box.top + box.height / 2) + 'px';
+    var ang = (Math.PI * 2 * i) / 22 + Math.random() * 0.4;
+    var dist = 90 + Math.random() * 130;
+    b.style.setProperty('--bx', Math.cos(ang) * dist + 'px');
+    b.style.setProperty('--by', (Math.sin(ang) * dist - 40) + 'px');
+    document.body.appendChild(b);
+    (function (node) { setTimeout(function () { node.remove(); }, 1000); })(b);
+  }
+}
+
+/* Read where every player sits now, re-render into the new order, then put
+   the rows back where they were and let them travel — FLIP, so the swap is
+   a real move rather than a jump. */
+function playReveal(s, idx, beforeTotals, beforeOrder) {
+  var firstRects = {};
+  $$('.pod').forEach(function (el) {
+    firstRects[el.getAttribute('data-pid')] = el.getBoundingClientRect();
+  });
+
+  render();
+
+  var after = totals(s);
+  var afterOrder = standings(s).map(function (x) { return x.id; });
+  var leaderChanged = beforeOrder.length && afterOrder[0] !== beforeOrder[0];
+  var pods = $$('.pod');
+  var row = $('.lrow[data-round="' + idx + '"]');
+
+  function finish() {
+    document.body.classList.remove('revealing');
+    var hint = $('#skiphint'); if (hint) hint.remove();
+    pods.forEach(function (el) {
+      el.style.transition = ''; el.style.transform = '';
+      el.classList.remove('mover');
+      var sc = $('[data-score="' + el.getAttribute('data-pid') + '"]', el);
+      if (sc) sc.textContent = after[el.getAttribute('data-pid')];
+    });
+    render();
+  }
+
+  if (reducedMotion()) { finish(); return; }
+
+  document.body.classList.add('revealing');
+  var hint = document.createElement('div');
+  hint.className = 'skiphint'; hint.id = 'skiphint'; hint.textContent = 'tap to skip';
+  document.body.appendChild(hint);
+  revealEnd = finish;
+
+  /* hold the board exactly as it looked a moment ago */
+  pods.forEach(function (el) {
+    var pid = el.getAttribute('data-pid');
+    var sc = $('[data-score="' + pid + '"]', el);
+    if (sc) sc.textContent = beforeTotals[pid] === undefined ? 0 : beforeTotals[pid];
+    var f = firstRects[pid];
+    if (!f) return;
+    var l = el.getBoundingClientRect();
+    var dx = f.left - l.left, dy = f.top - l.top;
+    if (!dx && !dy) return;
+    el.style.transition = 'none';
+    el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    el.classList.add('mover');
+  });
+
+  /* 1 — the verdict lands */
+  if (row) {
+    var stamp = $('.lstamp', row);
+    if (stamp) stamp.classList.add('stamped');
+    $$('.lcard', row).forEach(function (el, i) {
+      el.style.animationDelay = (0.16 + i * 0.13) + 's';
+      el.classList.add('flip');
+    });
+  }
+
+  /* 2 — the scores climb */
+  at(620, function () {
+    pods.forEach(function (el) {
+      var pid = el.getAttribute('data-pid');
+      var from = beforeTotals[pid] === undefined ? 0 : beforeTotals[pid];
+      var to = after[pid];
+      var sc = $('[data-score="' + pid + '"]', el);
+      if (sc) countUp(sc, from, to, 880);
+      if (to > from) {
+        var dl = $('[data-delta="' + pid + '"]', el);
+        if (dl) { dl.textContent = '+' + (to - from); dl.classList.add('up'); }
+      }
+    });
+  });
+
+  /* 3 — the board re-orders itself */
+  at(1620, function () {
+    pods.forEach(function (el) {
+      el.style.transition = 'transform .72s cubic-bezier(.34,1.56,.64,1)';
+      el.style.transform = 'translate(0,0)';
+    });
+  });
+
+  /* 4 — and the new leader is crowned */
+  at(2280, function () {
+    if (!leaderChanged) return;
+    var top = $('.pod.first');
+    if (!top) return;
+    top.classList.add('crowned');
+    burstFrom(top);
+  });
+
+  at(leaderChanged ? 3500 : 2700, function () {
+    revealEnd = null;
+    finish();
+  });
+}
 
 document.addEventListener('click', function (e) {
+  /* a reveal is playing — the first tap anywhere fast-forwards it */
+  if (revealEnd) { skipReveal(); return; }
+
   var t = e.target.closest('[data-go]');
-  if (t) { addingHand = false; revealingIdx = -1; go(t.getAttribute('data-go')); return; }
+  if (t) { go(t.getAttribute('data-go')); return; }
 
   if (e.target.id === 'seed') { loadSample(); render(); return; }
 
@@ -1700,6 +2258,14 @@ document.addEventListener('click', function (e) {
   if (e.target.closest('#playersel button')) {
     var p = e.target.closest('button');
     p.setAttribute('aria-pressed', p.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+    paintPlayerCount();
+    return;
+  }
+  var allp = e.target.closest('[data-allplayers]');
+  if (allp) {
+    var on = allp.getAttribute('data-allplayers') === '1';
+    $$('#playersel button').forEach(function (b) { b.setAttribute('aria-pressed', String(on)); });
+    paintPlayerCount();
     return;
   }
   var deckBtn = e.target.closest('#decksel button');
@@ -1730,71 +2296,118 @@ document.addEventListener('click', function (e) {
     state.sessions.push(sess); save(); go('/session/' + sess.id); return;
   }
 
-  /* ---------- bid hands ---------- */
-  if (e.target.id === 'addhand') { addingHand = true; render(); return; }
-  if (e.target.id === 'cancelhand') { addingHand = false; render(); return; }
-  var bsel = e.target.closest('#biddersel button');
-  if (bsel) { pickOne($('#biddersel'), bsel); return; }
-  var ssel = e.target.closest('#sirsel button');
-  if (ssel) { pickOne($('#sirsel'), ssel); return; }
+  /* ---------- the round console ---------- */
+  var bpk = e.target.closest('[data-bidder]');
+  if (bpk) {
+    var sb = currentSession(); if (!sb) return;
+    draftFor(sb).bidderId = bpk.getAttribute('data-bidder'); paintConsole(sb); return;
+  }
+  var spk = e.target.closest('[data-sir]');
+  if (spk) {
+    var ssr = currentSession(); if (!ssr) return;
+    draftFor(ssr).sir = spk.getAttribute('data-sir'); paintConsole(ssr); return;
+  }
+  var qbd = e.target.closest('[data-bidset]');
+  if (qbd) {
+    var sqb = currentSession(); if (!sqb) return;
+    draftFor(sqb).bid = Number(qbd.getAttribute('data-bidset')); paintConsole(sqb); return;
+  }
+  var stp = e.target.closest('[data-bidstep]');
+  if (stp) {
+    var sst = currentSession(); if (!sst) return;
+    var dst = draftFor(sst);
+    var nv = (dst.bid || 0) + Number(stp.getAttribute('data-bidstep'));
+    dst.bid = Math.max(0, Math.min(deckMax(sst), nv)) || null;
+    paintConsole(sst); return;
+  }
+  var crk = e.target.closest('[data-crank]');
+  if (crk) {
+    var sc1 = currentSession(); if (!sc1) return;
+    var d1 = draftFor(sc1), i1 = Number(crk.getAttribute('data-crank'));
+    d1.calls[i1].rank = crk.getAttribute('data-rk');
+    resolveCallClashes(); paintConsole(sc1); return;
+  }
+  var cst = e.target.closest('[data-csuit]');
+  if (cst) {
+    var sc2 = currentSession(); if (!sc2) return;
+    var d2 = draftFor(sc2), i2 = Number(cst.getAttribute('data-csuit'));
+    d2.calls[i2].suit = cst.getAttribute('data-st');
+    resolveCallClashes(); paintConsole(sc2); return;
+  }
 
   if (e.target.id === 'savehand') {
     var s1 = currentSession(); if (!s1) return;
-    var bidderId = pickedValue('#biddersel', 'data-pickbidder');
-    if (!bidderId) { alert('Pick who won the bid.'); return; }
-    var amt = Number($('#bidamt').value);
-    if (!amt || amt < 1 || amt > deckMax(s1)) { alert('Bid must be between 1 and ' + deckMax(s1) + '.'); return; }
-    var calls = [];
-    for (var ci = 0; ci < (s1.partnerCount || 1); ci++) {
-      calls.push({ card: { rank: $('[data-rank="' + ci + '"]').value, suit: $('[data-suit="' + ci + '"]').value },
-                   holderId: null });
-    }
+    var d = draftFor(s1);
+    if (!d.bidderId) { alert('Pick who won the bid.'); return; }
+    if (!d.bid || d.bid < 1 || d.bid > deckMax(s1)) { alert('Bid must be between 1 and ' + deckMax(s1) + '.'); return; }
+    var calls = d.calls.map(function (c) { return { card: { rank: c.rank, suit: c.suit }, holderId: null }; });
     var seen = {};
     for (var k = 0; k < calls.length; k++) {
       var key = calls[k].card.rank + calls[k].card.suit;
       if (seen[key]) { alert('The same card cannot be asked for twice in one round.'); return; }
       seen[key] = true;
     }
-    s1.rounds.push({ stage: 'bid', bidderId: bidderId, bid: amt,
-                     sir: pickedValue('#sirsel', 'data-picksir') || 'S', calls: calls, winner: null });
-    addingHand = false; save(); render(); return;
+    s1.rounds.push({ stage: 'bid', bidderId: d.bidderId, bid: d.bid,
+                     sir: d.sir, calls: calls, winner: null });
+    newDraft(s1); save(); render();
+    var fresh = $('.lrow[data-round="' + (s1.rounds.length - 1) + '"]');
+    if (fresh) fresh.classList.add('dealt');
+    return;
   }
-
-  var rev = e.target.closest('[data-reveal]');
-  if (rev) { revealingIdx = Number(rev.getAttribute('data-reveal')); render(); return; }
-  if (e.target.id === 'cancelreveal') { revealingIdx = -1; render(); return; }
 
   var disc = e.target.closest('[data-cancelhand]');
   if (disc) {
     var s2 = currentSession(); if (!s2) return;
     if (!confirm('Discard this round? Nothing has been scored from it yet.')) return;
     s2.rounds.splice(Number(disc.getAttribute('data-cancelhand')), 1);
-    revealingIdx = -1; save(); render(); return;
+    save(); render(); return;
   }
 
+  /* naming a holder repaints in place — re-rendering here would throw away
+     the chips the user is still working through */
   var hold = e.target.closest('[data-holder]');
   if (hold) {
-    pickOne(hold.parentNode, hold);
-    var s3 = currentSession(); if (!s3 || revealingIdx < 0) return;
-    s3.rounds[revealingIdx].calls[Number(hold.getAttribute('data-holder'))].holderId = hold.getAttribute('data-hp');
-    save(); return;
+    var s3 = currentSession(); if (!s3) return;
+    var pr = pendingRound(s3); if (!pr) return;
+    var ci = Number(hold.getAttribute('data-holder'));
+    pr.calls[ci].holderId = hold.getAttribute('data-hp');
+    save();
+    $$('button', hold.parentNode).forEach(function (bt) {
+      bt.setAttribute('aria-pressed', String(bt === hold));
+    });
+    var stepEl = hold.closest('.step'); if (stepEl) stepEl.classList.add('done');
+    var allHeld = pr.calls.every(function (c) { return !!c.holderId; });
+    $$('[data-win]').forEach(function (bt) { bt.disabled = !allHeld; });
+    var lrow = $('.lrow[data-round="' + s3.rounds.indexOf(pr) + '"]');
+    if (lrow) {
+      $$('.lheld', lrow).forEach(function (el, li) {
+        var h = pr.calls[li] && pr.calls[li].holderId;
+        el.textContent = h ? playerName(h) : 'not revealed';
+        el.className = 'lheld' + (h ? ' named' : '');
+      });
+    }
+    return;
   }
 
   var win = e.target.closest('[data-win]');
   if (win) {
     var s4 = currentSession(); if (!s4) return;
-    var idx = Number(win.getAttribute('data-ridx'));
-    var r = s4.rounds[idx];
-    var missing = r.calls.some(function (c) { return !c.holderId; });
-    if (missing) { alert('Say who held each called card first.'); return; }
+    var widx = Number(win.getAttribute('data-ridx'));
+    var r = s4.rounds[widx];
+    if (!r) return;
+    if (r.calls.some(function (c) { return !c.holderId; })) { alert('Say who held each called card first.'); return; }
     var shares = biddingShares(r);
     if (s4.playerIds.filter(function (pid) { return !shares[pid]; }).length === 0) {
       alert('Everyone cannot be on the bidding side — someone has to be the opposition.');
       return;
     }
+    var beforeTotals = totals(s4);
+    var beforeOrder = standings(s4).map(function (x) { return x.id; });
     r.winner = win.getAttribute('data-win');
     r.stage = 'done';
-    revealingIdx = -1; save(); render(); return;
+    save();
+    playReveal(s4, widx, beforeTotals, beforeOrder);
+    return;
   }
 
   /* ---------- numeric rounds ---------- */
@@ -1864,6 +2477,13 @@ document.addEventListener('click', function (e) {
 });
 
 document.addEventListener('input', function (e) {
+  if (e.target.id === 'bidamt') {
+    var sbd = currentSession(); if (!sbd) return;
+    var raw = Number(e.target.value);
+    draftFor(sbd).bid = raw > 0 ? Math.min(raw, deckMax(sbd)) : null;
+    paintConsole(sbd);
+    return;
+  }
   var cell = e.target.closest('.cell');
   if (cell) {
     var s = currentSession(); if (!s) return;
@@ -1882,6 +2502,36 @@ document.addEventListener('input', function (e) {
   }
 });
 
+/* Slide the rail into a new order without a re-render — same FLIP the
+   reveal uses, just quicker, for a score typed into the sheet. */
+function refreshPodium(s) {
+  var box = $('#podium'); if (!box) return;
+  var t = totals(s);
+  var order = standings(s).map(function (x) { return x.id; });
+  var rects = {};
+  $$('.pod', box).forEach(function (el) { rects[el.getAttribute('data-pid')] = el.getBoundingClientRect(); });
+  order.forEach(function (pid, i) {
+    var el = $('.pod[data-pid="' + pid + '"]', box);
+    if (!el) return;
+    box.appendChild(el);
+    el.classList.toggle('first', i === 0);
+    var rk = $('.podrank', el); if (rk) rk.textContent = i + 1;
+    var sc = $('[data-score="' + pid + '"]', el); if (sc) sc.textContent = t[pid];
+  });
+  $$('.pod', box).forEach(function (el) {
+    var f = rects[el.getAttribute('data-pid')]; if (!f) return;
+    var l = el.getBoundingClientRect();
+    var dx = f.left - l.left, dy = f.top - l.top;
+    if (!dx && !dy) return;
+    el.style.transition = 'none';
+    el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    requestAnimationFrame(function () {
+      el.style.transition = 'transform .52s cubic-bezier(.34,1.56,.64,1)';
+      el.style.transform = 'translate(0,0)';
+    });
+  });
+}
+
 /* recompute the numeric footer in place, so focus is never stolen mid-entry */
 function updateTotals(s) {
   var t = totals(s);
@@ -1895,7 +2545,24 @@ function updateTotals(s) {
     cells[i + 1].textContent = t[pid];
     cells[i + 1].className = (leader && pid === leader.id) ? 'lead' : '';
   });
+  refreshPodium(s);
 }
+
+/* Enter walks the sheet the way a paper scoresheet does — along the row. */
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  var cell = e.target.closest && e.target.closest('.cell');
+  if (cell) {
+    var cells = $$('.cell');
+    var at = cells.indexOf(cell);
+    if (at > -1 && cells[at + 1]) { e.preventDefault(); cells[at + 1].focus(); cells[at + 1].select(); }
+    return;
+  }
+  if (e.target.id === 'bidamt') {
+    var sv = $('#savehand');
+    if (sv) { e.preventDefault(); sv.focus(); }
+  }
+});
 
 window.addEventListener('hashchange', render);
 applyTheme();
