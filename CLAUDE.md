@@ -196,6 +196,43 @@ never one flat mark pasted across every theme.
 
 ---
 
+## Game rules the app encodes
+
+### 3 of Spade — bid scored
+
+Card values, for reference only (never entered): A/K/Q/J/10 are 10 each, the
+**3 of Spades is 30**, each 5 is 5 — **250 points in one deck**, 500 in two.
+
+Set once per session: the players, **how many decks** (1 or 2, which caps every
+bid at 250 or 500), and **how many partners the bidder calls** (1, 2 or 3 —
+asked separately from the deck count, since either deck size can be played with
+any of them).
+
+Each hand records: the bidder, the bid, the **sir** (trump suit), and one called
+card per partner. After the hand, who turned out to hold each called card, and
+which side won.
+
+**Scoring — a player takes the bid multiplied by the shares they hold:**
+
+- the bidder holds 1 share, for bidding;
+- a called-card holder holds 1 share **per called card they hold**, so a player
+  holding two of them takes **2 × bid** — this is the *dual partner* and is the
+  rule most easily got wrong;
+- bidder's team wins → the bidding side takes their shares, opposition 0;
+- opponents win → the bidding side takes 0 and **each** opponent takes the full
+  bid, flat, never multiplied.
+
+The bidder can never be a called-card holder. The same *player* may hold two
+called cards; the same *card* cannot be called twice in one hand.
+
+Points collected out of 250/500 are **not** recorded — the winning side is
+tapped outright.
+
+### KaChuFull
+
+Still the generic one-number-per-player-per-round sheet. Its real rules have not
+been given yet; do not invent them.
+
 ## The app
 
 `AP-CardGames.html` at the repo root is the working site: one self-contained file, no

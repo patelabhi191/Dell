@@ -587,6 +587,67 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
   .bar-target { display: none; }
 }
 
+/* ============================ 3 of Spade ============================ */
+.hint { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
+
+.lockedgame { display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 14px 16px; border-radius: 12px; background: var(--panel); border: var(--panel-border);
+  box-shadow: var(--panel-shadow); }
+.lockedmark { display: inline-flex; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--rank-bg); color: var(--acc1); align-items: center; justify-content: center; }
+.lockedname { font-family: var(--font-display); font-size: 20px; }
+.lockedtag { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--muted); }
+
+.hand { padding: 14px 4px; border-top: 1px solid var(--hair); }
+.hand:first-of-type { border-top: none; }
+.hand.pending { opacity: .96; }
+.hand-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hand-no { font-family: var(--font-display); font-size: 12px; color: var(--muted);
+  background: var(--rank-bg); border-radius: 6px; padding: 3px 8px; }
+.hand-bid { font-size: 14.5px; }
+.hand-bid b { font-weight: 700; }
+.hand-sir { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
+.suitmark { font-size: 15px; line-height: 1; color: var(--ink); }
+.suitmark.red { color: var(--live); }
+.badge-pend { margin-left: auto; font-size: 10px; font-weight: 800; letter-spacing: .1em;
+  text-transform: uppercase; padding: 4px 9px; border-radius: 999px;
+  background: var(--rank-bg); color: var(--muted); }
+.badge-res { margin-left: auto; font-size: 10px; font-weight: 800; letter-spacing: .08em;
+  text-transform: uppercase; padding: 4px 9px; border-radius: 999px; color: #fff; }
+.badge-res.won { background: var(--acc2); }
+.badge-res.lost { background: var(--live); }
+
+.hand-calls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+.callpair { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px 4px 4px;
+  border-radius: 999px; background: var(--rank-bg); }
+.cardchip { display: inline-flex; align-items: center; justify-content: center; min-width: 34px;
+  height: 26px; padding: 0 6px; border-radius: 6px; background: var(--card-face); color: var(--suit-dark);
+  font-family: var(--font-display); font-size: 13px; }
+.cardchip.red { color: var(--suit-red); }
+.callto { font-size: 12.5px; color: var(--muted); }
+
+.hand-pts { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.ptcell { display: inline-flex; align-items: baseline; gap: 6px; padding: 5px 10px;
+  border-radius: 8px; background: var(--rank-bg); }
+.ptcell b { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ptcell i { font-style: normal; font-family: var(--font-display); font-size: 14px; }
+.ptcell.won { background: var(--row-hover); }
+.ptcell.won i { color: var(--acc1); }
+
+.formpanel { margin-top: 14px; }
+.cardpicks { display: flex; flex-direction: column; gap: 12px; }
+.cardpick { display: grid; grid-template-columns: 1fr 90px 1fr; gap: 8px; align-items: center; }
+.cardpick label { font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); }
+.chipsel button.redsuit { color: var(--live); }
+.holdersel { gap: 8px; }
+
+@media (max-width: 520px) {
+  .cardpick { grid-template-columns: 1fr; gap: 6px; }
+  .lockedtag { margin-left: 0; width: 100%; }
+}
+
 /* ============================ motion ============================ */
 @keyframes dcPlaque { from { opacity:0; transform: translateY(-22px) scale(.96);} to { opacity:1; transform:none; } }
 @keyframes dcRule { from { transform: scaleX(0);} to { transform: scaleX(1);} }
@@ -649,9 +710,27 @@ var ADMIN_PIN = '2468';
 var FIREBASE_CONFIG = null;
 
 var GAMES = [
-  { id: 'spade3',    name: '3 of Spade', band: '3 of Spade', target: 500, slot: 1 },
-  { id: 'kachufull', name: 'KaChuFull',  band: 'KaChuFull',  target: 200, slot: 2 }
+  { id: 'spade3',    name: '3 of Spade', band: '3 of Spade', slot: 1, roundType: 'bid' },
+  { id: 'kachufull', name: 'KaChuFull',  band: 'KaChuFull',  slot: 2, roundType: 'numeric' }
 ];
+
+/* A single deck holds 250 points: (4 suits x 50 for A/K/Q/J/10) + 30 for the
+   3 of Spades + 20 for the four 5s. Two decks, 500. This caps a bid. */
+var DECK_POINTS = 250;
+
+var RANKS = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
+var SUITS = [
+  { id: 'S', name: 'Spades',   glyph: '\u2660', red: false },
+  { id: 'H', name: 'Hearts',   glyph: '\u2665', red: true  },
+  { id: 'D', name: 'Diamonds', glyph: '\u2666', red: true  },
+  { id: 'C', name: 'Clubs',    glyph: '\u2663', red: false }
+];
+function suitById(id) {
+  for (var i = 0; i < SUITS.length; i++) if (SUITS[i].id === id) return SUITS[i];
+  return SUITS[0];
+}
+function cardLabel(c) { return c ? (c.rank + suitById(c.suit).glyph) : '--'; }
+function cardIsRed(c) { return c ? suitById(c.suit).red : false; }
 
 var THEMES = [
   { id: 'terminal', label: 'Terminal Classic', note: 'Charcoal chrome, trapezoid plaque' },
@@ -729,15 +808,59 @@ function playerName(id) {
 }
 function gameById(id) {
   for (var i = 0; i < GAMES.length; i++) if (GAMES[i].id === id) return GAMES[i];
-  return { id: id, name: id, band: id, target: 0, slot: 1 };
+  return { id: id, name: id, band: id, slot: 1, roundType: 'numeric' };
 }
 
-/* Highest total wins — the settled scoring rule. */
+/* Sessions stored before bid scoring existed carry no roundType; they are
+   numeric, so nothing already recorded changes meaning. */
+function isBid(s) { return s.roundType === 'bid'; }
+
+/* One deck 250, two decks 500. Caps the bid. */
+function deckMax(s) { return (Number(s.deckCount) === 2 ? 2 : 1) * DECK_POINTS; }
+
+/* Who is on the bidder's side this hand, and how many shares each holds.
+   The bidder holds one share for bidding; a called-card holder holds one
+   share per called card they turned out to have -- so a player holding two
+   of them takes twice the bid. That is the dual partner. */
+function biddingShares(r) {
+  var shares = {};
+  if (!r.bidderId) return shares;
+  shares[r.bidderId] = 1;
+  (r.calls || []).forEach(function (c) {
+    if (!c.holderId) return;
+    shares[c.holderId] = (shares[c.holderId] || 0) + 1;
+  });
+  return shares;
+}
+
+/* What one hand pays each player. */
+function roundPoints(s, r) {
+  var out = {};
+  s.playerIds.forEach(function (pid) { out[pid] = 0; });
+
+  if (!isBid(s)) {
+    s.playerIds.forEach(function (pid) { out[pid] = Number((r.scores || {})[pid]) || 0; });
+    return out;
+  }
+
+  /* a hand still waiting on the partner reveal pays nothing yet */
+  if (r.stage !== 'done' || !r.winner) return out;
+
+  var shares = biddingShares(r);
+  if (r.winner === 'bidding') {
+    s.playerIds.forEach(function (pid) { out[pid] = (shares[pid] || 0) * r.bid; });
+  } else {
+    s.playerIds.forEach(function (pid) { out[pid] = shares[pid] ? 0 : r.bid; });
+  }
+  return out;
+}
+
 function totals(session) {
   var t = {};
   session.playerIds.forEach(function (pid) { t[pid] = 0; });
   session.rounds.forEach(function (r) {
-    session.playerIds.forEach(function (pid) { t[pid] += Number(r.scores[pid]) || 0; });
+    var rp = roundPoints(session, r);
+    session.playerIds.forEach(function (pid) { t[pid] += rp[pid]; });
   });
   return t;
 }
@@ -747,6 +870,11 @@ function standings(session) {
   return session.playerIds.map(function (pid) {
     return { id: pid, name: playerName(pid), total: t[pid] };
   }).sort(function (a, b) { return b.total - a.total; });
+}
+
+function pendingRound(s) {
+  for (var i = 0; i < s.rounds.length; i++) if (s.rounds[i].stage === 'bid') return s.rounds[i];
+  return null;
 }
 
 function liveSession() {
@@ -926,11 +1054,14 @@ function header(opts) {
    7. VIEWS
    ------------------------------------------------------------------ */
 
+/* transient form state — never persisted */
+var addingHand = false;
+var revealingIdx = -1;
+
 function viewHome() {
   var live = liveSession();
   var html = header({});
 
-  /* live / resume bar, at the top — the settled priority */
   if (live) {
     var st = standings(live);
     var g = gameById(live.gameId);
@@ -939,23 +1070,21 @@ function viewHome() {
     }).join('');
     html += '<div class="bar skin">' +
       '<div class="bar-icon">' + icon('spade', 21) + '</div>' +
-      '<div class="bar-id"><div class="kicker"><span class="livedot"></span>Live now &middot; Round ' + live.rounds.length + '</div>' +
+      '<div class="bar-id"><div class="kicker"><span class="livedot"></span>Live now &middot; ' +
+        plural(live.rounds.length, 'hand') + '</div>' +
       '<div class="bar-game">' + esc(g.name) + '</div></div>' +
       '<div class="bar-scores">' + scores + '</div>' +
-      (live.target ? '<div class="bar-target"><b>First to</b><i>' + live.target + '</i></div>' : '') +
       '<button class="btn-resume" data-go="/session/' + live.id + '">' + icon('play', 14) + ' RESUME</button>' +
       '</div>';
   } else {
     html += '<div class="bar skin">' +
       '<div class="bar-icon">' + icon('spade', 21) + '</div>' +
       '<div class="bar-id"><div class="kicker" style="color:var(--strip-muted)">No game in progress</div>' +
-      '<div class="bar-game">Start a session</div></div>' +
+      '<div class="bar-game">Pick a game below</div></div>' +
       '<div class="bar-scores"></div>' +
-      '<button class="btn-resume" data-go="/new">' + icon('play', 14) + ' NEW SESSION</button>' +
       '</div>';
   }
 
-  /* four tiles */
   var tiles = '';
   GAMES.forEach(function (g, i) {
     var n = i + 1;
@@ -977,7 +1106,6 @@ function viewHome() {
   html += '<div class="prompt"><div>Tap a game to start scoring</div>' +
     '<div class="dots"><span></span><span></span><span></span></div></div>';
 
-  /* standings + recent */
   var at = allTime();
   var boardRows = at.length ? at.map(function (r, i) {
     return '<div class="row"><span class="rank' + (i === 0 ? ' top' : '') + '">' + (i + 1) + '</span>' +
@@ -989,12 +1117,11 @@ function viewHome() {
 
   var done = finishedSessions().slice(0, 5);
   var recentRows = done.length ? done.map(function (s) {
-    var st2 = standings(s);
     return '<button class="row" style="width:100%;text-align:left" data-go="/session/' + s.id + '">' +
       '<span class="grow" style="max-width:110px;font-weight:600">' + esc(gameById(s.gameId).name) + '</span>' +
       '<span class="dim" style="width:56px">' + fmtDate(s.finishedAt) + '</span>' +
       '<span class="grow" style="font-weight:700;color:var(--acc2)">' + esc(playerName(s.winnerId)) + '</span>' +
-      '<span class="num">' + (st2[0] ? st2[0].total : 0) + '</span></button>';
+      '<span class="num">' + plural(s.rounds.length, 'hand') + '</span></button>';
   }).join('') : '<div class="empty">Nothing in the archive yet.</div>';
 
   html += '<div class="grid2">' +
@@ -1003,10 +1130,9 @@ function viewHome() {
       (done.length ? '<a href="#/archives">see all</a>' : 'see all') + '</span></div>' + recentRows + '</section>' +
     '</div>';
 
-  /* first-run affordances */
   if (!state.players.length) {
     html += '<div class="panel skin" style="margin-top:14px;text-align:center">' +
-      '<div class="empty" style="padding-bottom:14px">Nothing here yet — this is a fresh scoreboard.<br>' +
+      '<div class="empty" style="padding-bottom:14px">Nothing here yet &mdash; this is a fresh scoreboard.<br>' +
       'Add the people who play, or drop in a sample night to see it populated.</div>' +
       '<div class="btn-row" style="justify-content:center"><button class="btn btn-primary" data-go="/players">Add players</button>' +
       '<button class="btn" id="seed">Load sample night</button></div></div>';
@@ -1020,29 +1146,142 @@ function viewHome() {
 }
 
 function viewNew(query) {
-  var preset = (query.match(/game=([a-z0-9]+)/) || [])[1] || GAMES[0].id;
+  var gid = (query.match(/game=([a-z0-9]+)/) || [])[1];
+  /* no game in the URL means nothing was chosen — send them to the tiles
+     rather than silently defaulting to the first game */
+  if (!gid || !GAMES.some(function (g) { return g.id === gid; })) { go('/'); return ''; }
+
+  var g = gameById(gid);
   var active = state.players.filter(function (p) { return p.active !== false; });
   if (!active.length) {
     return header({ back: '/' }) + '<div class="pagehead"><h1 class="title">New session</h1></div>' +
       '<div class="panel skin"><div class="empty">You need players before a session can start.</div>' +
       '<div class="btn-row" style="justify-content:center"><button class="btn btn-primary" data-go="/players">Add players</button></div></div>';
   }
-  var games = GAMES.map(function (g) {
-    return '<button data-game="' + g.id + '" aria-pressed="' + (g.id === preset) + '">' + esc(g.name) + '</button>';
-  }).join('');
+
   var people = active.map(function (p) {
     return '<button data-player="' + p.id + '" aria-pressed="true">' + esc(p.name) + '</button>';
   }).join('');
+
+  var bidBits = '';
+  if (g.roundType === 'bid') {
+    bidBits =
+      '<div class="field"><label>How many decks</label><div class="chipsel" id="decksel">' +
+        '<button data-deck="1" aria-pressed="true">1 deck</button>' +
+        '<button data-deck="2" aria-pressed="false">2 decks</button>' +
+      '</div><p class="hint" id="deckhint">Bids can go up to 250.</p></div>' +
+      '<div class="field"><label>Partners the bidder calls</label><div class="chipsel" id="partsel">' +
+        '<button data-part="1" aria-pressed="true">1</button>' +
+        '<button data-part="2" aria-pressed="false">2</button>' +
+        '<button data-part="3" aria-pressed="false">3</button>' +
+      '</div><p class="hint">One card is asked for per partner. Either deck size can be played with any of these.</p></div>';
+  }
+
   return header({ back: '/' }) +
-    '<div class="pagehead"><h1 class="title">New session</h1><p class="sub">Highest total wins. Enter scores round by round as you play.</p></div>' +
+    '<div class="pagehead"><h1 class="title">New session</h1>' +
+    '<p class="sub">Game is set from the tile you tapped &mdash; go Back to change it.</p></div>' +
     '<div class="stack">' +
-      '<div class="field"><label>Game</label><div class="chipsel" id="gamesel">' + games + '</div></div>' +
+      '<div class="lockedgame skin"><span class="lockedmark">' + icon(g.id === 'spade3' ? 'spade' : 'club', 18) + '</span>' +
+        '<span class="lockedname">' + esc(g.name) + '</span>' +
+        '<span class="lockedtag">locked for this session</span></div>' +
       '<div class="field"><label>Players &mdash; tap to include</label><div class="chipsel" id="playersel">' + people + '</div></div>' +
-      '<div class="field" style="max-width:220px"><label>Target score</label>' +
-        '<input class="input" id="target" type="number" inputmode="numeric" value="' + gameById(preset).target + '"></div>' +
-      '<div class="btn-row"><button class="btn btn-primary" id="start">Start session</button>' +
+      bidBits +
+      '<div class="btn-row"><button class="btn btn-primary" id="start" data-game="' + g.id + '">Start session</button>' +
         '<button class="btn btn-ghost" data-go="/">Cancel</button></div>' +
     '</div>';
+}
+
+/* ---------- scoresheet ---------- */
+
+function sirChip(sid) {
+  var su = suitById(sid);
+  return '<span class="suitmark' + (su.red ? ' red' : '') + '">' + su.glyph + '</span>';
+}
+function cardChip(c) {
+  return '<span class="cardchip' + (cardIsRed(c) ? ' red' : '') + '">' + (c ? esc(c.rank) : '?') +
+    (c ? suitById(c.suit).glyph : '') + '</span>';
+}
+
+function bidHandRow(s, r, idx) {
+  var pts = roundPoints(s, r);
+  var pending = r.stage !== 'done';
+  var calls = (r.calls || []).map(function (c) {
+    return '<span class="callpair">' + cardChip(c.card) +
+      '<span class="callto">' + (c.holderId ? esc(playerName(c.holderId)) : 'not revealed') + '</span></span>';
+  }).join('');
+
+  var line = s.playerIds.map(function (pid) {
+    var v = pts[pid];
+    return '<span class="ptcell' + (v > 0 ? ' won' : '') + '"><b>' + esc(playerName(pid)) + '</b>' +
+      '<i>' + (pending ? '&mdash;' : '+' + v) + '</i></span>';
+  }).join('');
+
+  return '<div class="hand' + (pending ? ' pending' : '') + '">' +
+    '<div class="hand-head">' +
+      '<span class="hand-no">H' + (idx + 1) + '</span>' +
+      '<span class="hand-bid"><b>' + esc(playerName(r.bidderId)) + '</b> bid <b>' + r.bid + '</b></span>' +
+      '<span class="hand-sir">sir ' + sirChip(r.sir) + '</span>' +
+      (pending ? '<span class="badge-pend">awaiting reveal</span>'
+               : '<span class="badge-res ' + (r.winner === 'bidding' ? 'won' : 'lost') + '">' +
+                 (r.winner === 'bidding' ? "bidder's team won" : 'opponents won') + '</span>') +
+    '</div>' +
+    '<div class="hand-calls">' + calls + '</div>' +
+    '<div class="hand-pts">' + line + '</div>' +
+    (pending ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" data-reveal="' + idx + '">Reveal partners &amp; result</button>' +
+               '<button class="btn btn-ghost" data-cancelhand="' + idx + '">Discard hand</button></div>' : '') +
+    '</div>';
+}
+
+function bidAddForm(s) {
+  var players = s.playerIds.map(function (pid) {
+    return '<button data-pickbidder="' + pid + '" aria-pressed="false">' + esc(playerName(pid)) + '</button>';
+  }).join('');
+  var suits = SUITS.map(function (su) {
+    return '<button data-picksir="' + su.id + '" aria-pressed="' + (su.id === 'S') + '" class="' + (su.red ? 'redsuit' : '') + '">' +
+      su.glyph + ' ' + su.name + '</button>';
+  }).join('');
+  var cards = '';
+  for (var i = 0; i < (s.partnerCount || 1); i++) {
+    cards += '<div class="cardpick"><label>Card asked for ' + (i + 1) + '</label>' +
+      '<select class="input" data-rank="' + i + '">' +
+        RANKS.map(function (rk) { return '<option value="' + rk + '">' + rk + '</option>'; }).join('') +
+      '</select>' +
+      '<select class="input" data-suit="' + i + '">' +
+        SUITS.map(function (su) { return '<option value="' + su.id + '">' + su.glyph + ' ' + su.name + '</option>'; }).join('') +
+      '</select></div>';
+  }
+  return '<div class="panel skin formpanel">' +
+    '<div class="panel-head"><h2>New hand</h2><span>before the cards are played</span></div>' +
+    '<div class="stack" style="padding-top:6px">' +
+      '<div class="field"><label>Who won the bid</label><div class="chipsel" id="biddersel">' + players + '</div></div>' +
+      '<div class="field" style="max-width:220px"><label>Bid amount &mdash; up to ' + deckMax(s) + '</label>' +
+        '<input class="input" id="bidamt" type="number" inputmode="numeric" min="1" max="' + deckMax(s) + '" placeholder="150"></div>' +
+      '<div class="field"><label>Sir &mdash; the trump suit</label><div class="chipsel" id="sirsel">' + suits + '</div></div>' +
+      '<div class="field"><label>Cards asked for</label><div class="cardpicks">' + cards + '</div></div>' +
+      '<div class="btn-row"><button class="btn btn-primary" id="savehand">Save hand</button>' +
+        '<button class="btn btn-ghost" id="cancelhand">Cancel</button></div>' +
+    '</div></div>';
+}
+
+function bidRevealForm(s, r, idx) {
+  var rows = (r.calls || []).map(function (c, ci) {
+    var opts = s.playerIds.filter(function (pid) { return pid !== r.bidderId; }).map(function (pid) {
+      return '<button data-holder="' + ci + '" data-hp="' + pid + '" aria-pressed="' +
+        (c.holderId === pid) + '">' + esc(playerName(pid)) + '</button>';
+    }).join('');
+    return '<div class="field"><label>Who held ' + cardLabel(c.card) + '</label>' +
+      '<div class="chipsel holdersel" data-hrow="' + ci + '">' + opts + '</div></div>';
+  }).join('');
+  return '<div class="panel skin formpanel">' +
+    '<div class="panel-head"><h2>Reveal</h2><span>after the hand</span></div>' +
+    '<div class="stack" style="padding-top:6px">' +
+      rows +
+      '<p class="hint">Pick the same player twice if both called cards were in one hand &mdash; they score double.</p>' +
+      '<div class="field"><label>Who won the hand</label>' +
+        '<div class="btn-row"><button class="btn btn-primary" data-win="bidding" data-ridx="' + idx + '">Bidder&rsquo;s team won</button>' +
+        '<button class="btn btn-danger" data-win="opposition" data-ridx="' + idx + '">Opponents won</button></div></div>' +
+      '<div class="btn-row"><button class="btn btn-ghost" id="cancelreveal">Not yet</button></div>' +
+    '</div></div>';
 }
 
 function viewSession(id) {
@@ -1052,54 +1291,78 @@ function viewSession(id) {
 
   var g = gameById(s.gameId);
   var readonly = s.status === 'finished';
-  var t = totals(s);
   var st = standings(s);
-  var leader = st[0];
 
+  var sub = readonly
+    ? 'Finished ' + fmtDate(s.finishedAt) + ' &middot; won by ' + esc(playerName(s.winnerId)) + ' &middot; ' + plural(s.rounds.length, 'hand')
+    : plural(s.rounds.length, 'hand') + ' played &middot; ' + plural(s.playerIds.length, 'player') +
+      (isBid(s) ? ' &middot; ' + plural(Number(s.deckCount) || 1, 'deck') + ' &middot; ' +
+        plural(s.partnerCount || 1, 'partner') : '');
+
+  var html = header({ back: readonly ? '/archives' : '/' }) +
+    '<div class="pagehead"><h1 class="title">' + esc(g.name) + '</h1><p class="sub">' + sub + '</p></div>';
+
+  /* standings strip — same for both game shapes */
+  html += '<section class="panel skin"><div class="panel-head"><h2>Standings</h2><span>this session</span></div>' +
+    st.map(function (r, i) {
+      return '<div class="row"><span class="rank' + (i === 0 ? ' top' : '') + '">' + (i + 1) + '</span>' +
+        '<span class="grow" style="font-weight:600">' + esc(r.name) + '</span>' +
+        '<span class="num" style="' + (i === 0 ? 'color:var(--acc1)' : '') + '">' + r.total + '</span></div>';
+    }).join('') + '</section>';
+
+  if (isBid(s)) {
+    var pend = pendingRound(s);
+    html += '<section class="panel skin" style="margin-top:14px">' +
+      '<div class="panel-head"><h2>Hands</h2><span>' + plural(s.rounds.length, 'hand') + '</span></div>' +
+      (s.rounds.length
+        ? s.rounds.map(function (r, i) { return bidHandRow(s, r, i); }).join('')
+        : '<div class="empty">No hands yet &mdash; add one when the bidding is done.</div>') +
+      '</section>';
+
+    if (!readonly) {
+      if (revealingIdx >= 0 && s.rounds[revealingIdx]) html += bidRevealForm(s, s.rounds[revealingIdx], revealingIdx);
+      else if (addingHand) html += bidAddForm(s);
+      else {
+        html += '<div class="btn-row" style="margin-top:14px">' +
+          (pend ? '' : '<button class="btn btn-primary" id="addhand">Add hand</button>') +
+          (s.rounds.length ? '<button class="btn btn-danger" id="finish">Finish session</button>' : '') +
+          '</div>';
+        if (pend) html += '<p class="hint" style="margin-top:10px">Reveal the partners on hand ' +
+          (s.rounds.indexOf(pend) + 1) + ' before starting the next one.</p>';
+      }
+    }
+    return html;
+  }
+
+  /* numeric games — unchanged one-number-per-player grid */
+  var t = totals(s);
+  var leader = st[0];
   var head = '<tr><th>Round</th>' + s.playerIds.map(function (pid) {
     return '<th>' + esc(playerName(pid)) + '</th>';
   }).join('') + '</tr>';
-
   var body = s.rounds.map(function (r, ri) {
     return '<tr><td class="rnum">R' + (ri + 1) + '</td>' + s.playerIds.map(function (pid) {
-      var v = (r.scores[pid] === undefined || r.scores[pid] === null) ? '' : r.scores[pid];
+      var v = ((r.scores || {})[pid] === undefined) ? '' : r.scores[pid];
       return '<td>' + (readonly
         ? '<span class="num">' + (v === '' ? '&mdash;' : v) + '</span>'
         : '<input class="cell" type="number" inputmode="numeric" data-round="' + ri + '" data-player="' + pid +
           '" value="' + v + '" aria-label="Round ' + (ri + 1) + ', ' + esc(playerName(pid)) + '">') + '</td>';
     }).join('') + '</tr>';
   }).join('');
-
   var foot = '<tr><td class="rnum">Total</td>' + s.playerIds.map(function (pid) {
     return '<td class="' + (leader && pid === leader.id ? 'lead' : '') + '">' + t[pid] + '</td>';
   }).join('') + '</tr>';
-  if (s.target && !readonly) {
-    foot += '<tr><td class="rnum">To go</td>' + s.playerIds.map(function (pid) {
-      var left = s.target - t[pid];
-      return '<td class="togo">' + (left <= 0 ? 'reached' : left) + '</td>';
-    }).join('') + '</tr>';
-  }
 
-  var html = header({ back: readonly ? '/archives' : '/' }) +
-    '<div class="pagehead"><h1 class="title">' + esc(g.name) + '</h1>' +
-    '<p class="sub">' + (readonly
-      ? 'Finished ' + fmtDate(s.finishedAt) + ' &middot; won by ' + esc(playerName(s.winnerId)) + ' &middot; ' + s.rounds.length + ' rounds'
-      : 'Round ' + s.rounds.length + (s.target ? ' &middot; first to ' + s.target : '') + ' &middot; ' + s.playerIds.length + ' players') + '</p></div>' +
-    '<section class="panel skin"><div class="sheetwrap"><table class="sheet">' +
+  html += '<section class="panel skin" style="margin-top:14px"><div class="sheetwrap"><table class="sheet">' +
       '<thead>' + head + '</thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot>' +
     '</table></div>';
-
   if (!readonly) {
-    if (!s.rounds.length) html += '<div class="empty">No rounds yet — add the first one when the hand is done.</div>';
+    if (!s.rounds.length) html += '<div class="empty">No rounds yet.</div>';
     html += '<div class="btn-row" style="margin-top:14px">' +
       '<button class="btn btn-primary" id="addround">Add round</button>' +
       (s.rounds.length ? '<button class="btn btn-ghost" id="delround">Delete last round</button>' : '') +
       (s.rounds.length ? '<button class="btn btn-danger" id="finish">Finish session</button>' : '') +
       '</div>';
-    if (s.target && leader && leader.total >= s.target) {
-      html += '<div class="banner-win"><b>' + esc(leader.name) + '</b> has passed ' + s.target +
-        ' with ' + leader.total + '. Finish the session to record the win.</div>';
-    }
   }
   html += '</section>';
   return html;
@@ -1108,13 +1371,12 @@ function viewSession(id) {
 function viewArchives() {
   var done = finishedSessions();
   var rows = done.length ? done.map(function (s) {
-    var st = standings(s);
     return '<button class="row" style="width:100%;text-align:left" data-go="/session/' + s.id + '">' +
       '<span class="rank">' + s.rounds.length + '</span>' +
       '<span class="grow" style="max-width:130px;font-weight:600">' + esc(gameById(s.gameId).name) + '</span>' +
       '<span class="dim" style="width:62px">' + fmtDate(s.finishedAt) + '</span>' +
       '<span class="grow" style="font-weight:700;color:var(--acc2)">' + esc(playerName(s.winnerId)) + '</span>' +
-      '<span class="num">' + (st[0] ? st[0].total : 0) + '</span></button>';
+      '<span class="num">' + (standings(s)[0] ? standings(s)[0].total : 0) + '</span></button>';
   }).join('') : '<div class="empty">No finished sessions yet.</div>';
   return header({ back: '/' }) + '<div class="pagehead"><h1 class="title">Archives</h1>' +
     '<p class="sub">Every night played out, newest first. Tap one to read its scoresheet.</p></div>' +
@@ -1139,21 +1401,20 @@ function viewPlayers() {
 
 var adminUnlocked = false;
 var pinBuffer = '';
-var pinError = false;
 
 function viewAdmin() {
   if (!adminUnlocked) {
     var keys = ['1','2','3','4','5','6','7','8','9','C','0','OK'];
     var dots = '';
-    for (var i = 0; i < 4; i++) dots += '<span class="' + (i < pinBuffer.length ? 'on' : '') + '"></span>';
+    for (var i = 0; i < 4; i++) dots += '<span></span>';
     return header({ back: '/', title: 'ADMIN', sub: 'Appearance' }) +
       '<section class="panel skin" style="max-width:360px;margin:40px auto 0;text-align:center">' +
         '<div style="display:flex;justify-content:center;margin-bottom:14px"><span style="width:52px;height:52px;border-radius:50%;' +
           'background:var(--strip-icon-bg);color:var(--strip-accent);display:flex;align-items:center;justify-content:center">' +
           lockIcon(22) + '</span></div>' +
         '<h1 class="title" style="font-size:20px">Enter admin PIN</h1>' +
-        '<p class="sub">' + (pinError ? 'That PIN was not recognised — try again' : 'Four digits') + '</p>' +
-        '<div class="pindots" style="margin-bottom:18px">' + dots + '</div>' +
+        '<p class="sub" id="pinhint">Four digits</p>' +
+        '<div class="pindots" id="pindots" style="margin-bottom:18px">' + dots + '</div>' +
         '<div class="pinpad">' + keys.map(function (k) {
           return '<button data-key="' + k + '"' + (k === 'OK' ? ' style="background:var(--resume-bg);color:var(--resume-ink);font-size:15px"' : '') + '>' + k + '</button>';
         }).join('') + '</div>' +
@@ -1187,13 +1448,47 @@ function loadSample() {
   state.players = names.map(function (n) { return { id: uid(), name: n, active: true }; });
   var ids = state.players.map(function (p) { return p.id; });
   var day = 86400000;
+  var suits = ['S', 'H', 'D', 'C'];
+  var ranks = ['A', 'K', 'Q', 'J', '10'];
 
-  function makeFinished(gameId, playersIn, roundCount, daysAgo) {
-    var s = { id: uid(), gameId: gameId, playerIds: playersIn, target: gameById(gameId).target,
+  function bidHand(playersIn, bidderIdx, bid, holderIdxs, won, seed) {
+    return {
+      stage: 'done',
+      bidderId: playersIn[bidderIdx],
+      bid: bid,
+      sir: suits[seed % 4],
+      calls: holderIdxs.map(function (hi, n) {
+        return { card: { rank: ranks[(seed + n) % ranks.length], suit: suits[(seed + n + 1) % 4] },
+                 holderId: playersIn[hi] };
+      }),
+      winner: won ? 'bidding' : 'opposition'
+    };
+  }
+
+  function spadeSession(playersIn, partnerCount, deckCount, hands, daysAgo) {
+    var s = { id: uid(), gameId: 'spade3', roundType: 'bid', playerIds: playersIn,
+              deckCount: deckCount, partnerCount: partnerCount,
               status: 'finished', createdAt: Date.now() - daysAgo * day, rounds: [] };
-    for (var r = 0; r < roundCount; r++) {
+    for (var h = 0; h < hands; h++) {
+      var b = h % playersIn.length;
+      var holders = [];
+      for (var k = 0; k < partnerCount; k++) {
+        var pick = (b + 1 + k) % playersIn.length;
+        holders.push(pick);
+      }
+      s.rounds.push(bidHand(playersIn, b, 150 + ((h * 10) % 80), holders, h % 3 !== 0, h));
+    }
+    s.finishedAt = Date.now() - daysAgo * day;
+    s.winnerId = standings(s)[0].id;
+    return s;
+  }
+
+  function numericSession(playersIn, rounds, daysAgo) {
+    var s = { id: uid(), gameId: 'kachufull', roundType: 'numeric', playerIds: playersIn,
+              status: 'finished', createdAt: Date.now() - daysAgo * day, rounds: [] };
+    for (var r = 0; r < rounds; r++) {
       var sc = {};
-      playersIn.forEach(function (pid) { sc[pid] = Math.floor(20 + Math.random() * 70); });
+      playersIn.forEach(function (pid) { sc[pid] = Math.floor(20 + Math.random() * 60); });
       s.rounds.push({ scores: sc });
     }
     s.finishedAt = Date.now() - daysAgo * day;
@@ -1202,19 +1497,16 @@ function loadSample() {
   }
 
   state.sessions = [
-    makeFinished('spade3', ids.slice(0, 4), 8, 21),
-    makeFinished('kachufull', ids.slice(1, 5), 6, 16),
-    makeFinished('spade3', ids.slice(0, 4), 9, 9),
-    makeFinished('kachufull', [ids[0], ids[1], ids[3]], 5, 4)
+    spadeSession(ids.slice(0, 4), 1, 1, 6, 21),
+    numericSession(ids.slice(1, 5), 5, 16),
+    spadeSession(ids.slice(0, 4), 2, 2, 5, 9)
   ];
 
-  var live = { id: uid(), gameId: 'spade3', playerIds: ids.slice(0, 4), target: 500,
-               status: 'live', createdAt: Date.now(), rounds: [] };
-  for (var r = 0; r < 6; r++) {
-    var sc = {};
-    live.playerIds.forEach(function (pid) { sc[pid] = Math.floor(40 + Math.random() * 45); });
-    live.rounds.push({ scores: sc });
-  }
+  /* one night still in progress, with a hand awaiting its reveal */
+  var live = { id: uid(), gameId: 'spade3', roundType: 'bid', playerIds: ids.slice(0, 4),
+               deckCount: 1, partnerCount: 1, status: 'live', createdAt: Date.now(), rounds: [] };
+  live.rounds.push(bidHand(live.playerIds, 0, 180, [1], true, 0));
+  live.rounds.push(bidHand(live.playerIds, 2, 165, [0], false, 3));
   state.sessions.push(live);
   save();
 }
@@ -1266,57 +1558,155 @@ function currentSession() {
   return null;
 }
 
+/* pick-one chip rows: press the tapped one, release its siblings */
+function pickOne(row, btn) {
+  $$('button', row).forEach(function (x) { x.setAttribute('aria-pressed', String(x === btn)); });
+}
+function pickedValue(rowSel, attr) {
+  var b = $(rowSel + ' button[aria-pressed="true"]');
+  return b ? b.getAttribute(attr) : null;
+}
+
+/* the PIN pad is updated in place — a full re-render would restart the
+   panel's entrance animation and make the pad blink on every key press */
+function updatePinDots(err) {
+  $$('#pindots span').forEach(function (d, i) { d.className = i < pinBuffer.length ? 'on' : ''; });
+  var hint = $('#pinhint');
+  if (hint) hint.textContent = err ? 'That PIN was not recognised \u2014 try again' : 'Four digits';
+}
+
 document.addEventListener('click', function (e) {
   var t = e.target.closest('[data-go]');
-  if (t) { go(t.getAttribute('data-go')); return; }
+  if (t) { addingHand = false; revealingIdx = -1; go(t.getAttribute('data-go')); return; }
 
-  /* home: sample data */
   if (e.target.id === 'seed') { loadSample(); render(); return; }
 
-  /* new session */
-  if (e.target.closest('#gamesel button')) {
-    var b = e.target.closest('button');
-    $$('#gamesel button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
-    $('#target').value = gameById(b.getAttribute('data-game')).target;
-    return;
-  }
+  /* ---------- new session ---------- */
   if (e.target.closest('#playersel button')) {
     var p = e.target.closest('button');
     p.setAttribute('aria-pressed', p.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
     return;
   }
+  var deckBtn = e.target.closest('#decksel button');
+  if (deckBtn) {
+    pickOne($('#decksel'), deckBtn);
+    var hint = $('#deckhint');
+    if (hint) hint.textContent = 'Bids can go up to ' + (Number(deckBtn.getAttribute('data-deck')) * DECK_POINTS) + '.';
+    return;
+  }
+  var partBtn = e.target.closest('#partsel button');
+  if (partBtn) { pickOne($('#partsel'), partBtn); return; }
+
   if (e.target.id === 'start') {
-    var gsel = $('#gamesel button[aria-pressed="true"]');
+    var gid = e.target.getAttribute('data-game');
+    var g = gameById(gid);
     var chosen = $$('#playersel button[aria-pressed="true"]').map(function (x) { return x.getAttribute('data-player'); });
+    if (g.roundType === 'bid' && chosen.length < 3) {
+      alert('3 of Spade needs at least three players — a bidder, a partner and someone to play against.');
+      return;
+    }
     if (!chosen.length) { alert('Pick at least one player.'); return; }
-    var s = { id: uid(), gameId: gsel.getAttribute('data-game'), playerIds: chosen,
-              target: Number($('#target').value) || 0, status: 'live', createdAt: Date.now(), rounds: [] };
-    state.sessions.push(s); save(); go('/session/' + s.id); return;
+    var sess = { id: uid(), gameId: gid, roundType: g.roundType, playerIds: chosen,
+                 status: 'live', createdAt: Date.now(), rounds: [] };
+    if (g.roundType === 'bid') {
+      sess.deckCount = Number(pickedValue('#decksel', 'data-deck')) || 1;
+      sess.partnerCount = Number(pickedValue('#partsel', 'data-part')) || 1;
+    }
+    state.sessions.push(sess); save(); go('/session/' + sess.id); return;
   }
 
-  /* scoresheet */
-  if (e.target.id === 'addround') {
+  /* ---------- bid hands ---------- */
+  if (e.target.id === 'addhand') { addingHand = true; render(); return; }
+  if (e.target.id === 'cancelhand') { addingHand = false; render(); return; }
+  var bsel = e.target.closest('#biddersel button');
+  if (bsel) { pickOne($('#biddersel'), bsel); return; }
+  var ssel = e.target.closest('#sirsel button');
+  if (ssel) { pickOne($('#sirsel'), ssel); return; }
+
+  if (e.target.id === 'savehand') {
+    var s1 = currentSession(); if (!s1) return;
+    var bidderId = pickedValue('#biddersel', 'data-pickbidder');
+    if (!bidderId) { alert('Pick who won the bid.'); return; }
+    var amt = Number($('#bidamt').value);
+    if (!amt || amt < 1 || amt > deckMax(s1)) { alert('Bid must be between 1 and ' + deckMax(s1) + '.'); return; }
+    var calls = [];
+    for (var ci = 0; ci < (s1.partnerCount || 1); ci++) {
+      calls.push({ card: { rank: $('[data-rank="' + ci + '"]').value, suit: $('[data-suit="' + ci + '"]').value },
+                   holderId: null });
+    }
+    var seen = {};
+    for (var k = 0; k < calls.length; k++) {
+      var key = calls[k].card.rank + calls[k].card.suit;
+      if (seen[key]) { alert('The same card cannot be asked for twice in one hand.'); return; }
+      seen[key] = true;
+    }
+    s1.rounds.push({ stage: 'bid', bidderId: bidderId, bid: amt,
+                     sir: pickedValue('#sirsel', 'data-picksir') || 'S', calls: calls, winner: null });
+    addingHand = false; save(); render(); return;
+  }
+
+  var rev = e.target.closest('[data-reveal]');
+  if (rev) { revealingIdx = Number(rev.getAttribute('data-reveal')); render(); return; }
+  if (e.target.id === 'cancelreveal') { revealingIdx = -1; render(); return; }
+
+  var disc = e.target.closest('[data-cancelhand]');
+  if (disc) {
     var s2 = currentSession(); if (!s2) return;
-    var sc = {}; s2.playerIds.forEach(function (pid) { sc[pid] = 0; });
-    s2.rounds.push({ scores: sc }); save(); render();
-    var first = $('.cell[data-round="' + (s2.rounds.length - 1) + '"]');
+    if (!confirm('Discard this hand? Nothing has been scored from it yet.')) return;
+    s2.rounds.splice(Number(disc.getAttribute('data-cancelhand')), 1);
+    revealingIdx = -1; save(); render(); return;
+  }
+
+  var hold = e.target.closest('[data-holder]');
+  if (hold) {
+    pickOne(hold.parentNode, hold);
+    var s3 = currentSession(); if (!s3 || revealingIdx < 0) return;
+    s3.rounds[revealingIdx].calls[Number(hold.getAttribute('data-holder'))].holderId = hold.getAttribute('data-hp');
+    save(); return;
+  }
+
+  var win = e.target.closest('[data-win]');
+  if (win) {
+    var s4 = currentSession(); if (!s4) return;
+    var idx = Number(win.getAttribute('data-ridx'));
+    var r = s4.rounds[idx];
+    var missing = r.calls.some(function (c) { return !c.holderId; });
+    if (missing) { alert('Say who held each called card first.'); return; }
+    var shares = biddingShares(r);
+    if (s4.playerIds.filter(function (pid) { return !shares[pid]; }).length === 0) {
+      alert('Everyone cannot be on the bidding side — someone has to be the opposition.');
+      return;
+    }
+    r.winner = win.getAttribute('data-win');
+    r.stage = 'done';
+    revealingIdx = -1; save(); render(); return;
+  }
+
+  /* ---------- numeric rounds ---------- */
+  if (e.target.id === 'addround') {
+    var s5 = currentSession(); if (!s5) return;
+    var sc = {}; s5.playerIds.forEach(function (pid) { sc[pid] = 0; });
+    s5.rounds.push({ scores: sc }); save(); render();
+    var first = $('.cell[data-round="' + (s5.rounds.length - 1) + '"]');
     if (first) { first.focus(); first.select(); }
     return;
   }
   if (e.target.id === 'delround') {
-    var s3 = currentSession(); if (!s3 || !s3.rounds.length) return;
+    var s6 = currentSession(); if (!s6 || !s6.rounds.length) return;
     if (!confirm('Delete the last round? This cannot be undone.')) return;
-    s3.rounds.pop(); save(); render(); return;
+    s6.rounds.pop(); save(); render(); return;
   }
+
   if (e.target.id === 'finish') {
-    var s4 = currentSession(); if (!s4) return;
-    var win = standings(s4)[0];
-    if (!confirm('Finish this session? ' + win.name + ' wins with ' + win.total + '.')) return;
-    s4.status = 'finished'; s4.finishedAt = Date.now(); s4.winnerId = win.id;
+    var s7 = currentSession(); if (!s7) return;
+    if (pendingRound(s7)) { alert('Finish revealing the last hand before closing the session.'); return; }
+    var winr = standings(s7)[0];
+    if (!confirm('Finish this session? ' + winr.name + ' wins with ' + winr.total + '.')) return;
+    s7.status = 'finished'; s7.finishedAt = Date.now(); s7.winnerId = winr.id;
     save(); go('/archives'); return;
   }
 
-  /* players */
+  /* ---------- players ---------- */
   if (e.target.id === 'addplayer') {
     var nm = ($('#newplayer').value || '').trim();
     if (!nm) return;
@@ -1337,16 +1727,17 @@ document.addEventListener('click', function (e) {
     save(); render(); return;
   }
 
-  /* admin */
+  /* ---------- admin ---------- */
   var key = e.target.closest('[data-key]');
   if (key) {
     var k = key.getAttribute('data-key');
-    if (k === 'C') { pinBuffer = ''; pinError = false; }
-    else if (k === 'OK') {
-      if (pinBuffer === ADMIN_PIN) { adminUnlocked = true; pinBuffer = ''; pinError = false; }
-      else { pinBuffer = ''; pinError = true; }
-    } else if (pinBuffer.length < 4) { pinBuffer += k; pinError = false; }
-    render(); return;
+    if (k === 'C') { pinBuffer = ''; updatePinDots(false); return; }
+    if (k === 'OK') {
+      if (pinBuffer === ADMIN_PIN) { adminUnlocked = true; pinBuffer = ''; render(); return; }
+      pinBuffer = ''; updatePinDots(true); return;
+    }
+    if (pinBuffer.length < 4) { pinBuffer += k; updatePinDots(false); }
+    return;
   }
   var th = e.target.closest('[data-theme-set]');
   if (th) { state.settings.theme = th.getAttribute('data-theme-set'); save(); render(); return; }
@@ -1357,7 +1748,6 @@ document.addEventListener('click', function (e) {
   }
 });
 
-/* live score entry — totals update as you type */
 document.addEventListener('input', function (e) {
   var cell = e.target.closest('.cell');
   if (cell) {
@@ -1377,7 +1767,7 @@ document.addEventListener('input', function (e) {
   }
 });
 
-/* recompute the footer in place, so focus is never stolen mid-entry */
+/* recompute the numeric footer in place, so focus is never stolen mid-entry */
 function updateTotals(s) {
   var t = totals(s);
   var st = standings(s);
@@ -1390,14 +1780,6 @@ function updateTotals(s) {
     cells[i + 1].textContent = t[pid];
     cells[i + 1].className = (leader && pid === leader.id) ? 'lead' : '';
   });
-  if (foot[1]) {
-    var togo = $$('td', foot[1]);
-    s.playerIds.forEach(function (pid, i) {
-      if (!togo[i + 1]) return;
-      var left = s.target - t[pid];
-      togo[i + 1].textContent = left <= 0 ? 'reached' : left;
-    });
-  }
 }
 
 window.addEventListener('hashchange', render);
