@@ -779,6 +779,17 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .steplab b { font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
   color: var(--muted); line-height: 1.35; }
 .stepbody { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; }
+/* One row, every name visible, ending exactly where the card racks end:
+   the callrow reserves 74px for the card face plus its 12px gap. */
+.rack { display: grid; gap: 8px; align-items: center; padding-right: 86px; }
+.rack > .pick { min-height: 54px; padding: 0 10px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.rack.rk-lg > .pick { font-size: 18px; }
+.rack.rk-md > .pick { font-size: 16px; }
+.rack.rk-sm > .pick { font-size: 14px; }
+.rack.rk-xs > .pick { font-size: 12.5px; padding: 0 6px; }
+/* the sir chips keep their type size and simply grow to fill the row */
+.rack.sirrack > .pick { font-size: 14.5px; }
 .stepbody .hint { width: 100%; margin: 2px 0 0; }
 
 /* one tap, one value — every choice on this screen is a chip, never a dropdown */
@@ -929,6 +940,13 @@ body.revealing .skiphint { opacity: 1; }
 }
 @media (max-width: 760px) { .prow { grid-template-columns: repeat(7, minmax(0,1fr)); } }
 @media (max-width: 430px) { .prow { grid-template-columns: repeat(5, minmax(0,1fr)); } }
+@media (max-width: 860px) {
+  /* no room to line up with anything — let the chips wrap instead of
+     squeezing names down to nothing */
+  .rack { display: flex; flex-wrap: wrap; padding-right: 0; }
+  .rack > .pick { flex: 1 1 auto; font-size: 15px; }
+  .rack.sirrack > .pick { flex: 1 1 44%; }
+}
 @media (max-width: 620px) {
   .step { grid-template-columns: minmax(0,1fr); gap: 8px; padding: 12px 13px; }
   .steplab { padding-top: 0; }
@@ -1698,6 +1716,15 @@ function ledgerHtml(s) {
 
 /* ---------- the entry console: everything on one screen, one tap per value ---------- */
 
+/* Names get the biggest type that still fits them all on one line — the
+   more people at the table, the smaller the step down. */
+function rackSize(n) {
+  if (n <= 4) return 'rk-lg';
+  if (n <= 6) return 'rk-md';
+  if (n <= 8) return 'rk-sm';
+  return 'rk-xs';
+}
+
 function quickBids(s) {
   var max = deckMax(s);
   var out = [];
@@ -1752,7 +1779,9 @@ function bidConsole(s) {
 
     '<div class="step' + (d.bidderId ? ' done' : '') + '" data-step="bidder">' +
       '<span class="steplab"><span class="stepno">1</span><b>Who won<br>the bid</b></span>' +
-      '<span class="stepbody">' + bidders + '</span></div>' +
+      '<span class="stepbody rack ' + rackSize(s.playerIds.length) + '" ' +
+        'style="grid-template-columns:repeat(' + s.playerIds.length + ',minmax(0,1fr))">' +
+        bidders + '</span></div>' +
 
     '<div class="step' + (d.bid ? ' done' : '') + '" data-step="bid">' +
       '<span class="steplab"><span class="stepno">2</span><b>Bid<br>amount</b></span>' +
@@ -1765,7 +1794,8 @@ function bidConsole(s) {
 
     '<div class="step done" data-step="sir">' +
       '<span class="steplab"><span class="stepno">3</span><b>Sir &mdash;<br>the trump</b></span>' +
-      '<span class="stepbody">' + sirs + '</span></div>' +
+      '<span class="stepbody rack sirrack" ' +
+        'style="grid-template-columns:repeat(4,minmax(0,1fr))">' + sirs + '</span></div>' +
 
     '<div class="step done" data-step="cards">' +
       '<span class="steplab"><span class="stepno">4</span><b>Cards<br>asked for</b></span>' +
@@ -1799,7 +1829,9 @@ function revealConsole(s, r, idx) {
       '<span class="steplab"><span class="stepno">' + (ci + 1) + '</span><b>Who held<br>' +
         '<span class="callface' + (cardIsRed(c.card) ? ' red' : '') + '" style="width:52px;height:66px;font-size:19px;margin-top:6px">' +
         esc(c.card.rank) + suitById(c.card.suit).glyph + '</span></b></span>' +
-      '<span class="stepbody">' + opts + '</span></div>';
+      '<span class="stepbody rack ' + rackSize(s.playerIds.length - 1) + '" ' +
+        'style="grid-template-columns:repeat(' + (s.playerIds.length - 1) + ',minmax(0,1fr))">' +
+        opts + '</span></div>';
   }).join('');
   var allHeld = (r.calls || []).every(function (c) { return !!c.holderId; });
   return '<section class="console" id="console">' +

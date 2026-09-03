@@ -212,7 +212,12 @@ reveal the same console flips to the reveal instead. Numbered steps run down the
 left; the step number turns green as each is answered.
 
 **One tap, one value — never a dropdown.** Bidder, sir, rank and suit are all
-chips. Ranks are a 13-wide grid rack that regrids to 7 then 5 columns as the
+chips. The bidder and sir rows are `.rack` grids that end exactly where the card
+racks end — the callrow reserves 74px for the card face plus a 12px gap, so the
+rack carries `padding-right: 86px` and every row shares one right edge. The
+bidder rack sizes its type to the roster (18 / 16 / 14 / 12.5px at 4 / 6 / 8 /
+more players) so every name stays on one line, whole and unclipped; below 860px
+it gives up on aligning and wraps instead. Ranks are a 13-wide grid rack that regrids to 7 then 5 columns as the
 screen narrows, so a wrapped last row keeps its column width. The four suits
 span that same full width beneath it — glyph plus name, edged in `--suit-edge`
 so they read as cards rather than buttons — regridding to 2x2 on a phone. Each
