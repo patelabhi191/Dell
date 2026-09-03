@@ -61,6 +61,7 @@
   --art-meta-bg: rgba(0,0,0,0.45);
   --art-shadow: 0 6px 16px rgba(0,0,0,0.55);
   --card-face: #f4f1e8;
+  --suit-edge: rgba(244,241,232,0.40);
   --logo-ink: #14161a;
   --logo-muted: #5f636a;
   --logo-spade: #14161a;
@@ -149,6 +150,7 @@
   --art-meta-bg: rgba(255,255,255,0.9);
   --art-shadow: 0 6px 14px rgba(23,36,77,0.28);
   --card-face: #ffffff;
+  --suit-edge: #b9c4e6;
   --logo-ink: #17244d;
   --logo-muted: #616a8c;
   --logo-spade: #101317;
@@ -237,6 +239,7 @@
   --art-meta-bg: rgba(36,19,80,0.72);
   --art-shadow: 0 6px 18px rgba(0,0,0,0.5);
   --card-face: #f7f2ff;
+  --suit-edge: rgba(247,242,255,0.42);
   --logo-ink: #241350;
   --logo-muted: #6b5b96;
   --logo-spade: #150f1c;
@@ -325,6 +328,7 @@
   --art-meta-bg: rgba(255,255,255,0.9);
   --art-shadow: 0 7px 16px rgba(15,61,56,0.24);
   --card-face: #ffffff;
+  --suit-edge: #a8ddd4;
   --logo-ink: #0f3d38;
   --logo-muted: #3f6e68;
   --logo-spade: #101a17;
@@ -439,6 +443,17 @@ a { color: var(--acc1); }
 .btn-resume::after { content: ""; position: absolute; top: 0; left: 0; width: 32%; height: 100%; pointer-events: none;
   background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.6), rgba(255,255,255,0));
   animation: dcSweep 3.1s ease-in-out infinite; }
+
+/* more than one table can be running at once */
+.livewrap { margin-bottom: 16px; }
+.livehead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;
+  animation: dcFade .5s ease .2s both; }
+.livecount { display: inline-flex; align-items: center; gap: 9px; padding: 9px 16px; border-radius: 999px;
+  background: var(--ground-plate); color: var(--ground-ink);
+  font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.livestack { display: flex; flex-direction: column; gap: 10px; }
+.livestack .bar { margin-bottom: 0; }
+.livewrap:not(.open) .bar.extra { display: none; }
 
 /* ============================ tiles ============================ */
 .tiles { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
@@ -686,7 +701,7 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
   transform: scale(.3) rotate(-40deg); pointer-events: none; }
 .pod.crowned .podcrown { animation: dcCrownIn .8s cubic-bezier(.34,1.56,.64,1) forwards; }
 .pod.crowned { animation: dcThrone .9s cubic-bezier(.34,1.56,.64,1); }
-.podshock { position: absolute; inset: -3px; border-radius: 15px; border: 2px solid var(--acc1);
+.podshock { position: absolute; inset: 0; border-radius: 13px; border: 2px solid var(--acc1);
   opacity: 0; pointer-events: none; }
 .pod.crowned .podshock { animation: dcShock 1s ease-out .08s 2; }
 .poddelta { position: absolute; right: 14px; top: 4px; font-family: var(--font-display); font-size: 15px;
@@ -728,13 +743,18 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .pick:active:not(:disabled) { transform: translateY(0) scale(.96); }
 .pick[aria-pressed="true"] { background: var(--acc1); border-color: var(--acc1); color: #fff; }
 .pick:disabled { opacity: .26; cursor: not-allowed; }
-.pick.sq { min-width: 44px; padding: 0 9px; border-radius: 11px; font-family: var(--font-display); font-size: 15px; }
-.pick.suitpick { min-width: 54px; font-size: 18px; font-family: var(--font-display); }
+.pick.sq { min-width: 44px; padding: 0 9px; border-radius: 11px; font-family: var(--font-display); font-size: 16px; }
+/* card-white edges, so the suit chips read as cards rather than as buttons */
+.pick.suitpick { display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-width: 54px; font-size: 14.5px; font-weight: 700; letter-spacing: .03em;
+  border-color: var(--suit-edge); }
+.pick.suitpick .sglyph { font-size: 26px; line-height: 1; }
+.pick.suitpick .sname { white-space: nowrap; }
 .pick.suitpick.red { color: var(--suit-red); }
 .pick.suitpick.red[aria-pressed="true"] { background: var(--live); border-color: var(--live); color: #fff; }
 .pick.small { min-height: 36px; padding: 0 12px; font-size: 13px; }
 
-.bidbox { display: flex; align-items: center; gap: 9px; }
+.bidbox { display: flex; align-items: center; gap: 9px; margin-right: 18px; }
 .stepbtn { width: 46px; height: 46px; border-radius: 13px; background: var(--rank-bg); color: var(--ink);
   font-family: var(--font-display); font-size: 17px;
   transition: transform .16s cubic-bezier(.34,1.56,.64,1), background .18s ease; }
@@ -745,18 +765,23 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .bidnum:focus { outline: none; border-color: var(--acc1); }
 .bidcap { font-size: 11.5px; color: var(--muted); }
 
-.callrow { display: grid; grid-template-columns: 58px minmax(0,1fr) 56px; gap: 10px; align-items: center;
-  padding: 9px 0; border-top: 1px dashed var(--hair); }
+.callrow { display: grid; grid-template-columns: 78px minmax(0,1fr) 74px; gap: 12px; align-items: center;
+  padding: 11px 0; border-top: 1px dashed var(--hair); }
 .callrow:first-child { border-top: none; padding-top: 2px; }
-.callno { font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.callno { font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--acc1); text-align: center; padding: 9px 4px;
+  border: 2px solid var(--acc1); border-radius: 10px; background: var(--row-hover); }
 .callpick { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.prow { display: grid; grid-template-columns: repeat(13, minmax(0,1fr)); gap: 5px; }
-.prow.suits { grid-template-columns: repeat(4, minmax(0,108px)); gap: 6px;
-  padding-top: 6px; border-top: 1px dashed var(--hair); }
+.prow { display: grid; grid-template-columns: repeat(13, minmax(0,1fr)); gap: 6px; }
+.prow > .pick { min-height: 48px; }
+/* the four suits span the same width as the rack above them, A through 2 */
+.prow.suits { grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px;
+  padding-top: 8px; border-top: 1px dashed var(--hair); }
+.prow.suits > .pick { min-height: 54px; }
 .callface { justify-self: end; display: flex; align-items: center; justify-content: center;
-  width: 52px; height: 66px; border-radius: 9px; background: var(--card-face); color: var(--suit-dark);
-  border: 1px solid var(--hair); font-family: var(--font-display); font-size: 19px;
-  box-shadow: 0 3px 0 rgba(0,0,0,.22);
+  width: 72px; height: 92px; border-radius: 11px; background: var(--card-face); color: var(--suit-dark);
+  border: 1px solid var(--hair); font-family: var(--font-display); font-size: 26px;
+  box-shadow: 0 4px 0 rgba(0,0,0,.22);
   backface-visibility: hidden; }
 .callface.red { color: var(--suit-red); }
 .callface.flip { animation: dcFlip .42s cubic-bezier(.22,1,.36,1); }
@@ -861,8 +886,10 @@ body.revealing .skiphint { opacity: 1; }
 @media (max-width: 620px) {
   .step { grid-template-columns: minmax(0,1fr); gap: 8px; padding: 12px 13px; }
   .steplab { padding-top: 0; }
-  .callrow { grid-template-columns: minmax(0,1fr) 52px; }
+  .callrow { grid-template-columns: minmax(0,1fr) 80px; }
   .callno { grid-column: 1 / -1; }
+  /* four named suits will not fit across a phone — stack them two by two */
+  .prow.suits { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .deskacts { margin-left: 0; width: 100%; }
   .pick { min-height: 40px; padding: 0 13px; }
   .pick.sq { min-width: 40px; }
@@ -912,7 +939,7 @@ body.revealing .skiphint { opacity: 1; }
    here is visually silent, it just stops the replay */
 body.settled .rule, body.settled .plaque, body.settled .bar,
 body.settled .tile, body.settled .prompt, body.settled .panel,
-body.settled .deskhead, body.settled .podwrap, body.settled .console,
+body.settled .deskhead, body.settled .podwrap, body.settled .console, body.settled .livehead,
 body.settled .ledger, body.settled .sheetpanel, body.settled .setpanel {
   animation: none !important;
 }
@@ -1125,6 +1152,12 @@ function pendingRound(s) {
   return null;
 }
 
+/* every table still in play, newest first */
+function liveSessions() {
+  return state.sessions.filter(function (s) { return s.status === 'live'; })
+    .sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+}
+
 function liveSession() {
   for (var i = 0; i < state.sessions.length; i++) if (state.sessions[i].status === 'live') return state.sessions[i];
   return null;
@@ -1305,24 +1338,42 @@ function header(opts) {
 
 /* transient view state — never persisted */
 
+/* one running table, as a bar. Two fit on screen; beyond that the rest
+   fold away behind a count until someone asks for them. */
+function liveBar(s, extra) {
+  var g = gameById(s.gameId);
+  var scores = standings(s).map(function (r, i) {
+    return '<div class="bar-score' + (i === 0 ? ' lead' : '') + '"><b>' + esc(r.name) + '</b><i>' + r.total + '</i></div>';
+  }).join('');
+  return '<div class="bar skin' + (extra ? ' extra' : '') + '">' +
+    '<div class="bar-icon">' + icon(s.gameId === 'spade3' ? 'spade' : 'club', 21) + '</div>' +
+    '<div class="bar-id"><div class="kicker"><span class="livedot"></span>Live now &middot; ' +
+      plural(s.rounds.length, 'round') + '</div>' +
+    '<div class="bar-game">' + esc(g.name) + '</div></div>' +
+    '<div class="bar-scores">' + scores + '</div>' +
+    '<button class="btn-resume" data-go="/session/' + s.id + '">' + icon('play', 14) + ' RESUME</button>' +
+    '</div>';
+}
+
 function viewHome() {
-  var live = liveSession();
+  var lives = liveSessions();
+  var live = lives[0] || null;
   var html = header({});
 
-  if (live) {
-    var st = standings(live);
-    var g = gameById(live.gameId);
-    var scores = st.map(function (r, i) {
-      return '<div class="bar-score' + (i === 0 ? ' lead' : '') + '"><b>' + esc(r.name) + '</b><i>' + r.total + '</i></div>';
-    }).join('');
-    html += '<div class="bar skin">' +
-      '<div class="bar-icon">' + icon('spade', 21) + '</div>' +
-      '<div class="bar-id"><div class="kicker"><span class="livedot"></span>Live now &middot; ' +
-        plural(live.rounds.length, 'round') + '</div>' +
-      '<div class="bar-game">' + esc(g.name) + '</div></div>' +
-      '<div class="bar-scores">' + scores + '</div>' +
-      '<button class="btn-resume" data-go="/session/' + live.id + '">' + icon('play', 14) + ' RESUME</button>' +
-      '</div>';
+  if (lives.length) {
+    var shown = lives.slice(0, 2);
+    var folded = lives.slice(2);
+    html += '<div class="livewrap" id="livewrap">';
+    if (lives.length > 1) {
+      html += '<div class="livehead"><span class="livecount"><span class="livedot"></span>' +
+        lives.length + ' tables running</span>' +
+        (folded.length ? '<button class="btn btn-nav small" id="livetoggle">Show all ' +
+          lives.length + '</button>' : '') + '</div>';
+    }
+    html += '<div class="livestack">' +
+      shown.map(function (x) { return liveBar(x, false); }).join('') +
+      folded.map(function (x) { return liveBar(x, true); }).join('') +
+      '</div></div>';
   } else {
     html += '<div class="bar skin">' +
       '<div class="bar-icon">' + icon('spade', 21) + '</div>' +
@@ -1335,11 +1386,11 @@ function viewHome() {
   var tiles = '';
   GAMES.forEach(function (g, i) {
     var n = i + 1;
-    var isLive = live && live.gameId === g.id;
+    var onGame = lives.filter(function (x) { return x.gameId === g.id; }).length;
     tiles += '<button class="tile tile' + n + ' skin" data-go="/new?game=' + g.id + '">' +
       '<div class="art art' + n + '"><div class="artin">' + (i === 0 ? logoSpade3() : logoKachu()) + '</div>' +
       '<span class="pill pill-meta">' + esc(lastPlayed(g.id)) + '</span>' +
-      (isLive ? '<span class="pill pill-live">LIVE</span>' : '') +
+      (onGame ? '<span class="pill pill-live">' + (onGame > 1 ? onGame + ' LIVE' : 'LIVE') + '</span>' : '') +
       '</div><div class="band band' + n + '">' + esc(g.band) + '</div></button>';
   });
   tiles += '<div class="tile tile3 skin"><div class="art art3"><div class="artin">' + logoSoon() + '</div>' +
@@ -1572,7 +1623,8 @@ function bidConsole(s) {
 
   var sirs = SUITS.map(function (su) {
     return '<button class="pick suitpick' + (su.red ? ' red' : '') + '" data-sir="' + su.id + '" ' +
-      'aria-pressed="' + (d.sir === su.id) + '" title="' + su.name + '">' + su.glyph + '</button>';
+      'aria-pressed="' + (d.sir === su.id) + '">' +
+      '<span class="sglyph">' + su.glyph + '</span><span class="sname">' + su.name + '</span></button>';
   }).join('');
 
   var calls = d.calls.map(function (c, i) {
@@ -1584,7 +1636,7 @@ function bidConsole(s) {
     var suits = SUITS.map(function (su) {
       return '<button class="pick suitpick' + (su.red ? ' red' : '') + '" data-csuit="' + i + '" data-st="' + su.id + '"' +
         (callTaken(i, c.rank, su.id) ? ' disabled' : '') + ' aria-pressed="' + (c.suit === su.id) + '">' +
-        su.glyph + '</button>';
+        '<span class="sglyph">' + su.glyph + '</span><span class="sname">' + su.name + '</span></button>';
     }).join('');
     return '<div class="callrow">' +
       '<span class="callno">Card ' + (i + 1) + '</span>' +
@@ -1646,7 +1698,7 @@ function revealConsole(s, r, idx) {
     }).join('');
     return '<div class="step' + (c.holderId ? ' done' : '') + '" data-hstep="' + ci + '">' +
       '<span class="steplab"><span class="stepno">' + (ci + 1) + '</span><b>Who held<br>' +
-        '<span class="callface' + (cardIsRed(c.card) ? ' red' : '') + '" style="width:38px;height:48px;font-size:15px;margin-top:5px">' +
+        '<span class="callface' + (cardIsRed(c.card) ? ' red' : '') + '" style="width:52px;height:66px;font-size:19px;margin-top:6px">' +
         esc(c.card.rank) + suitById(c.card.suit).glyph + '</span></b></span>' +
       '<span class="stepbody">' + opts + '</span></div>';
   }).join('');
@@ -2253,6 +2305,13 @@ document.addEventListener('click', function (e) {
   if (t) { go(t.getAttribute('data-go')); return; }
 
   if (e.target.id === 'seed') { loadSample(); render(); return; }
+
+  if (e.target.id === 'livetoggle') {
+    var wrap = $('#livewrap');
+    var open = wrap.classList.toggle('open');
+    e.target.textContent = open ? 'Show fewer' : 'Show all ' + liveSessions().length;
+    return;
+  }
 
   /* ---------- new session ---------- */
   if (e.target.closest('#playersel button')) {

@@ -172,7 +172,11 @@ from a web dashboard. Every screen that lists things follows it:
   added without redesigning anything.
 - **The live session bar sits at the TOP**, directly under the plaque and above
   the tile row: live indicator, game and round, every player's running score,
-  target, and the Resume button. Resuming is always one tap away.
+  and the Resume button. Resuming is always one tap away.
+- **More than one table can be running.** One live session shows as a single
+  bar. Two show as two. Beyond that a count chip reads *"N tables running"*, the
+  two newest stay on screen and the rest fold behind **Show all N**. A game tile
+  whose game has several tables running says `2 LIVE` rather than `LIVE`.
 - Standings and recent results sit at the foot, below the tile row and prompt.
 
 That bar is the load-bearing idea. Scores get entered on a phone mid-game, so the
@@ -199,9 +203,12 @@ left; the step number turns green as each is answered.
 
 **One tap, one value — never a dropdown.** Bidder, sir, rank and suit are all
 chips. Ranks are a 13-wide grid rack that regrids to 7 then 5 columns as the
-screen narrows, so a wrapped last row keeps its column width. The bid takes
-quick chips scaled to the deck cap, a ±5 stepper, and a number field. Each
-called card shows a live card-face preview at the end of its row.
+screen narrows, so a wrapped last row keeps its column width. The four suits
+span that same full width beneath it — glyph plus name, edged in `--suit-edge`
+so they read as cards rather than buttons — regridding to 2x2 on a phone. Each
+card's number is a highlighted `--acc1` plaque, and a card-face preview of the
+chosen card closes the row. The bid takes quick chips scaled to the deck cap,
+a ±5 stepper, and a number field set apart from them.
 
 The draft round lives in memory (`draft`), not in storage, so a tap repaints
 chips in place (`paintConsole`) instead of re-rendering and throwing away focus,
