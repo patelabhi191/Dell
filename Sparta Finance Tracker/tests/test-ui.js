@@ -209,7 +209,9 @@ const section = t => console.log(`\n── ${t} ──`);
 
   // add an expense on Monthly; it must show up on Yearly (same state.yf.txns)
   const yfBefore = await page.evaluate(() => state.yf.txns.length);
-  await page.fill('#meDate', '2026-01-22');
+  // the form takes a month, not a date: the #meDate field was removed when
+  // Monthly moved to month-only entry
+  await page.selectOption('#meFormMonth', '2026-01');
   await page.fill('#meAmt', '55.55');
   await page.fill('#meDesc', 'Shared Ledger Probe');
   await page.click('#meSave'); await page.waitForTimeout(180);
@@ -226,7 +228,7 @@ const section = t => console.log(`\n── ${t} ──`);
   await go('dash');
   await page.click('#settingsBtn'); await page.waitForTimeout(150);
   check(await vis('#drawer'), 'settings drawer opens');
-  check(await count('#tabOrder .taborder-row') === 5, 'tab-order list shows 5 tabs');
+  check(await count('#tabOrder .taborder-row') === 6, 'tab-order list shows 6 tabs');
   const first0 = await page.evaluate(() => document.querySelector('#tabOrder .taborder-row').dataset.tab);
   await page.click('#tabOrder .taborder-row:nth-child(2) [data-up]'); await page.waitForTimeout(150);
   const first1 = await page.evaluate(() => document.querySelector('#tabOrder .taborder-row').dataset.tab);

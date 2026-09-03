@@ -1536,9 +1536,10 @@ select{color-scheme:dark}
     <div class="seg" id="viewSeg" role="tablist" aria-label="View">
       <button data-view="dash" class="active all">Dashboard</button>
       <button data-view="contrib">Contributions</button>
-      <button data-view="yearly">Yearly Finance</button>
-      <button data-view="monthly">Monthly Expense</button>
+      <button data-view="yearly">Yearly Fin</button>
+      <button data-view="monthly">Monthly</button>
       <button data-view="archive">Archives</button>
+      <button data-view="plan">Plan</button>
     </div>
     <div class="yearbar" id="yearBar">
       <label for="viewYear">Contribution year</label>
@@ -2261,11 +2262,18 @@ select{color-scheme:dark}
           <tbody id="meBody"></tbody>
         </table>
       </div>
-      <div class="empty" id="meEmpty">Nothing here yet — import a statement above, or add expenses on the Yearly Finance tab.</div>
+      <div class="empty" id="meEmpty">Nothing here yet — import a statement above, or add expenses on the Yearly Fin tab.</div>
     </section>
   </div>
 
   <!-- FINANCE ARCHIVES VIEW -->
+  <div id="planView" style="display:none">
+    <section class="panel cash">
+      <h3>Plan</h3>
+      <p class="note" style="margin-top:0">Reserved for now — planning tools will live here.</p>
+    </section>
+  </div>
+
   <div id="archiveView" style="display:none">
     <section class="panel cash">
       <h3>Archives</h3>
@@ -3057,13 +3065,14 @@ function applyView(view){
   $('viewSeg').querySelectorAll('button').forEach(x=>{
     x.className=x.dataset.view===view?'active all':'';
   });
-  const dash=view==='dash', contrib=view==='contrib', secondary=(view==='yearly'||view==='archive'||view==='monthly');
+  const dash=view==='dash', contrib=view==='contrib', secondary=(view==='yearly'||view==='archive'||view==='monthly'||view==='plan');
   // show exactly one container; dashView must go back to grid (not block) to keep its wider layout
   $('dashView').style.display=dash?'grid':'none';
   $('contribView').style.display=contrib?'block':'none';
   $('yearlyView').style.display=view==='yearly'?'block':'none';
   $('monthlyView').style.display=view==='monthly'?'block':'none';
   $('archiveView').style.display=view==='archive'?'block':'none';
+  $('planView').style.display=view==='plan'?'block':'none';
   // year selector belongs to Contributions only
   $('yearBar').classList.toggle('show',contrib);
   $('yfYearWrap').classList.toggle('show',view==='yearly');
@@ -5033,7 +5042,7 @@ function renderME(){
   $('meEmpty').style.display=listRows.length?'none':'block';
   $('meEmpty').textContent=(!listRows.length&&txns.length)
     ? 'Nothing in this category this month \u2014 try All categories.'
-    : 'Nothing here yet \u2014 import a statement above, or add expenses on the Yearly Finance tab.';
+    : 'Nothing here yet \u2014 import a statement above, or add expenses on the Yearly Fin tab.';
   const n=Object.keys(state.me.rules).length;
   $('meRuleCount').textContent=n?n+' merchant rule'+(n===1?'':'s')+' learned':'no rules learned yet';
   meFillCatSelect(); meFillAllotSelect(); meFillFormMonth(); renderMEChart(); renderMEMatrix(); renderMEGear();
@@ -5208,9 +5217,9 @@ if($('meFile')){
 
 
 /* ============ tab order ============ */
-const TAB_DEFAULT=['dash','contrib','yearly','monthly','archive'];
-const TAB_NAMES={dash:'Dashboard',contrib:'Contributions',yearly:'Yearly Finance',
-  monthly:'Monthly Expense',archive:'Archives'};
+const TAB_DEFAULT=['dash','contrib','yearly','monthly','archive','plan'];
+const TAB_NAMES={dash:'Dashboard',contrib:'Contributions',yearly:'Yearly Fin',
+  monthly:'Monthly',archive:'Archives',plan:'Plan'};
 function tabOrder(){
   let o=store.get('sparta.tabOrder',null);
   if(!Array.isArray(o)) o=TAB_DEFAULT.slice();
