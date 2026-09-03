@@ -675,6 +675,15 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .bulbs i { width: 6px; height: 6px; border-radius: 50%; background: var(--bulb); animation: dcBulb 1.5s ease-in-out infinite; }
 .bulbs i:nth-child(2n){animation-delay:.25s} .bulbs i:nth-child(3n){animation-delay:.55s}
 
+/* the one-shot entrance sequence plays once, on real page load — every
+   .rule/.plaque/.bar/.tile/.prompt/.panel animation ends on the exact same
+   opacity:1/transform:none rest state it starts from, so turning it off
+   here is visually silent, it just stops the replay */
+body.settled .rule, body.settled .plaque, body.settled .bar,
+body.settled .tile, body.settled .prompt, body.settled .panel {
+  animation: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::after { animation: none !important; transition: none !important; }
 }
@@ -1865,6 +1874,7 @@ function updateTotals(s) {
 window.addEventListener('hashchange', render);
 applyTheme();
 render();
+setTimeout(function () { document.body.classList.add('settled'); }, 1300);
 </script>
 </body>
 </html>
