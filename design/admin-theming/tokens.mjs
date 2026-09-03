@@ -5,7 +5,7 @@ export const THEMES = [
     tok: {
       bg: '#2f3134', 'bg-image': 'linear-gradient(180deg, #3a3d41 0%, #2b2d30 58%, #232528 100%)',
       ink: '#eceef0', muted: '#9aa0a6', hair: 'rgba(255,255,255,0.13)', rule: 'rgba(255,255,255,0.16)', 'mark-ink': '#d8dbdf',
-      acc1: '#c9a227', acc2: '#4a9d6b', acc3: '#8b1f28', acc4: '#3b6ea5', live: '#e0563f',
+      acc1: '#c9a227', 'on-acc1': '#221a05', 'on-live': '#1c0703', acc2: '#4a9d6b', acc3: '#8b1f28', acc4: '#3b6ea5', live: '#e0563f',
       'rank-bg': 'rgba(255,255,255,0.10)', 'row-hover': 'rgba(255,255,255,0.06)', 'dot-idle': 'rgba(255,255,255,0.22)',
       'font-display': "'Oswald', 'Helvetica Neue', sans-serif", 'font-body': "'Barlow', 'Helvetica Neue', sans-serif",
       'word-family': "'Oswald', sans-serif", 'word-size': '26px', 'word-track': '0.24em', 'word-weight': '300', 'word-shadow': 'none',
@@ -37,7 +37,7 @@ export const THEMES = [
     tok: {
       bg: '#e8342c', 'bg-image': 'repeating-linear-gradient(90deg, rgba(255,255,255,0.10) 0px, rgba(255,255,255,0.10) 46px, transparent 46px, transparent 92px)',
       ink: '#17244d', muted: '#6d7699', hair: '#dfe3f0', rule: 'rgba(255,255,255,0.4)', 'mark-ink': '#ffe066',
-      acc1: '#2440a8', acc2: '#f7b500', acc3: '#00a878', acc4: '#17244d', live: '#e8342c',
+      acc1: '#2440a8', 'on-acc1': '#ffffff', 'on-live': '#ffffff', acc2: '#f7b500', acc3: '#00a878', acc4: '#17244d', live: '#e8342c',
       'rank-bg': '#e4e8f6', 'row-hover': 'rgba(36,64,168,0.08)', 'dot-idle': 'rgba(255,255,255,0.5)',
       'font-display': "'Titan One', 'Arial Black', sans-serif", 'font-body': "'Mulish', 'Helvetica Neue', sans-serif",
       'word-family': "'Titan One', sans-serif", 'word-size': '25px', 'word-track': 'normal', 'word-weight': '400', 'word-shadow': 'none',
@@ -65,7 +65,7 @@ export const THEMES = [
     tok: {
       bg: '#241350', 'bg-image': 'radial-gradient(58% 40% at 16% 0%, rgba(255,42,163,0.34) 0%, transparent 68%), radial-gradient(52% 38% at 88% 4%, rgba(0,229,255,0.30) 0%, transparent 66%)',
       ink: '#f5f0ff', muted: '#a892d8', hair: 'rgba(255,255,255,0.14)', rule: 'rgba(255,255,255,0.18)', 'mark-ink': '#00e5ff',
-      acc1: '#ff2aa3', acc2: '#00e5ff', acc3: '#b4ff39', acc4: '#ffcc00', live: '#ff2aa3',
+      acc1: '#ff2aa3', 'on-acc1': '#1a0b33', 'on-live': '#2b0417', acc2: '#00e5ff', acc3: '#b4ff39', acc4: '#ffcc00', live: '#ff2aa3',
       'rank-bg': 'rgba(255,255,255,0.10)', 'row-hover': 'rgba(255,42,163,0.14)', 'dot-idle': 'rgba(255,255,255,0.22)',
       'font-display': "'Outfit', 'Helvetica Neue', sans-serif", 'font-body': "'Outfit', 'Helvetica Neue', sans-serif",
       'word-family': "'Monoton', cursive", 'word-size': '25px', 'word-track': '0.07em', 'word-weight': '400',
@@ -95,7 +95,7 @@ export const THEMES = [
     tok: {
       bg: '#12b0a0', 'bg-image': 'radial-gradient(circle at 88% 4%, rgba(255,183,3,0.35) 0%, transparent 34%), radial-gradient(circle at 6% 96%, rgba(255,111,89,0.28) 0%, transparent 36%)',
       ink: '#0f3d38', muted: '#5c8c85', hair: '#d6f2ec', rule: 'rgba(255,255,255,0.45)', 'mark-ink': '#fff3d0',
-      acc1: '#ff6f59', acc2: '#0f8c80', acc3: '#ffb703', acc4: '#0f3d38', live: '#ff6f59',
+      acc1: '#ff6f59', 'on-acc1': '#0a2a26', 'on-live': '#3d1109', acc2: '#0f8c80', acc3: '#ffb703', acc4: '#0f3d38', live: '#ff6f59',
       'rank-bg': '#d4f0ea', 'row-hover': 'rgba(18,176,160,0.12)', 'dot-idle': 'rgba(255,255,255,0.55)',
       'font-display': "'Fredoka', 'Trebuchet MS', sans-serif", 'font-body': "'Quicksand', 'Helvetica Neue', sans-serif",
       'word-family': "'Fredoka', sans-serif", 'word-size': '27px', 'word-track': 'normal', 'word-weight': '600', 'word-shadow': 'none',

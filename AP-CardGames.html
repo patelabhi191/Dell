@@ -17,6 +17,8 @@
   --rule: rgba(255,255,255,0.16);
   --mark-ink: #d8dbdf;
   --acc1: #c9a227;
+  --on-acc1: #221a05;
+  --on-live: #1c0703;
   --acc2: #4a9d6b;
   --acc3: #8b1f28;
   --acc4: #3b6ea5;
@@ -106,6 +108,8 @@
   --rule: rgba(255,255,255,0.4);
   --mark-ink: #ffe066;
   --acc1: #2440a8;
+  --on-acc1: #ffffff;
+  --on-live: #ffffff;
   --acc2: #f7b500;
   --acc3: #00a878;
   --acc4: #17244d;
@@ -195,6 +199,8 @@
   --rule: rgba(255,255,255,0.18);
   --mark-ink: #00e5ff;
   --acc1: #ff2aa3;
+  --on-acc1: #1a0b33;
+  --on-live: #2b0417;
   --acc2: #00e5ff;
   --acc3: #b4ff39;
   --acc4: #ffcc00;
@@ -284,6 +290,8 @@
   --rule: rgba(255,255,255,0.45);
   --mark-ink: #fff3d0;
   --acc1: #ff6f59;
+  --on-acc1: #0a2a26;
+  --on-live: #3d1109;
   --acc2: #0f8c80;
   --acc3: #ffb703;
   --acc4: #0f3d38;
@@ -409,11 +417,13 @@ a { color: var(--acc1); }
 .wordmark { font-family: var(--word-family); font-size: calc(var(--word-size) * .76); letter-spacing: var(--word-track);
   font-weight: var(--word-weight); text-shadow: var(--word-shadow); line-height: 1; color: var(--plaque-ink); white-space: nowrap; }
 .plaque-sub { font-size: 9px; font-weight: 700; letter-spacing: .28em; color: var(--plaque-sub); text-transform: uppercase; margin-top: 5px; }
-.opmark { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 7px;
-  color: var(--mark-ink); font-family: var(--font-display); font-size: 13px; }
-.backlink { position: absolute; left: 2px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 7px;
-  color: var(--mark-ink); font-size: 13px; font-weight: 600; text-decoration: none; padding: 8px 12px; border-radius: 999px;
-  background: var(--rank-bg); }
+.opmark, .backlink { position: absolute; top: 50%; transform: translateY(-50%); display: flex; align-items: center;
+  gap: 7px; padding: 8px 14px; border-radius: 999px; text-decoration: none; font-size: 13px;
+  background: var(--ground-plate); color: var(--ground-ink);
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1), filter .18s ease; }
+.opmark { right: 2px; font-family: var(--font-display); }
+.backlink { left: 2px; font-weight: 600; }
+.opmark:hover, .backlink:hover { transform: translateY(-50%) scale(1.05); filter: brightness(1.08); }
 
 /* ============================ live bar ============================ */
 .bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 14px 14px 18px; margin-bottom: 16px;
@@ -477,7 +487,7 @@ a { color: var(--acc1); }
 .pill { position: absolute; top: 10px; z-index: 2; font-size: 10px; font-weight: 800; letter-spacing: .12em;
   padding: 5px 9px; border-radius: 999px; }
 .pill-meta { left: 10px; color: var(--art-meta); background: var(--art-meta-bg); }
-.pill-live { right: 10px; color: #fff; background: var(--live); }
+.pill-live { right: 10px; color: var(--on-live); background: var(--live); }
 .band { min-height: 50px; padding: 6px 10px; display: flex; align-items: center; justify-content: center; text-align: center;
   font-family: var(--font-display); letter-spacing: var(--band-track); font-size: 18px;
   transition: filter .24s ease, letter-spacing .24s ease, background .24s ease, color .24s ease; }
@@ -507,7 +517,7 @@ a { color: var(--acc1); }
 .row:hover { background: var(--row-hover); transform: translateX(3px); }
 .rank { width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; background: var(--rank-bg); color: var(--muted);
   font-family: var(--font-display); font-size: 11px; display: flex; align-items: center; justify-content: center; }
-.rank.top { background: var(--acc1); color: #fff; }
+.rank.top { background: var(--acc1); color: var(--on-acc1); }
 .grow { flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .num { font-family: var(--font-display); font-size: 15px; }
 .dim { color: var(--muted); font-size: 13px; }
@@ -563,13 +573,49 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .banner-win { margin-top: 14px; padding: 14px 16px; border-radius: 10px; background: var(--row-hover);
   border: 1px solid var(--acc1); font-size: 14px; }
 
+/* a game with two names turns them over, one at a time */
+.gname { display: grid; perspective: 500px; }
+.gname i { grid-area: 1 / 1; font-style: normal; backface-visibility: hidden;
+  /* `both` matters: without it the delayed name sits fully visible until its
+     first turn, and the two overlap for the opening seconds */
+  animation: dcName 9s cubic-bezier(.22,1,.36,1) infinite both; }
+.gname i:nth-child(2) { animation-delay: 4.5s; }
+
+/* slot four: two library views sharing one frame */
+.tilesplit { display: flex; flex-direction: column; }
+.tilesplit .half { flex: 1 1 0; display: flex; flex-direction: column; min-height: 0;
+  text-align: left; transition: filter .22s ease; }
+.tilesplit .half + .half { border-top: 1px solid var(--hair); }
+.tilesplit .half:hover { filter: brightness(1.1); }
+.tilesplit .halfart { flex: 1 1 0; height: auto; min-height: 0; }
+.tilesplit .band { min-height: 42px; font-size: 16px; }
+
+/* the two library views share a tab strip, so neither is a dead end */
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; padding: 5px; border-radius: 999px;
+  background: var(--ground-plate); width: fit-content;
+  animation: dcRise .5s cubic-bezier(.34,1.56,.64,1) both; }
+.tab { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 20px;
+  border-radius: 999px; color: var(--ground-ink); font-family: var(--font-display); font-size: 14px;
+  transition: background .2s ease, color .2s ease, transform .2s cubic-bezier(.34,1.56,.64,1); }
+.tab:hover { transform: translateY(-2px); }
+.tab.on { background: var(--acc1); color: var(--on-acc1); }
+
 /* ============================ admin ============================ */
 .pinpad { display: grid; grid-template-columns: repeat(3, 72px); gap: 10px; justify-content: center; }
 .pinpad button { height: 56px; border-radius: 12px; background: var(--rank-bg); color: var(--ink);
-  font-family: var(--font-display); font-size: 19px; }
-.pindots { display: flex; gap: 12px; justify-content: center; }
-.pindots span { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--hair); }
-.pindots span.on { background: var(--acc1); border-color: var(--acc1); }
+  font-family: var(--font-display); font-size: 19px;
+  transition: transform .15s cubic-bezier(.34,1.56,.64,1), background .18s ease; }
+.pinpad button:hover { transform: translateY(-2px); background: var(--row-hover); }
+.pinpad button:active { transform: scale(.94); }
+.pinpad .okkey { background: var(--resume-bg); color: var(--resume-ink); font-size: 15px; }
+.pinpad .clrkey { color: var(--muted); font-size: 14px; }
+/* dots appear as characters are typed — the pad never advertises the length */
+.pindots { display: flex; gap: 12px; justify-content: center; min-height: 15px;
+  align-items: center; margin: 10px 0 4px; }
+.pindots span { width: 13px; height: 13px; border-radius: 50%; background: var(--acc1);
+  animation: dcPop .3s cubic-bezier(.34,1.56,.64,1) both; }
+.pindots.shake { animation: dcShake .4s ease; }
+.pinerr { min-height: 18px; color: var(--live); margin: 0 0 12px; }
 .themegrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
 .themecard { padding: 12px; border-radius: var(--panel-radius); background: var(--panel); box-shadow: var(--panel-shadow);
   border: 2px solid transparent; text-align: left; width: 100%; }
@@ -582,7 +628,7 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .mini-tiles i { flex-grow: 1; border-radius: 3px; }
 .badge { font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; padding: 5px 10px;
   border-radius: 999px; background: var(--rank-bg); color: var(--muted); }
-.badge.active { background: var(--acc1); color: #fff; }
+.badge.active { background: var(--acc1); color: var(--on-acc1); }
 
 /* ============================ responsive ============================ */
 @media (max-width: 860px) {
@@ -631,7 +677,7 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .badge-res { margin-left: auto; font-size: 10px; font-weight: 800; letter-spacing: .08em;
   text-transform: uppercase; padding: 4px 9px; border-radius: 999px; color: #fff; }
 .badge-res.won { background: var(--acc2); }
-.badge-res.lost { background: var(--live); }
+.badge-res.lost { background: var(--live); color: var(--on-live); }
 
 .hand-calls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
 .callpair { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px 4px 4px;
@@ -671,7 +717,7 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .mchip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px;
   background: var(--rank-bg); color: var(--ink); font-size: 11.5px; font-weight: 700;
   letter-spacing: .04em; white-space: nowrap; }
-.mchip.livechip { background: var(--live); color: #fff; }
+.mchip.livechip { background: var(--live); color: var(--on-live); }
 .deskacts { margin-left: auto; display: flex; gap: 9px; flex-wrap: wrap; }
 
 .desk { display: grid; grid-template-columns: 322px minmax(0,1fr); gap: 14px; align-items: start; }
@@ -694,7 +740,7 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .podscore { font-family: var(--font-display); font-size: 25px; line-height: 1; letter-spacing: .01em;
   transition: font-size .3s cubic-bezier(.34,1.56,.64,1), color .28s ease; }
 .pod.first { background: var(--row-hover); border-color: var(--acc1); }
-.pod.first .podrank { background: var(--acc1); color: #fff; }
+.pod.first .podrank { background: var(--acc1); color: var(--on-acc1); }
 .pod.first .podscore { color: var(--acc1); font-size: 30px; }
 .pod.mover { z-index: 4; box-shadow: 0 14px 30px rgba(0,0,0,.30); transform-origin: 50% 50%; }
 .podcrown { position: absolute; left: 6px; top: -13px; color: var(--acc1); opacity: 0;
@@ -729,7 +775,7 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
   color: var(--muted); font-family: var(--font-display); font-size: 11px;
   display: flex; align-items: center; justify-content: center;
   transition: background .24s ease, color .24s ease, transform .24s cubic-bezier(.34,1.56,.64,1); }
-.step.done .stepno { background: var(--acc2); color: #fff; transform: scale(1.08); }
+.step.done .stepno { background: var(--acc2); color: var(--panel-ink, #fff); transform: scale(1.08); }
 .steplab b { font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
   color: var(--muted); line-height: 1.35; }
 .stepbody { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; }
@@ -741,7 +787,7 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
   transition: transform .16s cubic-bezier(.34,1.56,.64,1), background .18s ease, border-color .18s ease, color .18s ease; }
 .pick:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--acc1); }
 .pick:active:not(:disabled) { transform: translateY(0) scale(.96); }
-.pick[aria-pressed="true"] { background: var(--acc1); border-color: var(--acc1); color: #fff; }
+.pick[aria-pressed="true"] { background: var(--acc1); border-color: var(--acc1); color: var(--on-acc1); }
 .pick:disabled { opacity: .26; cursor: not-allowed; }
 .pick.sq { min-width: 44px; padding: 0 9px; border-radius: 11px; font-family: var(--font-display); font-size: 16px; }
 /* card-white edges, so the suit chips read as cards rather than as buttons */
@@ -751,7 +797,7 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .pick.suitpick .sglyph { font-size: 26px; line-height: 1; }
 .pick.suitpick .sname { white-space: nowrap; }
 .pick.suitpick.red { color: var(--suit-red); }
-.pick.suitpick.red[aria-pressed="true"] { background: var(--live); border-color: var(--live); color: #fff; }
+.pick.suitpick.red[aria-pressed="true"] { background: var(--live); border-color: var(--live); color: var(--on-live); }
 .pick.small { min-height: 36px; padding: 0 12px; font-size: 13px; }
 
 .bidbox { display: flex; align-items: center; gap: 9px; margin-right: 18px; }
@@ -801,7 +847,7 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .winbtn:hover { transform: translateY(-3px) scale(1.01); filter: brightness(1.06); }
 .winbtn:active { transform: scale(.98); }
 .winbtn.bid { background: var(--acc2); }
-.winbtn.opp { background: var(--live); }
+.winbtn.opp { background: var(--live); color: var(--on-live); }
 .winbtn::after { content: ""; position: absolute; top: 0; left: 0; width: 30%; height: 100%; pointer-events: none;
   background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.45), rgba(255,255,255,0));
   animation: dcSweep 3.4s ease-in-out infinite; }
@@ -842,7 +888,7 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .lstamp { font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
   padding: 5px 10px; border-radius: 999px; color: #fff; white-space: nowrap; }
 .lstamp.won { background: var(--acc2); }
-.lstamp.lost { background: var(--live); }
+.lstamp.lost { background: var(--live); color: var(--on-live); }
 .lstamp.wait { background: var(--rank-bg); color: var(--muted); }
 .lstamp.stamped { animation: dcStamp .6s cubic-bezier(.34,1.56,.64,1) both; }
 
@@ -923,6 +969,11 @@ body.revealing .skiphint { opacity: 1; }
   60%{opacity:1;transform:scale(1.3) rotate(9deg) translateY(-2px)} 100%{opacity:1;transform:scale(1) rotate(-6deg)} }
 @keyframes dcShock { 0%{opacity:.85;transform:scale(1)} 100%{opacity:0;transform:scale(1.3)} }
 @keyframes dcThrone { 0%{transform:scale(1)} 30%{transform:scale(1.11)} 62%{transform:scale(.985)} 100%{transform:scale(1)} }
+@keyframes dcName { 0%{opacity:0;transform:rotateX(-92deg)} 4%{opacity:1;transform:rotateX(0)}
+  46%{opacity:1;transform:rotateX(0)} 51%{opacity:0;transform:rotateX(92deg)}
+  100%{opacity:0;transform:rotateX(92deg)} }
+@keyframes dcShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)}
+  45%{transform:translateX(6px)} 70%{transform:translateX(-4px)} }
 @keyframes dcBurst { 0%{opacity:1;transform:translate(0,0) rotate(0) scale(1)}
   100%{opacity:0;transform:translate(var(--bx),var(--by)) rotate(420deg) scale(.35)} }
 .conf { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
@@ -946,6 +997,10 @@ body.settled .ledger, body.settled .sheetpanel, body.settled .setpanel {
 
 @media (prefers-reduced-motion: reduce) {
   *, *::after { animation: none !important; transition: none !important; }
+  /* the two names can no longer take turns, so show them at once */
+  .gname { display: block; }
+  .gname i { display: inline; }
+  .gname i + i::before { content: " / "; }
 }
 </style>
 </head>
@@ -970,6 +1025,13 @@ body.settled .ledger, body.settled .sheetpanel, body.settled .setpanel {
    anyone can read it by viewing source. That is proportionate here:
    anyone with the link can already edit the scores themselves. */
 var ADMIN_PIN = '2468';
+/* Where the PIN comes from. Once Firestore is configured the settings
+   document carries it, so it can be changed without touching this file;
+   until then the constant above stands in. Either way it is checked in the
+   browser — a deterrent against accidental changes, not a security boundary. */
+function adminPin() {
+  return (state.settings && state.settings.pin) || ADMIN_PIN;
+}
 
 /* Leave null to use this device's localStorage (the default).
    To switch the whole group onto shared, live-syncing Firestore:
@@ -980,7 +1042,7 @@ var ADMIN_PIN = '2468';
 var FIREBASE_CONFIG = null;
 
 var GAMES = [
-  { id: 'spade3',    name: '3 of Spade', band: '3 of Spade', slot: 1, roundType: 'bid' },
+  { id: 'spade3',    name: '3 of Spade', alt: 'Kadi Teeli', band: '3 of Spade', slot: 1, roundType: 'bid' },
   { id: 'kachufull', name: 'KaChuFull',  band: 'KaChuFull',  slot: 2, roundType: 'numeric' }
 ];
 
@@ -1076,6 +1138,14 @@ function playerName(id) {
   for (var i = 0; i < state.players.length; i++) if (state.players[i].id === id) return state.players[i].name;
   return 'Unknown';
 }
+/* A game with two names shows them one at a time, each turning over like a
+   card. Pure CSS on an infinite loop, so it survives every re-render and
+   needs no timer of its own. */
+function gameNameHtml(g) {
+  if (!g.alt) return esc(g.name);
+  return '<span class="gname"><i>' + esc(g.name) + '</i><i>' + esc(g.alt) + '</i></span>';
+}
+
 function gameById(id) {
   for (var i = 0; i < GAMES.length; i++) if (GAMES[i].id === id) return GAMES[i];
   return { id: id, name: id, band: id, slot: 1, roundType: 'numeric' };
@@ -1230,6 +1300,16 @@ function icon(k, size, color) {
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="' + (color || 'currentColor') +
     '" aria-hidden="true"><path d="' + PATHS[k] + '"/></svg>';
 }
+var LINES = {
+  box: '<path d="M3 6.5h18v4H3zM5 10.5V20h14v-9.5M9.5 14h5"/>',
+  users: '<circle cx="9.2" cy="8.6" r="3.1"/><path d="M3.4 19.4a5.8 5.8 0 0 1 11.6 0"/>' +
+         '<circle cx="17.4" cy="10.2" r="2.3"/><path d="M15.9 15.2a4.6 4.6 0 0 1 4.7 4.2"/>'
+};
+function lineIcon(k, size) {
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + LINES[k] + '</svg>';
+}
+
 function lockIcon(size) {
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
     'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -1294,6 +1374,23 @@ function logoSoon() {
     '</div>' +
     '<div style="font-size:10px;font-weight:700;letter-spacing:.2em;color:var(--bink3);text-transform:uppercase">Game 3 &middot; 4 &middot; 5</div>' +
     '</div>';
+}
+
+/* the players mark — a stack of chips at the table, in the same flat style */
+function logoChips() {
+  function chip(x, y, col, pip) {
+    return '<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;width:74px;height:74px;border-radius:50%;' +
+      'background:' + col + ';border:4px solid var(--box-line);box-shadow:var(--art-shadow);' +
+      'display:flex;align-items:center;justify-content:center">' +
+      '<span style="position:absolute;inset:6px;border-radius:50%;border:3px dashed var(--box-line);opacity:.45"></span>' +
+      '<span style="position:relative;color:var(--box-line);display:flex">' + icon(pip, 26) + '</span></div>';
+  }
+  return '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">' +
+    '<div style="position:relative;width:170px;height:128px">' +
+      chip(0, 40, 'var(--acc4)', 'club') +
+      chip(48, 6, 'var(--card-face)', 'spade') +
+      chip(96, 40, 'var(--acc1)', 'heart') +
+    '</div></div>';
 }
 
 function logoBox() {
@@ -1391,18 +1488,25 @@ function viewHome() {
       '<div class="art art' + n + '"><div class="artin">' + (i === 0 ? logoSpade3() : logoKachu()) + '</div>' +
       '<span class="pill pill-meta">' + esc(lastPlayed(g.id)) + '</span>' +
       (onGame ? '<span class="pill pill-live">' + (onGame > 1 ? onGame + ' LIVE' : 'LIVE') + '</span>' : '') +
-      '</div><div class="band band' + n + '">' + esc(g.band) + '</div></button>';
+      '</div><div class="band band' + n + '">' + gameNameHtml(g) + '</div></button>';
   });
   tiles += '<div class="tile tile3 skin"><div class="art art3"><div class="artin">' + logoSoon() + '</div>' +
     '<span class="pill pill-meta">slot open</span></div>' +
     '<div class="band band3">More Coming Soon</div></div>';
-  tiles += '<button class="tile tile4 skin" data-go="/archives"><div class="art art4"><div class="artin">' + logoBox() + '</div>' +
-    '<span class="pill pill-meta">' + plural(finishedSessions().length, 'session') + '</span></div>' +
-    '<div class="band band4">Archives</div></button>';
+  /* slot four carries the two library views, a half each */
+  tiles += '<div class="tile tile4 skin tilesplit">' +
+    '<button class="half" data-go="/archives">' +
+      '<div class="art art4 halfart"><div class="artin" style="transform:scale(.56)">' + logoBox() + '</div>' +
+      '<span class="pill pill-meta">' + plural(finishedSessions().length, 'session') + '</span></div>' +
+      '<div class="band band4">Archives</div></button>' +
+    '<button class="half" data-go="/players">' +
+      '<div class="art art4 halfart"><div class="artin" style="transform:scale(.56)">' + logoChips() + '</div>' +
+      '<span class="pill pill-meta">' + plural(state.players.filter(function (p) { return p.active !== false; }).length, 'player') + '</span></div>' +
+      '<div class="band band4">Players</div></button>' +
+  '</div>';
   html += '<div class="tiles">' + tiles + '</div>';
 
-  html += '<div class="prompt"><div>Tap a game to start scoring</div>' +
-    '<div class="dots"><span></span><span></span><span></span></div></div>';
+  html += '<div class="prompt"><div>Tap a game to start scoring</div></div>';
 
   var at = allTime();
   var boardRows = at.length ? at.map(function (r, i) {
@@ -1434,11 +1538,6 @@ function viewHome() {
       'Add the people who play, or drop in a sample night to see it populated.</div>' +
       '<div class="btn-row" style="justify-content:center"><button class="btn btn-primary" data-go="/players">Add players</button>' +
       '<button class="btn" id="seed">Load sample night</button></div></div>';
-  } else {
-    html += '<div class="btn-row" style="margin-top:16px;justify-content:center">' +
-      '<button class="btn btn-nav" data-go="/players">Players</button>' +
-      '<button class="btn btn-nav" data-go="/archives">Archives</button>' +
-      '<button class="btn btn-nav" data-go="/admin">Admin</button></div>';
   }
   return html;
 }
@@ -1552,7 +1651,7 @@ function deskHead(s, g, readonly) {
     meta += '<span class="mchip">' + plural(s.partnerCount || 1, 'partner') + '</span>';
   }
   if (readonly) meta += '<span class="mchip">Won by ' + esc(playerName(s.winnerId)) + '</span>';
-  return '<div class="deskhead"><h1>' + esc(g.name) + '</h1><div class="deskmeta">' + meta + '</div>' +
+  return '<div class="deskhead"><h1>' + gameNameHtml(g) + '</h1><div class="deskmeta">' + meta + '</div>' +
     (readonly ? '' : '<div class="deskacts">' +
       (s.rounds.length ? '<button class="btn btn-danger" id="finish">Finish session</button>' : '') +
     '</div>') + '</div>';
@@ -1805,6 +1904,15 @@ function numericSheetHtml(s, readonly) {
   '</section>';
 }
 
+function libTabs(active) {
+  return '<div class="tabs">' +
+    '<button class="tab' + (active === 'archives' ? ' on' : '') + '" data-go="/archives">' +
+      lineIcon('box', 16) + 'Archives</button>' +
+    '<button class="tab' + (active === 'players' ? ' on' : '') + '" data-go="/players">' +
+      lineIcon('users', 16) + 'Players</button>' +
+  '</div>';
+}
+
 function viewArchives() {
   var done = finishedSessions();
   var rows = done.length ? done.map(function (s) {
@@ -1815,7 +1923,8 @@ function viewArchives() {
       '<span class="grow" style="font-weight:700;color:var(--acc2)">' + esc(playerName(s.winnerId)) + '</span>' +
       '<span class="num">' + (standings(s)[0] ? standings(s)[0].total : 0) + '</span></button>';
   }).join('') : '<div class="empty">No finished sessions yet.</div>';
-  return header({ back: '/' }) + '<div class="pagehead"><h1 class="title">Archives</h1>' +
+  return header({ back: '/' }) + libTabs('archives') +
+    '<div class="pagehead"><h1 class="title">Archives</h1>' +
     '<p class="sub">Every night played out, newest first. Tap one to read its scoresheet.</p></div>' +
     '<section class="panel skin">' + rows + '</section>';
 }
@@ -1827,7 +1936,8 @@ function viewPlayers() {
       '<button class="btn btn-ghost" data-toggle="' + p.id + '">' + (p.active === false ? 'Enable' : 'Disable') + '</button>' +
       '<button class="btn btn-danger" data-remove="' + p.id + '">Remove</button></div>';
   }).join('') : '<div class="empty">No players yet.</div>';
-  return header({ back: '/' }) + '<div class="pagehead"><h1 class="title">Players</h1>' +
+  return header({ back: '/' }) + libTabs('players') +
+    '<div class="pagehead"><h1 class="title">Players</h1>' +
     '<p class="sub">Everyone who plays. Disabling keeps their history but hides them from new sessions.</p></div>' +
     '<section class="panel skin">' + rows +
       '<div class="row" style="gap:10px;margin-top:10px">' +
@@ -1838,22 +1948,22 @@ function viewPlayers() {
 
 var adminUnlocked = false;
 var pinBuffer = '';
+var PIN_MAX = 8;
 
 function viewAdmin() {
   if (!adminUnlocked) {
-    var keys = ['1','2','3','4','5','6','7','8','9','C','0','OK'];
-    var dots = '';
-    for (var i = 0; i < 4; i++) dots += '<span></span>';
+    var keys = ['1','2','3','4','5','6','7','8','9','A','B','C','CLR','0','OK'];
     return header({ back: '/', title: 'ADMIN', sub: 'Appearance' }) +
       '<section class="panel skin" style="max-width:360px;margin:40px auto 0;text-align:center">' +
         '<div style="display:flex;justify-content:center;margin-bottom:14px"><span style="width:52px;height:52px;border-radius:50%;' +
           'background:var(--strip-icon-bg);color:var(--strip-accent);display:flex;align-items:center;justify-content:center">' +
           lockIcon(22) + '</span></div>' +
         '<h1 class="title" style="font-size:20px">Enter admin PIN</h1>' +
-        '<p class="sub" id="pinhint">Four digits</p>' +
-        '<div class="pindots" id="pindots" style="margin-bottom:18px">' + dots + '</div>' +
+        '<div class="pindots" id="pindots"></div>' +
+        '<p class="sub pinerr" id="pinhint"></p>' +
         '<div class="pinpad">' + keys.map(function (k) {
-          return '<button data-key="' + k + '"' + (k === 'OK' ? ' style="background:var(--resume-bg);color:var(--resume-ink);font-size:15px"' : '') + '>' + k + '</button>';
+          var cls = k === 'OK' ? ' class="okkey"' : (k === 'CLR' ? ' class="clrkey"' : '');
+          return '<button data-key="' + k + '"' + cls + '>' + k + '</button>';
         }).join('') + '</div>' +
       '</section>';
   }
@@ -2024,10 +2134,18 @@ function pickedValue(rowSel, attr) {
 
 /* the PIN pad is updated in place — a full re-render would restart the
    panel's entrance animation and make the pad blink on every key press */
+/* One dot per character actually entered — the pad gives nothing away about
+   how long the PIN is. */
 function updatePinDots(err) {
-  $$('#pindots span').forEach(function (d, i) { d.className = i < pinBuffer.length ? 'on' : ''; });
+  var box = $('#pindots');
+  if (box) {
+    var out = '';
+    for (var i = 0; i < pinBuffer.length; i++) out += '<span class="on"></span>';
+    box.innerHTML = out;
+    box.classList.toggle('shake', !!err);
+  }
   var hint = $('#pinhint');
-  if (hint) hint.textContent = err ? 'That PIN was not recognised \u2014 try again' : 'Four digits';
+  if (hint) hint.textContent = err ? 'That PIN was not recognised \u2014 try again' : '';
 }
 
 /* Each called card is two independent selects (rank, suit), so a "card" is a
@@ -2518,12 +2636,12 @@ document.addEventListener('click', function (e) {
   var key = e.target.closest('[data-key]');
   if (key) {
     var k = key.getAttribute('data-key');
-    if (k === 'C') { pinBuffer = ''; updatePinDots(false); return; }
+    if (k === 'CLR') { pinBuffer = ''; updatePinDots(false); return; }
     if (k === 'OK') {
-      if (pinBuffer === ADMIN_PIN) { adminUnlocked = true; pinBuffer = ''; render(); return; }
+      if (pinBuffer === adminPin()) { adminUnlocked = true; pinBuffer = ''; render(); return; }
       pinBuffer = ''; updatePinDots(true); return;
     }
-    if (pinBuffer.length < 4) { pinBuffer += k; updatePinDots(false); }
+    if (pinBuffer.length < PIN_MAX) { pinBuffer += k; updatePinDots(false); }
     return;
   }
   var th = e.target.closest('[data-theme-set]');

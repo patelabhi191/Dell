@@ -14,7 +14,7 @@ history.
 | Decision | Choice |
 | --- | --- |
 | Structure | **Single page** app, not one HTML page per game |
-| Games | **Fixed**: 1 · 3 of Spade · 2 · KaChuFull · 3 · More Coming Soon · 4 · Archives |
+| Games | **Fixed**: 1 · 3 of Spade · 2 · KaChuFull · 3 · More Coming Soon · 4 · Archives + Players |
 | Scoring | Highest total wins; round-by-round entry with running totals |
 | Backend | **Firebase Firestore**, live updates so every phone sees the same scores |
 | Access | Anyone with the link — no login |
@@ -121,7 +121,7 @@ Rules:
 The four skins are **not** alternatives to choose between — all four ship, and the
 active one is set from Admin.
 
-- **83 CSS custom properties**, defined four times over as `[data-theme="terminal"]`,
+- **89 CSS custom properties**, defined four times over as `[data-theme="terminal"]`,
   `"slot"`, `"neon"`, `"tropical"`. Every colour, border, radius and shadow in the
   app resolves through a `var(--token)`; no themed literal survives in markup.
 - Switching sets **one attribute on the root**. A 240ms transition on background,
@@ -144,9 +144,16 @@ missing or unreadable.
 
 ### Admin access
 
-Admin is gated by a **4-digit PIN**. Be honest about what that is: a PIN checked
-in the browser is a **deterrent, not a security boundary** — anyone can read it in
-the page source. It stops accidental and casual changes, which is its job here.
+Admin is gated by a **PIN**. Be honest about what that is: a PIN checked in the
+browser is a **deterrent, not a security boundary** — anyone can read it in the
+page source, or in the settings document once it lives there. It stops accidental
+and casual changes, which is its job here.
+
+The pad gives nothing away: no length hint, no pre-drawn slots, one dot appearing
+per character typed, up to 8. Keys run 1-9, then **A B C**, then CLR / 0 / OK, so
+the PIN is not limited to digits. `adminPin()` reads `settings.pin` and falls back
+to the constant, which is where the Firestore-held PIN will arrive; it is **2468**
+until then.
 
 This is proportionate rather than sloppy: the site is already open to anyone with
 the link for entering and editing scores, so the theme setting is a lower-value
@@ -178,6 +185,9 @@ from a web dashboard. Every screen that lists things follows it:
   two newest stay on screen and the rest fold behind **Show all N**. A game tile
   whose game has several tables running says `2 LIVE` rather than `LIVE`.
 - Standings and recent results sit at the foot, below the tile row and prompt.
+- **No bottom nav.** Admin is the plaque's operator mark, top right. Archives
+  and Players are the two halves of slot four, and each page carries a tab strip
+  so you can cross between them without going home.
 
 That bar is the load-bearing idea. Scores get entered on a phone mid-game, so the
 thing that must never be more than one tap away is the game in progress.
@@ -238,7 +248,14 @@ scores just land.
 | 1 | **3 of Spade** | The numeral **3** beside a solid black **spade**, on three fanned cards |
 | 2 | **KaChuFull** | A **diagonal saltire cross** carrying all four suits on its arms, hub monogram at the centre |
 | 3 | **More Coming Soon** | An intentional **ghost tile** — dashed frame, muted panel, plus mark. It reads as a slot waiting to be filled, never as a broken tile |
-| 4 | **Archives** | Box-and-papers, inverted band, visually distinct from the game tiles |
+| 4 | **Archives + Players** | Split in half: box-and-papers over a stack of chips, a band each. Two destinations in one frame, visually distinct from the game tiles |
+
+**3 of Spade goes by two names** — *3 of Spade* and *Kadi Teeli*. Wherever the
+game is titled (the tile band, the desk head) both are shown, one at a time,
+each turning over on its X axis via `dcName` on a 9s infinite loop — 4.5s a
+name, the second offset by half a cycle. It needs `both` fill or the delayed
+name sits visible until its first turn. Under `prefers-reduced-motion` they
+cannot take turns, so they render side by side as `3 of Spade / Kadi Teeli`.
 
 Both game logos are redrawn per skin so each one belongs to its own palette —
 never one flat mark pasted across every theme.
@@ -307,7 +324,7 @@ build step, no dependencies. Open it directly or serve it anywhere static.
 - Routes: `#/` home, `#/new`, `#/session/<id>`, `#/archives`, `#/players`, `#/admin`.
   `#/new` and `#/session/<id>` render on the wide shell; everything else on the
   1240px floor.
-- The 86 theme tokens are generated from `design/admin-theming/tokens.mjs`; never
+- The 89 theme tokens are generated from `design/admin-theming/tokens.mjs`; never
   hand-edit them in `AP-CardGames.html`, edit the table and re-inject.
 - Text that sits on the page ground (not on a panel) must use `--ground-ink` /
   `--ground-muted` on a `--ground-plate`. `--muted` is tuned for panels and is
