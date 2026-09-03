@@ -429,9 +429,6 @@ a { color: var(--acc1); }
 .bar-score i { font-family: var(--font-display); font-style: normal; font-size: 21px; line-height: 1.1; color: var(--strip-ink); }
 .bar-score.lead b, .bar-score.lead i { color: var(--strip-accent); }
 .bar-score.lead i { animation: dcReel 5s ease-in-out infinite; }
-.bar-target { padding-left: 14px; border-left: 1px solid var(--strip-hair); display: flex; flex-direction: column; align-items: flex-end; }
-.bar-target b { font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--strip-muted); }
-.bar-target i { font-family: var(--font-display); font-style: normal; font-size: 18px; }
 
 .btn-resume { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 9px;
   min-height: 52px; padding: 0 24px; border-radius: var(--resume-radius); background: var(--resume-bg);
@@ -585,7 +582,6 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
   .head { height: 74px; }
   .pshape { height: 70px; width: 260px; }
   .opmark span { display: none; }
-  .bar-target { display: none; }
 }
 
 /* ============================ 3 of Spade ============================ */
@@ -1565,8 +1561,15 @@ function applyTheme() {
   document.documentElement.setAttribute('data-theme', state.settings.theme || 'terminal');
 }
 
+var firstRender = true;
+
 function render() {
   applyTheme();
+  /* The entrance reveal is armed for the first paint only. Any later render —
+     a tap, a route change — settles the body BEFORE the markup swap, so the
+     new nodes never replay the fade-in from zero. Without this, a tap inside
+     the first 1.3s replayed the whole entrance and read as a blank screen. */
+  if (!firstRender) document.body.classList.add('settled');
   var hash = location.hash.slice(1) || '/';
   var path = hash.split('?')[0];
   var query = hash.slice(path.length);
@@ -1583,6 +1586,7 @@ function render() {
   window.scrollTo(0, 0);
   buildConfetti();
   if (addingHand) syncCardPickers();
+  firstRender = false;
 }
 
 function buildConfetti() {
@@ -1634,29 +1638,51 @@ function syncCardPickers() {
   var rows = $$('.cardpick');
   var n = rows.length;
   if (!n) return;
+
   var combos = [];
   for (var i = 0; i < n; i++) {
-    combos[i] = { rankSel: $('[data-rank="' + i + '"]'), suitSel: $('[data-suit="' + i + '"]') };
-    combos[i].rank = combos[i].rankSel ? combos[i].rankSel.value : null;
-    combos[i].suit = combos[i].suitSel ? combos[i].suitSel.value : null;
-  }
-  for (var j = 0; j < n; j++) {
-    var mySel = combos[j].suitSel;
-    if (!mySel) continue;
-    var myRank = combos[j].rank;
-    $$('option', mySel).forEach(function (opt) {
-      var conflict = false;
-      for (var k = 0; k < n; k++) {
-        if (k === j) continue;
-        if (combos[k].rank === myRank && combos[k].suit === opt.value) { conflict = true; break; }
-      }
-      opt.disabled = conflict;
+    var rankSel = $('[data-rank="' + i + '"]');
+    var suitSel = $('[data-suit="' + i + '"]');
+    combos.push({
+      rankSel: rankSel, suitSel: suitSel,
+      rank: rankSel ? rankSel.value : null,
+      suit: suitSel ? suitSel.value : null
     });
-    var curOpt = mySel.querySelector('option[value="' + combos[j].suit + '"]');
-    if (curOpt && curOpt.disabled) {
-      var fallback = mySel.querySelector('option:not(:disabled)');
-      if (fallback) mySel.value = fallback.value;
+  }
+
+  function takenElsewhere(idx, rank, suit) {
+    for (var k = 0; k < n; k++) {
+      if (k === idx) continue;
+      if (combos[k].rank === rank && combos[k].suit === suit) return true;
     }
+    return false;
+  }
+
+  /* Pass one: nudge any picker that now duplicates another off the clash,
+     writing the new value straight back into combos so the next picker sees
+     where this one actually landed rather than where it used to be. */
+  for (var j = 0; j < n; j++) {
+    var c = combos[j];
+    if (!c.suitSel || !takenElsewhere(j, c.rank, c.suit)) continue;
+    var opts = $$('option', c.suitSel);
+    for (var o = 0; o < opts.length; o++) {
+      if (takenElsewhere(j, c.rank, opts[o].value)) continue;
+      c.suitSel.value = opts[o].value;
+      c.suit = opts[o].value;
+      break;
+    }
+  }
+
+  /* Pass two: grey out the suits that would recreate a pair someone else
+     holds, now that every picker's value is final. */
+  for (var m = 0; m < n; m++) {
+    var cm = combos[m];
+    if (!cm.suitSel) continue;
+    (function (idx, rank) {
+      $$('option', combos[idx].suitSel).forEach(function (opt) {
+        opt.disabled = takenElsewhere(idx, rank, opt.value);
+      });
+    })(m, cm.rank);
   }
 }
 
