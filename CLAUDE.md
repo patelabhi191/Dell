@@ -133,15 +133,32 @@ active one is set from Admin.
 | `daylight` | Daylight Studio | warm white, the same accents |
 
 **The frosted pair is the one exception to the casino register** — it exists so
-the site can read as an ordinary, well-built iOS app when that is wanted. It
-takes `backdrop-filter: blur(20px) saturate(180%)`, a `rgba(255,255,255,0.2)`
-refraction edge and a `0 8px 32px rgba(0,0,0,0.25)` ambient shadow. Two rules
-matter: the wallpaper in `--bg-image` is what makes the blur visible at all —
-frosted glass over a flat colour just looks flat — and the blur is applied to the
-**chrome only** (`.pshape, .bar, .panel, .console, .podwrap, .ledger,
-.sheetpanel, .setpanel, .deskhead, .tabs, .livecount`), never to `.pod`, `.pick`
-or `.lrow`. Dozens of blurred layers per screen is what makes glassmorphism crawl
-on a phone, and a row on an already-frosted panel gains nothing.
+the site can read as an ordinary, well-built iOS app when that is wanted. Four
+things make it read as glass rather than as frosted plastic, and none of them is
+the blur radius:
+
+1. **Grain.** Each surface token is three layers — a monochrome `feTurbulence`
+   data-URI, a specular top-to-bottom gradient, then the translucent fill. Every
+   surface paints through the `background:` shorthand, so this rides inside
+   `--panel`, `--strip-bg`, `--tile-bg`, `--plaque-bg` and `--ground-plate` with
+   no structural change. It is the single biggest tell.
+2. **Refraction lives on the edges.** The shadow tokens carry a bright 1px inset
+   line along the top where light enters the curve, a dim one at the foot, an
+   inner glow falling off toward the middle, then a tight contact shadow and a
+   wide ambient one. That is what gives a pane thickness.
+3. **Material tiers.** Nav chrome takes `blur(30px) saturate(190%)` with a
+   `brightness()` term; content cards take `blur(22px) saturate(175%)`. The
+   difference between tiers is most of what reads as depth.
+4. **Something to refract.** The wallpaper uses hard-stopped radial gradients
+   spread across the whole field, so there are real edges to bend under a panel.
+   A soft gradient blurs to nothing.
+
+Colour is deliberately restrained: tiles are neutral glass with the game's colour
+surviving as a tint and a thin edge, so the wallpaper and the current selection
+are the only saturated things on screen. The blur is applied to the **chrome
+only** — never to `.pod`, `.pick` or `.lrow`. Dozens of blurred layers per screen
+is what makes glassmorphism crawl on a phone, and a row on an already-frosted
+panel gains nothing.
 
 **Midnight and Daylight are one palette on two grounds**, not two unrelated
 skins — violet, mint, sky and coral, flat blocks, offset shadows, Space Grotesk
@@ -340,7 +357,15 @@ which side won.
   bid, flat, never multiplied.
 
 The bidder can never be a called-card holder. The same *player* may hold two
-called cards; the same *card* cannot be called twice in one hand.
+called cards — that is the dual partner.
+
+**How many copies of a card can be asked for depends on the deck count.** One
+deck means a called card is unique in the round. Two decks means both copies
+exist, so the bidder may ask for the same card twice; three decks, three times.
+A card is not "taken", it has capacity: `cardAtCapacity()` counts the copies
+already asked for and only closes the chip at the deck count. Where two copies
+of one card are called, the reveal numbers them (*copy 1 of 2*) so the two steps
+are distinguishable, and a player holding both takes two shares.
 
 Points collected out of 250/500 are **not** recorded — the winning side is
 tapped outright.
