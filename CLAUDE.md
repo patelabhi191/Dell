@@ -195,6 +195,27 @@ One global setting for the whole group, read with `onSnapshot` so a change reach
 every open phone without a reload. Falls back to `terminal` when the document is
 missing or unreadable.
 
+### Admin, in three tabs
+
+**Appearance** is the eight skins. **Database** holds the Firestore connection —
+a connection name plus the six config fields, Save, Disconnect, and a Test that
+writes one scratch document to `cardnight/_conntest`, reads it back and deletes
+it, reporting the round trip or the exact failure code. **Settings** holds
+switches that are stored but not yet wired: `pinScores` (PIN before a round can
+be saved) and one reserved slot. A switch is deliberately allowed to exist
+before the behaviour behind it does, so turning it on survives a reload and the
+feature can be attached later without another Admin change.
+
+The Firebase SDK is **not** bundled. It is pulled from Google's CDN by dynamic
+`import()` the first time a connection is attempted, so an unconfigured copy of
+the app loads nothing extra and still runs offline on `localStorage`. The board
+stays usable on local storage while the connection is proving out; only once
+`FirestoreStore.init()` resolves does `Store` get promoted, so a failed
+connection leaves the app exactly where it was.
+
+The config values are ordinary client keys. **Firestore security rules are what
+protect the data, never the secrecy of these values.**
+
 ### Admin access
 
 Admin is gated by a **PIN**. Be honest about what that is: a PIN checked in the
@@ -303,8 +324,8 @@ scores just land.
 
 | # | Game | Logo |
 | --- | --- | --- |
-| 1 | **3 of Spade** | The numeral **3** beside a solid black **spade**, on three fanned cards |
-| 2 | **KaChuFull** | A **diagonal saltire cross** carrying all four suits on its arms, hub monogram at the centre |
+| 1 | **3 of Spade** | *Being redrawn.* The tile shows its frame and band only |
+| 2 | **KaChuFull** | *Being redrawn.* The tile shows its frame and band only |
 | 3 | **More Coming Soon** | An intentional **ghost tile** — dashed frame, muted panel, plus mark. It reads as a slot waiting to be filled, never as a broken tile |
 | 4 | **Archives + Players** | Split in half: box-and-papers over a stack of chips, a band each. Two destinations in one frame, visually distinct from the game tiles |
 
@@ -315,8 +336,10 @@ name, the second offset by half a cycle. It needs `both` fill or the delayed
 name sits visible until its first turn. Under `prefers-reduced-motion` they
 cannot take turns, so they render side by side as `3 of Spade / Kadi Teeli`.
 
-Both game logos are redrawn per skin so each one belongs to its own palette —
-never one flat mark pasted across every theme.
+The two game marks were removed while the artwork is reworked; the previous
+builders are in git history. Archives, Players and the ghost tile keep theirs.
+When the game marks return they are **redrawn per skin** so each belongs to its
+own palette — never one flat mark pasted across every theme.
 
 ## Iconography
 

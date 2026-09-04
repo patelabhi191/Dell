@@ -992,7 +992,10 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
   /* `both` matters: without it the delayed name sits fully visible until its
      first turn, and the two overlap for the opening seconds */
   animation: dcName 9s cubic-bezier(.22,1,.36,1) infinite both; }
-.gname i:nth-child(2) { animation-delay: 4.5s; }
+.gname i:nth-child(2) { animation-delay: 4.5s; opacity: 0; }
+/* the running animation overrides that resting value; if animation is frozen
+   (a screenshot tool, a print) the second name stays hidden instead of
+   stacking on top of the first */
 
 /* slot four: two library views sharing one frame */
 .tilesplit { display: flex; flex-direction: column; }
@@ -1014,6 +1017,22 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .tab.on { background: var(--acc1); color: var(--on-acc1); }
 
 /* ============================ admin ============================ */
+.flagrow { display: flex; align-items: center; gap: 16px; padding: 15px 17px;
+  border-bottom: 1px solid var(--hair); }
+.flagrow:last-child { border-bottom: none; }
+.flagrow.off { opacity: .5; }
+.flagtext { display: flex; flex-direction: column; gap: 3px; }
+.flagtext b { font-size: 14.5px; font-weight: 600; }
+.flagtext i { font-style: normal; font-size: 12.5px; color: var(--muted); }
+.switch { flex-shrink: 0; margin-left: auto; width: 52px; height: 31px; border-radius: 999px;
+  background: var(--rank-bg); border: 1px solid var(--hair); position: relative;
+  transition: background .22s ease, border-color .22s ease; }
+.switch span { position: absolute; top: 2px; left: 2px; width: 25px; height: 25px; border-radius: 50%;
+  background: var(--card-face); box-shadow: 0 1px 3px rgba(0,0,0,.35);
+  transition: transform .22s cubic-bezier(.34,1.56,.64,1); }
+.switch[aria-checked="true"] { background: var(--acc2); border-color: var(--acc2); }
+.switch[aria-checked="true"] span { transform: translateX(21px); }
+.switch:disabled { cursor: not-allowed; }
 .pinpad { display: grid; grid-template-columns: repeat(3, 72px); gap: 10px; justify-content: center; }
 .pinpad button { height: 56px; border-radius: 12px; background: var(--rank-bg); color: var(--ink);
   font-family: var(--font-display); font-size: 19px;
@@ -1526,33 +1545,91 @@ var LocalStore = {
   }
 };
 
-/* Same shape, backed by a single Firestore document so every phone sees
-   the same scores. Activated only when FIREBASE_CONFIG is filled in.
+/* ------------------------------------------------------------------
+   FIRESTORE — the same read/write interface, backed by one document so
+   every phone at the table sees the same scores.
 
-   Add before this script:
-     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"><\/script>
-     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"><\/script>
+   The SDK is not shipped with this file; it is pulled from Google's CDN
+   the first time a connection is attempted, so an unconfigured copy of
+   the app loads nothing extra and still works offline on localStorage.
+   ------------------------------------------------------------------ */
 
-   Then read() resolves from the cached snapshot and write() pushes the
-   whole document; onSnapshot re-renders when anyone else writes. */
+var FB_SDK = 'https://www.gstatic.com/firebasejs/10.12.5/';
+
+/* Where the config comes from: whatever Admin saved, else the constant at
+   the top of the file. Both are plain client keys — Firestore security
+   rules are what actually protect the data, never these values. */
+function firebaseConfig() {
+  var c = (state && state.settings && state.settings.firebase) || FIREBASE_CONFIG;
+  return (c && c.apiKey && c.projectId) ? c : null;
+}
+function firebaseName() {
+  var c = (state && state.settings && state.settings.firebase) || FIREBASE_CONFIG;
+  return (c && c.label) || (c && c.projectId) || '';
+}
+
+var fb = { app: null, db: null, api: null, status: 'off', detail: '' };
+
+/* Load the modular SDK once and hand back { api, db }. */
+function firebaseInit() {
+  var cfg = firebaseConfig();
+  if (!cfg) return Promise.reject(new Error('No Firebase configuration saved yet.'));
+  if (fb.db) return Promise.resolve(fb);
+  return Promise.all([
+    import(FB_SDK + 'firebase-app.js'),
+    import(FB_SDK + 'firebase-firestore.js')
+  ]).then(function (mods) {
+    var appMod = mods[0], fsMod = mods[1];
+    fb.api = fsMod;
+    fb.app = appMod.getApps && appMod.getApps().length ? appMod.getApp() : appMod.initializeApp({
+      apiKey: cfg.apiKey, authDomain: cfg.authDomain, projectId: cfg.projectId,
+      storageBucket: cfg.storageBucket, messagingSenderId: cfg.messagingSenderId, appId: cfg.appId
+    });
+    fb.db = fsMod.getFirestore(fb.app);
+    return fb;
+  });
+}
+
+/* Write a scratch document, read it back, delete it — and time the round
+   trip. This is what the Admin tab's Test button runs. */
+function firebaseTest() {
+  var t0 = Date.now(), stamp = 'ping-' + t0;
+  return firebaseInit().then(function (h) {
+    var ref = h.api.doc(h.db, 'cardnight', '_conntest');
+    return h.api.setDoc(ref, { stamp: stamp, at: t0 })
+      .then(function () { return h.api.getDoc(ref); })
+      .then(function (snap) {
+        if (!snap.exists() || snap.data().stamp !== stamp) throw new Error('Wrote the test document but read back something else.');
+        return h.api.deleteDoc(ref).catch(function () { /* leaving it behind is harmless */ });
+      })
+      .then(function () { return { ms: Date.now() - t0 }; });
+  });
+}
+
 var FirestoreStore = {
   id: 'firestore',
-  _doc: null,
+  _ref: null,
   _cache: null,
   init: function (onRemoteChange) {
-    firebase.initializeApp(FIREBASE_CONFIG);
-    this._doc = firebase.firestore().collection('cardnight').doc('state');
-    var self = this;
-    this._doc.onSnapshot(function (snap) {
-      self._cache = snap.exists ? snap.data().state : null;
-      onRemoteChange(self._cache);
+    return firebaseInit().then(function (h) {
+      FirestoreStore._ref = h.api.doc(h.db, 'cardnight', 'state');
+      h.api.onSnapshot(FirestoreStore._ref, function (snap) {
+        FirestoreStore._cache = snap.exists() ? snap.data().state : null;
+        if (onRemoteChange) onRemoteChange(FirestoreStore._cache);
+      });
+      return FirestoreStore;
     });
   },
   read: function () { return this._cache; },
-  write: function (state) { this._doc.set({ state: state }); return true; }
+  write: function (st) {
+    if (!this._ref || !fb.api) return false;
+    fb.api.setDoc(this._ref, { state: st, at: Date.now() });
+    return true;
+  }
 };
 
-var Store = (FIREBASE_CONFIG && window.firebase) ? FirestoreStore : LocalStore;
+/* Local until a connection is proven; the boot sequence promotes it. */
+var Store = LocalStore;
 
 /* ------------------------------------------------------------------
    3. STATE + MODEL
@@ -1757,50 +1834,9 @@ function lockIcon(size) {
     '<path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5z"/></svg>';
 }
 
-/* logo 1 — the numeral 3 beside a solid black spade, on three fanned cards */
-function logoSpade3() {
-  function card(rot, dx) {
-    return '<div style="position:absolute;left:50%;top:50%;width:82px;height:112px;margin:-64px 0 0 -41px;' +
-      'background:var(--card-face);border-radius:8px;box-shadow:var(--art-shadow);' +
-      'transform:rotate(' + rot + 'deg) translateX(' + dx + 'px)"></div>';
-  }
-  return '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">' +
-    card(-16, -48) + card(0, 0) + card(16, 48) +
-    '<div style="position:relative;display:flex;align-items:center;gap:2px;margin-top:12px">' +
-      '<span style="font-family:var(--font-display);font-size:76px;line-height:.82;color:var(--logo-ink)">3</span>' +
-      '<span style="display:flex;flex-direction:column;align-items:center;gap:2px">' +
-        '<span style="font-size:10px;font-weight:800;letter-spacing:.2em;color:var(--logo-muted);text-transform:uppercase">of</span>' +
-        '<span class="spademark" style="display:inline-flex;color:var(--logo-spade);filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))">' +
-          icon('spade', 44) + '</span>' +
-      '</span></div></div>';
-}
+/* Game artwork is being redrawn; the tiles show their frame and band only.
+   The previous logoSpade3()/logoKachu() builders are in git history. */
 
-/* logo 2 — a diagonal saltire carrying all four suits on its arms */
-function logoKachu() {
-  function bar(rot) {
-    return '<div style="position:absolute;left:50%;top:50%;width:166px;height:11px;margin:-5.5px 0 0 -83px;' +
-      'border-radius:6px;background:var(--logo-bar);transform:rotate(' + rot + 'deg)"></div>';
-  }
-  function suit(k, x, y, col) {
-    return '<span class="kcsuit" style="position:absolute;left:50%;top:50%;margin:' + (y - 15) + 'px 0 0 ' + (x - 15) + 'px;' +
-      'width:30px;height:30px;border-radius:50%;background:var(--card-face);box-shadow:var(--art-shadow);' +
-      'display:flex;align-items:center;justify-content:center;color:var(' + col + ')">' + icon(k, 17) + '</span>';
-  }
-  return '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">' +
-    '<div style="position:relative;width:180px;height:180px">' +
-      '<div style="position:absolute;left:50%;top:50%;width:146px;height:146px;margin:-73px 0 0 -73px;' +
-        'border-radius:50%;border:2px dashed var(--logo-ring)"></div>' +
-      bar(45) + bar(-45) +
-      suit('spade', -58, -58, '--suit-dark') + suit('heart', 58, -58, '--suit-red') +
-      suit('club', -58, 58, '--suit-dark') + suit('diamond', 58, 58, '--suit-red') +
-      '<span style="position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:11px;' +
-        'background:var(--logo-hub);transform:rotate(45deg);box-shadow:var(--art-shadow)"></span>' +
-      '<span style="position:absolute;left:50%;top:50%;margin:-11px 0 0 -23px;width:46px;text-align:center;' +
-        'font-family:var(--font-display);font-size:19px;color:var(--logo-hub-ink)">KF</span>' +
-    '</div></div>';
-}
-
-/* tile 3 — an intentional ghost, a slot waiting to be filled */
 function logoSoon() {
   return '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">' +
     '<div class="soonplus" style="position:relative;width:72px;height:72px;border-radius:20px;' +
@@ -1926,7 +1962,7 @@ function viewHome() {
     var n = i + 1;
     var onGame = lives.filter(function (x) { return x.gameId === g.id; }).length;
     tiles += '<button class="tile tile' + n + ' skin" data-go="/new?game=' + g.id + '">' +
-      '<div class="art art' + n + '"><div class="artin">' + (i === 0 ? logoSpade3() : logoKachu()) + '</div>' +
+      '<div class="art art' + n + '"><div class="artin"></div>' +
       '<span class="pill pill-meta">' + esc(lastPlayed(g.id)) + '</span>' +
       (onGame ? '<span class="pill pill-live">' + (onGame > 1 ? onGame + ' LIVE' : 'LIVE') + '</span>' : '') +
       '</div><div class="band band' + n + '">' + gameNameHtml(g) + '</div></button>';
@@ -2418,6 +2454,7 @@ function viewPlayers() {
 }
 
 var adminUnlocked = false;
+var adminTab = 'theme';
 var pinBuffer = '';
 var PIN_MAX = 8;
 
@@ -2438,6 +2475,24 @@ function viewAdmin() {
         }).join('') + '</div>' +
       '</section>';
   }
+  var tabs = '<div class="tabs">' +
+    [['theme','Appearance'],['db','Database'],['flags','Settings']].map(function (t) {
+      return '<button class="tab' + (adminTab === t[0] ? ' on' : '') + '" data-atab="' + t[0] + '">' +
+        esc(t[1]) + '</button>';
+    }).join('') + '</div>';
+
+  var body;
+  if (adminTab === 'db') body = adminDbPanel();
+  else if (adminTab === 'flags') body = adminFlagsPanel();
+  else body = adminThemePanel();
+
+  var tabName = { theme: 'Appearance', db: 'Database', flags: 'Settings' }[adminTab] || 'Appearance';
+  return header({ back: '/', title: 'ADMIN', sub: tabName }) + tabs + body +
+    '<div class="btn-row" style="margin-top:18px"><button class="btn btn-ghost" id="lock">Lock admin</button>' +
+    '<button class="btn btn-danger" id="wipe">Erase all data</button></div>';
+}
+
+function adminThemePanel() {
   var cards = THEMES.map(function (t) {
     var on = state.settings.theme === t.id;
     return '<button class="themecard skin" data-theme-set="' + t.id + '" aria-pressed="' + on + '">' +
@@ -2449,12 +2504,77 @@ function viewAdmin() {
         '<span class="dim" style="font-size:11px">' + esc(t.note) + '</span></span>' +
         '<span class="badge' + (on ? ' active' : '') + '">' + (on ? 'Active' : 'Select') + '</span></div></button>';
   }).join('');
-  return header({ back: '/', title: 'ADMIN', sub: 'Appearance' }) +
-    '<div class="pagehead"><h1 class="title">Site theme</h1>' +
-    '<p class="sub">Applies to this scoreboard. With Firestore configured it changes for everyone at once.</p></div>' +
-    '<div class="themegrid">' + cards + '</div>' +
-    '<div class="btn-row" style="margin-top:18px"><button class="btn btn-ghost" id="lock">Lock admin</button>' +
-    '<button class="btn btn-danger" id="wipe">Erase all data</button></div>';
+  return '<div class="pagehead"><h1 class="title">Site theme</h1>' +
+    '<p class="sub">Applies to this scoreboard. With Firestore connected it changes for everyone at once.</p></div>' +
+    '<div class="themegrid">' + cards + '</div>';
+}
+
+var FB_FIELDS = [
+  ['label',            'Connection name',    'The table upstairs'],
+  ['projectId',        'Project ID',         'ap-card-games'],
+  ['apiKey',           'API key',            'AIza...'],
+  ['authDomain',       'Auth domain',        'ap-card-games.firebaseapp.com'],
+  ['appId',            'App ID',             '1:123...:web:abc'],
+  ['storageBucket',    'Storage bucket',     'ap-card-games.appspot.com'],
+  ['messagingSenderId','Messaging sender ID','123456789']
+];
+
+function adminDbPanel() {
+  var cfg = (state.settings && state.settings.firebase) || {};
+  var rows = FB_FIELDS.map(function (f) {
+    return '<div class="step" style="grid-template-columns:170px minmax(0,1fr)">' +
+      '<span class="steplab"><b>' + esc(f[1]) + '</b></span>' +
+      '<span class="stepbody"><input class="input" data-fb="' + f[0] + '" value="' +
+        esc(cfg[f[0]] || '') + '" placeholder="' + esc(f[2]) + '" ' +
+        'autocomplete="off" spellcheck="false" aria-label="' + esc(f[1]) + '"></span></div>';
+  }).join('');
+
+  var connected = !!firebaseConfig();
+  return '<div class="pagehead"><h1 class="title">Database</h1>' +
+    '<p class="sub">Scores live on this device until a Firestore project is connected. ' +
+    'These are ordinary client keys &mdash; what protects the data is your Firestore rules, not secrecy.</p></div>' +
+    '<section class="console" style="margin-bottom:14px">' +
+      '<div class="console-head"><h2>Connection</h2>' +
+        '<span class="tag' + (connected ? ' hot' : '') + '" id="fbwhere">' +
+        (connected ? 'configured &middot; ' + esc(firebaseName()) : 'not configured') + '</span></div>' +
+      rows +
+      '<div class="saverow">' +
+        '<span class="readout" id="fbstatus">' +
+          (connected ? 'Saved. Run a test to prove it reaches Firestore.'
+                     : 'Storing on this device only.') + '</span>' +
+        '<span class="grow"></span>' +
+        '<button class="btn btn-ghost" id="fbclear">Disconnect</button>' +
+        '<button class="btn" id="fbsave">Save</button>' +
+        '<button class="btn btn-primary" id="fbtest">Test connection</button>' +
+      '</div>' +
+    '</section>' +
+    '<p class="hint">The test writes one scratch document to <b>cardnight/_conntest</b>, reads it ' +
+    'back, then deletes it. Nothing else on the board is touched.</p>';
+}
+
+/* Switches that are meant to exist before they do anything. Each one is
+   stored, so turning it on survives a reload and the feature can be wired
+   to it later without another Admin change. */
+var FLAGS = [
+  { id: 'pinScores', label: 'PIN protection on entering scores',
+    note: 'Ask for the admin PIN before a round can be saved. Not wired up yet.' },
+  { id: 'slot2',     label: 'To be added',
+    note: 'Reserved for the next switch.', disabled: true }
+];
+
+function adminFlagsPanel() {
+  var flags = state.settings.flags || {};
+  var rows = FLAGS.map(function (f) {
+    var on = !!flags[f.id];
+    return '<div class="flagrow' + (f.disabled ? ' off' : '') + '">' +
+      '<span class="flagtext"><b>' + esc(f.label) + '</b><i>' + esc(f.note) + '</i></span>' +
+      '<button class="switch" data-flag="' + f.id + '" role="switch" aria-checked="' + on + '"' +
+        (f.disabled ? ' disabled' : '') + ' aria-label="' + esc(f.label) + '"><span></span></button>' +
+    '</div>';
+  }).join('');
+  return '<div class="pagehead"><h1 class="title">Settings</h1>' +
+    '<p class="sub">Switches for the whole scoreboard.</p></div>' +
+    '<section class="console">' + rows + '</section>';
 }
 
 /* ------------------------------------------------------------------
@@ -3128,6 +3248,60 @@ document.addEventListener('click', function (e) {
     if (pinBuffer.length < PIN_MAX) { pinBuffer += k; updatePinDots(false); }
     return;
   }
+  var atab = e.target.closest('[data-atab]');
+  if (atab) { adminTab = atab.getAttribute('data-atab'); render(); return; }
+
+  var flag = e.target.closest('[data-flag]');
+  if (flag) {
+    if (!state.settings.flags) state.settings.flags = {};
+    var fid = flag.getAttribute('data-flag');
+    var next = !state.settings.flags[fid];
+    state.settings.flags[fid] = next;
+    flag.setAttribute('aria-checked', String(next));
+    save();
+    return;
+  }
+
+  if (e.target.id === 'fbsave' || e.target.id === 'fbtest') {
+    var cfg = {};
+    $$('[data-fb]').forEach(function (i) {
+      var v = i.value.trim();
+      if (v) cfg[i.getAttribute('data-fb')] = v;
+    });
+    state.settings.firebase = cfg;
+    save();
+    var out = $('#fbstatus'), where = $('#fbwhere');
+    if (where) {
+      where.textContent = firebaseConfig() ? 'configured \u00b7 ' + firebaseName() : 'not configured';
+      where.className = 'tag' + (firebaseConfig() ? ' hot' : '');
+    }
+    if (e.target.id === 'fbsave') {
+      if (out) out.textContent = firebaseConfig()
+        ? 'Saved. Run a test to prove it reaches Firestore.'
+        : 'Needs at least a project ID and an API key.';
+      return;
+    }
+    if (!firebaseConfig()) {
+      if (out) out.textContent = 'Fill in at least the project ID and the API key first.';
+      return;
+    }
+    if (out) out.textContent = 'Testing\u2026';
+    e.target.disabled = true;
+    firebaseTest().then(function (r) {
+      if (out) out.innerHTML = '<b>Connected.</b> Round trip to ' + esc(firebaseName()) + ' in ' + r.ms + 'ms.';
+    }).catch(function (err) {
+      var msg = (err && (err.code || err.message)) ? String(err.code || err.message) : String(err);
+      if (out) out.innerHTML = '<b>Not connected.</b> ' + esc(msg);
+    }).then(function () { if (e.target) e.target.disabled = false; });
+    return;
+  }
+
+  if (e.target.id === 'fbclear') {
+    if (!confirm('Disconnect this Firestore project? Scores go back to being kept on this device only.')) return;
+    delete state.settings.firebase;
+    save(); render(); return;
+  }
+
   var th = e.target.closest('[data-theme-set]');
   if (th) { state.settings.theme = th.getAttribute('data-theme-set'); save(); render(); return; }
   if (e.target.id === 'lock') { adminUnlocked = false; go('/'); return; }
@@ -3229,6 +3403,31 @@ window.addEventListener('hashchange', render);
 applyTheme();
 render();
 setTimeout(function () { document.body.classList.add('settled'); }, 1300);
+
+/* If a Firestore project is configured, promote the store once the
+   connection actually proves out. The board is usable on localStorage the
+   whole time; a failed connection leaves it exactly where it was rather
+   than blocking the screen on a network round trip. */
+if (firebaseConfig()) {
+  FirestoreStore.init(function (remote) {
+    if (remote) {
+      state = remote;
+      if (!state.settings) state.settings = { theme: 'terminal' };
+      if (!state.players) state.players = [];
+      if (!state.sessions) state.sessions = [];
+      applyTheme();
+      render();
+    } else if (Store === FirestoreStore) {
+      FirestoreStore.write(state);   /* first device up seeds the document */
+    }
+  }).then(function () {
+    Store = FirestoreStore;
+    fb.status = 'on';
+  }).catch(function (err) {
+    fb.status = 'error';
+    fb.detail = (err && (err.code || err.message)) ? String(err.code || err.message) : String(err);
+  });
+}
 </script>
 </body>
 </html>
