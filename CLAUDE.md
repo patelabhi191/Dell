@@ -195,16 +195,25 @@ One global setting for the whole group, read with `onSnapshot` so a change reach
 every open phone without a reload. Falls back to `terminal` when the document is
 missing or unreadable.
 
-### Admin, in three tabs
+### Admin, one page in three sections
 
-**Appearance** is the eight skins. **Database** holds the Firestore connection —
-a connection name plus the six config fields, Save, Disconnect, and a Test that
-writes one scratch document to `cardnight/_conntest`, reads it back and deletes
-it, reporting the round trip or the exact failure code. **Settings** holds
-switches that are stored but not yet wired: `pinScores` (PIN before a round can
-be saved) and one reserved slot. A switch is deliberately allowed to exist
-before the behaviour behind it does, so turning it on survives a reload and the
-feature can be attached later without another Admin change.
+No tabs — you scroll it, in the order you'd work down it: **1 Database**,
+**2 Settings**, **3 Appearance**. The skins come last because they are the
+thing you change least.
+
+**The Firestore connection is configured in `FIREBASE_CONFIG` at the top of
+`AP-CardGames.html`, and nowhere else.** Admin cannot edit it — the connection
+belongs to whoever deploys the file, not to whoever opens it in a browser. The
+Database section is read-only: connection name, project id, the document path,
+the REST endpoint, the SDK url, and which store is actually live. Its one
+control is **Test connection**, which writes a scratch document to
+`cardnight/_conntest`, reads it back and deletes it, reporting either the round
+trip or the exact failure code.
+
+**Settings** holds switches that are stored but not yet wired: `pinScores` (PIN
+before a round can be saved) and one reserved slot. A switch is deliberately
+allowed to exist before the behaviour behind it does, so turning it on survives
+a reload and the feature can be attached later without another Admin change.
 
 The Firebase SDK is **not** bundled. It is pulled from Google's CDN by dynamic
 `import()` the first time a connection is attempted, so an unconfigured copy of
@@ -213,8 +222,9 @@ stays usable on local storage while the connection is proving out; only once
 `FirestoreStore.init()` resolves does `Store` get promoted, so a failed
 connection leaves the app exactly where it was.
 
-The config values are ordinary client keys. **Firestore security rules are what
-protect the data, never the secrecy of these values.**
+The config values are ordinary client keys — they ship to every visitor by
+design. **Firestore security rules are what protect the data, never the secrecy
+of these values.**
 
 ### Admin access
 

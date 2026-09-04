@@ -1017,6 +1017,25 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .tab.on { background: var(--acc1); color: var(--on-acc1); }
 
 /* ============================ admin ============================ */
+.adminsec { margin-bottom: 16px; }
+.adminhead { display: flex; align-items: flex-start; gap: 12px; padding: 14px 17px;
+  border-bottom: 1px solid var(--hair); background: var(--rank-bg); }
+.adminno { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--acc1);
+  color: var(--on-acc1); font-family: var(--font-display); font-size: 12px;
+  display: flex; align-items: center; justify-content: center; }
+.admintitle { display: flex; flex-direction: column; gap: 2px; }
+.admintitle b { font-family: var(--font-display); font-size: 17px; font-weight: 400; }
+.admintitle i { font-style: normal; font-size: 12.5px; color: var(--muted); }
+.admintitle i b { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px; font-weight: 600; color: var(--ink);
+  background: var(--rank-bg); padding: 2px 6px; border-radius: 5px; }
+.kv { display: grid; grid-template-columns: 148px minmax(0,1fr); gap: 14px; align-items: baseline;
+  padding: 11px 17px; border-bottom: 1px solid var(--hair); }
+.kv .k { font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); }
+.kv .v { font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
+.urlcode { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+  background: var(--rank-bg); padding: 3px 7px; border-radius: 6px; overflow-wrap: anywhere; }
 .flagrow { display: flex; align-items: center; gap: 16px; padding: 15px 17px;
   border-bottom: 1px solid var(--hair); }
 .flagrow:last-child { border-bottom: none; }
@@ -1485,13 +1504,37 @@ function adminPin() {
   return (state.settings && state.settings.pin) || ADMIN_PIN;
 }
 
-/* Leave null to use this device's localStorage (the default).
-   To switch the whole group onto shared, live-syncing Firestore:
-     1. Create a Firebase project and a Firestore database.
-     2. Paste the web config object here.
-     3. Add the two <script> tags noted in FirestoreStore below.
-   Until then every device keeps its own copy. */
+/* ==================================================================
+   FIREBASE — the only place the connection is configured.
+
+   Leave this null and the board keeps its scores in this device's own
+   localStorage; every phone then has a separate copy. To put the whole
+   group on one shared, live-syncing database:
+
+     1. Create a Firebase project, then a Firestore database in it.
+     2. In Project settings > Your apps > Web, copy the config object.
+     3. Fill it in below and reload. Admin > Database will show what it
+        connected to and can test the round trip.
+
+   `label` is yours — a name for this connection, shown in Admin.
+
+   These are ordinary client keys, not secrets: they ship in the page to
+   every visitor by design. What actually protects the data is your
+   Firestore security rules. Write them before you put real scores in.
+
+   Nothing here can be edited from the Admin screen, on purpose — the
+   connection belongs to whoever deploys the file, not to whoever opens it.
+   ================================================================== */
 var FIREBASE_CONFIG = null;
+/* var FIREBASE_CONFIG = {
+     label:             'The table upstairs',
+     apiKey:            '',
+     authDomain:        '',
+     projectId:         '',
+     storageBucket:     '',
+     messagingSenderId: '',
+     appId:             ''
+   }; */
 
 var GAMES = [
   { id: 'spade3',    name: '3 of Spade', alt: 'Kadi Teeli', band: '3 of Spade', slot: 1, roundType: 'bid' },
@@ -1556,16 +1599,24 @@ var LocalStore = {
 
 var FB_SDK = 'https://www.gstatic.com/firebasejs/10.12.5/';
 
-/* Where the config comes from: whatever Admin saved, else the constant at
-   the top of the file. Both are plain client keys — Firestore security
-   rules are what actually protect the data, never these values. */
+/* The config comes from the constant at the top of this file and nowhere
+   else — Admin can look at it and test it, but never edit it. */
 function firebaseConfig() {
-  var c = (state && state.settings && state.settings.firebase) || FIREBASE_CONFIG;
+  var c = FIREBASE_CONFIG;
   return (c && c.apiKey && c.projectId) ? c : null;
 }
 function firebaseName() {
-  var c = (state && state.settings && state.settings.firebase) || FIREBASE_CONFIG;
-  return (c && c.label) || (c && c.projectId) || '';
+  return (FIREBASE_CONFIG && (FIREBASE_CONFIG.label || FIREBASE_CONFIG.projectId)) || '';
+}
+
+/* The document this board reads and writes, and the REST endpoint behind
+   it — worth showing plainly so a failed connection can be traced. */
+var FB_PATH = { collection: 'cardnight', doc: 'state' };
+function firebaseDocUrl() {
+  var c = FIREBASE_CONFIG;
+  if (!c || !c.projectId) return '';
+  return 'https://firestore.googleapis.com/v1/projects/' + c.projectId +
+         '/databases/(default)/documents/' + FB_PATH.collection + '/' + FB_PATH.doc;
 }
 
 var fb = { app: null, db: null, api: null, status: 'off', detail: '' };
@@ -1595,7 +1646,7 @@ function firebaseInit() {
 function firebaseTest() {
   var t0 = Date.now(), stamp = 'ping-' + t0;
   return firebaseInit().then(function (h) {
-    var ref = h.api.doc(h.db, 'cardnight', '_conntest');
+    var ref = h.api.doc(h.db, FB_PATH.collection, '_conntest');
     return h.api.setDoc(ref, { stamp: stamp, at: t0 })
       .then(function () { return h.api.getDoc(ref); })
       .then(function (snap) {
@@ -1612,7 +1663,7 @@ var FirestoreStore = {
   _cache: null,
   init: function (onRemoteChange) {
     return firebaseInit().then(function (h) {
-      FirestoreStore._ref = h.api.doc(h.db, 'cardnight', 'state');
+      FirestoreStore._ref = h.api.doc(h.db, FB_PATH.collection, FB_PATH.doc);
       h.api.onSnapshot(FirestoreStore._ref, function (snap) {
         FirestoreStore._cache = snap.exists() ? snap.data().state : null;
         if (onRemoteChange) onRemoteChange(FirestoreStore._cache);
@@ -2454,7 +2505,6 @@ function viewPlayers() {
 }
 
 var adminUnlocked = false;
-var adminTab = 'theme';
 var pinBuffer = '';
 var PIN_MAX = 8;
 
@@ -2475,81 +2525,53 @@ function viewAdmin() {
         }).join('') + '</div>' +
       '</section>';
   }
-  var tabs = '<div class="tabs">' +
-    [['theme','Appearance'],['db','Database'],['flags','Settings']].map(function (t) {
-      return '<button class="tab' + (adminTab === t[0] ? ' on' : '') + '" data-atab="' + t[0] + '">' +
-        esc(t[1]) + '</button>';
-    }).join('') + '</div>';
-
-  var body;
-  if (adminTab === 'db') body = adminDbPanel();
-  else if (adminTab === 'flags') body = adminFlagsPanel();
-  else body = adminThemePanel();
-
-  var tabName = { theme: 'Appearance', db: 'Database', flags: 'Settings' }[adminTab] || 'Appearance';
-  return header({ back: '/', title: 'ADMIN', sub: tabName }) + tabs + body +
+  /* One page, in the order you work down it: what it is connected to,
+     what is switched on, and the look last. */
+  return header({ back: '/', title: 'ADMIN', sub: 'Console' }) +
+    '<div class="pagehead"><h1 class="title">Admin</h1>' +
+    '<p class="sub">The connection, the switches, and the look &mdash; in that order.</p></div>' +
+    adminDbSection() +
+    adminFlagsSection() +
+    adminThemeSection() +
     '<div class="btn-row" style="margin-top:18px"><button class="btn btn-ghost" id="lock">Lock admin</button>' +
     '<button class="btn btn-danger" id="wipe">Erase all data</button></div>';
 }
 
-function adminThemePanel() {
-  var cards = THEMES.map(function (t) {
-    var on = state.settings.theme === t.id;
-    return '<button class="themecard skin" data-theme-set="' + t.id + '" aria-pressed="' + on + '">' +
-      '<div class="mini" data-theme="' + t.id + '"><div class="mini-plaque"></div><div class="mini-bar"></div>' +
-        '<div class="mini-tiles"><i style="background:var(--band1)"></i><i style="background:var(--band2)"></i>' +
-        '<i style="background:var(--band3)"></i><i style="background:var(--band4)"></i></div></div>' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px">' +
-        '<span><span style="font-family:var(--font-display);font-size:15px">' + esc(t.label) + '</span><br>' +
-        '<span class="dim" style="font-size:11px">' + esc(t.note) + '</span></span>' +
-        '<span class="badge' + (on ? ' active' : '') + '">' + (on ? 'Active' : 'Select') + '</span></div></button>';
-  }).join('');
-  return '<div class="pagehead"><h1 class="title">Site theme</h1>' +
-    '<p class="sub">Applies to this scoreboard. With Firestore connected it changes for everyone at once.</p></div>' +
-    '<div class="themegrid">' + cards + '</div>';
+function adminHead(n, title, note) {
+  return '<div class="adminhead"><span class="adminno">' + n + '</span>' +
+    '<span class="admintitle"><b>' + esc(title) + '</b><i>' + note + '</i></span></div>';
 }
 
-var FB_FIELDS = [
-  ['label',            'Connection name',    'The table upstairs'],
-  ['projectId',        'Project ID',         'ap-card-games'],
-  ['apiKey',           'API key',            'AIza...'],
-  ['authDomain',       'Auth domain',        'ap-card-games.firebaseapp.com'],
-  ['appId',            'App ID',             '1:123...:web:abc'],
-  ['storageBucket',    'Storage bucket',     'ap-card-games.appspot.com'],
-  ['messagingSenderId','Messaging sender ID','123456789']
-];
-
-function adminDbPanel() {
-  var cfg = (state.settings && state.settings.firebase) || {};
-  var rows = FB_FIELDS.map(function (f) {
-    return '<div class="step" style="grid-template-columns:170px minmax(0,1fr)">' +
-      '<span class="steplab"><b>' + esc(f[1]) + '</b></span>' +
-      '<span class="stepbody"><input class="input" data-fb="' + f[0] + '" value="' +
-        esc(cfg[f[0]] || '') + '" placeholder="' + esc(f[2]) + '" ' +
-        'autocomplete="off" spellcheck="false" aria-label="' + esc(f[1]) + '"></span></div>';
+/* Read-only. The connection is configured in FIREBASE_CONFIG at the top of
+   this file; all Admin does is say what that resolved to and prove it. */
+function adminDbSection() {
+  var cfg = firebaseConfig();
+  var rows = [
+    ['Connection', cfg ? esc(firebaseName()) : 'None &mdash; scores stay on this device'],
+    ['Project ID', cfg ? esc(cfg.projectId) : '&mdash;'],
+    ['Document',   cfg ? esc(FB_PATH.collection + '/' + FB_PATH.doc) : '&mdash;'],
+    ['Endpoint',   cfg ? '<code class="urlcode">' + esc(firebaseDocUrl()) + '</code>' : '&mdash;'],
+    ['SDK',        '<code class="urlcode">' + esc(FB_SDK) + '</code>'],
+    ['Storage',    Store === FirestoreStore ? 'Firestore &mdash; shared and live'
+                                            : 'This device only (localStorage)']
+  ].map(function (r) {
+    return '<div class="kv"><span class="k">' + r[0] + '</span><span class="v">' + r[1] + '</span></div>';
   }).join('');
 
-  var connected = !!firebaseConfig();
-  return '<div class="pagehead"><h1 class="title">Database</h1>' +
-    '<p class="sub">Scores live on this device until a Firestore project is connected. ' +
-    'These are ordinary client keys &mdash; what protects the data is your Firestore rules, not secrecy.</p></div>' +
-    '<section class="console" style="margin-bottom:14px">' +
-      '<div class="console-head"><h2>Connection</h2>' +
-        '<span class="tag' + (connected ? ' hot' : '') + '" id="fbwhere">' +
-        (connected ? 'configured &middot; ' + esc(firebaseName()) : 'not configured') + '</span></div>' +
-      rows +
-      '<div class="saverow">' +
-        '<span class="readout" id="fbstatus">' +
-          (connected ? 'Saved. Run a test to prove it reaches Firestore.'
-                     : 'Storing on this device only.') + '</span>' +
-        '<span class="grow"></span>' +
-        '<button class="btn btn-ghost" id="fbclear">Disconnect</button>' +
-        '<button class="btn" id="fbsave">Save</button>' +
-        '<button class="btn btn-primary" id="fbtest">Test connection</button>' +
-      '</div>' +
-    '</section>' +
-    '<p class="hint">The test writes one scratch document to <b>cardnight/_conntest</b>, reads it ' +
-    'back, then deletes it. Nothing else on the board is touched.</p>';
+  return '<section class="console adminsec">' +
+    adminHead(1, 'Database', 'Configured in <b>FIREBASE_CONFIG</b> at the top of the HTML file, not here.') +
+    rows +
+    '<div class="saverow">' +
+      '<span class="readout" id="fbstatus">' +
+        (cfg ? 'Configured. Run the test to prove it reaches Firestore.'
+             : 'No configuration in the file &mdash; running on this device alone.') + '</span>' +
+      '<span class="grow"></span>' +
+      '<button class="btn btn-primary" id="fbtest"' + (cfg ? '' : ' disabled') + '>Test connection</button>' +
+    '</div>' +
+    '<p class="hint" style="padding:0 17px 15px">The test writes one scratch document to <b>' +
+      esc(FB_PATH.collection) + '/_conntest</b>, reads it back, then deletes it. ' +
+      'Nothing else on the board is touched.</p>' +
+  '</section>';
 }
 
 /* Switches that are meant to exist before they do anything. Each one is
@@ -2562,7 +2584,7 @@ var FLAGS = [
     note: 'Reserved for the next switch.', disabled: true }
 ];
 
-function adminFlagsPanel() {
+function adminFlagsSection() {
   var flags = state.settings.flags || {};
   var rows = FLAGS.map(function (f) {
     var on = !!flags[f.id];
@@ -2572,9 +2594,28 @@ function adminFlagsPanel() {
         (f.disabled ? ' disabled' : '') + ' aria-label="' + esc(f.label) + '"><span></span></button>' +
     '</div>';
   }).join('');
-  return '<div class="pagehead"><h1 class="title">Settings</h1>' +
-    '<p class="sub">Switches for the whole scoreboard.</p></div>' +
-    '<section class="console">' + rows + '</section>';
+  return '<section class="console adminsec">' +
+    adminHead(2, 'Settings', 'Stored now, wired up later.') + rows + '</section>';
+}
+
+function adminThemeSection() {
+  var cards = THEMES.map(function (t) {
+    var on = state.settings.theme === t.id;
+    return '<button class="themecard skin" data-theme-set="' + t.id + '" aria-pressed="' + on + '">' +
+      '<div class="mini" data-theme="' + t.id + '"><div class="mini-plaque"></div><div class="mini-bar"></div>' +
+        '<div class="mini-tiles"><i style="background:var(--band1)"></i><i style="background:var(--band2)"></i>' +
+        '<i style="background:var(--band3)"></i><i style="background:var(--band4)"></i></div></div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px">' +
+        '<span><span style="font-family:var(--font-display);font-size:15px">' + esc(t.label) + '</span><br>' +
+        '<span class="dim" style="font-size:11px">' + esc(t.note) + '</span></span>' +
+        '<span class="badge' + (on ? ' active' : '') + '">' + (on ? 'Active' : 'Select') + '</span></div></button>';
+  }).join('');
+  return '<section class="adminsec">' +
+    '<div class="console" style="margin-bottom:14px">' +
+      adminHead(3, 'Appearance', 'With Firestore connected, the skin changes for everyone at once.') +
+    '</div>' +
+    '<div class="themegrid">' + cards + '</div>' +
+  '</section>';
 }
 
 /* ------------------------------------------------------------------
@@ -3248,9 +3289,6 @@ document.addEventListener('click', function (e) {
     if (pinBuffer.length < PIN_MAX) { pinBuffer += k; updatePinDots(false); }
     return;
   }
-  var atab = e.target.closest('[data-atab]');
-  if (atab) { adminTab = atab.getAttribute('data-atab'); render(); return; }
-
   var flag = e.target.closest('[data-flag]');
   if (flag) {
     if (!state.settings.flags) state.settings.flags = {};
@@ -3262,27 +3300,10 @@ document.addEventListener('click', function (e) {
     return;
   }
 
-  if (e.target.id === 'fbsave' || e.target.id === 'fbtest') {
-    var cfg = {};
-    $$('[data-fb]').forEach(function (i) {
-      var v = i.value.trim();
-      if (v) cfg[i.getAttribute('data-fb')] = v;
-    });
-    state.settings.firebase = cfg;
-    save();
-    var out = $('#fbstatus'), where = $('#fbwhere');
-    if (where) {
-      where.textContent = firebaseConfig() ? 'configured \u00b7 ' + firebaseName() : 'not configured';
-      where.className = 'tag' + (firebaseConfig() ? ' hot' : '');
-    }
-    if (e.target.id === 'fbsave') {
-      if (out) out.textContent = firebaseConfig()
-        ? 'Saved. Run a test to prove it reaches Firestore.'
-        : 'Needs at least a project ID and an API key.';
-      return;
-    }
+  if (e.target.id === 'fbtest') {
+    var out = $('#fbstatus');
     if (!firebaseConfig()) {
-      if (out) out.textContent = 'Fill in at least the project ID and the API key first.';
+      if (out) out.textContent = 'Nothing to test — FIREBASE_CONFIG is empty in the HTML file.';
       return;
     }
     if (out) out.textContent = 'Testing\u2026';
@@ -3294,12 +3315,6 @@ document.addEventListener('click', function (e) {
       if (out) out.innerHTML = '<b>Not connected.</b> ' + esc(msg);
     }).then(function () { if (e.target) e.target.disabled = false; });
     return;
-  }
-
-  if (e.target.id === 'fbclear') {
-    if (!confirm('Disconnect this Firestore project? Scores go back to being kept on this device only.')) return;
-    delete state.settings.firebase;
-    save(); render(); return;
   }
 
   var th = e.target.closest('[data-theme-set]');
