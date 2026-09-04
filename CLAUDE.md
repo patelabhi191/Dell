@@ -149,9 +149,12 @@ the blur radius:
 3. **Material tiers.** Nav chrome takes `blur(30px) saturate(190%)` with a
    `brightness()` term; content cards take `blur(22px) saturate(175%)`. The
    difference between tiers is most of what reads as depth.
-4. **Something to refract.** The wallpaper uses hard-stopped radial gradients
-   spread across the whole field, so there are real edges to bend under a panel.
-   A soft gradient blurs to nothing.
+4. **A ground worth blurring.** Frosted Dark is two colours merging — crimson
+   flowing into deep indigo across the diagonal, with a top light and a foot
+   vignette. Frosted Light carries no blobs at all: a light field merging to a
+   second shade over its last quarter, grey deepening at the left and right
+   edges, and three static wave bands (an inline SVG, stretched by a
+   theme-scoped `background-size`) so it reads as slow water rather than paper.
 
 Colour is deliberately restrained: tiles are neutral glass with the game's colour
 surviving as a tint and a thin edge, so the wallpaper and the current selection

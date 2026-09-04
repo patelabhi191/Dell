@@ -121,7 +121,7 @@ export const THEMES = [
 
   { id: 'glassdark', label: 'Frosted Dark', note: 'iOS glass over a night wallpaper',
     tok: {
-      'bg': '#07070b', 'bg-image': 'radial-gradient(closest-side at 14% 16%, #3a3690 0%, #3a3690 56%, transparent 58%), radial-gradient(closest-side at 47% 6%, #0f5590 0%, #0f5590 52%, transparent 54%), radial-gradient(closest-side at 86% 22%, #1c7d86 0%, #1c7d86 52%, transparent 54%), radial-gradient(closest-side at 66% 52%, #2a3a94 0%, #2a3a94 48%, transparent 50%), radial-gradient(closest-side at 22% 62%, #6a2f86 0%, #6a2f86 50%, transparent 52%), radial-gradient(closest-side at 92% 78%, #12706b 0%, #12706b 50%, transparent 52%), radial-gradient(closest-side at 40% 92%, #3d2f8e 0%, #3d2f8e 52%, transparent 54%), linear-gradient(160deg, #131328 0%, #0b0b16 55%, #08080e 100%)', 'ink': '#f7f7fa', 'muted': '#a8adb8',
+      'bg': '#07070b', 'bg-image': 'radial-gradient(130% 90% at 50% -10%, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0) 55%), radial-gradient(110% 80% at 50% 115%, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0) 60%), linear-gradient(118deg, #8d1739 0%, #59205c 46%, #1a2560 78%, #101a48 100%)', 'ink': '#f7f7fa', 'muted': '#a8adb8',
       'hair': 'rgba(255,255,255,0.18)', 'rule': 'rgba(255,255,255,0.22)', 'mark-ink': '#f5f5f7', 'acc1': '#0a84ff',
       'on-acc1': '#021428', 'acc1-text': '#4da6ff', 'on-live': '#2a0210', 'acc2': '#3ec98a', 'acc3': '#bf5af2',
       'acc4': '#7f8aa8', 'live': '#ff375f', 'rank-bg': 'rgba(255,255,255,0.07)', 'row-hover': 'rgba(255,255,255,0.055)',
@@ -148,7 +148,7 @@ export const THEMES = [
 
   { id: 'glasslight', label: 'Frosted Light', note: 'iOS glass over a bright wallpaper',
     tok: {
-      'bg': '#e9edf5', 'bg-image': 'radial-gradient(closest-side at 14% 16%, #c9cff5 0%, #c9cff5 56%, transparent 58%), radial-gradient(closest-side at 47% 6%, #bfdcf6 0%, #bfdcf6 52%, transparent 54%), radial-gradient(closest-side at 86% 22%, #c2e9e3 0%, #c2e9e3 52%, transparent 54%), radial-gradient(closest-side at 66% 52%, #d3d8fa 0%, #d3d8fa 48%, transparent 50%), radial-gradient(closest-side at 22% 62%, #e2d2f2 0%, #e2d2f2 50%, transparent 52%), radial-gradient(closest-side at 92% 78%, #c8ebe4 0%, #c8ebe4 50%, transparent 52%), radial-gradient(closest-side at 40% 92%, #cdd3f6 0%, #cdd3f6 52%, transparent 54%), linear-gradient(160deg, #f4f7fd 0%, #e9edf5 55%, #e4e9f3 100%)', 'ink': '#1c1c1e', 'muted': '#5c6069',
+      'bg': '#e9edf5', 'bg-image': "url(\"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1440 900%22 preserveAspectRatio=%22none%22%3E%3Cpath d=%22M0,286 C250,214 470,352 720,292 C980,230 1210,340 1440,278 L1440,900 L0,900 Z%22 fill=%22%23303a52%22 opacity=%220.10%22/%3E%3Cpath d=%22M0,432 C270,362 530,500 790,438 C1030,382 1250,466 1440,414 L1440,900 L0,900 Z%22 fill=%22%23303a52%22 opacity=%220.085%22/%3E%3Cpath d=%22M0,590 C290,520 570,656 850,596 C1090,544 1270,614 1440,570 L1440,900 L0,900 Z%22 fill=%22%23303a52%22 opacity=%220.07%22/%3E%3C/svg%3E\"), linear-gradient(90deg, rgba(58,64,84,0.34) 0%, rgba(58,64,84,0.13) 16%, rgba(58,64,84,0) 34%, rgba(58,64,84,0) 66%, rgba(58,64,84,0.13) 84%, rgba(58,64,84,0.34) 100%), linear-gradient(155deg, #eef2fa 0%, #e9edf7 58%, #e6e2f3 78%, #e3ddf1 100%)", 'ink': '#1c1c1e', 'muted': '#5c6069',
       'hair': 'rgba(60,60,67,0.16)', 'rule': 'rgba(60,60,67,0.20)', 'mark-ink': '#1c1c1e', 'acc1': '#0064d2',
       'on-acc1': '#ffffff', 'acc1-text': '#0057b8', 'on-live': '#3a0603', 'acc2': '#1c8c3c', 'acc3': '#8944ab',
       'acc4': '#3a3aed', 'live': '#ff3b30', 'rank-bg': 'rgba(60,60,67,0.08)', 'row-hover': 'rgba(0,100,210,0.08)',
@@ -253,6 +253,7 @@ ${indent}[data-theme="neon"] .wordmark { animation: dcFlicker 7s steps(1, end) i
 ${indent}[data-theme="glassdark"] .pshape, [data-theme="glasslight"] .pshape { border-radius: 22px; }
 ${indent}[data-theme="midnight"] .pshape { border-radius: 14px; }
 ${indent}[data-theme="daylight"] .pshape { border-radius: 14px; }
+${indent}[data-theme="glasslight"] body { background-size: 100% 100%, auto, auto; background-repeat: no-repeat; }
 ${indent}/* frosted glass: the chrome is blurred, never the rows inside it. Dozens of
 ${indent}   backdrop-filtered layers per screen is what makes glassmorphism crawl on a
 ${indent}   phone, and rows sitting on an already-frosted panel gain nothing from it. */
