@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AP Card Games Night — skins</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600&family=Barlow:wght@400;500;600;700&family=Titan+One&family=Mulish:wght@400;600;700;800&family=Monoton&family=Outfit:wght@300;400;500;600;700&family=Fredoka:wght@500;600;700&family=Quicksand:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101014;color:#e8e8ee;
+  font:15px/1.5 'Outfit',system-ui,sans-serif;padding:26px}
+h1{font:700 30px 'Space Grotesk',system-ui,sans-serif;margin:0 0 4px;letter-spacing:-.02em}
+.lede{margin:0 0 26px;color:#9a9aa8;max-width:70ch}
+.grid{display:flex;flex-direction:column;gap:22px}
+
+.skin{position:relative;border-radius:16px;overflow:hidden;isolation:isolate;
+  background-color:var(--bg);background-image:var(--bg-image);
+  font-family:var(--font-body);color:var(--ink)}
+.wall{position:absolute;inset:0;z-index:-1}
+.inner{padding:18px 20px 22px}
+.meta{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:12px;color:var(--ground-muted)}
+.meta b{font-family:var(--font-display);font-size:16px;color:var(--ground-ink)}
+.meta code{font:600 11px ui-monospace,monospace;padding:3px 8px;border-radius:999px;
+  background:var(--ground-plate);color:var(--ground-ink)}
+.meta .dot{width:10px;height:10px;border-radius:50%;background:var(--acc1)}
+.meta .note{margin-left:auto}
+
+.head{position:relative;display:flex;justify-content:center;height:62px;align-items:center;margin-bottom:12px}
+.rule{position:absolute;left:0;right:0;top:50%;height:1px;background:var(--rule)}
+.plaque{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:280px;height:58px;background:var(--plaque-bg);border:var(--plaque-border);
+  box-shadow:var(--plaque-shadow);border-radius:var(--panel-radius)}
+.word{font-family:var(--word-family);font-size:calc(var(--word-size) * .68);letter-spacing:var(--word-track);
+  font-weight:var(--word-weight);color:var(--plaque-ink);text-shadow:var(--word-shadow);white-space:nowrap}
+.sub{font-size:8px;font-weight:700;letter-spacing:.28em;color:var(--plaque-sub);text-transform:uppercase;margin-top:3px}
+
+.bar{display:flex;align-items:center;gap:12px;padding:11px 12px;margin-bottom:12px;
+  background:var(--strip-bg);border:var(--strip-border);border-radius:var(--strip-radius);
+  box-shadow:var(--strip-shadow);color:var(--strip-ink)}
+.baricon{width:34px;height:34px;border-radius:50%;background:var(--strip-icon-bg);color:var(--strip-accent);
+  display:flex;align-items:center;justify-content:center;font-size:16px}
+.barid{display:flex;flex-direction:column;gap:2px}
+.barid em{font-style:normal;font-size:9px;font-weight:800;letter-spacing:.16em;color:var(--live)}
+.barid b{font-family:var(--font-display);font-size:16px;color:var(--strip-ink)}
+.scores{margin-left:auto;display:flex}
+.sc{display:flex;flex-direction:column;padding:0 11px;border-left:1px solid var(--strip-hair)}
+.sc em{font-style:normal;font-size:8px;font-weight:700;letter-spacing:.1em;color:var(--strip-muted)}
+.sc b{font-family:var(--font-display);font-size:17px;font-weight:400}
+.sc.lead em,.sc.lead b{color:var(--strip-accent)}
+.resume{display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 18px;font-size:12px;
+  background:var(--resume-bg);color:var(--resume-ink);border:var(--resume-border);
+  box-shadow:var(--resume-shadow);border-radius:var(--resume-radius);font-family:var(--font-display)}
+
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.tile{border-radius:var(--tile-radius);overflow:hidden;background:var(--tile-bg);box-shadow:var(--tile-shadow)}
+.t1{border:var(--frame1)}.t2{border:var(--frame2)}.t3{border:var(--frame3)}.t4{border:var(--frame4)}
+.art{height:76px}
+.a1{background:var(--art1)}.a2{background:var(--art2)}.a3{background:var(--art3)}.a4{background:var(--art4)}
+.band{min-height:34px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);
+  font-size:13px;letter-spacing:var(--band-track)}
+.b1{background:var(--band1);color:var(--bink1)}.b2{background:var(--band2);color:var(--bink2)}
+.b3{background:var(--band3);color:var(--bink3)}.b4{background:var(--band4);color:var(--bink4)}
+
+.two{display:grid;grid-template-columns:230px 1fr;gap:10px;align-items:start}
+.pod-wrap,.console{background:var(--panel);border:var(--panel-border);border-radius:var(--panel-radius);
+  box-shadow:var(--panel-shadow);overflow:hidden}
+.pod-wrap{padding:10px}
+.ph{font-family:var(--font-display);font-size:14px;padding:0 4px 8px;border-bottom:1px solid var(--hair);margin-bottom:8px}
+.pod{display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:9px;padding:8px 10px;
+  border-radius:11px;background:var(--rank-bg);border:2px solid transparent;margin-bottom:6px}
+.pod.first{background:var(--row-hover);border-color:var(--acc1)}
+.rk{width:22px;height:22px;border-radius:50%;background:var(--panel);color:var(--muted);
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:11px}
+.pod.first .rk{background:var(--acc1);color:var(--on-acc1)}
+.nm{font-weight:600;font-size:14px}
+.sc2{font-family:var(--font-display);font-size:21px}
+.pod.first .sc2{color:var(--acc1-text);font-size:24px}
+
+.ch{display:flex;align-items:baseline;gap:9px;padding:10px 13px;background:var(--rank-bg);
+  border-bottom:1px solid var(--hair);font-family:var(--font-display);font-size:14px}
+.ch em{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.step{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;padding:9px 13px;
+  border-bottom:1px solid var(--hair)}
+.step:last-child{border-bottom:none}
+.lab{display:flex;align-items:center;gap:7px;font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--muted)}
+.no{width:19px;height:19px;border-radius:50%;background:var(--rank-bg);color:var(--muted);
+  display:flex;align-items:center;justify-content:center;font-style:normal;font-size:10px;font-family:var(--font-display)}
+.no.ok{background:var(--acc2);color:#fff}
+.body{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pick{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:0 12px;
+  border-radius:999px;border:2px solid var(--hair);font-size:12.5px;font-weight:600}
+.pick.on{background:var(--acc1);border-color:var(--acc1);color:var(--on-acc1)}
+.pick.sq{min-width:34px;padding:0 8px;border-radius:9px;font-family:var(--font-display)}
+.pick.suit{border-color:var(--suit-edge)}
+.pick.suit b{font-size:17px;font-weight:400}
+.pick.suit.red{color:var(--suit-red)}
+.pick.suit.red.on{background:var(--live);border-color:var(--live);color:var(--on-live)}
+.face{display:inline-flex;align-items:center;justify-content:center;width:42px;height:54px;margin-left:6px;
+  border-radius:8px;background:var(--card-face);color:var(--suit-dark);border:1px solid var(--hair);
+  font-family:var(--font-display);font-size:16px}
+
+/* the frosted skins blur their chrome, exactly as the app does */
+.glass .plaque,.glass .bar,.glass .pod-wrap,.glass .console{
+  -webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%)}
+@media (max-width:900px){.two{grid-template-columns:1fr}.tiles{grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body>
+<h1>AP Card Games Night &mdash; 8 skins</h1>
+<p class="lede">Every skin, drawn from the same token table the app reads
+(<code>design/admin-theming/tokens.mjs</code>), so this page cannot drift from
+what Admin actually applies. Each block shows that skin's plaque, live bar,
+game tiles, podium and round console.</p>
+<div class="grid">
+
+<section class="skin" style="--bg: #2f3134; --bg-image: linear-gradient(180deg, #3a3d41 0%, #2b2d30 58%, #232528 100%); --ink: #eceef0; --muted: #b0b6bd; --hair: rgba(255,255,255,0.13); --rule: rgba(255,255,255,0.16); --mark-ink: #d8dbdf; --acc1: #c9a227; --on-acc1: #221a05; --acc1-text: #e0b93a; --on-live: #1c0703; --acc2: #4a9d6b; --acc3: #8b1f28; --acc4: #3b6ea5; --live: #e0563f; --rank-bg: rgba(255,255,255,0.10); --row-hover: rgba(255,255,255,0.06); --dot-idle: rgba(255,255,255,0.22); --font-display: 'Oswald', 'Helvetica Neue', sans-serif; --font-body: 'Barlow', 'Helvetica Neue', sans-serif; --word-family: 'Oswald', sans-serif; --word-size: 26px; --word-track: 0.24em; --word-weight: 300; --word-shadow: none; --plaque-bg: linear-gradient(180deg, #43464a 0%, #303336 100%); --plaque-border: 1px solid rgba(255,255,255,0.16); --plaque-ink: #f2f4f6; --plaque-sub: #8d9298; --plaque-shadow: none; --frame1: 2px solid #c9a227; --frame2: 2px solid #4a9d6b; --frame3: 2px dashed rgba(255,255,255,0.22); --frame4: 2px solid #3b6ea5; --art1: linear-gradient(180deg, rgba(201,162,39,0.20) 0%, rgba(201,162,39,0.07) 60%, rgba(0,0,0,0.32) 100%); --art2: linear-gradient(180deg, rgba(74,157,107,0.20) 0%, rgba(74,157,107,0.07) 60%, rgba(0,0,0,0.32) 100%); --art3: rgba(255,255,255,0.03); --art4: linear-gradient(180deg, #3a3d41 0%, #2a2c2f 100%); --band1: linear-gradient(180deg, #3c3f43 0%, #2c2f32 100%); --band2: linear-gradient(180deg, #3c3f43 0%, #2c2f32 100%); --band3: rgba(255,255,255,0.06); --band4: linear-gradient(180deg, #3c3f43 0%, #2c2f32 100%); --bink1: #f2f4f6; --bink2: #f2f4f6; --bink3: #9aa0a6; --bink4: #f2f4f6; --band-track: 0.14em; --tile-bg: #26282b; --tile-radius: 5px; --tile-shadow: 0 8px 20px rgba(0,0,0,0.42); --tile-hover: 0 20px 38px rgba(0,0,0,0.62); --art-meta: #e6e8ea; --art-meta-bg: rgba(0,0,0,0.45); --art-shadow: 0 6px 16px rgba(0,0,0,0.55); --card-face: #f4f1e8; --suit-edge: rgba(244,241,232,0.40); --logo-ink: #14161a; --logo-muted: #5f636a; --logo-spade: #14161a; --logo-bar: #c9a227; --logo-ring: rgba(255,255,255,0.2); --logo-hub: #c9a227; --logo-hub-ink: #221a05; --suit-dark: #14161a; --suit-red: #a8242f; --box-line: #1c1e21; --ghost-line: rgba(255,255,255,0.3); --panel: rgba(255,255,255,0.045); --panel-border: 1px solid rgba(255,255,255,0.12); --panel-radius: 6px; --panel-shadow: none; --strip-bg: linear-gradient(180deg, #34373b 0%, #26282b 100%); --strip-border: 1px solid rgba(255,255,255,0.14); --strip-radius: 8px; --strip-shadow: 0 6px 18px rgba(0,0,0,0.3); --strip-ink: #f2f4f6; --strip-muted: #9aa0a6; --strip-accent: #c9a227; --strip-hair: rgba(255,255,255,0.16); --strip-icon-bg: rgba(201,162,39,0.15); --resume-bg: linear-gradient(180deg, #d4ac2c 0%, #a8811c 100%); --resume-ink: #221a05; --resume-border: none; --resume-shadow: 0 3px 10px rgba(0,0,0,0.4); --resume-radius: 10px; --ground-plate: rgba(255,255,255,0.07); --ground-ink: #eceef0; --ground-muted: #9aa0a6; --bulb: #e7dcc0; --bulb-glow: rgba(231,220,192,0.85)">
+  <div class="wall"></div>
+  <div class="inner">
+    <header class="meta">
+      <span class="dot"></span>
+      <b>Terminal Classic</b><code>terminal</code><span class="note">Charcoal chrome, trapezoid plaque</span>
+    </header>
+
+    <div class="head">
+      <i class="rule"></i>
+      <div class="plaque"><div class="word">AP CARD GAMES</div><div class="sub">Night</div></div>
+    </div>
+
+    <div class="bar">
+      <span class="baricon">&#9824;</span>
+      <span class="barid"><em>&#9679; LIVE NOW &middot; 2 ROUNDS</em><b>3 of Spade</b></span>
+      <span class="scores">
+        <span class="sc lead"><em>PRIYA</em><b>345</b></span>
+        <span class="sc"><em>ABHI</em><b>180</b></span>
+        <span class="sc"><em>NIKHIL</em><b>165</b></span>
+      </span>
+      <span class="resume">&#9654; RESUME</span>
+    </div>
+
+    <div class="tiles">
+      <div class="tile t1"><div class="art a1"></div>
+        <div class="band b1">3 of Spade</div></div><div class="tile t2"><div class="art a2"></div>
+        <div class="band b2">KaChuFull</div></div><div class="tile t3"><div class="art a3"></div>
+        <div class="band b3">Coming Soon</div></div><div class="tile t4"><div class="art a4"></div>
+        <div class="band b4">Archives</div></div>
+    </div>
+
+    <div class="two">
+      <div class="pod-wrap">
+        <div class="ph">Standing</div>
+        <div class="pod first"><span class="rk">1</span><span class="nm">Priya</span><span class="sc2">345</span></div><div class="pod"><span class="rk">2</span><span class="nm">Abhi</span><span class="sc2">180</span></div><div class="pod"><span class="rk">3</span><span class="nm">Nikhil</span><span class="sc2">165</span></div>
+      </div>
+      <div class="console">
+        <div class="ch">New round <em>before the cards are played</em></div>
+        <div class="step"><span class="lab"><i class="no">1</i>WHO WON</span>
+          <span class="body"><span class="pick">Abhi</span><span class="pick">Priya</span><span class="pick on">Rahul</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">3</i>SIR</span>
+          <span class="body"><span class="pick suit on"><b>♠</b>Spades</span><span class="pick suit red"><b>♥</b>Hearts</span><span class="pick suit red"><b>♦</b>Diamonds</span><span class="pick suit"><b>♣</b>Clubs</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">4</i>CARD 1</span>
+          <span class="body"><span class="pick sq on">A</span><span class="pick sq">K</span><span class="pick sq">Q</span><span class="pick sq">J</span><span class="pick sq">10</span>
+            <span class="face">A&#9824;</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="skin" style="--bg: #cf3a30; --bg-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 46px, transparent 46px, transparent 92px); --ink: #17244d; --muted: #5c6484; --hair: #dfe3f0; --rule: rgba(255,255,255,0.4); --mark-ink: #ffe066; --acc1: #2440a8; --on-acc1: #ffffff; --acc1-text: #2440a8; --on-live: #ffffff; --acc2: #f7b500; --acc3: #00a878; --acc4: #17244d; --live: #e8342c; --rank-bg: #e4e8f6; --row-hover: rgba(36,64,168,0.08); --dot-idle: rgba(255,255,255,0.5); --font-display: 'Titan One', 'Arial Black', sans-serif; --font-body: 'Mulish', 'Helvetica Neue', sans-serif; --word-family: 'Titan One', sans-serif; --word-size: 25px; --word-track: normal; --word-weight: 400; --word-shadow: none; --plaque-bg: #17244d; --plaque-border: 3px solid #ffffff; --plaque-ink: #ffe066; --plaque-sub: #9aa6cf; --plaque-shadow: 5px 5px 0 rgba(23,36,77,0.4); --frame1: 3px solid #17244d; --frame2: 3px solid #17244d; --frame3: 3px dashed #b9c2dd; --frame4: 3px solid #17244d; --art1: linear-gradient(180deg, rgba(36,64,168,0.16) 0%, #ffffff 100%); --art2: linear-gradient(180deg, rgba(247,181,0,0.20) 0%, #ffffff 100%); --art3: #f4f6fc; --art4: #eef1fa; --band1: #2440a8; --band2: #f7b500; --band3: #dde3f2; --band4: #17244d; --bink1: #ffffff; --bink2: #17244d; --bink3: #6d7699; --bink4: #ffffff; --band-track: 0.05em; --tile-bg: #ffffff; --tile-radius: 14px; --tile-shadow: 5px 5px 0 #17244d; --tile-hover: 10px 13px 0 #17244d; --art-meta: #17244d; --art-meta-bg: rgba(255,255,255,0.9); --art-shadow: 0 6px 14px rgba(23,36,77,0.28); --card-face: #ffffff; --suit-edge: #b9c4e6; --logo-ink: #17244d; --logo-muted: #616a8c; --logo-spade: #101317; --logo-bar: #f7b500; --logo-ring: rgba(23,36,77,0.25); --logo-hub: #e8342c; --logo-hub-ink: #ffffff; --suit-dark: #17244d; --suit-red: #e8342c; --box-line: #17244d; --ghost-line: #b9c2dd; --panel: #ffffff; --panel-border: 3px solid #17244d; --panel-radius: 12px; --panel-shadow: 5px 5px 0 #17244d; --strip-bg: #ffffff; --strip-border: 3px solid #17244d; --strip-radius: 12px; --strip-shadow: 5px 5px 0 #17244d; --strip-ink: #17244d; --strip-muted: #6d7699; --strip-accent: #e8342c; --strip-hair: #dfe3f0; --strip-icon-bg: #ffe9a8; --resume-bg: #2440a8; --resume-ink: #ffffff; --resume-border: 3px solid #17244d; --resume-shadow: none; --resume-radius: 10px; --ground-plate: rgba(23,36,77,0.94); --ground-ink: #ffffff; --ground-muted: rgba(255,255,255,0.88); --bulb: #ffe066; --bulb-glow: rgba(255,224,102,0.95)">
+  <div class="wall"></div>
+  <div class="inner">
+    <header class="meta">
+      <span class="dot"></span>
+      <b>Slot Machine</b><code>slot</code><span class="note">Red carnival, marquee bulbs, confetti</span>
+    </header>
+
+    <div class="head">
+      <i class="rule"></i>
+      <div class="plaque"><div class="word">AP CARD GAMES</div><div class="sub">Night</div></div>
+    </div>
+
+    <div class="bar">
+      <span class="baricon">&#9824;</span>
+      <span class="barid"><em>&#9679; LIVE NOW &middot; 2 ROUNDS</em><b>3 of Spade</b></span>
+      <span class="scores">
+        <span class="sc lead"><em>PRIYA</em><b>345</b></span>
+        <span class="sc"><em>ABHI</em><b>180</b></span>
+        <span class="sc"><em>NIKHIL</em><b>165</b></span>
+      </span>
+      <span class="resume">&#9654; RESUME</span>
+    </div>
+
+    <div class="tiles">
+      <div class="tile t1"><div class="art a1"></div>
+        <div class="band b1">3 of Spade</div></div><div class="tile t2"><div class="art a2"></div>
+        <div class="band b2">KaChuFull</div></div><div class="tile t3"><div class="art a3"></div>
+        <div class="band b3">Coming Soon</div></div><div class="tile t4"><div class="art a4"></div>
+        <div class="band b4">Archives</div></div>
+    </div>
+
+    <div class="two">
+      <div class="pod-wrap">
+        <div class="ph">Standing</div>
+        <div class="pod first"><span class="rk">1</span><span class="nm">Priya</span><span class="sc2">345</span></div><div class="pod"><span class="rk">2</span><span class="nm">Abhi</span><span class="sc2">180</span></div><div class="pod"><span class="rk">3</span><span class="nm">Nikhil</span><span class="sc2">165</span></div>
+      </div>
+      <div class="console">
+        <div class="ch">New round <em>before the cards are played</em></div>
+        <div class="step"><span class="lab"><i class="no">1</i>WHO WON</span>
+          <span class="body"><span class="pick">Abhi</span><span class="pick">Priya</span><span class="pick on">Rahul</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">3</i>SIR</span>
+          <span class="body"><span class="pick suit on"><b>♠</b>Spades</span><span class="pick suit red"><b>♥</b>Hearts</span><span class="pick suit red"><b>♦</b>Diamonds</span><span class="pick suit"><b>♣</b>Clubs</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">4</i>CARD 1</span>
+          <span class="body"><span class="pick sq on">A</span><span class="pick sq">K</span><span class="pick sq">Q</span><span class="pick sq">J</span><span class="pick sq">10</span>
+            <span class="face">A&#9824;</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="skin" style="--bg: #241350; --bg-image: radial-gradient(58% 40% at 16% 0%, rgba(255,42,163,0.34) 0%, transparent 68%), radial-gradient(52% 38% at 88% 4%, rgba(0,229,255,0.30) 0%, transparent 66%); --ink: #f5f0ff; --muted: #a892d8; --hair: rgba(255,255,255,0.14); --rule: rgba(255,255,255,0.18); --mark-ink: #00e5ff; --acc1: #ff2aa3; --on-acc1: #1a0b33; --acc1-text: #ff85c8; --on-live: #2b0417; --acc2: #00e5ff; --acc3: #b4ff39; --acc4: #ffcc00; --live: #ff2aa3; --rank-bg: rgba(255,255,255,0.10); --row-hover: rgba(255,42,163,0.14); --dot-idle: rgba(255,255,255,0.22); --font-display: 'Outfit', 'Helvetica Neue', sans-serif; --font-body: 'Outfit', 'Helvetica Neue', sans-serif; --word-family: 'Monoton', cursive; --word-size: 25px; --word-track: 0.07em; --word-weight: 400; --word-shadow: 0 0 12px #00e5ff, 0 0 30px #ff2aa3; --plaque-bg: rgba(255,255,255,0.05); --plaque-border: 2px solid #00e5ff; --plaque-ink: #ffffff; --plaque-sub: #a892d8; --plaque-shadow: 0 0 26px rgba(0,229,255,0.4), inset 0 0 24px rgba(255,42,163,0.2); --frame1: 2px solid #ff2aa3; --frame2: 2px solid #00e5ff; --frame3: 2px dashed rgba(255,255,255,0.28); --frame4: 2px solid #ffcc00; --art1: radial-gradient(80% 70% at 50% 42%, rgba(255,42,163,0.22) 0%, rgba(255,255,255,0.03) 72%); --art2: radial-gradient(80% 70% at 50% 42%, rgba(0,229,255,0.22) 0%, rgba(255,255,255,0.03) 72%); --art3: rgba(255,255,255,0.03); --art4: rgba(255,255,255,0.06); --band1: rgba(255,42,163,0.16); --band2: rgba(0,229,255,0.16); --band3: rgba(255,255,255,0.07); --band4: rgba(255,255,255,0.09); --bink1: #ff2aa3; --bink2: #00e5ff; --bink3: #a892d8; --bink4: #ffffff; --band-track: 0.12em; --tile-bg: rgba(255,255,255,0.05); --tile-radius: 14px; --tile-shadow: 0 0 22px rgba(255,42,163,0.22); --tile-hover: 0 0 46px rgba(255,42,163,0.6); --art-meta: #f5f0ff; --art-meta-bg: rgba(36,19,80,0.72); --art-shadow: 0 6px 18px rgba(0,0,0,0.5); --card-face: #f7f2ff; --suit-edge: rgba(247,242,255,0.42); --logo-ink: #241350; --logo-muted: #6b5b96; --logo-spade: #150f1c; --logo-bar: #00e5ff; --logo-ring: rgba(255,255,255,0.25); --logo-hub: #ff2aa3; --logo-hub-ink: #1a0b33; --suit-dark: #241350; --suit-red: #ff2aa3; --box-line: #1a0f3d; --ghost-line: rgba(180,255,57,0.6); --panel: rgba(255,255,255,0.055); --panel-border: 1px solid rgba(255,255,255,0.16); --panel-radius: 14px; --panel-shadow: 0 0 24px rgba(0,229,255,0.10); --strip-bg: rgba(255,255,255,0.06); --strip-border: 2px solid #ff2aa3; --strip-radius: 14px; --strip-shadow: 0 0 30px rgba(255,42,163,0.3); --strip-ink: #ffffff; --strip-muted: #a892d8; --strip-accent: #00e5ff; --strip-hair: rgba(255,255,255,0.18); --strip-icon-bg: rgba(0,229,255,0.14); --resume-bg: #ff2aa3; --resume-ink: #1a0b33; --resume-border: none; --resume-shadow: 0 0 24px rgba(255,42,163,0.7); --resume-radius: 10px; --ground-plate: rgba(255,255,255,0.08); --ground-ink: #f5f0ff; --ground-muted: #c3b0ea; --bulb: #00e5ff; --bulb-glow: rgba(0,229,255,0.95)">
+  <div class="wall"></div>
+  <div class="inner">
+    <header class="meta">
+      <span class="dot"></span>
+      <b>Neon Terminal</b><code>neon</code><span class="note">Indigo, flickering neon tube</span>
+    </header>
+
+    <div class="head">
+      <i class="rule"></i>
+      <div class="plaque"><div class="word">AP CARD GAMES</div><div class="sub">Night</div></div>
+    </div>
+
+    <div class="bar">
+      <span class="baricon">&#9824;</span>
+      <span class="barid"><em>&#9679; LIVE NOW &middot; 2 ROUNDS</em><b>3 of Spade</b></span>
+      <span class="scores">
+        <span class="sc lead"><em>PRIYA</em><b>345</b></span>
+        <span class="sc"><em>ABHI</em><b>180</b></span>
+        <span class="sc"><em>NIKHIL</em><b>165</b></span>
+      </span>
+      <span class="resume">&#9654; RESUME</span>
+    </div>
+
+    <div class="tiles">
+      <div class="tile t1"><div class="art a1"></div>
+        <div class="band b1">3 of Spade</div></div><div class="tile t2"><div class="art a2"></div>
+        <div class="band b2">KaChuFull</div></div><div class="tile t3"><div class="art a3"></div>
+        <div class="band b3">Coming Soon</div></div><div class="tile t4"><div class="art a4"></div>
+        <div class="band b4">Archives</div></div>
+    </div>
+
+    <div class="two">
+      <div class="pod-wrap">
+        <div class="ph">Standing</div>
+        <div class="pod first"><span class="rk">1</span><span class="nm">Priya</span><span class="sc2">345</span></div><div class="pod"><span class="rk">2</span><span class="nm">Abhi</span><span class="sc2">180</span></div><div class="pod"><span class="rk">3</span><span class="nm">Nikhil</span><span class="sc2">165</span></div>
+      </div>
+      <div class="console">
+        <div class="ch">New round <em>before the cards are played</em></div>
+        <div class="step"><span class="lab"><i class="no">1</i>WHO WON</span>
+          <span class="body"><span class="pick">Abhi</span><span class="pick">Priya</span><span class="pick on">Rahul</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">3</i>SIR</span>
+          <span class="body"><span class="pick suit on"><b>♠</b>Spades</span><span class="pick suit red"><b>♥</b>Hearts</span><span class="pick suit red"><b>♦</b>Diamonds</span><span class="pick suit"><b>♣</b>Clubs</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">4</i>CARD 1</span>
+          <span class="body"><span class="pick sq on">A</span><span class="pick sq">K</span><span class="pick sq">Q</span><span class="pick sq">J</span><span class="pick sq">10</span>
+            <span class="face">A&#9824;</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="skin" style="--bg: #12b0a0; --bg-image: radial-gradient(circle at 88% 4%, rgba(255,183,3,0.35) 0%, transparent 34%), radial-gradient(circle at 6% 96%, rgba(255,111,89,0.28) 0%, transparent 36%); --ink: #0f3d38; --muted: #3f6a64; --hair: #d6f2ec; --rule: rgba(255,255,255,0.45); --mark-ink: #fff3d0; --acc1: #ff6f59; --on-acc1: #0a2a26; --acc1-text: #b3301a; --on-live: #3d1109; --acc2: #0f8c80; --acc3: #ffb703; --acc4: #0f3d38; --live: #ff6f59; --rank-bg: #d4f0ea; --row-hover: rgba(18,176,160,0.12); --dot-idle: rgba(255,255,255,0.55); --font-display: 'Fredoka', 'Trebuchet MS', sans-serif; --font-body: 'Quicksand', 'Helvetica Neue', sans-serif; --word-family: 'Fredoka', sans-serif; --word-size: 27px; --word-track: normal; --word-weight: 600; --word-shadow: none; --plaque-bg: #ffffff; --plaque-border: 4px solid #0f3d38; --plaque-ink: #0f3d38; --plaque-sub: #7fa79f; --plaque-shadow: 0 8px 0 rgba(15,61,56,0.28); --frame1: 4px solid #ffffff; --frame2: 4px solid #ffffff; --frame3: 4px dashed rgba(255,255,255,0.85); --frame4: 4px solid #0f3d38; --art1: linear-gradient(180deg, rgba(255,111,89,0.20) 0%, #ffffff 100%); --art2: linear-gradient(180deg, rgba(15,140,128,0.18) 0%, #ffffff 100%); --art3: rgba(255,255,255,0.6); --art4: #e2efe8; --band1: #ff6f59; --band2: #0f8c80; --band3: #d4f0ea; --band4: #0f3d38; --bink1: #ffffff; --bink2: #ffffff; --bink3: #5c8c85; --bink4: #ffffff; --band-track: 0.04em; --tile-bg: #ffffff; --tile-radius: 26px; --tile-shadow: 0 10px 0 rgba(15,61,56,0.28); --tile-hover: 0 20px 0 rgba(15,61,56,0.32); --art-meta: #0f3d38; --art-meta-bg: rgba(255,255,255,0.9); --art-shadow: 0 7px 16px rgba(15,61,56,0.24); --card-face: #ffffff; --suit-edge: #a8ddd4; --logo-ink: #0f3d38; --logo-muted: #3f6e68; --logo-spade: #101a17; --logo-bar: #ffb703; --logo-ring: rgba(15,61,56,0.22); --logo-hub: #ff6f59; --logo-hub-ink: #ffffff; --suit-dark: #0f3d38; --suit-red: #ff6f59; --box-line: #0f3d38; --ghost-line: #8fc9c0; --panel: #ffffff; --panel-border: 3px solid #ffffff; --panel-radius: 20px; --panel-shadow: 0 8px 0 rgba(15,61,56,0.2); --strip-bg: #ffffff; --strip-border: 4px solid #0f3d38; --strip-radius: 999px; --strip-shadow: 0 8px 0 rgba(15,61,56,0.28); --strip-ink: #0f3d38; --strip-muted: #5c8c85; --strip-accent: #ff6f59; --strip-hair: #d6f2ec; --strip-icon-bg: #ffe6d9; --resume-bg: #ff6f59; --resume-ink: #ffffff; --resume-border: none; --resume-shadow: 0 6px 0 #c9503e; --resume-radius: 999px; --ground-plate: rgba(255,255,255,0.92); --ground-ink: #06322d; --ground-muted: rgba(6,50,45,0.78); --bulb: #ffe9a8; --bulb-glow: rgba(255,233,168,0.95)">
+  <div class="wall"></div>
+  <div class="inner">
+    <header class="meta">
+      <span class="dot"></span>
+      <b>Tropical Table</b><code>tropical</code><span class="note">Turquoise felt, arched plaque</span>
+    </header>
+
+    <div class="head">
+      <i class="rule"></i>
+      <div class="plaque"><div class="word">AP CARD GAMES</div><div class="sub">Night</div></div>
+    </div>
+
+    <div class="bar">
+      <span class="baricon">&#9824;</span>
+      <span class="barid"><em>&#9679; LIVE NOW &middot; 2 ROUNDS</em><b>3 of Spade</b></span>
+      <span class="scores">
+        <span class="sc lead"><em>PRIYA</em><b>345</b></span>
+        <span class="sc"><em>ABHI</em><b>180</b></span>
+        <span class="sc"><em>NIKHIL</em><b>165</b></span>
+      </span>
+      <span class="resume">&#9654; RESUME</span>
+    </div>
+
+    <div class="tiles">
+      <div class="tile t1"><div class="art a1"></div>
+        <div class="band b1">3 of Spade</div></div><div class="tile t2"><div class="art a2"></div>
+        <div class="band b2">KaChuFull</div></div><div class="tile t3"><div class="art a3"></div>
+        <div class="band b3">Coming Soon</div></div><div class="tile t4"><div class="art a4"></div>
+        <div class="band b4">Archives</div></div>
+    </div>
+
+    <div class="two">
+      <div class="pod-wrap">
+        <div class="ph">Standing</div>
+        <div class="pod first"><span class="rk">1</span><span class="nm">Priya</span><span class="sc2">345</span></div><div class="pod"><span class="rk">2</span><span class="nm">Abhi</span><span class="sc2">180</span></div><div class="pod"><span class="rk">3</span><span class="nm">Nikhil</span><span class="sc2">165</span></div>
+      </div>
+      <div class="console">
+        <div class="ch">New round <em>before the cards are played</em></div>
+        <div class="step"><span class="lab"><i class="no">1</i>WHO WON</span>
+          <span class="body"><span class="pick">Abhi</span><span class="pick">Priya</span><span class="pick on">Rahul</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">3</i>SIR</span>
+          <span class="body"><span class="pick suit on"><b>♠</b>Spades</span><span class="pick suit red"><b>♥</b>Hearts</span><span class="pick suit red"><b>♦</b>Diamonds</span><span class="pick suit"><b>♣</b>Clubs</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">4</i>CARD 1</span>
+          <span class="body"><span class="pick sq on">A</span><span class="pick sq">K</span><span class="pick sq">Q</span><span class="pick sq">J</span><span class="pick sq">10</span>
+            <span class="face">A&#9824;</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="skin glass" style="--bg: #08080c; --bg-image: radial-gradient(58% 52% at 10% 6%, rgba(94,92,230,0.55) 0%, transparent 62%), radial-gradient(50% 46% at 90% 10%, rgba(10,132,255,0.48) 0%, transparent 64%), radial-gradient(56% 50% at 82% 90%, rgba(48,209,88,0.30) 0%, transparent 62%), radial-gradient(46% 42% at 14% 94%, rgba(191,90,242,0.42) 0%, transparent 62%); --ink: #f5f5f7; --muted: #b6bac4; --hair: rgba(255,255,255,0.18); --rule: rgba(255,255,255,0.22); --mark-ink: #f5f5f7; --acc1: #0a84ff; --on-acc1: #021428; --acc1-text: #4da6ff; --on-live: #2a0210; --acc2: #30d158; --acc3: #bf5af2; --acc4: #5e5ce6; --live: #ff375f; --rank-bg: rgba(255,255,255,0.10); --row-hover: rgba(255,255,255,0.08); --dot-idle: rgba(255,255,255,0.26); --font-display: -apple-system, 'SF Pro Rounded', 'Fredoka', sans-serif; --font-body: -apple-system, 'SF Pro Text', 'Quicksand', sans-serif; --word-family: -apple-system, 'SF Pro Rounded', 'Fredoka', sans-serif; --word-size: 25px; --word-track: -0.01em; --word-weight: 700; --word-shadow: none; --plaque-bg: rgba(255,255,255,0.14); --plaque-border: 1px solid rgba(255,255,255,0.22); --plaque-ink: #ffffff; --plaque-sub: rgba(235,235,245,0.66); --plaque-shadow: 0 8px 32px 0 rgba(0,0,0,0.25); --frame1: 1px solid rgba(10,132,255,0.55); --frame2: 1px solid rgba(48,209,88,0.55); --frame3: 1px dashed rgba(255,255,255,0.28); --frame4: 1px solid rgba(191,90,242,0.55); --art1: linear-gradient(180deg, rgba(10,132,255,0.32) 0%, rgba(10,132,255,0.05) 100%); --art2: linear-gradient(180deg, rgba(48,209,88,0.28) 0%, rgba(48,209,88,0.05) 100%); --art3: rgba(255,255,255,0.04); --art4: linear-gradient(180deg, rgba(191,90,242,0.28) 0%, rgba(191,90,242,0.05) 100%); --band1: rgba(10,132,255,0.34); --band2: rgba(48,209,88,0.30); --band3: rgba(255,255,255,0.07); --band4: rgba(191,90,242,0.30); --bink1: #ffffff; --bink2: #ffffff; --bink3: rgba(235,235,245,0.66); --bink4: #ffffff; --band-track: -0.01em; --tile-bg: rgba(18,18,22,0.55); --tile-radius: 22px; --tile-shadow: 0 8px 32px 0 rgba(0,0,0,0.25); --tile-hover: 0 18px 48px 0 rgba(0,0,0,0.45); --art-meta: #ffffff; --art-meta-bg: rgba(0,0,0,0.45); --art-shadow: 0 8px 24px rgba(0,0,0,0.45); --card-face: #ffffff; --suit-edge: rgba(255,255,255,0.32); --logo-ink: #0b0b10; --logo-muted: #6b6f7a; --logo-spade: #0b0b10; --logo-bar: #0a84ff; --logo-ring: rgba(255,255,255,0.26); --logo-hub: #0a84ff; --logo-hub-ink: #ffffff; --suit-dark: #0b0b10; --suit-red: #ff375f; --box-line: #0b0b10; --ghost-line: rgba(255,255,255,0.34); --panel: rgba(18,18,22,0.65); --panel-border: 1px solid rgba(255,255,255,0.20); --panel-radius: 18px; --panel-shadow: 0 8px 32px 0 rgba(0,0,0,0.25); --strip-bg: rgba(18,18,22,0.62); --strip-border: 1px solid rgba(255,255,255,0.20); --strip-radius: 20px; --strip-shadow: 0 8px 32px 0 rgba(0,0,0,0.25); --strip-ink: #ffffff; --strip-muted: rgba(235,235,245,0.66); --strip-accent: #64b5ff; --strip-hair: rgba(255,255,255,0.18); --strip-icon-bg: rgba(10,132,255,0.24); --resume-bg: linear-gradient(180deg, #0a84ff 0%, #0058cc 100%); --resume-ink: #ffffff; --resume-border: 1px solid rgba(255,255,255,0.25); --resume-shadow: 0 8px 24px rgba(10,132,255,0.40); --resume-radius: 14px; --ground-plate: rgba(18,18,22,0.55); --ground-ink: #f5f5f7; --ground-muted: rgba(235,235,245,0.66); --bulb: #ffffff; --bulb-glow: rgba(255,255,255,0.70)">
+  <div class="wall"></div>
+  <div class="inner">
+    <header class="meta">
+      <span class="dot"></span>
+      <b>Frosted Dark</b><code>glassdark</code><span class="note">iOS glass over a night wallpaper</span>
+    </header>
+
+    <div class="head">
+      <i class="rule"></i>
+      <div class="plaque"><div class="word">AP CARD GAMES</div><div class="sub">Night</div></div>
+    </div>
+
+    <div class="bar">
+      <span class="baricon">&#9824;</span>
+      <span class="barid"><em>&#9679; LIVE NOW &middot; 2 ROUNDS</em><b>3 of Spade</b></span>
+      <span class="scores">
+        <span class="sc lead"><em>PRIYA</em><b>345</b></span>
+        <span class="sc"><em>ABHI</em><b>180</b></span>
+        <span class="sc"><em>NIKHIL</em><b>165</b></span>
+      </span>
+      <span class="resume">&#9654; RESUME</span>
+    </div>
+
+    <div class="tiles">
+      <div class="tile t1"><div class="art a1"></div>
+        <div class="band b1">3 of Spade</div></div><div class="tile t2"><div class="art a2"></div>
+        <div class="band b2">KaChuFull</div></div><div class="tile t3"><div class="art a3"></div>
+        <div class="band b3">Coming Soon</div></div><div class="tile t4"><div class="art a4"></div>
+        <div class="band b4">Archives</div></div>
+    </div>
+
+    <div class="two">
+      <div class="pod-wrap">
+        <div class="ph">Standing</div>
+        <div class="pod first"><span class="rk">1</span><span class="nm">Priya</span><span class="sc2">345</span></div><div class="pod"><span class="rk">2</span><span class="nm">Abhi</span><span class="sc2">180</span></div><div class="pod"><span class="rk">3</span><span class="nm">Nikhil</span><span class="sc2">165</span></div>
+      </div>
+      <div class="console">
+        <div class="ch">New round <em>before the cards are played</em></div>
+        <div class="step"><span class="lab"><i class="no">1</i>WHO WON</span>
+          <span class="body"><span class="pick">Abhi</span><span class="pick">Priya</span><span class="pick on">Rahul</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">3</i>SIR</span>
+          <span class="body"><span class="pick suit on"><b>♠</b>Spades</span><span class="pick suit red"><b>♥</b>Hearts</span><span class="pick suit red"><b>♦</b>Diamonds</span><span class="pick suit"><b>♣</b>Clubs</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">4</i>CARD 1</span>
+          <span class="body"><span class="pick sq on">A</span><span class="pick sq">K</span><span class="pick sq">Q</span><span class="pick sq">J</span><span class="pick sq">10</span>
+            <span class="face">A&#9824;</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="skin glass" style="--bg: #eef1f7; --bg-image: radial-gradient(58% 52% at 10% 6%, rgba(94,92,230,0.22) 0%, transparent 62%), radial-gradient(50% 46% at 90% 10%, rgba(0,122,255,0.20) 0%, transparent 64%), radial-gradient(56% 50% at 82% 90%, rgba(52,199,89,0.16) 0%, transparent 62%), radial-gradient(46% 42% at 14% 94%, rgba(175,82,222,0.18) 0%, transparent 62%); --ink: #1c1c1e; --muted: #5c6069; --hair: rgba(60,60,67,0.16); --rule: rgba(60,60,67,0.20); --mark-ink: #1c1c1e; --acc1: #0064d2; --on-acc1: #ffffff; --acc1-text: #0057b8; --on-live: #3a0603; --acc2: #1c8c3c; --acc3: #8944ab; --acc4: #3a3aed; --live: #ff3b30; --rank-bg: rgba(60,60,67,0.08); --row-hover: rgba(0,100,210,0.08); --dot-idle: rgba(60,60,67,0.24); --font-display: -apple-system, 'SF Pro Rounded', 'Fredoka', sans-serif; --font-body: -apple-system, 'SF Pro Text', 'Quicksand', sans-serif; --word-family: -apple-system, 'SF Pro Rounded', 'Fredoka', sans-serif; --word-size: 25px; --word-track: -0.01em; --word-weight: 700; --word-shadow: none; --plaque-bg: rgba(255,255,255,0.58); --plaque-border: 1px solid rgba(255,255,255,0.90); --plaque-ink: #1c1c1e; --plaque-sub: rgba(60,60,67,0.66); --plaque-shadow: 0 8px 32px 0 rgba(17,24,39,0.12); --frame1: 1px solid rgba(0,100,210,0.45); --frame2: 1px solid rgba(28,140,60,0.45); --frame3: 1px dashed rgba(60,60,67,0.30); --frame4: 1px solid rgba(137,68,171,0.45); --art1: linear-gradient(180deg, rgba(0,100,210,0.20) 0%, rgba(255,255,255,0.30) 100%); --art2: linear-gradient(180deg, rgba(28,140,60,0.18) 0%, rgba(255,255,255,0.30) 100%); --art3: rgba(255,255,255,0.30); --art4: linear-gradient(180deg, rgba(137,68,171,0.18) 0%, rgba(255,255,255,0.30) 100%); --band1: rgba(0,100,210,0.86); --band2: rgba(20,120,52,0.86); --band3: rgba(255,255,255,0.55); --band4: rgba(118,58,148,0.86); --bink1: #ffffff; --bink2: #ffffff; --bink3: rgba(60,60,67,0.66); --bink4: #ffffff; --band-track: -0.01em; --tile-bg: rgba(255,255,255,0.45); --tile-radius: 22px; --tile-shadow: 0 8px 32px 0 rgba(17,24,39,0.10); --tile-hover: 0 18px 48px 0 rgba(17,24,39,0.20); --art-meta: #1c1c1e; --art-meta-bg: rgba(255,255,255,0.75); --art-shadow: 0 8px 24px rgba(17,24,39,0.18); --card-face: #ffffff; --suit-edge: rgba(60,60,67,0.28); --logo-ink: #1c1c1e; --logo-muted: #7a7e88; --logo-spade: #1c1c1e; --logo-bar: #0064d2; --logo-ring: rgba(60,60,67,0.20); --logo-hub: #0064d2; --logo-hub-ink: #ffffff; --suit-dark: #1c1c1e; --suit-red: #d70015; --box-line: #1c1c1e; --ghost-line: rgba(60,60,67,0.32); --panel: rgba(255,255,255,0.52); --panel-border: 1px solid rgba(255,255,255,0.90); --panel-radius: 18px; --panel-shadow: 0 8px 32px 0 rgba(17,24,39,0.10); --strip-bg: rgba(255,255,255,0.55); --strip-border: 1px solid rgba(255,255,255,0.90); --strip-radius: 20px; --strip-shadow: 0 8px 32px 0 rgba(17,24,39,0.10); --strip-ink: #1c1c1e; --strip-muted: rgba(60,60,67,0.66); --strip-accent: #0064d2; --strip-hair: rgba(60,60,67,0.16); --strip-icon-bg: rgba(0,100,210,0.14); --resume-bg: linear-gradient(180deg, #0a84ff 0%, #0064d2 100%); --resume-ink: #ffffff; --resume-border: 1px solid rgba(255,255,255,0.45); --resume-shadow: 0 8px 24px rgba(0,100,210,0.30); --resume-radius: 14px; --ground-plate: rgba(255,255,255,0.62); --ground-ink: #1c1c1e; --ground-muted: rgba(60,60,67,0.70); --bulb: #ffffff; --bulb-glow: rgba(255,255,255,0.85)">
+  <div class="wall"></div>
+  <div class="inner">
+    <header class="meta">
+      <span class="dot"></span>
+      <b>Frosted Light</b><code>glasslight</code><span class="note">iOS glass over a bright wallpaper</span>
+    </header>
+
+    <div class="head">
+      <i class="rule"></i>
+      <div class="plaque"><div class="word">AP CARD GAMES</div><div class="sub">Night</div></div>
+    </div>
+
+    <div class="bar">
+      <span class="baricon">&#9824;</span>
+      <span class="barid"><em>&#9679; LIVE NOW &middot; 2 ROUNDS</em><b>3 of Spade</b></span>
+      <span class="scores">
+        <span class="sc lead"><em>PRIYA</em><b>345</b></span>
+        <span class="sc"><em>ABHI</em><b>180</b></span>
+        <span class="sc"><em>NIKHIL</em><b>165</b></span>
+      </span>
+      <span class="resume">&#9654; RESUME</span>
+    </div>
+
+    <div class="tiles">
+      <div class="tile t1"><div class="art a1"></div>
+        <div class="band b1">3 of Spade</div></div><div class="tile t2"><div class="art a2"></div>
+        <div class="band b2">KaChuFull</div></div><div class="tile t3"><div class="art a3"></div>
+        <div class="band b3">Coming Soon</div></div><div class="tile t4"><div class="art a4"></div>
+        <div class="band b4">Archives</div></div>
+    </div>
+
+    <div class="two">
+      <div class="pod-wrap">
+        <div class="ph">Standing</div>
+        <div class="pod first"><span class="rk">1</span><span class="nm">Priya</span><span class="sc2">345</span></div><div class="pod"><span class="rk">2</span><span class="nm">Abhi</span><span class="sc2">180</span></div><div class="pod"><span class="rk">3</span><span class="nm">Nikhil</span><span class="sc2">165</span></div>
+      </div>
+      <div class="console">
+        <div class="ch">New round <em>before the cards are played</em></div>
+        <div class="step"><span class="lab"><i class="no">1</i>WHO WON</span>
+          <span class="body"><span class="pick">Abhi</span><span class="pick">Priya</span><span class="pick on">Rahul</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">3</i>SIR</span>
+          <span class="body"><span class="pick suit on"><b>♠</b>Spades</span><span class="pick suit red"><b>♥</b>Hearts</span><span class="pick suit red"><b>♦</b>Diamonds</span><span class="pick suit"><b>♣</b>Clubs</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">4</i>CARD 1</span>
+          <span class="body"><span class="pick sq on">A</span><span class="pick sq">K</span><span class="pick sq">Q</span><span class="pick sq">J</span><span class="pick sq">10</span>
+            <span class="face">A&#9824;</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="skin" style="--bg: #0b0b0f; --bg-image: radial-gradient(72% 48% at 50% -12%, rgba(124,108,255,0.24) 0%, transparent 70%); --ink: #f2f2f5; --muted: #9a9aa6; --hair: rgba(255,255,255,0.10); --rule: rgba(255,255,255,0.14); --mark-ink: #f2f2f5; --acc1: #7c6cff; --on-acc1: #100826; --acc1-text: #a99bff; --on-live: #33110c; --acc2: #3fddb4; --acc3: #ffd84d; --acc4: #4cc2ff; --live: #ff6b5a; --rank-bg: rgba(255,255,255,0.07); --row-hover: rgba(124,108,255,0.14); --dot-idle: rgba(255,255,255,0.20); --font-display: 'Space Grotesk', 'Outfit', sans-serif; --font-body: 'Outfit', 'Quicksand', sans-serif; --word-family: 'Space Grotesk', 'Outfit', sans-serif; --word-size: 24px; --word-track: -0.02em; --word-weight: 700; --word-shadow: none; --plaque-bg: #17171f; --plaque-border: 2px solid #2c2c38; --plaque-ink: #f2f2f5; --plaque-sub: #9a9aa6; --plaque-shadow: 5px 5px 0 rgba(124,108,255,0.55); --frame1: 2px solid #7c6cff; --frame2: 2px solid #3fddb4; --frame3: 2px dashed rgba(255,255,255,0.22); --frame4: 2px solid #4cc2ff; --art1: linear-gradient(180deg, rgba(124,108,255,0.34) 0%, rgba(11,11,15,0.92) 100%); --art2: linear-gradient(180deg, rgba(63,221,180,0.28) 0%, rgba(11,11,15,0.92) 100%); --art3: rgba(255,255,255,0.03); --art4: linear-gradient(180deg, rgba(76,194,255,0.28) 0%, rgba(11,11,15,0.92) 100%); --band1: #7c6cff; --band2: #3fddb4; --band3: rgba(255,255,255,0.06); --band4: #4cc2ff; --bink1: #100826; --bink2: #04231a; --bink3: #9a9aa6; --bink4: #04203a; --band-track: -0.01em; --tile-bg: #141419; --tile-radius: 14px; --tile-shadow: 6px 6px 0 rgba(0,0,0,0.55); --tile-hover: 10px 10px 0 rgba(124,108,255,0.55); --art-meta: #f2f2f5; --art-meta-bg: rgba(0,0,0,0.55); --art-shadow: 4px 4px 0 rgba(0,0,0,0.50); --card-face: #f5f2ea; --suit-edge: rgba(245,242,234,0.40); --logo-ink: #0b0b0f; --logo-muted: #5a5a66; --logo-spade: #0b0b0f; --logo-bar: #ffd84d; --logo-ring: rgba(255,255,255,0.18); --logo-hub: #ff6b5a; --logo-hub-ink: #33110c; --suit-dark: #0b0b0f; --suit-red: #ff6b5a; --box-line: #0b0b0f; --ghost-line: rgba(255,255,255,0.26); --panel: #17171f; --panel-border: 1px solid #26262f; --panel-radius: 14px; --panel-shadow: none; --strip-bg: #17171f; --strip-border: 2px solid #7c6cff; --strip-radius: 14px; --strip-shadow: 5px 5px 0 rgba(124,108,255,0.30); --strip-ink: #f2f2f5; --strip-muted: #9a9aa6; --strip-accent: #3fddb4; --strip-hair: rgba(255,255,255,0.12); --strip-icon-bg: rgba(124,108,255,0.22); --resume-bg: #ffd84d; --resume-ink: #2b2100; --resume-border: none; --resume-shadow: 5px 5px 0 rgba(0,0,0,0.55); --resume-radius: 12px; --ground-plate: rgba(255,255,255,0.08); --ground-ink: #f2f2f5; --ground-muted: #a6a6b2; --bulb: #ffd84d; --bulb-glow: rgba(255,216,77,0.80)">
+  <div class="wall"></div>
+  <div class="inner">
+    <header class="meta">
+      <span class="dot"></span>
+      <b>Midnight Studio</b><code>midnight</code><span class="note">Black ground, electric accents</span>
+    </header>
+
+    <div class="head">
+      <i class="rule"></i>
+      <div class="plaque"><div class="word">AP CARD GAMES</div><div class="sub">Night</div></div>
+    </div>
+
+    <div class="bar">
+      <span class="baricon">&#9824;</span>
+      <span class="barid"><em>&#9679; LIVE NOW &middot; 2 ROUNDS</em><b>3 of Spade</b></span>
+      <span class="scores">
+        <span class="sc lead"><em>PRIYA</em><b>345</b></span>
+        <span class="sc"><em>ABHI</em><b>180</b></span>
+        <span class="sc"><em>NIKHIL</em><b>165</b></span>
+      </span>
+      <span class="resume">&#9654; RESUME</span>
+    </div>
+
+    <div class="tiles">
+      <div class="tile t1"><div class="art a1"></div>
+        <div class="band b1">3 of Spade</div></div><div class="tile t2"><div class="art a2"></div>
+        <div class="band b2">KaChuFull</div></div><div class="tile t3"><div class="art a3"></div>
+        <div class="band b3">Coming Soon</div></div><div class="tile t4"><div class="art a4"></div>
+        <div class="band b4">Archives</div></div>
+    </div>
+
+    <div class="two">
+      <div class="pod-wrap">
+        <div class="ph">Standing</div>
+        <div class="pod first"><span class="rk">1</span><span class="nm">Priya</span><span class="sc2">345</span></div><div class="pod"><span class="rk">2</span><span class="nm">Abhi</span><span class="sc2">180</span></div><div class="pod"><span class="rk">3</span><span class="nm">Nikhil</span><span class="sc2">165</span></div>
+      </div>
+      <div class="console">
+        <div class="ch">New round <em>before the cards are played</em></div>
+        <div class="step"><span class="lab"><i class="no">1</i>WHO WON</span>
+          <span class="body"><span class="pick">Abhi</span><span class="pick">Priya</span><span class="pick on">Rahul</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">3</i>SIR</span>
+          <span class="body"><span class="pick suit on"><b>♠</b>Spades</span><span class="pick suit red"><b>♥</b>Hearts</span><span class="pick suit red"><b>♦</b>Diamonds</span><span class="pick suit"><b>♣</b>Clubs</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">4</i>CARD 1</span>
+          <span class="body"><span class="pick sq on">A</span><span class="pick sq">K</span><span class="pick sq">Q</span><span class="pick sq">J</span><span class="pick sq">10</span>
+            <span class="face">A&#9824;</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="skin" style="--bg: #f4f1ea; --bg-image: radial-gradient(72% 48% at 50% -12%, rgba(91,75,232,0.12) 0%, transparent 70%); --ink: #14141a; --muted: #6b6862; --hair: #e2ddd1; --rule: #d8d2c4; --mark-ink: #14141a; --acc1: #5b4be8; --on-acc1: #ffffff; --acc1-text: #5b4be8; --on-live: #33100a; --acc2: #0a7a63; --acc3: #e2a01a; --acc4: #1f63cc; --live: #e8503a; --rank-bg: rgba(20,20,26,0.06); --row-hover: rgba(91,75,232,0.09); --dot-idle: rgba(20,20,26,0.20); --font-display: 'Space Grotesk', 'Outfit', sans-serif; --font-body: 'Outfit', 'Quicksand', sans-serif; --word-family: 'Space Grotesk', 'Outfit', sans-serif; --word-size: 24px; --word-track: -0.02em; --word-weight: 700; --word-shadow: none; --plaque-bg: #ffffff; --plaque-border: 2px solid #14141a; --plaque-ink: #14141a; --plaque-sub: #6b6862; --plaque-shadow: 5px 5px 0 #5b4be8; --frame1: 2px solid #5b4be8; --frame2: 2px solid #0a7a63; --frame3: 2px dashed #cfc9ba; --frame4: 2px solid #1f63cc; --art1: linear-gradient(180deg, rgba(91,75,232,0.18) 0%, rgba(255,255,255,0.92) 100%); --art2: linear-gradient(180deg, rgba(10,122,99,0.16) 0%, rgba(255,255,255,0.92) 100%); --art3: rgba(20,20,26,0.03); --art4: linear-gradient(180deg, rgba(31,99,204,0.16) 0%, rgba(255,255,255,0.92) 100%); --band1: #5b4be8; --band2: #0a7a63; --band3: #efece1; --band4: #1f63cc; --bink1: #ffffff; --bink2: #ffffff; --bink3: #6b6862; --bink4: #ffffff; --band-track: -0.01em; --tile-bg: #ffffff; --tile-radius: 14px; --tile-shadow: 5px 5px 0 rgba(20,20,26,0.10); --tile-hover: 9px 9px 0 rgba(91,75,232,0.30); --art-meta: #14141a; --art-meta-bg: rgba(255,255,255,0.82); --art-shadow: 4px 4px 0 rgba(20,20,26,0.12); --card-face: #ffffff; --suit-edge: #cfc9ba; --logo-ink: #14141a; --logo-muted: #8a857a; --logo-spade: #14141a; --logo-bar: #e2a01a; --logo-ring: rgba(20,20,26,0.14); --logo-hub: #e8503a; --logo-hub-ink: #33100a; --suit-dark: #14141a; --suit-red: #d8402c; --box-line: #14141a; --ghost-line: #cfc9ba; --panel: #ffffff; --panel-border: 1px solid #e2ddd1; --panel-radius: 14px; --panel-shadow: none; --strip-bg: #ffffff; --strip-border: 2px solid #14141a; --strip-radius: 14px; --strip-shadow: 5px 5px 0 rgba(91,75,232,0.25); --strip-ink: #14141a; --strip-muted: #6b6862; --strip-accent: #5b4be8; --strip-hair: #e2ddd1; --strip-icon-bg: rgba(91,75,232,0.12); --resume-bg: #5b4be8; --resume-ink: #ffffff; --resume-border: none; --resume-shadow: 5px 5px 0 rgba(20,20,26,0.18); --resume-radius: 12px; --ground-plate: rgba(20,20,26,0.06); --ground-ink: #14141a; --ground-muted: #6b6862; --bulb: #e2a01a; --bulb-glow: rgba(226,160,26,0.70)">
+  <div class="wall"></div>
+  <div class="inner">
+    <header class="meta">
+      <span class="dot"></span>
+      <b>Daylight Studio</b><code>daylight</code><span class="note">Warm white, the same accents</span>
+    </header>
+
+    <div class="head">
+      <i class="rule"></i>
+      <div class="plaque"><div class="word">AP CARD GAMES</div><div class="sub">Night</div></div>
+    </div>
+
+    <div class="bar">
+      <span class="baricon">&#9824;</span>
+      <span class="barid"><em>&#9679; LIVE NOW &middot; 2 ROUNDS</em><b>3 of Spade</b></span>
+      <span class="scores">
+        <span class="sc lead"><em>PRIYA</em><b>345</b></span>
+        <span class="sc"><em>ABHI</em><b>180</b></span>
+        <span class="sc"><em>NIKHIL</em><b>165</b></span>
+      </span>
+      <span class="resume">&#9654; RESUME</span>
+    </div>
+
+    <div class="tiles">
+      <div class="tile t1"><div class="art a1"></div>
+        <div class="band b1">3 of Spade</div></div><div class="tile t2"><div class="art a2"></div>
+        <div class="band b2">KaChuFull</div></div><div class="tile t3"><div class="art a3"></div>
+        <div class="band b3">Coming Soon</div></div><div class="tile t4"><div class="art a4"></div>
+        <div class="band b4">Archives</div></div>
+    </div>
+
+    <div class="two">
+      <div class="pod-wrap">
+        <div class="ph">Standing</div>
+        <div class="pod first"><span class="rk">1</span><span class="nm">Priya</span><span class="sc2">345</span></div><div class="pod"><span class="rk">2</span><span class="nm">Abhi</span><span class="sc2">180</span></div><div class="pod"><span class="rk">3</span><span class="nm">Nikhil</span><span class="sc2">165</span></div>
+      </div>
+      <div class="console">
+        <div class="ch">New round <em>before the cards are played</em></div>
+        <div class="step"><span class="lab"><i class="no">1</i>WHO WON</span>
+          <span class="body"><span class="pick">Abhi</span><span class="pick">Priya</span><span class="pick on">Rahul</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">3</i>SIR</span>
+          <span class="body"><span class="pick suit on"><b>♠</b>Spades</span><span class="pick suit red"><b>♥</b>Hearts</span><span class="pick suit red"><b>♦</b>Diamonds</span><span class="pick suit"><b>♣</b>Clubs</span></span></div>
+        <div class="step"><span class="lab"><i class="no ok">4</i>CARD 1</span>
+          <span class="body"><span class="pick sq on">A</span><span class="pick sq">K</span><span class="pick sq">Q</span><span class="pick sq">J</span><span class="pick sq">10</span>
+            <span class="face">A&#9824;</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+</body></html>

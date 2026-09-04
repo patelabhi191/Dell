@@ -49,7 +49,7 @@ A casino floor is **lit up**, not dim. Build every screen that way:
 - **Bright grounds are the default** — cream, sunny yellow, turquoise, red.
   A deep ground is allowed only when the direction is genuinely neon, and then it
   must carry saturated colour, not muted metal.
-- **Marquee bulbs** along the edge of the hero, chasing at ~1.5s with staggered
+- **Marquee bulbs** along the edge of the hero, chasing at ~2.6s with staggered
   delays so they never blink in unison.
 - **Confetti** drifting behind the live session banner — the room celebrates.
 - **Glossy highlights** on chips and buttons: inset light from above, a solid
@@ -116,14 +116,45 @@ Rules:
   are wrong for this register.
 - Scores are the largest type on any screen after the game name.
 
-## Theming: all four skins ship
+## Theming: all eight skins ship
 
-The four skins are **not** alternatives to choose between — all four ship, and the
+The skins are **not** alternatives to choose between — all eight ship, and the
 active one is set from Admin.
 
-- **89 CSS custom properties**, defined four times over as `[data-theme="terminal"]`,
-  `"slot"`, `"neon"`, `"tropical"`. Every colour, border, radius and shadow in the
-  app resolves through a `var(--token)`; no themed literal survives in markup.
+| id | skin | register |
+| --- | --- | --- |
+| `terminal` | Terminal Classic | charcoal chrome, trapezoid plaque |
+| `slot` | Slot Machine | red carnival — deliberately the loudest, but toned down |
+| `neon` | Neon Terminal | indigo, flickering tube |
+| `tropical` | Tropical Table | turquoise felt, arched plaque |
+| `glassdark` | Frosted Dark | iOS glass over a night wallpaper |
+| `glasslight` | Frosted Light | iOS glass over a bright wallpaper |
+| `midnight` | Midnight Studio | black ground, electric editorial accents |
+| `daylight` | Daylight Studio | warm white, the same accents |
+
+**The frosted pair is the one exception to the casino register** — it exists so
+the site can read as an ordinary, well-built iOS app when that is wanted. It
+takes `backdrop-filter: blur(20px) saturate(180%)`, a `rgba(255,255,255,0.2)`
+refraction edge and a `0 8px 32px rgba(0,0,0,0.25)` ambient shadow. Two rules
+matter: the wallpaper in `--bg-image` is what makes the blur visible at all —
+frosted glass over a flat colour just looks flat — and the blur is applied to the
+**chrome only** (`.pshape, .bar, .panel, .console, .podwrap, .ledger,
+.sheetpanel, .setpanel, .deskhead, .tabs, .livecount`), never to `.pod`, `.pick`
+or `.lrow`. Dozens of blurred layers per screen is what makes glassmorphism crawl
+on a phone, and a row on an already-frosted panel gains nothing.
+
+**Midnight and Daylight are one palette on two grounds**, not two unrelated
+skins — violet, mint, sky and coral, flat blocks, offset shadows, Space Grotesk
+over Outfit.
+
+`--acc1` is tuned to be vivid as a **fill**. Used as text it fell as low as
+2.44:1, so `--acc1-text` is its sibling tuned for type — the leader's score, the
+scoresheet total, the card number, links. Never colour text with `--acc1`.
+
+- **90 CSS custom properties**, defined eight times over — `terminal`, `slot`,
+  `neon`, `tropical`, `glassdark`, `glasslight`, `midnight`, `daylight`. Every
+  colour, border, radius and shadow in the app resolves through a `var(--token)`;
+  no themed literal survives in markup.
 - Switching sets **one attribute on the root**. A 240ms transition on background,
   colour, border and shadow carries the change so it reads as a re-skin, not a flash.
 - Four things are **structural, not colour**, and are rules keyed on the theme
@@ -131,13 +162,15 @@ active one is set from Admin.
   flicker on Neon, felt shimmer on Tropical, none on Terminal), shadow language
   (hard offset / soft / glow) and corner-radius language.
 - The token table lives in one place — `design/admin-theming/tokens.mjs` — so the
-  skins cannot drift apart. Any new token must be added to **all four** themes.
+  skins cannot drift apart. Any new token must be added to **all eight** themes,
+  and `scratchpad/themecheck.mjs` asserts that parity.
 - `--acc3` is deliberately unused today: it is reserved for the third game when
   **More Coming Soon** becomes real.
 
 ### The setting
 
-`settings/site` in Firestore: `{ theme: 'terminal' | 'slot' | 'neon' | 'tropical' }`.
+`settings/site` in Firestore: `{ theme: 'terminal' | 'slot' | 'neon' | 'tropical' |
+'glassdark' | 'glasslight' | 'midnight' | 'daylight' }`.
 One global setting for the whole group, read with `onSnapshot` so a change reaches
 every open phone without a reload. Falls back to `terminal` when the document is
 missing or unreadable.
@@ -329,7 +362,7 @@ build step, no dependencies. Open it directly or serve it anywhere static.
 - Routes: `#/` home, `#/new`, `#/session/<id>`, `#/archives`, `#/players`, `#/admin`.
   `#/new` and `#/session/<id>` render on the wide shell; everything else on the
   1240px floor.
-- The 89 theme tokens are generated from `design/admin-theming/tokens.mjs`; never
+- The 90 theme tokens are generated from `design/admin-theming/tokens.mjs`; never
   hand-edit them in `AP-CardGames.html`, edit the table and re-inject.
 - Text that sits on the page ground (not on a panel) must use `--ground-ink` /
   `--ground-muted` on a `--ground-plate`. `--muted` is tuned for panels and is
@@ -339,6 +372,10 @@ build step, no dependencies. Open it directly or serve it anywhere static.
 
 The live set is `design/home-final/` — four skins of the terminal layout,
 carrying the real games and the presentation motion:
+
+`design/theme-preview/` is the skin gallery — `build.mjs` reads the same token
+table and writes `index.html`, so the preview cannot drift from the app. Re-run
+it after any token change.
 
 | File | Skin |
 | --- | --- |

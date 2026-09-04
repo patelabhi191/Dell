@@ -4,8 +4,8 @@ export const THEMES = [
   { id: 'terminal', label: 'Terminal Classic', note: 'Charcoal chrome, trapezoid plaque',
     tok: {
       bg: '#2f3134', 'bg-image': 'linear-gradient(180deg, #3a3d41 0%, #2b2d30 58%, #232528 100%)',
-      ink: '#eceef0', muted: '#9aa0a6', hair: 'rgba(255,255,255,0.13)', rule: 'rgba(255,255,255,0.16)', 'mark-ink': '#d8dbdf',
-      acc1: '#c9a227', 'on-acc1': '#221a05', 'on-live': '#1c0703', acc2: '#4a9d6b', acc3: '#8b1f28', acc4: '#3b6ea5', live: '#e0563f',
+      ink: '#eceef0', muted: '#b0b6bd', hair: 'rgba(255,255,255,0.13)', rule: 'rgba(255,255,255,0.16)', 'mark-ink': '#d8dbdf',
+      acc1: '#c9a227', 'on-acc1': '#221a05', 'acc1-text': '#e0b93a', 'on-live': '#1c0703', acc2: '#4a9d6b', acc3: '#8b1f28', acc4: '#3b6ea5', live: '#e0563f',
       'rank-bg': 'rgba(255,255,255,0.10)', 'row-hover': 'rgba(255,255,255,0.06)', 'dot-idle': 'rgba(255,255,255,0.22)',
       'font-display': "'Oswald', 'Helvetica Neue', sans-serif", 'font-body': "'Barlow', 'Helvetica Neue', sans-serif",
       'word-family': "'Oswald', sans-serif", 'word-size': '26px', 'word-track': '0.24em', 'word-weight': '300', 'word-shadow': 'none',
@@ -35,9 +35,9 @@ export const THEMES = [
 
   { id: 'slot', label: 'Slot Machine', note: 'Red carnival, marquee bulbs, confetti',
     tok: {
-      bg: '#e8342c', 'bg-image': 'repeating-linear-gradient(90deg, rgba(255,255,255,0.10) 0px, rgba(255,255,255,0.10) 46px, transparent 46px, transparent 92px)',
-      ink: '#17244d', muted: '#6d7699', hair: '#dfe3f0', rule: 'rgba(255,255,255,0.4)', 'mark-ink': '#ffe066',
-      acc1: '#2440a8', 'on-acc1': '#ffffff', 'on-live': '#ffffff', acc2: '#f7b500', acc3: '#00a878', acc4: '#17244d', live: '#e8342c',
+      bg: '#cf3a30', 'bg-image': 'repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 46px, transparent 46px, transparent 92px)',
+      ink: '#17244d', muted: '#5c6484', hair: '#dfe3f0', rule: 'rgba(255,255,255,0.4)', 'mark-ink': '#ffe066',
+      acc1: '#2440a8', 'on-acc1': '#ffffff', 'acc1-text': '#2440a8', 'on-live': '#ffffff', acc2: '#f7b500', acc3: '#00a878', acc4: '#17244d', live: '#e8342c',
       'rank-bg': '#e4e8f6', 'row-hover': 'rgba(36,64,168,0.08)', 'dot-idle': 'rgba(255,255,255,0.5)',
       'font-display': "'Titan One', 'Arial Black', sans-serif", 'font-body': "'Mulish', 'Helvetica Neue', sans-serif",
       'word-family': "'Titan One', sans-serif", 'word-size': '25px', 'word-track': 'normal', 'word-weight': '400', 'word-shadow': 'none',
@@ -65,7 +65,7 @@ export const THEMES = [
     tok: {
       bg: '#241350', 'bg-image': 'radial-gradient(58% 40% at 16% 0%, rgba(255,42,163,0.34) 0%, transparent 68%), radial-gradient(52% 38% at 88% 4%, rgba(0,229,255,0.30) 0%, transparent 66%)',
       ink: '#f5f0ff', muted: '#a892d8', hair: 'rgba(255,255,255,0.14)', rule: 'rgba(255,255,255,0.18)', 'mark-ink': '#00e5ff',
-      acc1: '#ff2aa3', 'on-acc1': '#1a0b33', 'on-live': '#2b0417', acc2: '#00e5ff', acc3: '#b4ff39', acc4: '#ffcc00', live: '#ff2aa3',
+      acc1: '#ff2aa3', 'on-acc1': '#1a0b33', 'acc1-text': '#ff85c8', 'on-live': '#2b0417', acc2: '#00e5ff', acc3: '#b4ff39', acc4: '#ffcc00', live: '#ff2aa3',
       'rank-bg': 'rgba(255,255,255,0.10)', 'row-hover': 'rgba(255,42,163,0.14)', 'dot-idle': 'rgba(255,255,255,0.22)',
       'font-display': "'Outfit', 'Helvetica Neue', sans-serif", 'font-body': "'Outfit', 'Helvetica Neue', sans-serif",
       'word-family': "'Monoton', cursive", 'word-size': '25px', 'word-track': '0.07em', 'word-weight': '400',
@@ -94,8 +94,8 @@ export const THEMES = [
   { id: 'tropical', label: 'Tropical Table', note: 'Turquoise felt, arched plaque',
     tok: {
       bg: '#12b0a0', 'bg-image': 'radial-gradient(circle at 88% 4%, rgba(255,183,3,0.35) 0%, transparent 34%), radial-gradient(circle at 6% 96%, rgba(255,111,89,0.28) 0%, transparent 36%)',
-      ink: '#0f3d38', muted: '#5c8c85', hair: '#d6f2ec', rule: 'rgba(255,255,255,0.45)', 'mark-ink': '#fff3d0',
-      acc1: '#ff6f59', 'on-acc1': '#0a2a26', 'on-live': '#3d1109', acc2: '#0f8c80', acc3: '#ffb703', acc4: '#0f3d38', live: '#ff6f59',
+      ink: '#0f3d38', muted: '#3f6a64', hair: '#d6f2ec', rule: 'rgba(255,255,255,0.45)', 'mark-ink': '#fff3d0',
+      acc1: '#ff6f59', 'on-acc1': '#0a2a26', 'acc1-text': '#b3301a', 'on-live': '#3d1109', acc2: '#0f8c80', acc3: '#ffb703', acc4: '#0f3d38', live: '#ff6f59',
       'rank-bg': '#d4f0ea', 'row-hover': 'rgba(18,176,160,0.12)', 'dot-idle': 'rgba(255,255,255,0.55)',
       'font-display': "'Fredoka', 'Trebuchet MS', sans-serif", 'font-body': "'Quicksand', 'Helvetica Neue', sans-serif",
       'word-family': "'Fredoka', sans-serif", 'word-size': '27px', 'word-track': 'normal', 'word-weight': '600', 'word-shadow': 'none',
@@ -118,9 +118,117 @@ export const THEMES = [
       'ground-plate': 'rgba(255,255,255,0.92)', 'ground-ink': '#06322d', 'ground-muted': 'rgba(6,50,45,0.78)',
       bulb: '#ffe9a8', 'bulb-glow': 'rgba(255,233,168,0.95)',
     } },
+
+  { id: 'glassdark', label: 'Frosted Dark', note: 'iOS glass over a night wallpaper',
+    tok: {
+      'bg': '#08080c', 'bg-image': 'radial-gradient(58% 52% at 10% 6%, rgba(94,92,230,0.55) 0%, transparent 62%), radial-gradient(50% 46% at 90% 10%, rgba(10,132,255,0.48) 0%, transparent 64%), radial-gradient(56% 50% at 82% 90%, rgba(48,209,88,0.30) 0%, transparent 62%), radial-gradient(46% 42% at 14% 94%, rgba(191,90,242,0.42) 0%, transparent 62%)', 'ink': '#f5f5f7', 'muted': '#b6bac4',
+      'hair': 'rgba(255,255,255,0.18)', 'rule': 'rgba(255,255,255,0.22)', 'mark-ink': '#f5f5f7', 'acc1': '#0a84ff',
+      'on-acc1': '#021428', 'acc1-text': '#4da6ff', 'on-live': '#2a0210', 'acc2': '#30d158', 'acc3': '#bf5af2',
+      'acc4': '#5e5ce6', 'live': '#ff375f', 'rank-bg': 'rgba(255,255,255,0.10)', 'row-hover': 'rgba(255,255,255,0.08)',
+      'dot-idle': 'rgba(255,255,255,0.26)', 'font-display': "-apple-system, 'SF Pro Rounded', 'Fredoka', sans-serif", 'font-body': "-apple-system, 'SF Pro Text', 'Quicksand', sans-serif", 'word-family': "-apple-system, 'SF Pro Rounded', 'Fredoka', sans-serif",
+      'word-size': '25px', 'word-track': '-0.01em', 'word-weight': '700', 'word-shadow': 'none',
+      'plaque-bg': 'rgba(255,255,255,0.14)', 'plaque-border': '1px solid rgba(255,255,255,0.22)', 'plaque-ink': '#ffffff', 'plaque-sub': 'rgba(235,235,245,0.66)',
+      'plaque-shadow': '0 8px 32px 0 rgba(0,0,0,0.25)', 'frame1': '1px solid rgba(10,132,255,0.55)', 'frame2': '1px solid rgba(48,209,88,0.55)', 'frame3': '1px dashed rgba(255,255,255,0.28)',
+      'frame4': '1px solid rgba(191,90,242,0.55)', 'art1': 'linear-gradient(180deg, rgba(10,132,255,0.32) 0%, rgba(10,132,255,0.05) 100%)', 'art2': 'linear-gradient(180deg, rgba(48,209,88,0.28) 0%, rgba(48,209,88,0.05) 100%)', 'art3': 'rgba(255,255,255,0.04)',
+      'art4': 'linear-gradient(180deg, rgba(191,90,242,0.28) 0%, rgba(191,90,242,0.05) 100%)', 'band1': 'rgba(10,132,255,0.34)', 'band2': 'rgba(48,209,88,0.30)', 'band3': 'rgba(255,255,255,0.07)',
+      'band4': 'rgba(191,90,242,0.30)', 'bink1': '#ffffff', 'bink2': '#ffffff', 'bink3': 'rgba(235,235,245,0.66)',
+      'bink4': '#ffffff', 'band-track': '-0.01em', 'tile-bg': 'rgba(18,18,22,0.55)', 'tile-radius': '22px',
+      'tile-shadow': '0 8px 32px 0 rgba(0,0,0,0.25)', 'tile-hover': '0 18px 48px 0 rgba(0,0,0,0.45)', 'art-meta': '#ffffff', 'art-meta-bg': 'rgba(0,0,0,0.45)',
+      'art-shadow': '0 8px 24px rgba(0,0,0,0.45)', 'card-face': '#ffffff', 'suit-edge': 'rgba(255,255,255,0.32)', 'logo-ink': '#0b0b10',
+      'logo-muted': '#6b6f7a', 'logo-spade': '#0b0b10', 'logo-bar': '#0a84ff', 'logo-ring': 'rgba(255,255,255,0.26)',
+      'logo-hub': '#0a84ff', 'logo-hub-ink': '#ffffff', 'suit-dark': '#0b0b10', 'suit-red': '#ff375f',
+      'box-line': '#0b0b10', 'ghost-line': 'rgba(255,255,255,0.34)', 'panel': 'rgba(18,18,22,0.65)', 'panel-border': '1px solid rgba(255,255,255,0.20)',
+      'panel-radius': '18px', 'panel-shadow': '0 8px 32px 0 rgba(0,0,0,0.25)', 'strip-bg': 'rgba(18,18,22,0.62)', 'strip-border': '1px solid rgba(255,255,255,0.20)',
+      'strip-radius': '20px', 'strip-shadow': '0 8px 32px 0 rgba(0,0,0,0.25)', 'strip-ink': '#ffffff', 'strip-muted': 'rgba(235,235,245,0.66)',
+      'strip-accent': '#64b5ff', 'strip-hair': 'rgba(255,255,255,0.18)', 'strip-icon-bg': 'rgba(10,132,255,0.24)', 'resume-bg': 'linear-gradient(180deg, #0a84ff 0%, #0058cc 100%)',
+      'resume-ink': '#ffffff', 'resume-border': '1px solid rgba(255,255,255,0.25)', 'resume-shadow': '0 8px 24px rgba(10,132,255,0.40)', 'resume-radius': '14px',
+      'ground-plate': 'rgba(18,18,22,0.55)', 'ground-ink': '#f5f5f7', 'ground-muted': 'rgba(235,235,245,0.66)', 'bulb': '#ffffff',
+      'bulb-glow': 'rgba(255,255,255,0.70)',
+    } },
+
+  { id: 'glasslight', label: 'Frosted Light', note: 'iOS glass over a bright wallpaper',
+    tok: {
+      'bg': '#eef1f7', 'bg-image': 'radial-gradient(58% 52% at 10% 6%, rgba(94,92,230,0.22) 0%, transparent 62%), radial-gradient(50% 46% at 90% 10%, rgba(0,122,255,0.20) 0%, transparent 64%), radial-gradient(56% 50% at 82% 90%, rgba(52,199,89,0.16) 0%, transparent 62%), radial-gradient(46% 42% at 14% 94%, rgba(175,82,222,0.18) 0%, transparent 62%)', 'ink': '#1c1c1e', 'muted': '#5c6069',
+      'hair': 'rgba(60,60,67,0.16)', 'rule': 'rgba(60,60,67,0.20)', 'mark-ink': '#1c1c1e', 'acc1': '#0064d2',
+      'on-acc1': '#ffffff', 'acc1-text': '#0057b8', 'on-live': '#3a0603', 'acc2': '#1c8c3c', 'acc3': '#8944ab',
+      'acc4': '#3a3aed', 'live': '#ff3b30', 'rank-bg': 'rgba(60,60,67,0.08)', 'row-hover': 'rgba(0,100,210,0.08)',
+      'dot-idle': 'rgba(60,60,67,0.24)', 'font-display': "-apple-system, 'SF Pro Rounded', 'Fredoka', sans-serif", 'font-body': "-apple-system, 'SF Pro Text', 'Quicksand', sans-serif", 'word-family': "-apple-system, 'SF Pro Rounded', 'Fredoka', sans-serif",
+      'word-size': '25px', 'word-track': '-0.01em', 'word-weight': '700', 'word-shadow': 'none',
+      'plaque-bg': 'rgba(255,255,255,0.58)', 'plaque-border': '1px solid rgba(255,255,255,0.90)', 'plaque-ink': '#1c1c1e', 'plaque-sub': 'rgba(60,60,67,0.66)',
+      'plaque-shadow': '0 8px 32px 0 rgba(17,24,39,0.12)', 'frame1': '1px solid rgba(0,100,210,0.45)', 'frame2': '1px solid rgba(28,140,60,0.45)', 'frame3': '1px dashed rgba(60,60,67,0.30)',
+      'frame4': '1px solid rgba(137,68,171,0.45)', 'art1': 'linear-gradient(180deg, rgba(0,100,210,0.20) 0%, rgba(255,255,255,0.30) 100%)', 'art2': 'linear-gradient(180deg, rgba(28,140,60,0.18) 0%, rgba(255,255,255,0.30) 100%)', 'art3': 'rgba(255,255,255,0.30)',
+      'art4': 'linear-gradient(180deg, rgba(137,68,171,0.18) 0%, rgba(255,255,255,0.30) 100%)', 'band1': 'rgba(0,100,210,0.86)', 'band2': 'rgba(20,120,52,0.86)', 'band3': 'rgba(255,255,255,0.55)',
+      'band4': 'rgba(118,58,148,0.86)', 'bink1': '#ffffff', 'bink2': '#ffffff', 'bink3': 'rgba(60,60,67,0.66)',
+      'bink4': '#ffffff', 'band-track': '-0.01em', 'tile-bg': 'rgba(255,255,255,0.45)', 'tile-radius': '22px',
+      'tile-shadow': '0 8px 32px 0 rgba(17,24,39,0.10)', 'tile-hover': '0 18px 48px 0 rgba(17,24,39,0.20)', 'art-meta': '#1c1c1e', 'art-meta-bg': 'rgba(255,255,255,0.75)',
+      'art-shadow': '0 8px 24px rgba(17,24,39,0.18)', 'card-face': '#ffffff', 'suit-edge': 'rgba(60,60,67,0.28)', 'logo-ink': '#1c1c1e',
+      'logo-muted': '#7a7e88', 'logo-spade': '#1c1c1e', 'logo-bar': '#0064d2', 'logo-ring': 'rgba(60,60,67,0.20)',
+      'logo-hub': '#0064d2', 'logo-hub-ink': '#ffffff', 'suit-dark': '#1c1c1e', 'suit-red': '#d70015',
+      'box-line': '#1c1c1e', 'ghost-line': 'rgba(60,60,67,0.32)', 'panel': 'rgba(255,255,255,0.52)', 'panel-border': '1px solid rgba(255,255,255,0.90)',
+      'panel-radius': '18px', 'panel-shadow': '0 8px 32px 0 rgba(17,24,39,0.10)', 'strip-bg': 'rgba(255,255,255,0.55)', 'strip-border': '1px solid rgba(255,255,255,0.90)',
+      'strip-radius': '20px', 'strip-shadow': '0 8px 32px 0 rgba(17,24,39,0.10)', 'strip-ink': '#1c1c1e', 'strip-muted': 'rgba(60,60,67,0.66)',
+      'strip-accent': '#0064d2', 'strip-hair': 'rgba(60,60,67,0.16)', 'strip-icon-bg': 'rgba(0,100,210,0.14)', 'resume-bg': 'linear-gradient(180deg, #0a84ff 0%, #0064d2 100%)',
+      'resume-ink': '#ffffff', 'resume-border': '1px solid rgba(255,255,255,0.45)', 'resume-shadow': '0 8px 24px rgba(0,100,210,0.30)', 'resume-radius': '14px',
+      'ground-plate': 'rgba(255,255,255,0.62)', 'ground-ink': '#1c1c1e', 'ground-muted': 'rgba(60,60,67,0.70)', 'bulb': '#ffffff',
+      'bulb-glow': 'rgba(255,255,255,0.85)',
+    } },
+
+  { id: 'midnight', label: 'Midnight Studio', note: 'Black ground, electric accents',
+    tok: {
+      'bg': '#0b0b0f', 'bg-image': 'radial-gradient(72% 48% at 50% -12%, rgba(124,108,255,0.24) 0%, transparent 70%)', 'ink': '#f2f2f5', 'muted': '#9a9aa6',
+      'hair': 'rgba(255,255,255,0.10)', 'rule': 'rgba(255,255,255,0.14)', 'mark-ink': '#f2f2f5', 'acc1': '#7c6cff',
+      'on-acc1': '#100826', 'acc1-text': '#a99bff', 'on-live': '#33110c', 'acc2': '#3fddb4', 'acc3': '#ffd84d',
+      'acc4': '#4cc2ff', 'live': '#ff6b5a', 'rank-bg': 'rgba(255,255,255,0.07)', 'row-hover': 'rgba(124,108,255,0.14)',
+      'dot-idle': 'rgba(255,255,255,0.20)', 'font-display': "'Space Grotesk', 'Outfit', sans-serif", 'font-body': "'Outfit', 'Quicksand', sans-serif", 'word-family': "'Space Grotesk', 'Outfit', sans-serif",
+      'word-size': '24px', 'word-track': '-0.02em', 'word-weight': '700', 'word-shadow': 'none',
+      'plaque-bg': '#17171f', 'plaque-border': '2px solid #2c2c38', 'plaque-ink': '#f2f2f5', 'plaque-sub': '#9a9aa6',
+      'plaque-shadow': '5px 5px 0 rgba(124,108,255,0.55)', 'frame1': '2px solid #7c6cff', 'frame2': '2px solid #3fddb4', 'frame3': '2px dashed rgba(255,255,255,0.22)',
+      'frame4': '2px solid #4cc2ff', 'art1': 'linear-gradient(180deg, rgba(124,108,255,0.34) 0%, rgba(11,11,15,0.92) 100%)', 'art2': 'linear-gradient(180deg, rgba(63,221,180,0.28) 0%, rgba(11,11,15,0.92) 100%)', 'art3': 'rgba(255,255,255,0.03)',
+      'art4': 'linear-gradient(180deg, rgba(76,194,255,0.28) 0%, rgba(11,11,15,0.92) 100%)', 'band1': '#7c6cff', 'band2': '#3fddb4', 'band3': 'rgba(255,255,255,0.06)',
+      'band4': '#4cc2ff', 'bink1': '#100826', 'bink2': '#04231a', 'bink3': '#9a9aa6',
+      'bink4': '#04203a', 'band-track': '-0.01em', 'tile-bg': '#141419', 'tile-radius': '14px',
+      'tile-shadow': '6px 6px 0 rgba(0,0,0,0.55)', 'tile-hover': '10px 10px 0 rgba(124,108,255,0.55)', 'art-meta': '#f2f2f5', 'art-meta-bg': 'rgba(0,0,0,0.55)',
+      'art-shadow': '4px 4px 0 rgba(0,0,0,0.50)', 'card-face': '#f5f2ea', 'suit-edge': 'rgba(245,242,234,0.40)', 'logo-ink': '#0b0b0f',
+      'logo-muted': '#5a5a66', 'logo-spade': '#0b0b0f', 'logo-bar': '#ffd84d', 'logo-ring': 'rgba(255,255,255,0.18)',
+      'logo-hub': '#ff6b5a', 'logo-hub-ink': '#33110c', 'suit-dark': '#0b0b0f', 'suit-red': '#ff6b5a',
+      'box-line': '#0b0b0f', 'ghost-line': 'rgba(255,255,255,0.26)', 'panel': '#17171f', 'panel-border': '1px solid #26262f',
+      'panel-radius': '14px', 'panel-shadow': 'none', 'strip-bg': '#17171f', 'strip-border': '2px solid #7c6cff',
+      'strip-radius': '14px', 'strip-shadow': '5px 5px 0 rgba(124,108,255,0.30)', 'strip-ink': '#f2f2f5', 'strip-muted': '#9a9aa6',
+      'strip-accent': '#3fddb4', 'strip-hair': 'rgba(255,255,255,0.12)', 'strip-icon-bg': 'rgba(124,108,255,0.22)', 'resume-bg': '#ffd84d',
+      'resume-ink': '#2b2100', 'resume-border': 'none', 'resume-shadow': '5px 5px 0 rgba(0,0,0,0.55)', 'resume-radius': '12px',
+      'ground-plate': 'rgba(255,255,255,0.08)', 'ground-ink': '#f2f2f5', 'ground-muted': '#a6a6b2', 'bulb': '#ffd84d',
+      'bulb-glow': 'rgba(255,216,77,0.80)',
+    } },
+
+  { id: 'daylight', label: 'Daylight Studio', note: 'Warm white, the same accents',
+    tok: {
+      'bg': '#f4f1ea', 'bg-image': 'radial-gradient(72% 48% at 50% -12%, rgba(91,75,232,0.12) 0%, transparent 70%)', 'ink': '#14141a', 'muted': '#6b6862',
+      'hair': '#e2ddd1', 'rule': '#d8d2c4', 'mark-ink': '#14141a', 'acc1': '#5b4be8',
+      'on-acc1': '#ffffff', 'acc1-text': '#5b4be8', 'on-live': '#33100a', 'acc2': '#0a7a63', 'acc3': '#e2a01a',
+      'acc4': '#1f63cc', 'live': '#e8503a', 'rank-bg': 'rgba(20,20,26,0.06)', 'row-hover': 'rgba(91,75,232,0.09)',
+      'dot-idle': 'rgba(20,20,26,0.20)', 'font-display': "'Space Grotesk', 'Outfit', sans-serif", 'font-body': "'Outfit', 'Quicksand', sans-serif", 'word-family': "'Space Grotesk', 'Outfit', sans-serif",
+      'word-size': '24px', 'word-track': '-0.02em', 'word-weight': '700', 'word-shadow': 'none',
+      'plaque-bg': '#ffffff', 'plaque-border': '2px solid #14141a', 'plaque-ink': '#14141a', 'plaque-sub': '#6b6862',
+      'plaque-shadow': '5px 5px 0 #5b4be8', 'frame1': '2px solid #5b4be8', 'frame2': '2px solid #0a7a63', 'frame3': '2px dashed #cfc9ba',
+      'frame4': '2px solid #1f63cc', 'art1': 'linear-gradient(180deg, rgba(91,75,232,0.18) 0%, rgba(255,255,255,0.92) 100%)', 'art2': 'linear-gradient(180deg, rgba(10,122,99,0.16) 0%, rgba(255,255,255,0.92) 100%)', 'art3': 'rgba(20,20,26,0.03)',
+      'art4': 'linear-gradient(180deg, rgba(31,99,204,0.16) 0%, rgba(255,255,255,0.92) 100%)', 'band1': '#5b4be8', 'band2': '#0a7a63', 'band3': '#efece1',
+      'band4': '#1f63cc', 'bink1': '#ffffff', 'bink2': '#ffffff', 'bink3': '#6b6862',
+      'bink4': '#ffffff', 'band-track': '-0.01em', 'tile-bg': '#ffffff', 'tile-radius': '14px',
+      'tile-shadow': '5px 5px 0 rgba(20,20,26,0.10)', 'tile-hover': '9px 9px 0 rgba(91,75,232,0.30)', 'art-meta': '#14141a', 'art-meta-bg': 'rgba(255,255,255,0.82)',
+      'art-shadow': '4px 4px 0 rgba(20,20,26,0.12)', 'card-face': '#ffffff', 'suit-edge': '#cfc9ba', 'logo-ink': '#14141a',
+      'logo-muted': '#8a857a', 'logo-spade': '#14141a', 'logo-bar': '#e2a01a', 'logo-ring': 'rgba(20,20,26,0.14)',
+      'logo-hub': '#e8503a', 'logo-hub-ink': '#33100a', 'suit-dark': '#14141a', 'suit-red': '#d8402c',
+      'box-line': '#14141a', 'ghost-line': '#cfc9ba', 'panel': '#ffffff', 'panel-border': '1px solid #e2ddd1',
+      'panel-radius': '14px', 'panel-shadow': 'none', 'strip-bg': '#ffffff', 'strip-border': '2px solid #14141a',
+      'strip-radius': '14px', 'strip-shadow': '5px 5px 0 rgba(91,75,232,0.25)', 'strip-ink': '#14141a', 'strip-muted': '#6b6862',
+      'strip-accent': '#5b4be8', 'strip-hair': '#e2ddd1', 'strip-icon-bg': 'rgba(91,75,232,0.12)', 'resume-bg': '#5b4be8',
+      'resume-ink': '#ffffff', 'resume-border': 'none', 'resume-shadow': '5px 5px 0 rgba(20,20,26,0.18)', 'resume-radius': '12px',
+      'ground-plate': 'rgba(20,20,26,0.06)', 'ground-ink': '#14141a', 'ground-muted': '#6b6862', 'bulb': '#e2a01a',
+      'bulb-glow': 'rgba(226,160,26,0.70)',
+    } },
 ];
 
-export const FONTS = 'Oswald:wght@300;400;500;600&family=Barlow:wght@400;500;600;700&family=Titan+One&family=Mulish:wght@400;600;700;800&family=Monoton&family=Outfit:wght@300;400;500;600;700&family=Fredoka:wght@500;600;700&family=Quicksand:wght@400;500;600;700';
+export const FONTS = 'Oswald:wght@300;400;500;600&family=Barlow:wght@400;500;600;700&family=Titan+One&family=Mulish:wght@400;600;700;800&family=Monoton&family=Outfit:wght@300;400;500;600;700&family=Fredoka:wght@500;600;700&family=Quicksand:wght@400;500;600;700&family=Space+Grotesk:wght@500;700';
 
 export const tokenCss = (indent = '    ') => THEMES.map((t) =>
   `${indent}[data-theme="${t.id}"] {\n` +
@@ -142,4 +250,16 @@ ${indent}.conf, .felt { display: none; }
 ${indent}[data-theme="slot"] .conf { display: block; }
 ${indent}[data-theme="tropical"] .felt { display: block; }
 ${indent}[data-theme="neon"] .wordmark { animation: dcFlicker 7s steps(1, end) infinite; }
+${indent}[data-theme="glassdark"] .pshape, [data-theme="glasslight"] .pshape { border-radius: 22px; }
+${indent}[data-theme="midnight"] .pshape { border-radius: 14px; }
+${indent}[data-theme="daylight"] .pshape { border-radius: 14px; }
+${indent}/* frosted glass: the chrome is blurred, never the rows inside it. Dozens of
+${indent}   backdrop-filtered layers per screen is what makes glassmorphism crawl on a
+${indent}   phone, and rows sitting on an already-frosted panel gain nothing from it. */
+${indent}:is([data-theme="glassdark"], [data-theme="glasslight"])
+${indent}  :is(.pshape, .bar, .panel, .console, .podwrap, .ledger, .sheetpanel, .setpanel,
+${indent}      .deskhead, .tabs, .livecount, .themecard, .backlink, .opmark, .pagehead) {
+${indent}  -webkit-backdrop-filter: blur(20px) saturate(180%);
+${indent}  backdrop-filter: blur(20px) saturate(180%);
+${indent}}
 `;
