@@ -1536,7 +1536,7 @@ select{color-scheme:dark}
     <div class="seg" id="viewSeg" role="tablist" aria-label="View">
       <button data-view="dash" class="active all">Dashboard</button>
       <button data-view="contrib">Contributions</button>
-      <button data-view="yearly">Yearly Fin</button>
+      <button data-view="yearly">Yearly Finance</button>
       <button data-view="monthly">Monthly</button>
       <button data-view="archive">Archives</button>
       <button data-view="plan">Plan</button>
@@ -2262,7 +2262,7 @@ select{color-scheme:dark}
           <tbody id="meBody"></tbody>
         </table>
       </div>
-      <div class="empty" id="meEmpty">Nothing here yet — import a statement above, or add expenses on the Yearly Fin tab.</div>
+      <div class="empty" id="meEmpty">Nothing here yet — import a statement above, or add expenses on the Yearly Finance tab.</div>
     </section>
   </div>
 
@@ -5042,7 +5042,7 @@ function renderME(){
   $('meEmpty').style.display=listRows.length?'none':'block';
   $('meEmpty').textContent=(!listRows.length&&txns.length)
     ? 'Nothing in this category this month \u2014 try All categories.'
-    : 'Nothing here yet \u2014 import a statement above, or add expenses on the Yearly Fin tab.';
+    : 'Nothing here yet \u2014 import a statement above, or add expenses on the Yearly Finance tab.';
   const n=Object.keys(state.me.rules).length;
   $('meRuleCount').textContent=n?n+' merchant rule'+(n===1?'':'s')+' learned':'no rules learned yet';
   meFillCatSelect(); meFillAllotSelect(); meFillFormMonth(); renderMEChart(); renderMEMatrix(); renderMEGear();
@@ -5218,7 +5218,7 @@ if($('meFile')){
 
 /* ============ tab order ============ */
 const TAB_DEFAULT=['dash','contrib','yearly','monthly','archive','plan'];
-const TAB_NAMES={dash:'Dashboard',contrib:'Contributions',yearly:'Yearly Fin',
+const TAB_NAMES={dash:'Dashboard',contrib:'Contributions',yearly:'Yearly Finance',
   monthly:'Monthly',archive:'Archives',plan:'Plan'};
 function tabOrder(){
   let o=store.get('sparta.tabOrder',null);
