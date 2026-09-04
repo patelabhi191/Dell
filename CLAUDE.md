@@ -204,11 +204,10 @@ thing you change least.
 **The Firestore connection is configured in `FIREBASE_CONFIG` at the top of
 `AP-CardGames.html`, and nowhere else.** Admin cannot edit it — the connection
 belongs to whoever deploys the file, not to whoever opens it in a browser. The
-Database section is read-only: connection name, project id, the document path,
-the REST endpoint, the SDK url, and which store is actually live. Its one
-control is **Test connection**, which writes a scratch document to
-`cardnight/_conntest`, reads it back and deletes it, reporting either the round
-trip or the exact failure code.
+Database section is read-only and shows two things: the **connection** name and
+which **storage** is actually live. Its one control is **Test connection**, which
+writes a scratch document to `cardnight/_conntest`, reads it back and deletes it,
+reporting either the round trip or the exact failure code.
 
 **Settings** holds switches that are stored but not yet wired: `pinScores` (PIN
 before a round can be saved) and one reserved slot. A switch is deliberately

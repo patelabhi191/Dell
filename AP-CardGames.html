@@ -1034,8 +1034,6 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .kv .k { font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
   color: var(--muted); }
 .kv .v { font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
-.urlcode { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
-  background: var(--rank-bg); padding: 3px 7px; border-radius: 6px; overflow-wrap: anywhere; }
 .flagrow { display: flex; align-items: center; gap: 16px; padding: 15px 17px;
   border-bottom: 1px solid var(--hair); }
 .flagrow:last-child { border-bottom: none; }
@@ -1609,15 +1607,8 @@ function firebaseName() {
   return (FIREBASE_CONFIG && (FIREBASE_CONFIG.label || FIREBASE_CONFIG.projectId)) || '';
 }
 
-/* The document this board reads and writes, and the REST endpoint behind
-   it — worth showing plainly so a failed connection can be traced. */
+/* The one document this board reads and writes. */
 var FB_PATH = { collection: 'cardnight', doc: 'state' };
-function firebaseDocUrl() {
-  var c = FIREBASE_CONFIG;
-  if (!c || !c.projectId) return '';
-  return 'https://firestore.googleapis.com/v1/projects/' + c.projectId +
-         '/databases/(default)/documents/' + FB_PATH.collection + '/' + FB_PATH.doc;
-}
 
 var fb = { app: null, db: null, api: null, status: 'off', detail: '' };
 
@@ -2548,10 +2539,6 @@ function adminDbSection() {
   var cfg = firebaseConfig();
   var rows = [
     ['Connection', cfg ? esc(firebaseName()) : 'None &mdash; scores stay on this device'],
-    ['Project ID', cfg ? esc(cfg.projectId) : '&mdash;'],
-    ['Document',   cfg ? esc(FB_PATH.collection + '/' + FB_PATH.doc) : '&mdash;'],
-    ['Endpoint',   cfg ? '<code class="urlcode">' + esc(firebaseDocUrl()) + '</code>' : '&mdash;'],
-    ['SDK',        '<code class="urlcode">' + esc(FB_SDK) + '</code>'],
     ['Storage',    Store === FirestoreStore ? 'Firestore &mdash; shared and live'
                                             : 'This device only (localStorage)']
   ].map(function (r) {
