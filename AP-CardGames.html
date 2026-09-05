@@ -966,7 +966,15 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .chipsel button[aria-pressed="true"] { border-color: var(--acc1); background: var(--row-hover); }
 
 /* ============================ scoresheet ============================ */
-.sheetwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.sheetwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent; }
+.sheetwrap::-webkit-scrollbar { height: 7px; }
+.sheetwrap::-webkit-scrollbar-track { background: transparent; }
+.sheetwrap::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 4px; opacity: .6; }
+/* shown only when the table really is wider than its box */
+.sheethint { display: none; margin: 9px 2px 0; font-size: 12px; color: var(--muted); }
+.sheetpanel.scrolls .sheethint { display: flex; align-items: center; gap: 7px; }
+.sheethint::before { content: "\2194"; font-size: 15px; }
 .sheet { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 340px; }
 .sheet th, .sheet td { padding: 7px 8px; text-align: right; white-space: nowrap; }
 .sheet th:first-child, .sheet td:first-child { text-align: left; position: sticky; left: 0;
@@ -1021,33 +1029,37 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
   font-size: 15px; min-height: 50px; padding: 0 22px; }
 .btn-view:hover { background: var(--acc1); color: var(--on-acc1); }
 
-.viewbar { position: relative; overflow: hidden; display: flex; align-items: center; gap: 16px;
-  padding: 16px 20px; margin-bottom: 18px; border-radius: var(--strip-radius);
+.viewbar { position: relative; overflow: hidden; display: grid; align-items: center;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "icon title live" "icon note note";
+  gap: 3px 16px; padding: 16px 20px; margin-bottom: 18px; border-radius: var(--strip-radius);
   background: var(--acc1); color: var(--on-acc1); box-shadow: var(--strip-shadow);
   animation: dcPop .6s cubic-bezier(.34,1.56,.64,1) both; }
 .viewbar::after { content: ""; position: absolute; top: 0; left: 0; width: 26%; height: 100%;
   pointer-events: none; background: linear-gradient(90deg, rgba(255,255,255,0),
   rgba(255,255,255,.30), rgba(255,255,255,0)); animation: dcSweep 4.2s ease-in-out infinite; }
-.viewicon { flex-shrink: 0; width: 46px; height: 46px; border-radius: 13px; display: flex;
+.viewicon { grid-area: icon; width: 46px; height: 46px; border-radius: 13px; display: flex;
   align-items: center; justify-content: center; background: rgba(255,255,255,.18);
   color: var(--on-acc1); }
-.viewtext { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.viewtext b { font-family: var(--font-display); font-size: 21px; font-weight: 400;
-  letter-spacing: .01em; line-height: 1.1; }
-.viewtext i { font-style: normal; font-size: 13px; opacity: .9; }
-.viewlive { flex-shrink: 0; margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+.viewtitle { grid-area: title; font-family: var(--font-display); font-size: 21px; font-weight: 400;
+  letter-spacing: .01em; line-height: 1.15; min-width: 0; }
+.viewnote { grid-area: note; font-style: normal; font-size: 13px; opacity: .92; min-width: 0; }
+.viewlive { grid-area: live; justify-self: end; display: inline-flex; align-items: center; gap: 8px;
   padding: 8px 15px; border-radius: 999px; background: rgba(255,255,255,.20);
-  font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+  font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
+  white-space: nowrap; }
 .viewlive .livedot { background: currentColor; }
 
 .waiting { padding: 13px 16px; margin-bottom: 14px; border-radius: var(--panel-radius);
   background: var(--panel); border: var(--panel-border); box-shadow: var(--panel-shadow);
   color: var(--muted); font-size: 13.5px; }
-@media (max-width: 620px) {
-  .viewbar { gap: 12px; padding: 14px 15px; }
+@media (max-width: 560px) {
+  /* the instruction takes its own line rather than squeezing into a column */
+  .viewbar { grid-template-areas: "icon title live" "note note note";
+    gap: 9px 12px; padding: 14px 15px; }
   .viewicon { width: 40px; height: 40px; }
-  .viewtext b { font-size: 18px; }
-  .viewlive { margin-left: 0; }
+  .viewtitle { font-size: 18px; }
+  .viewnote { font-size: 12.5px; }
 }
 
 /* ============================ admin ============================ */
@@ -1120,6 +1132,23 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
   .art { height: 236px; }
   .bar-scores { justify-content: flex-start; }
   .btn-resume { flex: 1 1 100%; justify-content: center; }
+}
+@media (max-width: 560px) {
+  /* The plaque is centred and absolute links sit under it, so on a narrow
+     screen the Back link disappears behind the wordmark. Lay the header out
+     as a row instead and let the plaque take what is left. */
+  .head { justify-content: space-between; gap: 8px; height: 70px; }
+  .backlink, .opmark { position: static; transform: none; flex-shrink: 0; }
+  .backlink:hover, .opmark:hover { transform: none; }
+  .plaque { flex: 1 1 auto; min-width: 0; display: flex; justify-content: center; }
+  .pshape { width: 100%; max-width: none; }
+  .rule { display: none; }
+
+  /* A name squeezed to "Ra…" tells you nothing. Let the row wrap onto a
+     second line instead of eliding the one word that matters. */
+  .row { flex-wrap: wrap; row-gap: 3px; }
+  .row .grow { max-width: none !important; min-width: 118px; }
+  .row .num, .row .dim { white-space: nowrap; }
 }
 @media (max-width: 520px) {
   .wrap { padding: 16px 12px 34px; }
@@ -2481,7 +2510,12 @@ function bidSheetHtml(s) {
   return '<section class="sheetpanel">' +
     '<div class="panel-head"><h2>Scoresheet</h2><span>this session</span></div>' +
     '<div class="sheetwrap"><table class="sheet"><thead>' + head + '</thead><tbody>' + body +
-    '</tbody><tfoot>' + foot + '</tfoot></table></div></section>';
+    '</tbody><tfoot>' + foot + '</tfoot></table></div>' + sheetHint() + '</section>';
+}
+
+/* Rendered always, revealed by CSS only when the table overflows its box. */
+function sheetHint() {
+  return '<p class="sheethint">Swipe the table sideways to see every player.</p>';
 }
 
 function numericSheetHtml(s, readonly) {
@@ -2506,7 +2540,7 @@ function numericSheetHtml(s, readonly) {
     '<div class="panel-head"><h2>Scoresheet</h2><span>' +
       (readonly ? 'final' : 'tab or enter moves along the row') + '</span></div>' +
     '<div class="sheetwrap"><table class="sheet"><thead>' + head + '</thead><tbody>' + body +
-    '</tbody><tfoot>' + foot + '</tfoot></table></div>' +
+    '</tbody><tfoot>' + foot + '</tfoot></table></div>' + sheetHint() +
     (readonly ? '' :
       (s.rounds.length ? '' : '<div class="empty">No rounds yet.</div>') +
       '<div class="btn-row" style="margin-top:14px">' +
@@ -2548,10 +2582,10 @@ function viewBoard(id) {
        phone should know at a glance that it is a window, not a keyboard. */
     '<div class="viewbar">' +
       '<span class="viewicon">' + lineIcon('board', 26) + '</span>' +
-      '<span class="viewtext"><b>Scoreboard only</b>' +
-        '<i>Watch along &mdash; scores land here as they are entered. ' +
-        'Nothing on this screen can change them.</i></span>' +
+      '<b class="viewtitle">Scoreboard only</b>' +
       '<span class="viewlive"><span class="livedot"></span>' + (live ? 'Live' : 'Final') + '</span>' +
+      '<i class="viewnote">Watch along &mdash; scores land here as they are entered. ' +
+        'Nothing on this screen can change them.</i>' +
     '</div>' +
     '<div class="deskhead"><h1>' + gameNameHtml(g) + '</h1><div class="deskmeta">' + meta + '</div>' +
       '<div class="deskacts"><button class="btn btn-nav" data-go="/session/' + s.id + '">' +
@@ -2806,8 +2840,17 @@ function render() {
      every time the result is entered, not once per round. */
   if (path.indexOf('/session/') !== 0) { scorePin.round = -1; scorePin.buffer = ''; }
   if (path !== lastPath) { window.scrollTo(0, 0); lastPath = path; }
+  markScrollingSheets();
   buildConfetti();
   firstRender = false;
+}
+
+/* A table that scrolls should say so; a table that fits should stay quiet. */
+function markScrollingSheets() {
+  $$('.sheetpanel').forEach(function (panel) {
+    var wrap = $('.sheetwrap', panel);
+    panel.classList.toggle('scrolls', !!wrap && wrap.scrollWidth > wrap.clientWidth + 1);
+  });
 }
 
 function buildConfetti() {

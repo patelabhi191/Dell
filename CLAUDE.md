@@ -455,7 +455,13 @@ build step, no dependencies. Open it directly or serve it anywhere static.
 - The 90 theme tokens are generated from `design/admin-theming/tokens.mjs`; never
   hand-edit them in `AP-CardGames.html`, edit the table and re-inject.
 - Text that sits on the page ground (not on a panel) must use `--ground-ink` /
-  `--ground-muted` on a `--ground-plate`. `--muted` is tuned for panels and is
+  `--ground-muted` on a `--ground-plate`.
+- **Phones down to 320px.** Below 560px the header lays out as a row — the
+  absolutely-positioned Back and operator links otherwise disappear behind the
+  centred plaque — and list rows wrap rather than eliding a name to "Ra…". A
+  scoresheet wider than its box gets a visible thin scrollbar and a swipe hint,
+  toggled by `markScrollingSheets()` so it appears only when the table really
+  does overflow. `--muted` is tuned for panels and is
   unreadable on a saturated ground — this is why the plate exists.
 
 ## Design directions (superseded by the app)
