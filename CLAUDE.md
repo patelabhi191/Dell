@@ -331,7 +331,11 @@ first, then rank, since five pickers cannot fit in one rank's four suits.
 
 **View scoreboard** in the desk head opens `#/board/<id>`: the podium and the
 scoresheet, and nothing that can change them — no console, no chips, no inputs,
-no Finish. Someone can leave it open on a phone at the table while a different
+no Finish. The board leads with a full-width **banner** in `--acc1`, set apart
+above the desk head: the words *Scoreboard only* in display type, a line telling
+the viewer what the screen does, a sweeping light and a pulsing live dot. A small
+chip could not carry that job — someone glancing at a phone across the table has
+to know instantly that it is a window, not a keyboard. Someone can leave it open on a phone at the table while a different
 phone does the scoring. A round still being played says so and shows as pending
 in the sheet, so the board never leaks a result before it is entered.
 
