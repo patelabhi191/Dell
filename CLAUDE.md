@@ -209,10 +209,24 @@ which **storage** is actually live. Its one control is **Test connection**, whic
 writes a scratch document to `cardnight/_conntest`, reads it back and deletes it,
 reporting either the round trip or the exact failure code.
 
-**Settings** holds switches that are stored but not yet wired: `pinScores` (PIN
-before a round can be saved) and one reserved slot. A switch is deliberately
+**Settings** holds `pinScores` and one reserved slot. A switch is deliberately
 allowed to exist before the behaviour behind it does, so turning it on survives
 a reload and the feature can be attached later without another Admin change.
+
+### pinScores — what the PIN actually guards
+
+With the switch on, **only the reveal is gated**: who held each called card and
+which side won. The bidder, the bid, the sir and the called cards are typed
+openly, because those are stated at the table before anything is at stake — it
+is the result that is worth protecting.
+
+The gate uses the same pad as Admin: keys 1-9, then A B C, then CLR / 0 / OK, one
+dot per character typed up to 8, and no hint about the length. The PIN is the
+same `adminPin()` — four digits, **2468** until Firestore carries one.
+
+It asks **every time**. The unlock is tied to one round index and is cleared both
+when that round is scored and whenever the desk is left, so walking away and
+coming back asks again.
 
 The Firebase SDK is **not** bundled. It is pulled from Google's CDN by dynamic
 `import()` the first time a connection is attempted, so an unconfigured copy of

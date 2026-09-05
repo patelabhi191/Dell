@@ -2324,6 +2324,24 @@ function consoleReadout(s, d) {
     }).join(', ');
 }
 
+/* When "PIN protection on entering scores" is on, the reveal is asked for a
+   PIN each time — the unlock is tied to one round and does not carry over. */
+var scorePin = { buffer: '', round: -1 };
+
+function scorePinNeeded(s, roundIdx) {
+  if (!(state.settings.flags && state.settings.flags.pinScores)) return false;
+  return scorePin.round !== roundIdx;
+}
+
+function scorePinGate(s, roundIdx) {
+  var r = s.rounds[roundIdx];
+  return '<section class="console" id="console" style="text-align:center;padding:22px 16px 26px">' +
+    pinPad('skey', 'Enter PIN to reveal round ' + (roundIdx + 1),
+      '<b>' + esc(playerName(r.bidderId)) + '</b> bid <b>' + r.bid + '</b> on ' + sirChip(r.sir) +
+      ' &mdash; the result is locked') +
+  '</section>';
+}
+
 /* the reveal console — same shape, so the eye does not have to relearn it */
 function revealConsole(s, r, idx) {
   /* On two or three decks the same card can be asked for more than once, so
@@ -2387,7 +2405,15 @@ function viewSession(id) {
 
   if (isBid(s)) {
     var pend = pendingRound(s);
-    if (!readonly) html += pend ? revealConsole(s, pend, s.rounds.indexOf(pend)) : bidConsole(s);
+    if (!readonly) {
+      if (!pend) html += bidConsole(s);
+      else {
+        var pi = s.rounds.indexOf(pend);
+        /* The bid, the sir and the called cards are typed openly; only the
+           result — who held what and who won — is gated, and every time. */
+        html += (scorePinNeeded(s, pi) ? scorePinGate(s, pi) : revealConsole(s, pend, pi));
+      }
+    }
     html += ledgerHtml(s);
     html += bidSheetHtml(s);
   } else {
@@ -2501,19 +2527,9 @@ var PIN_MAX = 8;
 
 function viewAdmin() {
   if (!adminUnlocked) {
-    var keys = ['1','2','3','4','5','6','7','8','9','A','B','C','CLR','0','OK'];
     return header({ back: '/', title: 'ADMIN', sub: 'Appearance' }) +
       '<section class="panel skin" style="max-width:360px;margin:40px auto 0;text-align:center">' +
-        '<div style="display:flex;justify-content:center;margin-bottom:14px"><span style="width:52px;height:52px;border-radius:50%;' +
-          'background:var(--strip-icon-bg);color:var(--strip-accent);display:flex;align-items:center;justify-content:center">' +
-          lockIcon(22) + '</span></div>' +
-        '<h1 class="title" style="font-size:20px">Enter admin PIN</h1>' +
-        '<div class="pindots" id="pindots"></div>' +
-        '<p class="sub pinerr" id="pinhint"></p>' +
-        '<div class="pinpad">' + keys.map(function (k) {
-          var cls = k === 'OK' ? ' class="okkey"' : (k === 'CLR' ? ' class="clrkey"' : '');
-          return '<button data-key="' + k + '"' + cls + '>' + k + '</button>';
-        }).join('') + '</div>' +
+        pinPad('key', 'Enter admin PIN', '') +
       '</section>';
   }
   /* One page, in the order you work down it: what it is connected to,
@@ -2710,6 +2726,9 @@ function render() {
   else if (path === '/admin') app.innerHTML = viewAdmin();
   else app.innerHTML = viewHome();
 
+  /* Leaving the desk re-locks the reveal: the gate is meant to be answered
+     every time the result is entered, not once per round. */
+  if (path.indexOf('/session/') !== 0) { scorePin.round = -1; scorePin.buffer = ''; }
   if (path !== lastPath) { window.scrollTo(0, 0); lastPath = path; }
   buildConfetti();
   firstRender = false;
@@ -2755,17 +2774,39 @@ function pickedValue(rowSel, attr) {
    panel's entrance animation and make the pad blink on every key press */
 /* One dot per character actually entered — the pad gives nothing away about
    how long the PIN is. */
-function updatePinDots(err) {
-  var box = $('#pindots');
+/* One pad, used by both gates. It gives nothing away: no length hint, no
+   pre-drawn slots, one dot per character typed up to PIN_MAX — even though
+   the PIN itself is four. `attr` is the data attribute the keys carry, so
+   the two gates never collide. */
+function pinPad(attr, title, note) {
+  var keys = ['1','2','3','4','5','6','7','8','9','A','B','C','CLR','0','OK'];
+  return '<div style="display:flex;justify-content:center;margin-bottom:14px">' +
+      '<span style="width:52px;height:52px;border-radius:50%;background:var(--strip-icon-bg);' +
+      'color:var(--strip-accent);display:flex;align-items:center;justify-content:center">' +
+      lockIcon(22) + '</span></div>' +
+    '<h1 class="title" style="font-size:20px">' + esc(title) + '</h1>' +
+    (note ? '<p class="sub" style="margin-bottom:2px">' + note + '</p>' : '') +
+    '<div class="pindots" id="' + attr + 'dots"></div>' +
+    '<p class="sub pinerr" id="' + attr + 'hint"></p>' +
+    '<div class="pinpad">' + keys.map(function (k) {
+      var cls = k === 'OK' ? ' class="okkey"' : (k === 'CLR' ? ' class="clrkey"' : '');
+      return '<button data-' + attr + '="' + k + '"' + cls + '>' + k + '</button>';
+    }).join('') + '</div>';
+}
+
+function paintPinDots(attr, len, err) {
+  var box = $('#' + attr + 'dots');
   if (box) {
     var out = '';
-    for (var i = 0; i < pinBuffer.length; i++) out += '<span class="on"></span>';
+    for (var i = 0; i < len; i++) out += '<span class="on"></span>';
     box.innerHTML = out;
     box.classList.toggle('shake', !!err);
   }
-  var hint = $('#pinhint');
+  var hint = $('#' + attr + 'hint');
   if (hint) hint.textContent = err ? 'That PIN was not recognised \u2014 try again' : '';
 }
+
+function updatePinDots(err) { paintPinDots('key', pinBuffer.length, err); }
 
 /* Each called card is two independent selects (rank, suit), so a "card" is a
    pair across two controls — live duplicate prevention has to consider both
@@ -3214,6 +3255,8 @@ document.addEventListener('click', function (e) {
     var beforeOrder = standings(s4).map(function (x) { return x.id; });
     r.winner = win.getAttribute('data-win');
     r.stage = 'done';
+    scorePin.round = -1;   /* the next round is asked again */
+    scorePin.buffer = '';
     save();
     playReveal(s4, widx, beforeTotals, beforeOrder);
     return;
@@ -3265,6 +3308,29 @@ document.addEventListener('click', function (e) {
   }
 
   /* ---------- admin ---------- */
+  var skey = e.target.closest('[data-skey]');
+  if (skey) {
+    var sk = skey.getAttribute('data-skey');
+    if (sk === 'CLR') { scorePin.buffer = ''; paintPinDots('skey', 0, false); return; }
+    if (sk === 'OK') {
+      if (scorePin.buffer === adminPin()) {
+        var sps = currentSession(), spr = sps && pendingRound(sps);
+        scorePin.round = spr ? sps.rounds.indexOf(spr) : -1;
+        scorePin.buffer = '';
+        render();
+        return;
+      }
+      scorePin.buffer = '';
+      paintPinDots('skey', 0, true);
+      return;
+    }
+    if (scorePin.buffer.length < PIN_MAX) {
+      scorePin.buffer += sk;
+      paintPinDots('skey', scorePin.buffer.length, false);
+    }
+    return;
+  }
+
   var key = e.target.closest('[data-key]');
   if (key) {
     var k = key.getAttribute('data-key');
