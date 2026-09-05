@@ -327,6 +327,18 @@ chips in place (`paintConsole`) instead of re-rendering and throwing away focus,
 scroll and animation. Duplicate called cards are resolved in the model — suit
 first, then rank, since five pickers cannot fit in one rank's four suits.
 
+### The scoreboard, for everyone not scoring
+
+**View scoreboard** in the desk head opens `#/board/<id>`: the podium and the
+scoresheet, and nothing that can change them — no console, no chips, no inputs,
+no Finish. Someone can leave it open on a phone at the table while a different
+phone does the scoring. A round still being played says so and shows as pending
+in the sheet, so the board never leaks a result before it is entered.
+
+Across devices it needs Firestore. Until that is connected each phone reads its
+own `localStorage`, so a second phone opening the board sees its own empty
+board, not the game.
+
 ### The reveal is the point of the screen
 
 Tapping a winner changes the board and may change who is winning, so it is
@@ -433,9 +445,9 @@ build step, no dependencies. Open it directly or serve it anywhere static.
   `FirestoreStore` implements the same interface and takes over as soon as
   `FIREBASE_CONFIG` is filled in at the top of the file. **Shared live sync is
   not active until those keys exist** — until then every device keeps its own copy.
-- Routes: `#/` home, `#/new`, `#/session/<id>`, `#/archives`, `#/players`, `#/admin`.
-  `#/new` and `#/session/<id>` render on the wide shell; everything else on the
-  1240px floor.
+- Routes: `#/` home, `#/new`, `#/session/<id>`, `#/board/<id>`, `#/archives`,
+  `#/players`, `#/admin`. `#/new` and `#/session/<id>` render on the wide shell;
+  everything else on the 1240px floor.
 - The 90 theme tokens are generated from `design/admin-theming/tokens.mjs`; never
   hand-edit them in `AP-CardGames.html`, edit the table and re-inject.
 - Text that sits on the page ground (not on a panel) must use `--ground-ink` /

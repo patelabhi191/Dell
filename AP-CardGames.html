@@ -1016,6 +1016,12 @@ p.sub { margin: 4px 0 0; color: var(--ground-muted); font-size: 13px; }
 .tab:hover { transform: translateY(-2px); }
 .tab.on { background: var(--acc1); color: var(--on-acc1); }
 
+/* the read-only scoreboard */
+.mchip.viewchip { background: var(--acc1); color: var(--on-acc1); }
+.waiting { padding: 13px 16px; margin-bottom: 14px; border-radius: var(--panel-radius);
+  background: var(--panel); border: var(--panel-border); box-shadow: var(--panel-shadow);
+  color: var(--muted); font-size: 13.5px; }
+
 /* ============================ admin ============================ */
 .adminsec { margin-bottom: 16px; }
 .adminhead { display: flex; align-items: flex-start; gap: 12px; padding: 14px 17px;
@@ -1861,6 +1867,7 @@ function icon(k, size, color) {
     '" aria-hidden="true"><path d="' + PATHS[k] + '"/></svg>';
 }
 var LINES = {
+  board: '<path d="M4 4.5h16v15H4zM4 9h16M9.5 9v10.5M15 9v10.5"/>',
   box: '<path d="M3 6.5h18v4H3zM5 10.5V20h14v-9.5M9.5 14h5"/>',
   users: '<circle cx="9.2" cy="8.6" r="3.1"/><path d="M3.4 19.4a5.8 5.8 0 0 1 11.6 0"/>' +
          '<circle cx="17.4" cy="10.2" r="2.3"/><path d="M15.9 15.2a4.6 4.6 0 0 1 4.7 4.2"/>'
@@ -2172,6 +2179,7 @@ function deskHead(s, g, readonly) {
   if (readonly) meta += '<span class="mchip">Won by ' + esc(playerName(s.winnerId)) + '</span>';
   return '<div class="deskhead"><h1>' + gameNameHtml(g) + '</h1><div class="deskmeta">' + meta + '</div>' +
     (readonly ? '' : '<div class="deskacts">' +
+      '<button class="btn btn-nav" data-go="/board/' + s.id + '">' + lineIcon('board', 15) + ' View scoreboard</button>' +
       (s.rounds.length ? '<button class="btn btn-danger" id="finish">Finish session</button>' : '') +
     '</div>') + '</div>';
 }
@@ -2488,6 +2496,36 @@ function libTabs(active) {
   '</div>';
 }
 
+/* The scoreboard on its own: standings and the sheet, and nothing that can
+   change them. Someone can leave this open on a phone at the table while a
+   different phone does the scoring. */
+function viewBoard(id) {
+  var s = null;
+  for (var i = 0; i < state.sessions.length; i++) if (state.sessions[i].id === id) s = state.sessions[i];
+  if (!s) return header({ back: '/' }) +
+    '<div class="panel skin"><div class="empty">That session no longer exists.</div></div>';
+
+  var g = gameById(s.gameId);
+  var live = s.status === 'live';
+  var meta = (live ? '<span class="mchip livechip">' + icon('play', 11) + ' Live</span>'
+                   : '<span class="mchip">Finished ' + fmtDate(s.finishedAt) + '</span>') +
+    '<span class="mchip">' + plural(s.rounds.length, 'round') + '</span>' +
+    '<span class="mchip">' + plural(s.playerIds.length, 'player') + '</span>' +
+    '<span class="mchip viewchip">' + lineIcon('board', 12) + ' Scoreboard only</span>';
+
+  var pend = isBid(s) ? pendingRound(s) : null;
+
+  return header({ back: '/' }) +
+    '<div class="deskhead"><h1>' + gameNameHtml(g) + '</h1><div class="deskmeta">' + meta + '</div>' +
+      '<div class="deskacts"><button class="btn btn-nav" data-go="/session/' + s.id + '">' +
+        'Back to scoring</button></div></div>' +
+    '<div class="desk"><div class="rail">' + podiumHtml(s) + '</div><div class="deskmain">' +
+      (pend ? '<div class="waiting">Round ' + (s.rounds.indexOf(pend) + 1) +
+              ' is being played &mdash; it scores once the result is entered.</div>' : '') +
+      (isBid(s) ? bidSheetHtml(s) : numericSheetHtml(s, true)) +
+    '</div></div>';
+}
+
 function viewArchives() {
   var done = finishedSessions();
   var rows = done.length ? done.map(function (s) {
@@ -2721,6 +2759,7 @@ function render() {
   if (path === '/') app.innerHTML = viewHome();
   else if (path === '/new') app.innerHTML = viewNew(query);
   else if (path.indexOf('/session/') === 0) app.innerHTML = viewSession(path.slice(9));
+  else if (path.indexOf('/board/') === 0) app.innerHTML = viewBoard(path.slice(7));
   else if (path === '/archives') app.innerHTML = viewArchives();
   else if (path === '/players') app.innerHTML = viewPlayers();
   else if (path === '/admin') app.innerHTML = viewAdmin();
