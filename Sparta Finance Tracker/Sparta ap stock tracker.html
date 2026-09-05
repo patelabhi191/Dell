@@ -793,22 +793,26 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 
 
 /* ═════════ Plan — two-colour skin, the gradients slowly becoming each other ═════════ */
+/* Kept in the same luminance band as the other tabs' panels (Archives .0095,
+   Dashboard .0142, Yearly .0172, Contributions .0235) — these land at
+   .027-.032, just above the brightest, so Plan reads as its own skin
+   without the earlier saturated version's 4x jump. */
 #planView .plan-skin{
   position:relative;overflow:hidden;min-height:420px;
-  background:linear-gradient(115deg,#7B2FBF 0%,#6D28D9 42%,#3B5BDB 100%);
+  background:linear-gradient(115deg,#412063 0%,#2E2461 45%,#22285C 100%);
 }
 /* Only the overlay animates. If both layers faded they would cross at ~50%
    opacity each and the page would show through the card mid-cycle. */
 #planView .plan-skin::before{
   content:'';position:absolute;inset:0;z-index:0;
-  background:linear-gradient(115deg,#3B5BDB 0%,#5B3BC4 48%,#C04FBF 100%);
+  background:linear-gradient(115deg,#12335E 0%,#35245F 48%,#4E2056 100%);
   animation:planskin 26s ease-in-out infinite;
 }
 @keyframes planskin{0%,100%{opacity:0}50%{opacity:1}}
 #planView .plan-skin>*{position:relative;z-index:1}   /* same job as #yearlyView .panel>* */
 /* .note is a dim slate tuned for the dark backdrop and is unreadable on the
    saturated gradient, so it is lifted within the skin only. */
-#planView .plan-skin .note{color:rgba(255,255,255,.82)}
+#planView .plan-skin .note{color:rgba(255,255,255,.72)}
 @media (prefers-reduced-motion:reduce){#planView .plan-skin::before{animation:none;opacity:.5}}
 
 /* ═════════ Archives — minimal: flat surfaces, thin rules, indigo accent ═════════ */
