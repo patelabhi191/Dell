@@ -145,6 +145,107 @@ const section = t => console.log(`\n── ${t} ──`);
   }
   await page.setViewportSize({ width: 1360, height: 1000 });
 
+  section('9. Eye on Stocks: chips');
+  await go('dash');
+  await page.evaluate(() => { state.notes.stocks = []; notesPersist(); renderNotes(); });
+  const chips = () => page.evaluate(() =>
+    [...document.querySelectorAll('#npStocks .np-chip')].map(c => c.dataset.s));
+  await page.click('#npStockInput');
+  await page.keyboard.type('NVDA'); await page.keyboard.press('Enter'); await page.waitForTimeout(120);
+  check(JSON.stringify(await chips()) === JSON.stringify(['NVDA']), 'Enter adds a chip',
+    JSON.stringify(await chips()));
+  check(await page.inputValue('#npStockInput') === '', 'the input clears after Enter');
+  // if renderNotes() rebuilt the input, focus would die here and you could not
+  // type a second ticker without re-clicking
+  check(await page.evaluate(() => document.activeElement.id) === 'npStockInput',
+    'focus stays in the input, so tickers can be typed one after another');
+  await page.keyboard.type('VFV'); await page.keyboard.press('Enter'); await page.waitForTimeout(120);
+  check(JSON.stringify(await chips()) === JSON.stringify(['NVDA', 'VFV']), 'a second chip adds without re-clicking');
+  await page.keyboard.press('Enter'); await page.waitForTimeout(120);
+  check((await chips()).length === 2, 'an empty input adds nothing');
+  await page.keyboard.type('nvda'); await page.keyboard.press('Enter'); await page.waitForTimeout(120);
+  check((await chips()).length === 2, 'a case-insensitive duplicate is ignored', JSON.stringify(await chips()));
+  await page.keyboard.type('  Berkshire Hathaway  '); await page.keyboard.press('Enter'); await page.waitForTimeout(120);
+  check((await chips())[2] === 'Berkshire Hathaway', 'entries are trimmed and casing is preserved, not uppercased',
+    (await chips())[2]);
+  await page.keyboard.press('Backspace'); await page.waitForTimeout(150);
+  check(JSON.stringify(await chips()) === JSON.stringify(['NVDA', 'VFV']),
+    'Backspace on an empty input removes the last chip');
+  await page.click('#npStocks .np-chip:nth-child(1) button'); await page.waitForTimeout(150);
+  check(JSON.stringify(await chips()) === JSON.stringify(['VFV']), 'the chip button removes that one');
+
+  section('10. stocks: shared, persisted, render()-safe');
+  await go('contrib');
+  check(JSON.stringify(await chips()) === JSON.stringify(['VFV']), 'the list shows on Contributions');
+  await page.click('#npStockInput');
+  await page.keyboard.type('XEQT'); await page.keyboard.press('Enter'); await page.waitForTimeout(150);
+  await go('dash');
+  check(JSON.stringify(await chips()) === JSON.stringify(['VFV', 'XEQT']),
+    'a stock added on Contributions shows on Dashboard');
+  check(JSON.stringify(await page.evaluate(() => corePayload().notes.stocks)) ===
+    JSON.stringify(['VFV', 'XEQT']), 'corePayload() carries the stocks');
+  await page.evaluate(() => { const i = document.getElementById('npStockInput');
+    i.value = 'TYPING'; i.focus(); i.setSelectionRange(3, 3); });
+  await page.evaluate(() => render());
+  await page.waitForTimeout(120);
+  const sKept = await page.evaluate(() => { const i = document.getElementById('npStockInput');
+    return { focused: document.activeElement === i, caret: i.selectionStart, val: i.value }; });
+  check(sKept.focused && sKept.caret === 3 && sKept.val === 'TYPING',
+    'render() leaves a half-typed ticker and its caret alone', JSON.stringify(sKept));
+  await page.evaluate(() => { document.getElementById('npStockInput').value = ''; });
+  await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(400);
+  await go('dash');
+  check(JSON.stringify(await chips()) === JSON.stringify(['VFV', 'XEQT']), 'stocks survive a reload');
+
+  section('11. normalizeNotes() repairs the stocks list');
+  const sNorm = await page.evaluate(() => {
+    const out = [];
+    const run = v => { state.notes = { points: [], text: '', stocks: v };
+      try { normalizeNotes(); out.push({ ok: true, s: state.notes.stocks }); }
+      catch (e) { out.push({ ok: false, err: e.message }); } };
+    run(null); run('AAPL'); run([' AAPL ', 'aapl', '', 42, null, 'MSFT']);
+    return out;
+  });
+  check(sNorm.every(r => r.ok), 'no shape throws', JSON.stringify(sNorm.map(r => r.ok)));
+  check(JSON.stringify(sNorm[0].s) === '[]' && JSON.stringify(sNorm[1].s) === '[]',
+    'null and a bare string reduce to an empty list');
+  check(JSON.stringify(sNorm[2].s) === JSON.stringify(['AAPL', 'MSFT']),
+    'a mixed list is trimmed, de-duped case-insensitively, junk dropped', JSON.stringify(sNorm[2].s));
+  await page.evaluate(() => { state.notes = { points: [], text: '', stocks: ['VFV'] };
+    notesPersist(); renderNotes(); });
+
+  section('12. the 60/40 split');
+  for (const v of ['dash', 'contrib']) {
+    await go(v);
+    await page.setViewportSize({ width: 1360, height: 1000 }); await page.waitForTimeout(180);
+    const g = await page.evaluate(() => {
+      const sp = document.querySelector('.np-split');
+      const [a, b] = [...sp.children].map(c => c.getBoundingClientRect().width);
+      const w = sp.getBoundingClientRect().width;
+      return { strategy: +(a / w).toFixed(3), stocks: +(b / w).toFixed(3),
+               sameRow: [...sp.children].every((c, _, arr) =>
+                 Math.abs(c.getBoundingClientRect().top - arr[0].getBoundingClientRect().top) < 2) };
+    });
+    check(Math.abs(g.strategy - 0.6) < 0.02, `${v}: Strategy is 60% wide`, String(g.strategy));
+    check(g.stocks > 0.34 && g.stocks < 0.40, `${v}: stocks column takes the rest`, String(g.stocks));
+    check(g.sameRow, `${v}: the two sit side by side at 1360px`);
+    await page.setViewportSize({ width: 900, height: 1000 }); await page.waitForTimeout(180);
+    const stacked = await page.evaluate(() => {
+      const c = [...document.querySelector('.np-split').children];
+      return c[1].getBoundingClientRect().top > c[0].getBoundingClientRect().top + 10;
+    });
+    check(stacked, `${v}: they stack to one column at 900px`);
+    for (const w of [560, 390]) {
+      await page.setViewportSize({ width: w, height: 1000 }); await page.waitForTimeout(150);
+      const over = await page.evaluate(() => {
+        const p = document.getElementById('notepadPanel');
+        return +(p.scrollWidth - p.clientWidth).toFixed(1);
+      });
+      check(over <= 0.5, `${v} @ ${w}px: no overflow`, `${over}px`);
+    }
+  }
+  await page.setViewportSize({ width: 1360, height: 1000 });
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nNOTES: ${pass} passed, ${fail} failed`);

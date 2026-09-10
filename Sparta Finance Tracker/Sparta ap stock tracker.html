@@ -268,6 +268,15 @@ button{font-family:var(--font-body);cursor:pointer}
   font-family:var(--font-body);transition:color .2s,border-color .2s}
 .np-del:hover{color:var(--rose);border-color:var(--rose)}
 .np-empty{color:var(--text-faint);font-size:12.5px}
+.np-split{display:grid;grid-template-columns:60% 1fr;gap:16px;align-items:start;margin-top:16px}
+@media(max-width:900px){.np-split{grid-template-columns:1fr}}
+.np-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.np-chip{display:inline-flex;align-items:center;gap:7px;padding:5px 8px 5px 12px;
+  border-radius:999px;font-size:12px;font-weight:600;letter-spacing:.04em;
+  background:rgba(94,234,212,.13);color:var(--teal);border:1px solid rgba(94,234,212,.32)}
+.np-chip button{background:none;border:none;color:inherit;opacity:.6;cursor:pointer;
+  font-size:14px;line-height:1;padding:0;font-family:var(--font-body)}
+.np-chip button:hover{opacity:1;color:var(--rose)}
 
 /* ---------- Hero value panel ---------- */
 .hero{padding:26px 28px 18px;position:relative;overflow:hidden}
@@ -1834,8 +1843,17 @@ select{color-scheme:dark}
         <button class="btn ghost" id="npAdd" style="font-size:12px;padding:8px 14px">+ Add point</button>
       </h3>
       <div class="np-points" id="npPoints"></div>
-      <label for="npText" style="margin-top:16px">Strategy</label>
-      <textarea id="npText" placeholder="Write your strategy here…"></textarea>
+      <div class="np-split">
+        <div>
+          <label for="npText">Strategy</label>
+          <textarea id="npText" placeholder="Write your strategy here…"></textarea>
+        </div>
+        <div>
+          <label for="npStockInput">Eye on Stocks</label>
+          <input id="npStockInput" type="text" placeholder="Add a stock, press Enter" autocomplete="off">
+          <div class="np-chips" id="npStocks"></div>
+        </div>
+      </div>
       <p class="note" style="margin:10px 0 0">Shared with the other of Dashboard / Contributions — both show the same notes.</p>
     </section>
   </div>
@@ -5290,6 +5308,13 @@ function normalizeNotes(){
            : null)
     .filter(Boolean);
   if(typeof n.text!=='string') n.text = n.text==null ? '' : String(n.text);
+  // stocks: plain strings, trimmed, blanks dropped, de-duped case-insensitively.
+  // Casing is kept as typed -- these may be company names, not just tickers.
+  if(!Array.isArray(n.stocks)) n.stocks=[];
+  const seen=new Set();
+  n.stocks = n.stocks.map(s=>typeof s==='string'?s.trim():'')
+    .filter(s=>{ if(!s) return false; const k=s.toLowerCase();
+      if(seen.has(k)) return false; seen.add(k); return true });
   return n;
 }
 normalizeNotes();
@@ -5314,6 +5339,11 @@ function renderNotes(){
       `</div>`).join('')
     : '<p class="np-empty">No points yet \u2014 press \u201c+ Add point\u201d to start.</p>';
   const t=$('npText'); if(t && t.value!==state.notes.text) t.value=state.notes.text;
+  const sBox=$('npStocks');
+  if(sBox) sBox.innerHTML = state.notes.stocks.length
+    ? state.notes.stocks.map(s=>`<span class="np-chip" data-s="${esc(s)}">${esc(s)}`+
+        `<button title="Remove" aria-label="Remove ${esc(s)}">\u00d7</button></span>`).join('')
+    : '<p class="np-empty">Nothing on the list yet.</p>';
 }
 function npIndex(id){ return state.notes.points.findIndex(p=>p.id===id) }
 function npFocus(i,toEnd){
@@ -5352,6 +5382,27 @@ if($('npPoints')){
   });
 }
 if($('npAdd')) $('npAdd').onclick=()=>npAddAt(-1);
+function npAddStock(raw){
+  const s=String(raw||'').trim(); if(!s) return false;
+  if(state.notes.stocks.some(x=>x.toLowerCase()===s.toLowerCase())) return false;
+  state.notes.stocks.push(s); notesPersist(); renderNotes(); return true;
+}
+function npRemoveStock(s){
+  const i=state.notes.stocks.findIndex(x=>x.toLowerCase()===String(s).toLowerCase());
+  if(i<0) return;
+  state.notes.stocks.splice(i,1); notesPersist(); renderNotes();
+}
+if($('npStockInput')) $('npStockInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); npAddStock(e.target.value); e.target.value='' }
+  // standard chip behaviour, and it mirrors Backspace-on-empty-row in the points list
+  else if(e.key==='Backspace' && e.target.value==='' && state.notes.stocks.length){
+    e.preventDefault(); npRemoveStock(state.notes.stocks[state.notes.stocks.length-1]);
+  }
+});
+if($('npStocks')) $('npStocks').addEventListener('click',e=>{
+  const btn=e.target.closest('.np-chip button'); if(!btn) return;
+  npRemoveStock(btn.closest('.np-chip').dataset.s);
+});
 if($('npText')) $('npText').addEventListener('input',e=>{
   state.notes.text=e.target.value; notesPersistSoon();
 });
