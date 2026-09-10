@@ -823,22 +823,121 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    .027-.032, just above the brightest, so Plan reads as its own skin
    without the earlier saturated version's 4x jump. */
 #planView .plan-skin{
-  position:relative;overflow:hidden;min-height:420px;
-  background:linear-gradient(115deg,#412063 0%,#2E2461 45%,#22285C 100%);
+  position:relative;overflow:hidden;padding:24px 26px 26px;
+  background:linear-gradient(180deg,#1E5FE0 0%,#1A4CBB 14%,#143C93 30%,
+                                    #0D2A62 52%,#091B38 74%,#071520 100%);
 }
-/* Only the overlay animates. If both layers faded they would cross at ~50%
-   opacity each and the page would show through the card mid-cycle. */
-#planView .plan-skin::before{
-  content:'';position:absolute;inset:0;z-index:0;
-  background:linear-gradient(115deg,#12335E 0%,#35245F 48%,#4E2056 100%);
-  animation:planskin 26s ease-in-out infinite;
-}
-@keyframes planskin{0%,100%{opacity:0}50%{opacity:1}}
 #planView .plan-skin>*{position:relative;z-index:1}   /* same job as #yearlyView .panel>* */
-/* .note is a dim slate tuned for the dark backdrop and is unreadable on the
-   saturated gradient, so it is lifted within the skin only. */
-#planView .plan-skin .note{color:rgba(255,255,255,.72)}
-@media (prefers-reduced-motion:reduce){#planView .plan-skin::before{animation:none;opacity:.5}}
+#planView .plan-skin h3{margin-bottom:6px}
+.pl-sub{color:rgba(255,255,255,.62);font-size:12.5px;margin:0 0 18px}
+
+/* ---- Segment: one full-width row closed, expands in place ---- */
+.pl-seg{border:1px solid rgba(255,255,255,.16);border-radius:14px;background:rgba(3,10,26,.34);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);margin-bottom:10px;overflow:hidden}
+.pl-seg.open{background:rgba(3,10,26,.46);border-color:rgba(255,255,255,.26)}
+.pl-seghead{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer}
+.pl-caret{flex:none;width:18px;color:rgba(255,255,255,.6);font-size:11px;transition:transform .2s}
+.pl-seg.open .pl-caret{transform:rotate(90deg)}
+.pl-segname{flex:1 1 auto;min-width:0;background:rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.14);
+  border-radius:9px;padding:8px 11px;color:#fff;font-size:13.5px;font-weight:600;font-family:var(--font-body)}
+.pl-startwrap{flex:none;display:flex;align-items:center;gap:8px}
+.pl-startwrap>span{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(255,255,255,.5);font-weight:700}
+.pl-start{width:120px;background:rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.14);border-radius:9px;
+  padding:8px 11px;color:#8FE8C8;font-size:13.5px;font-weight:700;text-align:right;
+  font-variant-numeric:tabular-nums;font-family:var(--font-body)}
+.pl-segsum{flex:none;font-size:11.5px;color:rgba(255,255,255,.55);min-width:150px;text-align:right;
+  font-variant-numeric:tabular-nums}
+.pl-segsum b{color:#8FE8C8;font-weight:700}
+.pl-segsum b.dn{color:#FF9C7A}
+.pl-segdel{flex:none;width:32px;height:32px;border-radius:9px;background:transparent;cursor:pointer;
+  border:1px solid rgba(255,255,255,.16);color:rgba(255,255,255,.45);display:inline-flex;
+  align-items:center;justify-content:center;transition:color .2s,border-color .2s,background .2s}
+.pl-segdel:hover{color:#FF9C7A;border-color:rgba(255,156,122,.5);background:rgba(255,156,122,.1)}
+/* Narrow: name, balance and summary cannot share one line without crushing the
+   name to a couple of characters, so the header wraps. Only the summary flexes --
+   letting the balance grow too pushed the delete button onto a row of its own. */
+@media(max-width:700px){
+  .pl-seghead{flex-wrap:wrap;row-gap:9px}
+  .pl-caret{order:0}
+  .pl-segname{flex:1 1 calc(100% - 30px);order:1}
+  .pl-startwrap{order:2;flex:0 1 auto;margin-left:30px}
+  .pl-startwrap .pl-start{width:112px;min-width:0}
+  .pl-segsum{order:3;flex:1 1 auto;text-align:right;min-width:0;font-size:10.5px}
+  .pl-segdel{order:4;flex:none}
+}
+
+/* ---- Body: list 60% on the left, entry form in the remaining 40% ---- */
+.pl-segbody{padding:0 14px 14px;border-top:1px solid rgba(255,255,255,.1)}
+.pl-split{display:grid;grid-template-columns:60% 1fr;gap:14px;align-items:start;margin-top:14px}
+@media(max-width:900px){.pl-split{grid-template-columns:1fr}}
+.pl-split>.pl-card:last-child{position:sticky;top:14px}   /* list is the long side */
+.pl-card{background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px}
+.pl-card h4{font-family:var(--font-display);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(255,255,255,.6);font-weight:600;margin:0 0 12px}
+/* one field per row: at 40% two-up cramps every label */
+.pl-fgrid{display:grid;grid-template-columns:1fr;gap:10px 12px}
+.pl-fgrid label{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);
+  font-weight:700;display:block;margin-bottom:5px}
+.pl-fgrid input,.pl-fgrid textarea{width:100%;background:rgba(0,0,0,.3);
+  border:1px solid rgba(255,255,255,.15);border-radius:9px;padding:9px 11px;color:#EAF0FA;font-size:13px;
+  font-family:var(--font-body);font-variant-numeric:tabular-nums}
+.pl-fgrid textarea{min-height:56px;resize:vertical;line-height:1.5;font-variant-numeric:normal}
+.pl-addbtn{margin-top:2px;background:linear-gradient(180deg,#3B82F6,#2563EB);border:none;
+  border-radius:10px;padding:11px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;
+  font-family:var(--font-body);width:100%}
+.pl-cancel{margin-top:8px;background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:10px;
+  padding:9px;color:rgba(255,255,255,.7);font-size:12.5px;font-weight:600;cursor:pointer;
+  font-family:var(--font-body);width:100%;display:none}
+.pl-card.editing .pl-cancel{display:block}
+.pl-typeseg{display:flex;gap:6px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.15);
+  border-radius:9px;padding:3px}
+.pl-typeseg button{flex:1;background:none;border:none;border-radius:7px;padding:7px 4px;
+  color:rgba(255,255,255,.6);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body)}
+.pl-typeseg button.on{background:rgba(249,115,22,.22);color:#FFB088}
+.pl-typeseg button.on.inc{background:rgba(56,189,248,.22);color:#7FD8FF}
+
+/* ---- The list: one stream, soonest at the top ---- */
+.pl-listhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.pl-rows{display:flex;flex-direction:column;gap:6px}
+.pl-row{display:grid;grid-template-columns:78px 1fr auto auto;gap:12px;align-items:center;
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 13px}
+/* Passed items are greyed but never hidden, and stay fully editable. */
+.pl-row.past{background:rgba(255,255,255,.022);border-color:rgba(255,255,255,.06)}
+.pl-row.past .pl-day,.pl-row.past .pl-nm{color:rgba(255,255,255,.5)}
+.pl-row.past .pl-yr,.pl-row.past .pl-nt,.pl-row.past .pl-bal{color:rgba(255,255,255,.3)}
+.pl-row.past .pl-amt{opacity:.55}
+.pl-date{text-align:center;line-height:1}
+.pl-day{font-size:16px;font-weight:700;color:#EAF0FA;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pl-yr{display:block;margin-top:3px;font-size:9.5px;font-weight:600;color:rgba(255,255,255,.42);
+  letter-spacing:.1em}
+.pl-nmrow{display:flex;align-items:center;gap:7px}
+.pl-nm{font-size:13.5px;color:#EAF0FA;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-clock{flex:none;color:#E8B15C;opacity:.85;display:inline-flex}
+.pl-nt{font-size:11px;color:rgba(255,255,255,.45);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-amt{text-align:right;font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pl-amt.inc{color:#7FD8FF}.pl-amt.exp{color:#FFB088}
+.pl-bal{text-align:right;font-size:10.5px;color:rgba(255,255,255,.45);font-weight:600;
+  font-variant-numeric:tabular-nums;margin-top:2px}
+.pl-acts{display:flex;gap:5px}
+.pl-act{width:27px;height:27px;border-radius:7px;background:transparent;border:1px solid rgba(255,255,255,.13);
+  color:rgba(255,255,255,.4);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  transition:color .2s,border-color .2s}
+.pl-act:hover{color:#7FD8FF;border-color:rgba(127,216,255,.45)}
+.pl-act.del:hover{color:#FF9C7A;border-color:rgba(255,156,122,.45)}
+.pl-today{display:flex;align-items:center;gap:9px;margin:2px 0}
+.pl-today span{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#8FE8C8;font-weight:700}
+.pl-today i{flex:1;height:1px;background:linear-gradient(90deg,rgba(143,232,200,.5),transparent)}
+.pl-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:11px;padding-top:11px;
+  border-top:1px dashed rgba(255,255,255,.16);font-size:11.5px;color:rgba(255,255,255,.6)}
+.pl-foot b{font-size:15px;color:#8FE8C8;font-variant-numeric:tabular-nums}
+.pl-foot b.low{font-size:12.5px;color:#FFB088}
+.pl-new{background:rgba(255,255,255,.07);border:1px dashed rgba(255,255,255,.22);border-radius:12px;
+  padding:12px;width:100%;color:rgba(255,255,255,.65);font-size:12.5px;font-weight:600;cursor:pointer;
+  font-family:var(--font-body)}
+.pl-new:hover{background:rgba(255,255,255,.11);color:#fff}
+.pl-none{color:rgba(255,255,255,.45);font-size:12.5px;text-align:center;padding:14px 0}
 
 /* ═════════ Archives — minimal: flat surfaces, thin rules, indigo accent ═════════ */
 #archiveView{--arc:#8B93F8}
@@ -2339,8 +2438,10 @@ select{color-scheme:dark}
   <!-- PLAN VIEW -->
   <div id="planView" style="display:none">
     <section class="panel cash plan-skin">
-      <h3>Plan</h3>
-      <p class="note" style="margin-top:0">Reserved for now — planning tools will live here.</p>
+      <h3>Plan <span id="plCount" style="font-weight:500;font-size:11.5px;color:rgba(255,255,255,.55)"></span></h3>
+      <p class="pl-sub">Money you expect to move, income and bills in one stream — nearest first, furthest out at the bottom.</p>
+      <div id="planSegs"></div>
+      <button class="pl-new" id="plNewSeg">+ New segment</button>
     </section>
   </div>
 
@@ -2502,6 +2603,7 @@ let state = {
   updatedAt: store.get('sparta.updatedAt', 0),
   bootStamp: store.get('sparta.updatedAt', 0),   // frozen at load; startup persists must not move it
   notes: store.get('sparta.notes', {points:[],text:''}),  // shared Dashboard/Contributions notepad
+  plan: store.get('sparta.plan', {segments:[]}),          // Plan tab: forward-looking cash segments
   filter: 'ALL',
   range: '1D'
 };
@@ -3417,6 +3519,7 @@ state.yearly.forEach(r=>{
   if(p.yf) state.yf=p.yf;
   if(p.me) state.me=p.me;
   if(p.notes) state.notes=p.notes;
+  if(p.plan) state.plan=p.plan;
   if(p.pin && typeof p.pin==='object'){
     store.set('sparta.pinOn', !!p.pin.on);
     store.set('sparta.pinCode', p.pin.code||null);
@@ -3427,6 +3530,8 @@ state.yearly.forEach(r=>{
   if(typeof normalizeME==='function'){ normalizeME(); store.set('sparta.me',state.me) }
   if(typeof normalizeNotes==='function'){ normalizeNotes(); store.set('sparta.notes',state.notes);
     if(typeof renderNotes==='function') renderNotes() }
+  if(typeof normalizePlan==='function'){ normalizePlan(); store.set('sparta.plan',state.plan);
+    if(typeof renderPlan==='function') renderPlan() }
   state.updatedAt=p.updatedAt||Date.now();
   state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t).getFullYear(); if(!c.who) c.who='ABI'; });
 // migrate holdings saved under the old "everything in base USD" model to native values
@@ -3528,7 +3633,7 @@ function corePayload(){
   return { pin:{ on:store.get('sparta.pinOn',false), code:store.get('sparta.pinCode',null) },
     holdings:coreHoldings(), cash:state.cash, contribs:state.contribs,
     limits:state.limits, limitsY:state.limitsY, yearly:state.yearly, yf:state.yf, me:state.me,
-    notes:state.notes,
+    notes:state.notes, plan:state.plan,
     updatedAt:state.updatedAt||Date.now() };
 }
 function encodeHistory(){
@@ -5407,6 +5512,285 @@ if($('npText')) $('npText').addEventListener('input',e=>{
   state.notes.text=e.target.value; notesPersistSoon();
 });
 renderNotes();
+
+/* ============ Plan: forward-looking cash segments ============ */
+function normalizePlan(){
+  const p = state.plan = (state.plan && typeof state.plan==='object' && !Array.isArray(state.plan))
+    ? state.plan : {};
+  if(!Array.isArray(p.segments)) p.segments=[];
+  p.segments = p.segments.map(s=>{
+    if(!s || typeof s!=='object' || Array.isArray(s)) return null;
+    const items = (Array.isArray(s.items)?s.items:[]).map(it=>{
+      if(!it || typeof it!=='object' || Array.isArray(it)) return null;
+      const amt = Number(it.amt);
+      return { id: it.id||uid(),
+               date: /^\d{4}-\d{2}-\d{2}$/.test(it.date) ? it.date : isoLocal(),
+               type: it.type==='income' ? 'income' : 'expense',
+               name: String(it.name==null?'':it.name),
+               amt: isFinite(amt) ? Math.abs(amt) : 0,
+               notes: String(it.notes==null?'':it.notes) };
+    }).filter(Boolean);
+    const st = Number(s.start);
+    return { id:s.id||uid(), name:String(s.name==null?'':s.name),
+             start: isFinite(st)?st:0, open: !!s.open, items };
+  }).filter(Boolean);
+  return p;
+}
+normalizePlan();
+let plEditId=null;                       // one row at a time, across all segments
+let plSaveTimer=null;
+function planPersist(){ store.set('sparta.plan', state.plan);
+  if(typeof cloudSaveDebounced==='function') cloudSaveDebounced() }
+function planPersistSoon(){ clearTimeout(plSaveTimer); plSaveTimer=setTimeout(planPersist,400) }
+
+const plSeg=id=>state.plan.segments.find(s=>s.id===id);
+const plNum=v=>{ const n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:0 };
+const plMoney=n=>(n<0?'-':'')+'$'+Math.abs(Math.round(n)).toLocaleString('en-US');
+const PL_MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const plEsc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const plSorted=seg=>seg.items.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+
+// Running balance, plus the lowest point it reaches. The low is what a plan is
+// really for, so it is computed here once and reused by both the list foot and
+// the collapsed one-line summary.
+function plRun(seg){
+  let bal=seg.start, low=seg.start, lowDate=null;
+  const rows=plSorted(seg).map(it=>{
+    bal += it.type==='income' ? it.amt : -it.amt;
+    if(bal<low){ low=bal; lowDate=it.date }
+    return { it, bal };
+  });
+  return { rows, end:bal, low, lowDate };
+}
+
+const PL_CLOCK='<span class="pl-clock" title="This date has passed"><svg viewBox="0 0 24 24" width="13" height="13"'+
+  ' fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/>'+
+  '<path d="M12 7.2v5l3 1.9"/></svg></span>';
+const PL_TRASH='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"'+
+  ' stroke-width="2.1" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+const PL_PEN='<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"'+
+  ' stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/></svg>';
+const PL_DEL='<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"'+
+  ' stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+function plListHTML(seg){
+  const { rows, end, low, lowDate } = plRun(seg);
+  const today=isoLocal();
+  let marked=false, out='';
+  rows.forEach(({it,bal})=>{
+    const past = it.date < today;
+    if(!past && !marked){ marked=true; out+='<div class="pl-today"><span>Today</span><i></i></div>' }
+    const [y,m,d]=it.date.split('-');
+    out+='<div class="pl-row'+(past?' past':'')+'" data-id="'+it.id+'">'+
+      '<div class="pl-date"><span class="pl-day">'+d+' '+(PL_MON[+m-1]||'')+'</span>'+
+        '<span class="pl-yr">'+y+'</span></div>'+
+      '<div><div class="pl-nmrow">'+(past?PL_CLOCK:'')+'<span class="pl-nm">'+
+        (plEsc(it.name)||'<span style="opacity:.5">Untitled</span>')+'</span></div>'+
+        (it.notes?'<div class="pl-nt">'+plEsc(it.notes)+'</div>':'')+'</div>'+
+      '<div><div class="pl-amt '+(it.type==='income'?'inc':'exp')+'">'+
+        (it.type==='income'?'+':'−')+plMoney(it.amt)+'</div>'+
+        '<div class="pl-bal">'+plMoney(bal)+'</div></div>'+
+      '<div class="pl-acts">'+
+        '<button class="pl-act edit" title="Edit" aria-label="Edit item">'+PL_PEN+'</button>'+
+        '<button class="pl-act del" title="Delete" aria-label="Delete item">'+PL_DEL+'</button>'+
+      '</div></div>';
+  });
+  if(!rows.length) out='<p class="pl-none">Nothing planned yet — add something on the right.</p>';
+  const lowTxt = lowDate
+    ? 'Lowest point <b class="low">'+plMoney(low)+'</b> · '+
+      (+lowDate.slice(8,10))+' '+(PL_MON[+lowDate.slice(5,7)-1]||'').charAt(0)+
+      (PL_MON[+lowDate.slice(5,7)-1]||'').slice(1).toLowerCase()
+    : 'No dip below the start';
+  return out+
+    '<div class="pl-foot"><span>'+lowTxt+'</span><span>Ends <b>'+plMoney(end)+'</b></span></div>';
+}
+
+function plBodyHTML(seg){
+  const rows=plListHTML(seg);
+  const n=seg.items.length;
+  const split=rows.indexOf('<div class="pl-foot">');
+  return '<div class="pl-segbody"><div class="pl-split">'+
+    '<div class="pl-card">'+
+      '<div class="pl-listhead"><h4 style="margin:0">Planned · '+n+'</h4>'+
+      '<span style="font-size:10.5px;color:rgba(255,255,255,.45)">soonest first</span></div>'+
+      '<div class="pl-rows">'+rows.slice(0,split)+'</div>'+rows.slice(split)+
+    '</div>'+
+    '<div class="pl-card pl-form">'+
+      '<h4>Add to this plan</h4>'+
+      '<div class="pl-fgrid">'+
+        '<div><label>Date</label><input class="pl-f-date" type="date" value="'+isoLocal()+'"></div>'+
+        '<div><label>Type</label><div class="pl-typeseg">'+
+          '<button class="pl-t-inc" data-t="income">Income</button>'+
+          '<button class="pl-t-exp on" data-t="expense">Expense</button></div></div>'+
+        '<div><label>Name</label><input class="pl-f-name" type="text" placeholder="What is it?"></div>'+
+        '<div><label>Amount ($)</label><input class="pl-f-amt" type="text" inputmode="decimal" placeholder="0.00"></div>'+
+        '<div><label>Notes</label><textarea class="pl-f-notes" placeholder="Anything worth remembering"></textarea></div>'+
+        '<button class="pl-addbtn">Add to plan</button>'+
+        '<button class="pl-cancel">Cancel edit</button>'+
+      '</div>'+
+    '</div></div></div>';
+}
+
+function plSegHTML(seg){
+  const { end, low, lowDate } = plRun(seg);
+  void low; void lowDate;
+  return '<div class="pl-seg'+(seg.open?' open':'')+'" data-id="'+seg.id+'">'+
+    '<div class="pl-seghead">'+
+      '<span class="pl-caret">▸</span>'+
+      '<input class="pl-segname" type="text" value="'+plEsc(seg.name)+'" placeholder="Name this segment" aria-label="Segment name">'+
+      '<span class="pl-startwrap"><span>Start</span>'+
+        '<input class="pl-start" type="text" inputmode="decimal" value="'+plMoney(seg.start)+'" aria-label="Starting balance"></span>'+
+      '<span class="pl-segsum">'+seg.items.length+' item'+(seg.items.length===1?'':'s')+
+        ' · ends <b'+(end<seg.start?' class="dn"':'')+'>'+plMoney(end)+'</b></span>'+
+      '<button class="pl-segdel" title="Delete segment" aria-label="Delete segment">'+PL_TRASH+'</button>'+
+    '</div>'+ (seg.open?plBodyHTML(seg):'') +'</div>';
+}
+
+// Full rebuild. Used on load, on a cloud pull, and whenever the set of segments
+// or items changes -- never from render(), which fires on every price tick.
+function renderPlan(){
+  const box=$('planSegs'); if(!box) return;
+  normalizePlan();
+  box.innerHTML=state.plan.segments.map(plSegHTML).join('');
+  const c=$('plCount');
+  if(c) c.textContent=state.plan.segments.length
+    ? state.plan.segments.length+' segment'+(state.plan.segments.length===1?'':'s') : '';
+}
+
+// Numbers only: rewrites the derived figures in place without rebuilding any
+// input, so editing the starting balance does not fight the caret.
+function plRefreshNumbers(segEl,seg){
+  const { rows, end } = plRun(seg);
+  const sum=segEl.querySelector('.pl-segsum');
+  if(sum) sum.innerHTML=seg.items.length+' item'+(seg.items.length===1?'':'s')+
+    ' · ends <b'+(end<seg.start?' class="dn"':'')+'>'+plMoney(end)+'</b>';
+  const bals=segEl.querySelectorAll('.pl-rows .pl-bal');
+  rows.forEach((r,i)=>{ if(bals[i]) bals[i].textContent=plMoney(r.bal) });
+  const foot=segEl.querySelector('.pl-foot');
+  if(foot){
+    const tmp=document.createElement('div'); tmp.innerHTML=plListHTML(seg);
+    const nf=tmp.querySelector('.pl-foot'); if(nf) foot.innerHTML=nf.innerHTML;
+  }
+}
+
+function plFormOf(segEl){ return segEl.querySelector('.pl-form') }
+function plSetType(formEl,type){
+  const inc=formEl.querySelector('.pl-t-inc'), exp=formEl.querySelector('.pl-t-exp');
+  inc.className='pl-t-inc'+(type==='income'?' on inc':''); inc.dataset.t='income';
+  exp.className='pl-t-exp'+(type==='expense'?' on':''); exp.dataset.t='expense';
+}
+const plTypeOf=formEl=>formEl.querySelector('.pl-t-inc.on')?'income':'expense';
+function plClearForm(formEl){
+  formEl.querySelector('.pl-f-date').value=isoLocal();
+  formEl.querySelector('.pl-f-name').value='';
+  formEl.querySelector('.pl-f-amt').value='';
+  formEl.querySelector('.pl-f-notes').value='';
+  plSetType(formEl,'expense');
+  formEl.classList.remove('editing');
+  formEl.querySelector('.pl-addbtn').textContent='Add to plan';
+  plEditId=null;
+}
+function plLoadForEdit(segEl,seg,id){
+  const it=seg.items.find(x=>x.id===id); if(!it) return;
+  const f=plFormOf(segEl); if(!f) return;
+  f.querySelector('.pl-f-date').value=it.date;
+  f.querySelector('.pl-f-name').value=it.name;
+  f.querySelector('.pl-f-amt').value=String(it.amt);
+  f.querySelector('.pl-f-notes').value=it.notes;
+  plSetType(f,it.type);
+  f.classList.add('editing');
+  f.querySelector('.pl-addbtn').textContent='Save changes';
+  plEditId=id;
+  f.querySelector('.pl-f-name').focus();
+}
+// Rebuilds the list half only. The form is left alone so its fields keep focus.
+function plRedrawList(segEl,seg){
+  const card=segEl.querySelector('.pl-split>.pl-card:first-child'); if(!card) return;
+  const html=plListHTML(seg), split=html.indexOf('<div class="pl-foot">');
+  card.querySelector('.pl-rows').innerHTML=html.slice(0,split);
+  card.querySelector('.pl-foot').outerHTML=html.slice(split);
+  const h4=card.querySelector('.pl-listhead h4');
+  if(h4) h4.textContent='Planned · '+seg.items.length;
+  const { end } = plRun(seg);
+  const sum=segEl.querySelector('.pl-segsum');
+  if(sum) sum.innerHTML=seg.items.length+' item'+(seg.items.length===1?'':'s')+
+    ' · ends <b'+(end<seg.start?' class="dn"':'')+'>'+plMoney(end)+'</b>';
+}
+
+if($('planSegs')){
+  const segsBox=$('planSegs');
+
+  segsBox.addEventListener('click',e=>{
+    const segEl=e.target.closest('.pl-seg'); if(!segEl) return;
+    const seg=plSeg(segEl.dataset.id); if(!seg) return;
+
+    const del=e.target.closest('.pl-segdel');
+    if(del){                                   // must not also toggle the segment
+      e.stopPropagation();
+      if(!confirm('Delete "'+(seg.name||'this segment')+'" and its '+seg.items.length+' item'+
+                  (seg.items.length===1?'':'s')+'? This cannot be undone.')) return;
+      state.plan.segments=state.plan.segments.filter(s=>s.id!==seg.id);
+      planPersist(); renderPlan(); toast('Segment deleted');
+      return;
+    }
+    const typeBtn=e.target.closest('.pl-typeseg button');
+    if(typeBtn){ plSetType(plFormOf(segEl), typeBtn.dataset.t); return }
+
+    if(e.target.closest('.pl-act.edit')){
+      plLoadForEdit(segEl,seg,e.target.closest('.pl-row').dataset.id); return;
+    }
+    if(e.target.closest('.pl-act.del')){
+      const id=e.target.closest('.pl-row').dataset.id;
+      seg.items=seg.items.filter(i=>i.id!==id);
+      if(plEditId===id) plClearForm(plFormOf(segEl));
+      planPersist(); plRedrawList(segEl,seg); return;
+    }
+    if(e.target.closest('.pl-cancel')){ plClearForm(plFormOf(segEl)); return }
+    if(e.target.closest('.pl-addbtn')){
+      const f=plFormOf(segEl);
+      const rec={ date:f.querySelector('.pl-f-date').value||isoLocal(),
+                  type:plTypeOf(f),
+                  name:f.querySelector('.pl-f-name').value.trim(),
+                  amt:Math.abs(plNum(f.querySelector('.pl-f-amt').value)),
+                  notes:f.querySelector('.pl-f-notes').value.trim() };
+      if(!rec.name && !rec.amt){ toast('Give it a name or an amount'); return }
+      if(plEditId){
+        const it=seg.items.find(x=>x.id===plEditId);
+        if(it) Object.assign(it,rec);
+      } else {
+        seg.items.push(Object.assign({id:uid()},rec));
+      }
+      planPersist(); plClearForm(f); plRedrawList(segEl,seg); return;
+    }
+    // clicks on the header toggle, unless they landed in a field
+    if(e.target.closest('.pl-seghead') && !e.target.closest('input')){
+      seg.open=!seg.open; planPersist(); renderPlan();
+    }
+  });
+
+  // Name and starting balance edit in place: state + numbers update, no rebuild.
+  segsBox.addEventListener('input',e=>{
+    const segEl=e.target.closest('.pl-seg'); if(!segEl) return;
+    const seg=plSeg(segEl.dataset.id); if(!seg) return;
+    if(e.target.classList.contains('pl-segname')){ seg.name=e.target.value; planPersistSoon(); return }
+    if(e.target.classList.contains('pl-start')){
+      seg.start=plNum(e.target.value); planPersistSoon(); plRefreshNumbers(segEl,seg);
+    }
+  });
+  // tidy the balance field to a formatted figure once the user leaves it
+  segsBox.addEventListener('blur',e=>{
+    if(!e.target.classList||!e.target.classList.contains('pl-start')) return;
+    const segEl=e.target.closest('.pl-seg'), seg=segEl&&plSeg(segEl.dataset.id);
+    if(seg) e.target.value=plMoney(seg.start);
+  },true);
+}
+if($('plNewSeg')) $('plNewSeg').onclick=()=>{
+  state.plan.segments.push({id:uid(),name:'',start:0,open:true,items:[]});
+  planPersist(); renderPlan();
+  const last=$('planSegs').lastElementChild;
+  if(last) last.querySelector('.pl-segname').focus();
+};
+renderPlan();
 
 /* ============ tab order ============ */
 const TAB_DEFAULT=['dash','contrib','yearly','monthly','archive','plan'];
