@@ -782,6 +782,12 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
     radial-gradient(85% 55% at 110% 115%,rgba(148,214,255,.13),transparent 62%),
     linear-gradient(180deg,rgba(255,255,255,.07) 0%,transparent 14%)}
 .skeu-panel>*{position:relative;z-index:1}
+/* The header owns the chart's filter popover. Without this it shares z-index:1
+   with the chart wrapper below it, DOM order decides, and the chart paints over
+   the popover -- the checkboxes were unclickable and the click landed outside
+   the popover, which closed it. .skeu-pop's z-index:30 could not help: it is
+   scoped inside this header's own stacking context. */
+.skeu-panel>.skeu-h{z-index:5}
 .skeu-h{font-family:var(--font-display);font-size:13px;letter-spacing:.13em;font-weight:700;
   color:#C6D2E4;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .skeu-label{font-size:10px;letter-spacing:.16em;color:#93A2B8;font-weight:700}
@@ -2499,6 +2505,7 @@ select{color-scheme:dark}
           <span class="skeu-label">REVIEW — UNCHECK ANYTHING YOU DON'T WANT</span>
           <span id="meSummary" class="skeu-sub"></span>
         </div>
+        <div id="meMonthCheck" class="note" style="display:none;margin:0 0 10px"></div>
         <div class="tscroll" style="max-height:340px;overflow-y:auto">
           <table class="htable" id="mePreview">
             <thead><tr><th style="width:26px"></th><th style="text-align:left">Date</th><th style="text-align:left">Description</th><th>Amount</th><th style="text-align:left">Category</th><th>Why</th></tr></thead>
@@ -2510,7 +2517,7 @@ select{color-scheme:dark}
           <button class="skeu-btn" id="meCancel">Cancel</button>
         </div>
       </div>
-      <p class="note" id="meNote">Upload a statement and the categoriser runs a waterfall: your saved rules first, then the file's own category column, then built-in merchant keywords, then Other. Card payments and transfers between your own accounts are excluded, and anything already imported is skipped. Confirming a category here teaches a rule, so the same merchant is never asked about twice.</p>
+      <p class="note" id="meNote">Upload a statement and the categoriser runs a waterfall: your saved rules first, then the file's own category column, then built-in merchant keywords, then Other. Card payments and transfers between your own accounts are excluded, since those settle the bill rather than spend. Refunds and credits come in as negative amounts, so they offset the category they came from. A row is skipped only if it is already in the ledger — re-importing a statement therefore restores anything that went missing. Confirming a category here teaches a rule, so the same merchant is never asked about twice.</p>
     </section>
 
 
@@ -4986,7 +4993,8 @@ let mePending = [];
 let meWhoFilter='ALL';
 function mePersist(){ store.set('sparta.me', state.me); if(typeof cloudSaveDebounced==='function') cloudSaveDebounced() }
 
-const meMoney=n=>'$'+(n||0).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
+const meMoney=n=>((n||0)<0?'-':'')+'$'+Math.abs(n||0)
+  .toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
 const meMonthName=ym=>{ const [y,m]=ym.split('-').map(Number);
   return new Date(y,m-1,1).toLocaleDateString('en-CA',{month:'long',year:'numeric'}) };
 function meMonthOptions(){
@@ -5442,7 +5450,11 @@ function meHandleCSV(text){
   const seen=new Set((state.me.imported||[]));
   const existing=new Set((state.yf.txns||[]).map(meFingerprint));
   mePending=[];
-  let skippedPay=0, skippedDup=0;
+  // Only the LEDGER can block a row. The remembered-fingerprint list used to
+  // block too, which meant a row deleted by mistake -- or lost because the cloud
+  // never synced -- could never be brought back: re-importing the same statement
+  // just said "nothing new". It now reports those instead, as rows to restore.
+  let skippedPay=0, skippedDup=0, restoring=0;
   rows.slice(1).forEach(r=>{
     const date=meParseDate(r[cDate]); if(!date) return;
     const desc=String(cDesc>-1?r[cDesc]:'').trim();
@@ -5450,17 +5462,26 @@ function meHandleCSV(text){
     // otherwise sail through as an expense and double-count the whole statement
     if(meIsExcluded(desc)){ skippedPay++; return }
     let amt;
-    if(cDeb>-1){ const dv=numify(r[cDeb]); amt=isNaN(dv)?NaN:dv; }
+    if(cDeb>-1){
+      const dv=numify(r[cDeb]);
+      // A refund lands in the credit column with the debit blank. Carrying it in
+      // as a NEGATIVE expense is what makes it offset the category it came from,
+      // rather than inflating income or being dropped.
+      if(!isNaN(dv)&&dv!==0) amt=dv;
+      else if(cCred>-1){ const cv=numify(r[cCred]); amt=(!isNaN(cv)&&cv!==0)?-Math.abs(cv):NaN }
+      else amt=NaN;
+    }
     else { const v=numify(r[cAmt]); amt=isNaN(v)?NaN:(signMode==='neg'?-v:v); }
-    if(isNaN(amt)||amt<=0) return;                       // refunds/credits ignored for now
+    if(isNaN(amt)||amt===0) return;                      // only blanks and zeros are skipped
     const t={date,desc,amt:+amt.toFixed(2)};
     const fp=meFingerprint(t);
-    if(seen.has(fp)||existing.has(fp)){ skippedDup++; return }
+    if(existing.has(fp)){ skippedDup++; return }
+    if(seen.has(fp)) restoring++;            // imported before, not in the ledger now
     const {cat,why,label}=meCategorise(desc, cCat>-1?r[cCat]:'');
     mePending.push(Object.assign(t,{cat,why,label,include:true,fp}));
   });
-  if(!mePending.length){ toast(`Nothing new to import${skippedDup?` — ${skippedDup} already imported`:''}`); $('mePreviewWrap').style.display='none'; return }
-  meRenderPreview(skippedPay,skippedDup);
+  if(!mePending.length){ toast(`Nothing new to import${skippedDup?` — all ${skippedDup} rows are already in the ledger`:''}`); $('mePreviewWrap').style.display='none'; return }
+  meRenderPreview(skippedPay,skippedDup,restoring);
 }
 function meParseDate(v){
   const s=String(v||'').trim(); if(!s) return null;
@@ -5471,7 +5492,7 @@ function meParseDate(v){
   const d=new Date(s);
   return isNaN(d.getTime())?null:isoLocal(d);
 }
-function meRenderPreview(skippedPay,skippedDup){
+function meRenderPreview(skippedPay,skippedDup,restoring){
   const tb=$('mePreviewBody'); tb.innerHTML='';
   mePending.forEach((p,i)=>{
     const tr=document.createElement('tr');
@@ -5489,9 +5510,37 @@ function meRenderPreview(skippedPay,skippedDup){
     p.cat=sel.value; p.changed=true;                      // a manual pick becomes a rule on apply
   });
   const bits=[`${mePending.length} to add`];
+  if(restoring) bits.push(`${restoring} being restored`);
   if(skippedPay) bits.push(`${skippedPay} payment/transfer skipped`);
-  if(skippedDup) bits.push(`${skippedDup} duplicate skipped`);
+  if(skippedDup) bits.push(`${skippedDup} already in the ledger`);
+  const refunds=mePending.filter(p=>p.amt<0).length;
+  if(refunds) bits.push(`${refunds} refund${refunds===1?'':'s'}`);
   $('meSummary').textContent=bits.join(' \u00b7 ');
+  // Which month do these actually land in? Rows keep their own dates unless an
+  // "Allot all to" is chosen, in which case they are filed under the month the
+  // tab is showing -- which is how a July statement ends up on August's bill.
+  const note=$('meMonthCheck');
+  if(note){
+    const months={};
+    mePending.forEach(p=>{ const k=(p.date||'').slice(0,7); months[k]=(months[k]||0)+1 });
+    const keys=Object.keys(months).sort();
+    const span=keys.map(k=>`${meMonthName(k)} (${months[k]})`).join(', ');
+    const allot=($('meImpAllot')?$('meImpAllot').value:'')||'';
+    if(allot){
+      const off=keys.filter(k=>k!==meMonth).reduce((s,k)=>s+months[k],0);
+      note.innerHTML = off
+        ? `<b style="color:var(--amber)">Check the month.</b> These rows are dated ${span}, but ` +
+          `<b>all ${mePending.length}</b> will be filed under <b>${meMonthName(meMonth)}</b>'s ${allot} ` +
+          `because "Allot all to" is set. Switch the month at the top first if that is not what you want.`
+        : `Dated ${span} \u2014 filed under ${meMonthName(meMonth)}'s ${allot}.`;
+      note.style.display='block';
+    } else {
+      note.textContent = keys.length>1
+        ? `Rows keep their own dates: ${span}.`
+        : `All rows dated ${span}.`;
+      note.style.display='block';
+    }
+  }
   $('mePreviewWrap').style.display='block';
 }
 function meApplyImport(){
