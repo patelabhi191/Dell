@@ -267,16 +267,26 @@ const section = t => console.log(`\n── ${t} ──`);
 
   // the guard every other field carries: opacity:0 does not stop animation,
   // so a hidden field would otherwise tick forever on every tab
-  await go('dash'); await page.waitForTimeout(1000);   // the field cross-fades over .7s
+  // Wait for the fade to actually finish rather than guessing a duration -- a
+  // fixed sleep raced the .7s transition under load and read 0.06 / 0.02.
+  await go('dash');
+  await page.waitForFunction(
+    () => parseFloat(getComputedStyle(document.querySelector('.planfield')).opacity) < 0.01,
+    null, { timeout: 5000 });
   const off = await page.evaluate(() => ({
     opacity: getComputedStyle(document.querySelector('.planfield')).opacity,
     running: document.getAnimations()
       .filter(a => a.animationName === 'pwDrift1' && a.playState === 'running').length,
     paused: getComputedStyle(document.querySelector('.pw-1')).animationPlayState,
   }));
-  check(off.opacity === '0', 'the field fades out on other tabs', off.opacity);
+  // computed opacity can land on 1.5e-10 rather than exactly "0" as the .7s
+  // transition settles, so compare as a number instead of a string
+  check(parseFloat(off.opacity) < 0.01, 'the field fades out on other tabs', off.opacity);
   check(off.paused === 'paused', 'and its animations are paused, not left ticking', off.paused);
-  await go('plan'); await page.waitForTimeout(1000);
+  await go('plan');
+  await page.waitForFunction(
+    () => getComputedStyle(document.querySelector('.pw-1')).animationPlayState === 'running',
+    null, { timeout: 5000 });
   check(await page.evaluate(() => getComputedStyle(document.querySelector('.pw-1')).animationPlayState)
     === 'running', 'they resume on return');
 

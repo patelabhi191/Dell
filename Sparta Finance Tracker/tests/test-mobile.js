@@ -98,6 +98,50 @@ const VIEWS = ['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan'];
   }
   await page.setViewportSize({ width: 390, height: 850 });
 
+  section('5. wave backdrops sit behind their motifs and idle elsewhere');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.waitForTimeout(300);
+  const EXPECT = { yearly: 'wv-yf', monthly: 'wv-me', archive: 'wv-arc' };
+  for (const [v, cls] of Object.entries(EXPECT)) {
+    await go(v);
+    const w = await page.evaluate(c => {
+      const wv = document.querySelector('.' + c);
+      if (!wv) return { missing: true };
+      const field = wv.parentElement;
+      // the layer must be the FIRST child, so the motif icons paint over it
+      // .arc-mesh is background texture rather than an icon and is deliberately
+      // the faintest thing on the page, so it is not held to the icon threshold
+      const motifs = [...field.querySelectorAll('.fin,.mo,.arc')]
+        .filter(m => !m.classList.contains('arc-mesh'));
+      return {
+        first: field.firstElementChild === wv,
+        wvZ: getComputedStyle(wv).zIndex,
+        motifZ: motifs.length ? getComputedStyle(motifs[0]).zIndex : null,
+        motifMin: motifs.length ? Math.min(...motifs.map(m => +getComputedStyle(m).opacity)) : null,
+        running: getComputedStyle(wv).animationPlayState,
+      };
+    }, cls);
+    check(!w.missing && w.first, `${v}: the wave layer is behind its motifs`);
+    check(w.wvZ === '0' && w.motifZ === '1', `${v}: stacking is wave 0 / motifs 1`, `${w.wvZ}/${w.motifZ}`);
+    check(w.motifMin >= 0.15, `${v}: motifs still readable over the waves`, `min opacity ${w.motifMin}`);
+    check(w.running === 'running', `${v}: its own wave animates`);
+  }
+  // a field stays in the DOM at opacity:0, and opacity alone does not stop animation
+  await go('dash');
+  const idle = await page.evaluate(() => ['wv-yf', 'wv-me', 'wv-arc']
+    .map(c => getComputedStyle(document.querySelector('.' + c)).animationPlayState));
+  check(idle.every(s => s === 'paused'), 'all three idle once you leave their tabs', idle.join(','));
+
+  section('6. the waves add no overflow at phone width');
+  await page.setViewportSize({ width: 390, height: 850 });
+  await page.waitForTimeout(300);
+  for (const v of ['yearly', 'monthly', 'archive']) {
+    await go(v);
+    const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+    check(over <= 1, `${v}: no sideways pan introduced`, `${over}px`);
+  }
+  await page.setViewportSize({ width: 390, height: 850 });
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nMOBILE: ${pass} passed, ${fail} failed`);
