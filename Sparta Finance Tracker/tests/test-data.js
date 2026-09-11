@@ -22,11 +22,20 @@ const near = (a, b, eps = 0.005) => Math.abs(a - b) < eps;
   const CAT_CASES = [
     // desc,                fileCat,        expectedCat,   expectedWhy,  note
     ['Loblaws', null, 'Groceries', 'rule', 'saved rule wins'],
-    ['Loblaws', 'Entertainment', 'Groceries', 'rule', 'rule beats file column'],
+    ['Loblaws', 'Dining Out', 'Groceries', 'rule', 'rule beats file column'],
     ['Shell Gas', null, 'Taxi', 'rule', 'user rule overrides keyword'],
-    ['SOMETHING ODD', 'Travel', 'Travel', 'file', 'file column used when no rule'],
+    ['SOMETHING ODD', 'Rent', 'Rent', 'file', 'file column used when no rule'],
+    ['SOMETHING ODD', 'Travel', 'Other', 'none', 'a category no longer on the list is ignored'],
     ['SOMETHING ODD', 'NotACategory', 'Other', 'none', 'unknown file cat ignored'],
     ['ZZZ UNKNOWN MERCHANT', null, 'Other', 'none', 'falls through to Other'],
+    // the renamed and added categories, reached by keyword
+    ['PRESTO FARE', null, 'Transit', 'kw', 'transit is its own category now'],
+    ['UBER TRIP 2381', null, 'Taxi/Rental', 'kw', 'Taxi became Taxi/Rental'],
+    ['HERTZ RENT A CAR', null, 'Taxi/Rental', 'kw', 'and it covers rentals'],
+    ['CINEPLEX ODEON', null, 'Indoor Entertainment', 'kw', 'Entertainment became Indoor'],
+    ['MARRIOTT HOTEL', null, 'Outdoor Entertainment', 'kw', 'Travel became Outdoor Entertainment'],
+    ['HOME DEPOT #7', null, 'Shopping', 'kw', 'Maintenance became Shopping'],
+    ['NSF FEE', null, 'Fees/Fine', 'kw', 'bank fees have a category'],
   ];
   const catResults = await page.evaluate(cases =>
     cases.map(([d, f]) => meCategorise(d, f)), CAT_CASES);

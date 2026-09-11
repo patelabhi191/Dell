@@ -214,6 +214,8 @@ const section = t => console.log(`\n── ${t} ──`);
   await page.selectOption('#meFormMonth', '2026-01');
   await page.fill('#meAmt', '55.55');
   await page.fill('#meDesc', 'Shared Ledger Probe');
+  // filing is either/or and starts on neither, so a category has to be chosen
+  await page.selectOption('#meCat', 'Groceries');
   await page.click('#meSave'); await page.waitForTimeout(180);
   check(await page.evaluate(() => state.yf.txns.length) === yfBefore + 1,
     'monthly expense writes into state.yf.txns (single shared ledger)');

@@ -90,6 +90,7 @@ const MONTH = new Date().toISOString().slice(0, 7);
     await page.waitForTimeout(150);
     await page.evaluate(m => { meMonth = m; renderME(); }, MONTH);   // no date field: the tab's month is the month
     await page.fill('#meAmt', '42.50');
+    await page.selectOption('#meCat', 'Groceries');   // either/or: one of the two is required
     await page.selectOption('#meWho', 'POO');
     await page.click('#meSave');
     await page.waitForTimeout(150);

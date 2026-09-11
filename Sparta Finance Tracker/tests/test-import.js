@@ -121,22 +121,53 @@ const CSV_NEG = ['Date,Description,Amount',
   check(amzn && amzn.a === -32.10, 'and the positive refund to a negative one',
     amzn ? String(amzn.a) : 'missing');
 
-  section('6b. "Expenses appear as" overrides the guess');
-  // Auto-detect samples the Amount column and needs >60% negative to call it.
-  // The dropdown is the manual override for files it cannot read that way.
+  section('6b. the manual sign override is gone; auto-detect reads both conventions');
+  // "Expenses appear as" was removed — auto-detect samples the Amount column and
+  // needs >60% negative to call a file negative-purchase, which it gets right on
+  // both shapes. What matters now is that the control is gone and nothing broke.
+  check(await page.$('#meSign') === null, 'the "Expenses appear as" select is gone');
+  check(await page.$('#meSource') === null, 'the dead "Statement source" select is gone too');
   await page.evaluate(() => { state.yf.txns = []; state.me.imported = []; yfPersist(); mePersist(); renderME(); });
-  await page.selectOption('#meSign', 'pos');
-  await feed(CSV_NEG, 'neg2.csv');
-  const forced = await preview();
-  const c2 = forced.find(r => /COSTCO/.test(r.n));
-  check(c2 && c2.a === -88.40, 'forcing "Positive numbers" takes the file literally, so -88.40 stays negative',
-    c2 ? String(c2.a) : 'missing');
-  await page.selectOption('#meSign', 'neg');
-  await feed(CSV_NEG, 'neg3.csv');
-  const forced2 = await preview();
-  const c3 = forced2.find(r => /COSTCO/.test(r.n));
-  check(c3 && c3.a === 88.40, 'forcing "Negative numbers" flips it back', c3 ? String(c3.a) : 'missing');
-  await page.selectOption('#meSign', 'auto');
+  await feed(CSV, 'pos2.csv');
+  const posAgain = await preview();
+  const lob = posAgain.find(r => /LOBLAWS/.test(r.n));
+  check(lob && lob.a === 120.50, 'a positive-purchase file still reads positive',
+    lob ? String(lob.a) : 'missing');
+
+  section('6c. the typed statement source tags the rows it imports');
+  await page.evaluate(() => { state.yf.txns = []; state.me.imported = []; yfPersist(); mePersist(); renderME(); });
+  await feed(CSV, 'src.csv');
+  await preview();
+  await page.fill('#meImpSrc', 'Amex <Gold> & Co');
+  await page.click('#meApply'); await page.waitForTimeout(350);
+  const src = await page.evaluate(() => {
+    // the rows are dated July; the tab opens on the current month, so go there
+    meMonth = '2026-07'; renderME();
+    const rows = (state.yf.txns || []).filter(t => t.type === 'expense');
+    return { srcs: [...new Set(rows.map(t => t.src))],
+             tag: document.getElementById('meBody').innerHTML };
+  });
+  check(src.srcs.length === 1 && src.srcs[0] === 'Amex <Gold> & Co',
+    'every imported row carries the typed source', JSON.stringify(src.srcs));
+  check(/Amex &lt;Gold&gt; &amp; Co/.test(src.tag) && !/<Gold>/.test(src.tag),
+    'and it renders as a tag with the angle brackets escaped');
+  await page.fill('#meImpSrc', '');
+
+  section('6d. the month being filed into is shown on the button row');
+  await page.evaluate(() => { state.yf.txns = []; state.me.imported = []; yfPersist(); mePersist(); renderME(); });
+  await feed(CSV, 'chip.csv');
+  await preview();
+  const chip = await page.evaluate(() => {
+    const el = document.getElementById('meApplyMonth');
+    const plain = el.textContent;
+    const sel = document.getElementById('meImpAllot');
+    let allotted = '';
+    if (sel.options.length > 1) { sel.value = sel.options[1].value; sel.onchange(); allotted = el.textContent; }
+    return { plain, allotted, month: meMonthName(meMonth) };
+  });
+  check(chip.plain.includes(chip.month), 'the chip names the month the picker is on', chip.plain);
+  check(/keep their own dates/.test(chip.plain),
+    'and says rows keep their own dates when nothing is allotted', chip.plain);
 
   section('7. the 12-month trend filter is actually clickable');
   await page.evaluate(() => { document.getElementById('mePreviewWrap').style.display = 'none'; });
