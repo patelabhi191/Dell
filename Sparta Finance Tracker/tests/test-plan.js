@@ -214,79 +214,71 @@ const section = t => console.log(`\n── ${t} ──`);
              anims: document.getAnimations().filter(a => a.animationName === 'planskin').length };
   });
   check(/linear-gradient\(165deg/.test(skin.img), 'a 165deg gradient', skin.img.slice(0, 40));
-  check(skin.img.includes('rgb(12, 63, 74)'), 'starts on the deep teal #0C3F4A');
-  check(skin.img.includes('rgb(7, 21, 32)'), 'lands on the app background #071520');
+  // rgba, not rgb: the panel is translucent so the backdrop waves read through it
+  check(/rgba\(12, 63, 74/.test(skin.img), 'starts on the deep teal #0C3F4A');
+  check(/rgba\(7, 21, 32/.test(skin.img), 'lands on the app background #071520');
   check(skin.anims === 0, 'the old cross-fade animation is gone', String(skin.anims));
   check(/Jakarta/.test(skin.font), 'Plus Jakarta Sans is applied', skin.font.slice(0, 40));
 
-  section('13. edge aurora');
-  const au = await page.evaluate(() => {
-    const l = document.querySelector('.pl-aurora');
-    const blobs = [...document.querySelectorAll('.pl-aurora span')];
-    const skinBox = document.querySelector('.plan-skin').getBoundingClientRect();
-    const names = ['plDrift1', 'plDrift2'];
-    const running = document.getAnimations()
-      .filter(a => names.includes(a.animationName) && a.playState === 'running').length;
-    // every blob must be anchored to a side, not drifting across the reading column
-    const mid = blobs.map(b => { const r = b.getBoundingClientRect();
-      const c = (r.left + r.width / 2 - skinBox.left) / skinBox.width; return +c.toFixed(2); });
-    return { count: blobs.length, running,
-             z: getComputedStyle(l).zIndex,
-             contentZ: getComputedStyle(document.querySelector('.plan-skin h3')).zIndex,
-             clipped: getComputedStyle(document.querySelector('.plan-skin')).overflow,
-             mid };
+  section('13. the Plan backdrop: waves + motifs on the page, behind the panel');
+  const bg = await page.evaluate(() => {
+    const f = document.querySelector('.planfield');
+    const waves = [...document.querySelectorAll('.pw')];
+    const motifs = [...document.querySelectorAll('.plm')];
+    const skin = document.querySelector('.plan-skin');
+    return {
+      field: !!f, fieldOpacity: getComputedStyle(f).opacity,
+      fieldZ: getComputedStyle(f).zIndex, fixed: getComputedStyle(f).position,
+      waves: waves.length, motifs: motifs.length,
+      // the panel must be translucent or the waves never show through it
+      skinBg: getComputedStyle(skin).backgroundImage,
+      skinBlur: getComputedStyle(skin).backdropFilter,
+      running: document.getAnimations()
+        .filter(a => /pwDrift|tkdrift/.test(a.animationName) && a.playState === 'running').length,
+      bodyClass: document.body.classList.contains('plan-view'),
+    };
   });
-  check(au.count === 4, 'four blobs', String(au.count));
-  check(au.running === 4, 'all four are drifting while Plan is open', String(au.running));
-  check(au.z === '0' && au.contentZ === '1', 'the aurora sits behind the content',
-    `${au.z} vs ${au.contentZ}`);
-  check(au.clipped === 'hidden', 'the panel clips it');
-  check(au.mid.every(c => c < 0.3 || c > 0.7), 'each blob stays on a side, clear of the middle',
-    JSON.stringify(au.mid));
+  check(bg.field && bg.fixed === 'fixed' && bg.fieldZ === '0',
+    'a fixed backdrop field behind the shell, like every other tab', `${bg.fixed}/${bg.fieldZ}`);
+  check(bg.bodyClass, 'body.plan-view is set');
+  check(bg.fieldOpacity === '1', 'the field is faded in on this tab', bg.fieldOpacity);
+  check(bg.waves === 5, 'five wave bands', String(bg.waves));
+  check(bg.motifs === 5, 'five planning motifs', String(bg.motifs));
+  check(bg.running > 0, 'the backdrop is animating while Plan is open', String(bg.running));
+  check(/rgba\(/.test(bg.skinBg), 'the panel is translucent, so the waves read through it',
+    bg.skinBg.slice(0, 44));
+  check(/blur/.test(bg.skinBlur), 'and blurred, so they stay knocked back', bg.skinBlur);
 
-  // motion has to be measurable, not just "an animation exists" -- and it must
-  // stay off the reading column
-  const sample = async (fx, fy) => {
-    const b = await page.evaluate(([a, c]) => { const r = document.querySelector('.plan-skin').getBoundingClientRect();
-      return { x: Math.round(r.x + r.width * a), y: Math.round(r.y + r.height * c) }; }, [fx, fy]);
-    const buf = await page.screenshot({ clip: { x: b.x, y: b.y, width: 2, height: 2 } });
+  // the panel must still be the brightest thing on screen
+  const pxAt = async (x, y) => {
+    const buf = await page.screenshot({ clip: { x, y, width: 2, height: 2 } });
     return page.evaluate(async s => { const i = new Image(); i.src = 'data:image/png;base64,' + s;
       await i.decode(); const c = document.createElement('canvas'); c.width = c.height = 2;
       const g = c.getContext('2d'); g.drawImage(i, 0, 0);
       return [...g.getImageData(0, 0, 1, 1).data].slice(0, 3); }, buf.toString('base64'));
   };
-  const seek = async ms => { await page.evaluate(t => document.getAnimations()
-      .filter(a => ['plDrift1','plDrift2'].includes(a.animationName))
-      .forEach(a => { a.pause(); a.currentTime = t; }), ms); await page.waitForTimeout(180); };
-  const dist = (p, q) => Math.hypot(p[0]-q[0], p[1]-q[1], p[2]-q[2]);
-  // Three points per side, taking the largest change: a big soft blob moves
-  // least at its own centre, so a single sample can sit in a flat spot and
-  // read as "no motion" when the side is plainly drifting.
-  const LEFT = [[0.03,0.35],[0.06,0.55],[0.03,0.75]];
-  const RIGHT = [[0.96,0.55],[0.90,0.30],[0.96,0.20]];
-  const MID = [[0.5,0.5],[0.45,0.3],[0.55,0.7]];
-  const grab = async pts => { const o = []; for (const [x,y] of pts) o.push(await sample(x,y)); return o; };
-  await seek(0);
-  const a = { l: await grab(LEFT), r: await grab(RIGHT), c: await grab(MID) };
-  await seek(18000);
-  const b2 = { l: await grab(LEFT), r: await grab(RIGHT), c: await grab(MID) };
-  const maxD = (p, q) => Math.max(...p.map((v, i) => dist(v, q[i])));
-  check(maxD(a.l, b2.l) > 5, 'the left edge visibly moves', `d=${maxD(a.l,b2.l).toFixed(1)}`);
-  check(maxD(a.r, b2.r) > 5, 'the right edge visibly moves', `d=${maxD(a.r,b2.r).toFixed(1)}`);
-  check(maxD(a.c, b2.c) < 1.5, 'the middle stays still, so reading is undisturbed',
-    `d=${maxD(a.c,b2.c).toFixed(1)}`);
-  await page.evaluate(() => document.getAnimations()
-    .filter(a => ['plDrift1','plDrift2'].includes(a.animationName)).forEach(a => a.play()));
+  const lum = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const box = await page.evaluate(() => { const r = document.querySelector('.pl-seg.open .pl-card')
+    .getBoundingClientRect(); return { x: Math.round(r.x + 40), y: Math.round(r.y + 30) }; });
+  const onTile = await pxAt(box.x, box.y);
+  const onBack = await pxAt(6, 620);
+  check(lum(onTile) > lum(onBack), 'the tile stays brighter than the backdrop behind it',
+    `tile ${lum(onTile).toFixed(1)} vs bg ${lum(onBack).toFixed(1)}`);
 
-  // the perf claim: display:none means these cost nothing on every other tab
-  await go('dash'); await page.waitForTimeout(250);
-  const off = await page.evaluate(() => document.getAnimations()
-    .filter(a => ['plDrift1','plDrift2'].includes(a.animationName) && a.playState === 'running').length);
-  check(off === 0, 'nothing animates once you leave the Plan tab', String(off));
-  await go('plan'); await page.waitForTimeout(250);
-  const back = await page.evaluate(() => document.getAnimations()
-    .filter(a => ['plDrift1','plDrift2'].includes(a.animationName) && a.playState === 'running').length);
-  check(back === 4, 'and it picks up again on return', String(back));
+  // the guard every other field carries: opacity:0 does not stop animation,
+  // so a hidden field would otherwise tick forever on every tab
+  await go('dash'); await page.waitForTimeout(1000);   // the field cross-fades over .7s
+  const off = await page.evaluate(() => ({
+    opacity: getComputedStyle(document.querySelector('.planfield')).opacity,
+    running: document.getAnimations()
+      .filter(a => a.animationName === 'pwDrift1' && a.playState === 'running').length,
+    paused: getComputedStyle(document.querySelector('.pw-1')).animationPlayState,
+  }));
+  check(off.opacity === '0', 'the field fades out on other tabs', off.opacity);
+  check(off.paused === 'paused', 'and its animations are paused, not left ticking', off.paused);
+  await go('plan'); await page.waitForTimeout(1000);
+  check(await page.evaluate(() => getComputedStyle(document.querySelector('.pw-1')).animationPlayState)
+    === 'running', 'they resume on return');
 
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();

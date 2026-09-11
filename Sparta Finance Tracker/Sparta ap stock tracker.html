@@ -89,10 +89,11 @@ body.contrib-view .cashfield{opacity:1}
 @media (prefers-reduced-motion: reduce){.tickerfield *,.cashfield *{animation:none!important}}
 
 /* ---------- Yearly Finance backdrop ---------- */
-.financefield,.archivefield,.monthlyfield{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .7s ease;user-select:none}
+.financefield,.archivefield,.monthlyfield,.planfield{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .7s ease;user-select:none}
 body.yearly-view .financefield{opacity:1}
 body.archive-view .archivefield{opacity:1}
 body.monthly-view .monthlyfield{opacity:1}
+body.plan-view .planfield{opacity:1}
 .fin{position:absolute;height:auto;color:var(--teal);animation:tkdrift 30s ease-in-out infinite alternate}
 /* left cluster: 3 items */
 .fin-calc{left:3vw;top:16vh;width:12vw;min-width:120px;color:var(--teal);opacity:.13}
@@ -118,6 +119,35 @@ body.monthly-view .monthlyfield{opacity:1}
 @media (prefers-reduced-motion: reduce){.mo{animation:none!important}}
 .fin text{font-family:var(--font-display),sans-serif}
 
+/* ---------- Plan backdrop: layered flowing waves + planning motifs ----------
+   The waves are wider than the viewport and drift sideways at different speeds,
+   so the bands slide past one another the way stacked ribbons do. Everything is
+   kept low-contrast and mostly to the lower half, so the Plan tile stays the
+   brightest thing on screen. */
+/* Each band is stretched vertically (preserveAspectRatio="none") and they are
+   stacked up the lower two thirds, so the ribbons overlap the way they do in
+   layered-wave artwork rather than hugging the very bottom. */
+.pw{position:absolute;left:-25%;width:150%;height:44vh;will-change:transform}
+.pw-1{bottom:-8%;color:#2E6E8E;opacity:.26;animation:pwDrift1 46s ease-in-out infinite alternate}
+.pw-2{bottom:4%;color:#3E86A6;opacity:.21;animation:pwDrift2 58s ease-in-out infinite alternate}
+.pw-3{bottom:16%;color:#5EA9C4;opacity:.17;animation:pwDrift1 68s ease-in-out infinite alternate-reverse}
+.pw-4{bottom:29%;color:#7FC6D9;opacity:.13;animation:pwDrift2 80s ease-in-out infinite alternate-reverse}
+.pw-5{bottom:43%;color:#A8DCE8;opacity:.09;animation:pwDrift1 94s ease-in-out infinite alternate}
+@keyframes pwDrift1{from{transform:translate3d(-4%,0,0) scaleY(1)}
+                    to{transform:translate3d(4%,-1.6vh,0) scaleY(1.09)}}
+@keyframes pwDrift2{from{transform:translate3d(3%,0,0) scaleY(1.06)}
+                    to{transform:translate3d(-5%,-1vh,0) scaleY(1)}}
+/* planning motifs, same treatment as .fin / .mo / .arc on the other tabs */
+.plm{position:absolute;height:auto;animation:tkdrift 34s ease-in-out infinite alternate}
+.plm-cal{left:3vw;top:14vh;width:13vw;min-width:130px;color:#7FC6D9;opacity:.13}
+.plm-flag{left:8vw;top:58vh;width:10vw;min-width:100px;color:#5EEAD4;opacity:.12;animation-delay:-8s}
+.plm-check{left:22vw;top:26vh;width:9vw;min-width:92px;color:#A8DCE8;opacity:.10;animation-delay:-15s}
+.plm-hour{right:22vw;top:64vh;width:8vw;min-width:82px;color:#E8B15C;opacity:.11;animation-delay:-5s}
+.plm-path{right:3vw;top:22vh;width:24vw;min-width:230px;color:#7FC6D9;opacity:.12;
+  animation:tkdrift 42s ease-in-out infinite alternate-reverse}
+@media (max-width:720px){.plm-check,.plm-hour{display:none}.plm-path{opacity:.09}}
+@media (prefers-reduced-motion:reduce){.pw,.plm{animation:none!important}}
+
 /* ---------- Finance Archives backdrop (modern layered/bento) ---------- */
 .arc{position:absolute;height:auto;animation:tkdrift 32s ease-in-out infinite alternate}
 .arc-docs{left:3vw;top:12vh;width:17vw;min-width:170px;color:#7DD3FC;opacity:.12}
@@ -130,12 +160,13 @@ body.monthly-view .monthlyfield{opacity:1}
 /* Backdrop fields stay in the DOM for the cross-fade, but only the ACTIVE tab's
    field animates. opacity:0 hides an element without stopping its animation, so
    without this the engine ticks every hidden field's transforms on every frame. */
-.tk,.cu,.fin,.mo,.arc,.tkchart,.tkcandle,.curing,.cubar{animation-play-state:paused}
+.tk,.cu,.fin,.mo,.arc,.pw,.plm,.tkchart,.tkcandle,.curing,.cubar{animation-play-state:paused}
 body.dash-view    .tk,body.dash-view .tkchart,body.dash-view .tkcandle,
 body.contrib-view .cu,body.contrib-view .curing,body.contrib-view .cubar,
 body.yearly-view  .fin,
 body.archive-view .arc,
-body.monthly-view .mo{animation-play-state:running}
+body.monthly-view .mo,
+body.plan-view    .pw,body.plan-view .plm{animation-play-state:running}
 @media (max-width:720px){
   .fin-growth,.arc-clock,.arc-mesh{display:none}
   .fin-bill,.arc-vault{opacity:.1}
@@ -825,40 +856,14 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   position:relative;overflow:hidden;padding:30px 28px;border-radius:26px;
   border:1px solid rgba(255,255,255,.12);
   font-family:'Plus Jakarta Sans','Inter',sans-serif;
-  background:linear-gradient(165deg,#0C3F4A 0%,#0A2E3C 30%,#08202C 62%,#071520 100%);
+  /* Translucent, not solid: the waves drifting behind the page show through and
+     the blur knocks them back, so the tile stays the brightest thing on screen
+     while the background still reads as moving. */
+  background:linear-gradient(165deg,rgba(12,63,74,.74) 0%,rgba(10,46,60,.80) 30%,
+                                    rgba(8,32,44,.86) 62%,rgba(7,21,32,.90) 100%);
+  backdrop-filter:blur(20px) saturate(135%);-webkit-backdrop-filter:blur(20px) saturate(135%);
 }
 #planView .plan-skin>*{position:relative;z-index:1}   /* same job as #yearlyView .panel>* */
-
-/* ---- Aurora on the panel edges. Same idea as the page-level .aurora: a few
-   heavily blurred blobs on screen-blend, drifting slowly. Held to the left and
-   right margins so nothing crosses the reading column. The panel already clips
-   with overflow:hidden. #planView is display:none on every other tab, and
-   animations inside a display:none subtree do not run, so this costs nothing
-   while Plan is closed -- no play-state guard needed. ---- */
-/* Specificity matters here: #planView .plan-skin>* sets z-index:1 on every
-   direct child, this one included, so a plain .pl-aurora rule loses and the
-   layer only appears to sit behind because it happens to come first in the
-   DOM. Matching that specificity puts it genuinely behind the content. */
-#planView .plan-skin>.pl-aurora{position:absolute;inset:0;z-index:0;pointer-events:none;
-  overflow:hidden;filter:blur(54px);opacity:.72}
-.pl-aurora span{position:absolute;border-radius:50%;mix-blend-mode:screen}
-.pl-aurora .p1{width:34%;height:62%;left:-13%;top:-10%;
-  background:radial-gradient(ellipse,rgba(94,234,212,.44),transparent 66%);
-  animation:plDrift1 34s ease-in-out infinite alternate}
-.pl-aurora .p2{width:32%;height:66%;right:-12%;top:8%;
-  background:radial-gradient(ellipse,rgba(56,189,248,.36),transparent 66%);
-  animation:plDrift2 36s ease-in-out infinite alternate}
-.pl-aurora .p3{width:28%;height:50%;left:-9%;bottom:-16%;
-  background:radial-gradient(ellipse,rgba(45,212,191,.32),transparent 68%);
-  animation:plDrift1 39s ease-in-out infinite alternate-reverse}
-.pl-aurora .p4{width:26%;height:44%;right:-8%;bottom:-12%;
-  background:radial-gradient(ellipse,rgba(167,139,250,.28),transparent 68%);
-  animation:plDrift2 41s ease-in-out infinite alternate-reverse}
-@keyframes plDrift1{from{transform:translate3d(0,0,0) scale(1)}
-                    to{transform:translate3d(7%,14%,0) scale(1.22)}}
-@keyframes plDrift2{from{transform:translate3d(0,0,0) scale(1.18)}
-                    to{transform:translate3d(-8%,-12%,0) scale(1)}}
-@media (prefers-reduced-motion:reduce){.pl-aurora span{animation:none}}
 
 #planView h3{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:23px;
   letter-spacing:-.03em;text-transform:none;color:#fff;margin-bottom:6px}
@@ -1530,6 +1535,52 @@ select{color-scheme:dark}
       <text x="55" y="68" font-size="13" font-weight="700" text-anchor="middle" fill="currentColor" opacity=".75">BILL</text>
     </svg>
   </div>
+  <div class="planfield" id="planField" aria-hidden="true">
+    <svg class="pw pw-1" viewBox="0 0 1440 180" preserveAspectRatio="none"><path fill="currentColor" d="M0 96 C 140 40 260 150 400 108 C 540 66 640 12 780 44 C 920 76 1020 156 1160 132 C 1300 108 1380 60 1440 40 L1440 180 L0 180 Z"/></svg>
+    <svg class="pw pw-2" viewBox="0 0 1440 180" preserveAspectRatio="none"><path fill="currentColor" d="M0 118 C 160 70 240 132 390 120 C 540 108 660 40 810 66 C 960 92 1060 150 1200 140 C 1320 132 1390 96 1440 78 L1440 180 L0 180 Z"/></svg>
+    <svg class="pw pw-3" viewBox="0 0 1440 180" preserveAspectRatio="none"><path fill="currentColor" d="M0 86 C 120 130 280 58 420 82 C 560 106 660 154 800 138 C 940 122 1060 52 1200 70 C 1320 86 1400 122 1440 134 L1440 180 L0 180 Z"/></svg>
+    <svg class="pw pw-4" viewBox="0 0 1440 180" preserveAspectRatio="none"><path fill="currentColor" d="M0 132 C 180 96 300 40 450 62 C 600 84 700 146 860 132 C 1020 118 1100 56 1250 74 C 1350 86 1410 118 1440 128 L1440 180 L0 180 Z"/></svg>
+    <svg class="pw pw-5" viewBox="0 0 1440 180" preserveAspectRatio="none"><path fill="currentColor" d="M0 60 C 150 108 270 34 430 56 C 590 78 690 130 850 112 C 1010 94 1110 40 1260 58 C 1360 70 1410 96 1440 106 L1440 180 L0 180 Z"/></svg>
+    <!-- calendar -->
+    <svg class="plm plm-cal" viewBox="0 0 140 130">
+      <rect x="8" y="22" width="124" height="100" rx="12" fill="currentColor" fill-opacity=".07" stroke="currentColor" stroke-width="3"/>
+      <path d="M8 52 h124" stroke="currentColor" stroke-width="3"/>
+      <path d="M38 8 v26 M102 8 v26" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+      <g fill="currentColor" opacity=".5">
+        <rect x="26" y="66" width="16" height="12" rx="3"/><rect x="62" y="66" width="16" height="12" rx="3"/>
+        <rect x="98" y="66" width="16" height="12" rx="3"/><rect x="26" y="92" width="16" height="12" rx="3"/>
+        <rect x="62" y="92" width="16" height="12" rx="3"/>
+      </g>
+    </svg>
+    <!-- milestone flag -->
+    <svg class="plm plm-flag" viewBox="0 0 110 130">
+      <path d="M26 122 V10" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+      <path d="M26 16 h68 l-14 22 l14 22 h-68 Z" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+      <ellipse cx="26" cy="124" rx="20" ry="5" fill="currentColor" opacity=".25"/>
+    </svg>
+    <!-- checklist -->
+    <svg class="plm plm-check" viewBox="0 0 110 110">
+      <rect x="6" y="8" width="30" height="30" rx="8" fill="none" stroke="currentColor" stroke-width="4"/>
+      <path d="M13 23 l7 7 l14 -15" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="6" y="56" width="30" height="30" rx="8" fill="none" stroke="currentColor" stroke-width="4"/>
+      <path d="M50 18 h56 M50 32 h38 M50 66 h56 M50 80 h30" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+    </svg>
+    <!-- hourglass -->
+    <svg class="plm plm-hour" viewBox="0 0 90 120">
+      <path d="M18 8 h54 M18 112 h54" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+      <path d="M24 8 c0 30 21 38 21 52 c0 -14 21 -22 21 -52" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="4"/>
+      <path d="M24 112 c0 -30 21 -38 21 -52 c0 14 21 22 21 52" fill="none" stroke="currentColor" stroke-width="4"/>
+    </svg>
+    <!-- a path forward, with milestone dots -->
+    <svg class="plm plm-path" viewBox="0 0 260 140">
+      <path d="M8 118 C 60 118 66 62 118 62 C 170 62 176 24 252 24" fill="none" stroke="currentColor"
+            stroke-width="4" stroke-linecap="round" stroke-dasharray="14 12" opacity=".7"/>
+      <g fill="currentColor"><circle cx="8" cy="118" r="8"/><circle cx="118" cy="62" r="8"/><circle cx="252" cy="24" r="9"/></g>
+      <path d="M232 8 l20 16 l-20 16" fill="none" stroke="currentColor" stroke-width="4"
+            stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>
+    </svg>
+  </div>
+
   <div class="archivefield" id="archiveField" aria-hidden="true">
     <!-- big stacked document cards, upper-left -->
     <svg class="arc arc-docs" viewBox="0 0 200 220">
@@ -2478,7 +2529,6 @@ select{color-scheme:dark}
   <!-- PLAN VIEW -->
   <div id="planView" style="display:none">
     <section class="panel cash plan-skin">
-      <div class="pl-aurora" aria-hidden="true"><span class="p1"></span><span class="p2"></span><span class="p3"></span><span class="p4"></span></div>
       <h3>Plan <span id="plCount" style="font-weight:500;font-size:11.5px;color:rgba(255,255,255,.55)"></span></h3>
       <p class="pl-sub">Money you expect to move, income and bills in one stream — nearest first, furthest out at the bottom.</p>
       <div id="planSegs"></div>
@@ -3303,6 +3353,7 @@ function applyView(view){
   document.body.classList.toggle('yearly-view',view==='yearly');
   document.body.classList.toggle('monthly-view',view==='monthly');
   document.body.classList.toggle('archive-view',view==='archive');
+  document.body.classList.toggle('plan-view',view==='plan');
   // Contributions: force CAD and lock currency + account (registered room is CAD-only, whole portfolio)
   if(contrib && state.ccy!=='CAD') setCcy('CAD');   // switch to CAD without unlocking
   const lockCcy = contrib || secondary;             // USD unavailable on Contributions & secondary tabs
