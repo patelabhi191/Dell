@@ -212,45 +212,100 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(cyc.spend === 2000, 'year total still $2,000', String(cyc.spend));
   check(cyc.cb === 1802, 'Credit Bill nets to $1,802', String(cyc.cb));
 
-  console.log('\n── 10. allotting with no bill creates one that tracks ──');
+  console.log('\n── 10. nothing is invented: you can only itemise into a bill that exists ──');
   await reset();
+  // Allot to now offers only the bills Yearly already holds for that month, so
+  // there is never a missing one to create. Forcing the old path proves it.
   await addVia(`${YEAR}-09`, '100', 'Grocery', 'Loblaws', 'Credit Bill');
-  let bill = await page.evaluate(() => state.yf.txns.find(t => t.derived));
-  check(!!bill && bill.date === `${YEAR}-09-15` && bill.amt === 100,
-    'bill auto-created on the 15th at $100', JSON.stringify(bill && { d: bill.date, a: bill.amt }));
-  await addVia(`${YEAR}-09`, '58', 'Home', 'Bell', 'Credit Bill');
-  bill = await page.evaluate(() => state.yf.txns.find(t => t.derived));
-  check(bill.amt === 158, 'it grows to $158 as more is itemised', String(bill.amt));
-  const sc1 = await page.evaluate(() => ({ spend: yfActual('expense', null), cb: yfActual('expense', 'Credit Bill') }));
-  check(sc1.spend === 158 && sc1.cb === 0, 'total is $158 and Credit Bill nets to zero',
-    JSON.stringify(sc1));
+  const none = await page.evaluate(() => ({
+    invented: state.yf.txns.filter(t => t.cat === 'Credit Bill' && !t.allot).length,
+    derived: state.yf.txns.filter(t => t.derived).length,
+    spend: yfActual('expense', null),
+  }));
+  check(none.invented === 0, 'no bill is conjured for a month that has none', String(none.invented));
+  check(none.derived === 0, 'and nothing is flagged derived — the concept is gone');
+  // The dropdown cannot offer a bill that does not exist, so setting that value
+  // through the form simply does not take: the row saves as ORDINARY spending.
+  // The UI can no longer produce an orphan allocation at all.
+  const orphan = await page.evaluate(() => state.yf.txns.map(t => t.allot || null));
+  check(orphan.every(a => a === null), 'the row saves as ordinary spending, not an orphan allocation',
+    JSON.stringify(orphan));
+  check(none.spend === 100, 'so it counts as an ordinary $100 expense', String(none.spend));
 
-  console.log('\n── 11. typing a total fixes the bill, overage warns ──');
+  console.log('\n── 11. the dropdown offers that month\'s real bills, and only those ──');
+  await reset();
   await page.evaluate(([y]) => {
-    const b = state.yf.txns.find(t => t.derived);
-    b.amt = 2000; delete b.derived;            // what typing an amount does
-    yfSyncDerivedBills(); renderYF();
+    state.yf.txns = [
+      { id: 'v', type: 'expense', date: `${y}-07-12`, amt: 1550, desc: 'Vacation', cat: 'Travel', who: 'ABI' },
+      { id: 'c', type: 'expense', date: `${y}-07-20`, amt: 1910, desc: 'Credit Bill', cat: 'Credit Bill', who: 'ABI' },
+      { id: 'i', type: 'income',  date: `${y}-07-15`, amt: 4200, desc: 'Pay', cat: 'Paycheck', who: 'ABI' },
+      { id: 'h', type: 'expense', date: `${y}-08-18`, amt: 1450, desc: 'Rent', cat: 'Home', who: 'ABI' }];
+    yfPersist(); meMonth = `${y}-07`; renderME();
   }, [YEAR]);
-  await addVia(`${YEAR}-09`, '40', 'Food', 'Taco Bell', 'Credit Bill');
-  const fixed = await page.evaluate(() => {
-    const b = state.yf.txns.find(t => t.cat === 'Credit Bill' && !t.allot);
-    return { amt: b.amt, derived: !!b.derived, cb: yfActual('expense', 'Credit Bill'), spend: yfActual('expense', null) };
-  });
-  check(fixed.amt === 2000 && !fixed.derived, 'bill holds at $2,000 and no longer tracks',
-    JSON.stringify(fixed));
-  check(fixed.cb === 1802 && fixed.spend === 2000, 'remainder $1,802, total $2,000', JSON.stringify(fixed));
-  const over = await page.evaluate(async ([y]) => {
-    meMonth = `${y}-09`; renderME();
-    document.getElementById('meAmt').value = '5000';
-    meFillCatSelect(); meFillAllotSelect();
-    document.getElementById('meCat').value = 'Travel';
-    document.getElementById('meDesc').value = 'Flights';
-    document.getElementById('meAllot').value = 'Credit Bill';
-    meSaveTx();
-    await new Promise(r => setTimeout(r, 80));
-    return document.getElementById('toast').textContent;
+  const julOpts = await page.evaluate(() => [...document.getElementById('meAllot').options].map(o => o.value));
+  check(julOpts.length === 3 && julOpts.includes('Travel') && julOpts.includes('Credit Bill'),
+    'July offers exactly its two expenses, not every category', JSON.stringify(julOpts));
+  check(!julOpts.includes('Home'), "August's bill is not on July's list");
+  check(!julOpts.includes('Paycheck'), 'income is never an allot target');
+  const labelled = await page.evaluate(() =>
+    [...document.getElementById('meAllot').options].map(o => o.textContent).join(' | '));
+  check(/1,910/.test(labelled) && /1,550/.test(labelled),
+    'each option shows what it is worth', labelled);
+
+  // the form's own Month picker re-scopes the list
+  await page.evaluate(([y]) => { const s = document.getElementById('meFormMonth');
+    s.value = `${y}-08`; s.dispatchEvent(new Event('change', { bubbles: true })); }, [YEAR]);
+  await page.waitForTimeout(150);
+  const augOpts = await page.evaluate(() => [...document.getElementById('meAllot').options].map(o => o.value));
+  check(augOpts.length === 2 && augOpts.includes('Home'), 'switching the form to August swaps the list',
+    JSON.stringify(augOpts));
+
+  // a month Yearly knows nothing about
+  await page.evaluate(([y]) => { const s = document.getElementById('meFormMonth');
+    s.value = `${y}-10`; s.dispatchEvent(new Event('change', { bubbles: true })); }, [YEAR]);
+  await page.waitForTimeout(150);
+  const empty = await page.evaluate(() => ({
+    opts: document.getElementById('meAllot').options.length,
+    note: document.getElementById('meAllotNote').textContent }));
+  check(empty.opts === 1, 'an empty month offers only — none —', String(empty.opts));
+  check(/add one there first/.test(empty.note), 'and the note says why', empty.note);
+
+  console.log('\n── 11b. the double-count that auto-creation used to cause ──');
+  await reset();
+  const dc = await page.evaluate(([y]) => {
+    state.yf.txns = [{ id: 'i1', type: 'expense', date: `${y}-07-04`, amt: 300, desc: 'Loblaws',
+      cat: 'Grocery', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-07` }];
+    yfAttachAllot('Credit Bill', `${y}-07`, 'ABI');          // the old auto-create path
+    const rowsAfter = state.yf.txns.length;
+    state.yf.txns.push({ id: 'b1', type: 'expense', date: `${y}-07-20`, amt: 1910,
+      desc: 'Credit Bill July', cat: 'Credit Bill', who: 'ABI' });
+    const list = state.yf.txns.filter(t => t.type === 'expense');
+    return { rowsAfter, bills: list.filter(t => t.cat === 'Credit Bill' && !t.allot).length,
+             total: +yfSpendOf(list).toFixed(2), cb: +yfCatOf(list, 'Credit Bill').toFixed(2) };
   }, [YEAR]);
-  check(/Over-allotted/.test(over), 'over-allotting warns rather than blocking', JSON.stringify(over));
+  check(dc.rowsAfter === 1, 'itemising into a missing bill adds no row', String(dc.rowsAfter));
+  check(dc.bills === 1, 'so the month ends with ONE Credit Bill, not two', String(dc.bills));
+  check(dc.total === 1910, 'the year total is $1,910, not $2,210', String(dc.total));
+  check(dc.cb === 1610, 'and Credit Bill nets to $1,610 after the $300 itemised out',
+    String(dc.cb));
+
+  console.log('\n── 11c. rows the old code invented migrate without moving a total ──');
+  const mig = await page.evaluate(([y]) => {
+    state.yf.txns = [
+      { id: 'd1', type: 'expense', date: `${y}-07-15`, amt: 300, desc: 'Credit Bill (from itemised)',
+        cat: 'Credit Bill', who: 'ABI', derived: true },
+      { id: 'i1', type: 'expense', date: `${y}-07-04`, amt: 300, desc: 'Loblaws', cat: 'Grocery',
+        who: 'ABI', allot: 'Credit Bill', allotM: `${y}-07` }];
+    const before = +yfSpendOf(state.yf.txns.filter(t => t.type === 'expense')).toFixed(2);
+    normalizeYF();
+    const after = +yfSpendOf(state.yf.txns.filter(t => t.type === 'expense')).toFixed(2);
+    return { before, after, flagged: state.yf.txns.some(t => t.derived),
+             amt: state.yf.txns.find(t => t.id === 'd1').amt };
+  }, [YEAR]);
+  check(!mig.flagged, 'the derived flag is dropped');
+  check(mig.amt === 300, 'the amount is untouched', String(mig.amt));
+  check(mig.before === mig.after, 'and the total does not move — a migration that shifts money is worse than the bug',
+    `${mig.before} -> ${mig.after}`);
 
   console.log('\n── 12. trend follows the bill month ──');
   await reset();
@@ -319,14 +374,19 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(impTot.spend === 2000 && impTot.cb === 1802, 'total stays $2,000, Credit Bill $1,802',
     JSON.stringify(impTot));
 
-  console.log('\n── 15. importing with no bill on record starts one ──');
+  console.log('\n── 15. importing when the month has no bill invents nothing ──');
   await reset();
   await importRows(`${YEAR}-09`, 'Credit Bill', STMT);
-  const dbill = await page.evaluate(() => state.yf.txns.find(t => t.derived));
-  check(!!dbill && dbill.amt === 198 && dbill.date === `${YEAR}-09-15`,
-    'derived bill created at $198 on the 15th', JSON.stringify(dbill && { a: dbill.amt, d: dbill.date }));
-  const sc = await page.evaluate(() => ({ spend: yfActual('expense', null), cb: yfActual('expense', 'Credit Bill') }));
-  check(sc.spend === 198 && sc.cb === 0, 'total $198, Credit Bill nets to zero', JSON.stringify(sc));
+  const sc = await page.evaluate(() => ({
+    invented: state.yf.txns.filter(t => t.cat === 'Credit Bill' && !t.allot).length,
+    spend: yfActual('expense', null),
+    allots: state.yf.txns.map(t => t.allot || null) }));
+  check(sc.invented === 0, 'no bill is created for the import to hang off', String(sc.invented));
+  // meImpAllot is scoped the same way, so "Credit Bill" is not on offer for a
+  // month Yearly has nothing in: the rows import as ordinary spending instead.
+  check(sc.allots.every(a => a === null), 'the rows import as ordinary expenses',
+    JSON.stringify(sc.allots));
+  check(sc.spend === 198, 'and count normally toward the total', String(sc.spend));
 
   console.log('\n── 16. importing past a fixed bill warns ──');
   await reset();
@@ -367,14 +427,13 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     `Σactual ${impInv.sum.toFixed(2)} vs spend ${impInv.spend.toFixed(2)}`);
 
   // ───────────────────────── Phase 3B/C: legibility ─────────────────────────
-  console.log('\n── 19. allocations and derived bills are visibly different ──');
+  console.log('\n── 19. an allocation is visibly different from ordinary spending ──');
   await reset();
   await page.evaluate(([y]) => {
     state.yf.txns = [
       { id: 'b', type: 'expense', date: `${y}-08-20`, amt: 2000, desc: 'Aug statement', cat: 'Credit Bill', who: 'ABI' },
       { id: 'g', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'Loblaws', cat: 'Grocery', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
-      { id: 'p', type: 'expense', date: `${y}-08-04`, amt: 45, desc: 'Cash lunch', cat: 'Food', who: 'ABI' },
-      { id: 'd', type: 'expense', date: `${y}-08-15`, amt: 0, desc: 'Other Bank (from itemised)', cat: 'Other Bank', who: 'ABI', derived: true }];
+      { id: 'p', type: 'expense', date: `${y}-08-04`, amt: 45, desc: 'Cash lunch', cat: 'Food', who: 'ABI' }];
     meMonth = `${y}-08`; render(); renderYF(); renderME();
   }, [YEAR]);
   const pills = await page.evaluate(() => {
@@ -387,21 +446,13 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(/→ Credit Bill/.test(pills['Loblaws'] || ''), 'an allocation carries a "→ Credit Bill" pill',
     (pills['Loblaws'] || '').slice(0, 90));
   check(!/acct-tag/.test(pills['Cash lunch'] || ''), 'ordinary spending carries no pill');
-  check(/auto/.test(pills['Other Bank (from itemised)'] || ''), 'a derived bill is marked auto');
-  // Allotted rows are deliberately absent from the Yearly log now (see 22), so
-  // there is no allocation pill to find there — but a derived bill does appear
-  // in Yearly, and still needs its "auto" marking.
-  const yfPills = await page.evaluate(() => {
-    const rowFor = re => [...document.querySelectorAll('#yfTxBody tr')].find(r => re.test(r.textContent));
-    return {
-      alloc: !!rowFor(/Loblaws/),
-      derivedTags: (rowFor(/from itemised/) || { children: [] }).children[4]
-        ? rowFor(/from itemised/).children[4].innerHTML : '',
-    };
-  });
-  check(yfPills.alloc === false, 'the Yearly log has no allotted row to tag');
-  check(/auto/.test(yfPills.derivedTags), 'a derived bill in the Yearly log is marked auto',
-    yfPills.derivedTags.slice(0, 90));
+  // There is no "auto" marking any more: bills are only ever typed into Yearly,
+  // so there is no such thing as a bill nobody entered.
+  const noAuto = await page.evaluate(() => document.body.innerHTML.includes('>auto<'));
+  check(!noAuto, 'nothing anywhere is tagged auto — invented bills no longer exist');
+  const yfHasAlloc = await page.evaluate(() =>
+    [...document.querySelectorAll('#yfTxBody tr')].some(r => /Loblaws/.test(r.textContent)));
+  check(yfHasAlloc === false, 'and the Yearly log still hides the allotted row');
 
   console.log('\n── 20. bill rows say what was billed and itemised ──');
   const note = await page.evaluate(() => {
@@ -469,25 +520,48 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   }, [viewing, pick, amt, cat, desc, allot]);
 
   check(await page.evaluate(() => !!document.getElementById('meFormMonth')), 'Month picker present on the form');
+  // March needs a real bill before anything can be itemised into it
+  await page.evaluate(([y]) => {
+    state.yf.txns.push({ id: 'mb', type: 'expense', date: `${y}-03-20`, amt: 900,
+      desc: 'March statement', cat: 'Credit Bill', who: 'ABI' });
+    yfPersist(); renderME();
+  }, [YEAR]);
   // sitting in August, file a March expense against March's Credit Bill
   await addInMonth(`${YEAR}-08`, `${YEAR}-03`, '250', 'Grocery', 'Old March buy', 'Credit Bill');
   const filed = await page.evaluate(() => state.yf.txns.find(t => t.desc === 'Old March buy'));
   check(filed && filed.date === `${YEAR}-03-15` && filed.allotM === `${YEAR}-03`,
     'filed against March, not the month being viewed', JSON.stringify({ d: filed && filed.date, m: filed && filed.allotM }));
-  const marchBill = await page.evaluate(() =>
-    state.yf.txns.find(t => t.derived && t.cat === 'Credit Bill'));
-  check(marchBill && marchBill.date === `${YEAR}-03-15` && marchBill.amt === 250,
-    "March's Credit Bill was created and updated", JSON.stringify(marchBill && { d: marchBill.date, a: marchBill.amt }));
+  const marchBill = await page.evaluate(([y]) =>
+    state.yf.txns.find(t => t.cat === 'Credit Bill' && !t.allot && (t.date || '').startsWith(`${y}-03`)), [YEAR]);
+  check(marchBill && marchBill.amt === 900,
+    "March's own bill is what it attached to, unchanged at $900",
+    JSON.stringify(marchBill && { d: marchBill.date, a: marchBill.amt }));
+  const marchNet = await page.evaluate(() => {
+    const l = state.yf.txns.filter(t => t.type === 'expense');
+    return { spend: +yfSpendOf(l).toFixed(2), cb: +yfCatOf(l, 'Credit Bill').toFixed(2) };
+  });
+  check(marchNet.spend === 900 && marchNet.cb === 650,
+    'total stays $900 and Credit Bill nets to $650 after the $250 itemised out',
+    JSON.stringify(marchNet));
   check(await page.evaluate(() => meMonth) === `${YEAR}-03`,
     'the tab follows the month just written to');
   const marchRows = await rows(`${YEAR}-03`);
   check(marchRows.some(r => r.desc === 'Old March buy'), 'and it shows under March',
     JSON.stringify(marchRows.map(r => r.desc)));
 
-  // a second one into the same month tops the same bill up
+  // a second one into the same month attaches to the SAME bill — the bill does
+  // not grow (it is the real statement figure), the remainder just shrinks again
   await addInMonth(`${YEAR}-03`, `${YEAR}-03`, '150', 'Food', 'More March', 'Credit Bill');
-  const topped = await page.evaluate(() => state.yf.txns.find(t => t.derived && t.cat === 'Credit Bill').amt);
-  check(topped === 400, "March's bill grows to $400, not a second bill", String(topped));
+  const topped = await page.evaluate(([y]) => {
+    const bills = state.yf.txns.filter(t => t.cat === 'Credit Bill' && !t.allot);
+    const l = state.yf.txns.filter(t => t.type === 'expense');
+    return { count: bills.length, amt: bills[0] && bills[0].amt,
+             cb: +yfCatOf(l, 'Credit Bill').toFixed(2), spend: +yfSpendOf(l).toFixed(2) };
+  }, [YEAR]);
+  check(topped.count === 1, 'still one Credit Bill for March, not a second', String(topped.count));
+  check(topped.amt === 900, 'the billed figure is untouched at $900', String(topped.amt));
+  check(topped.cb === 500 && topped.spend === 900,
+    'remainder falls to $500 as $400 is itemised out; total still $900', JSON.stringify(topped));
   const inv23 = await page.evaluate(() => {
     const sum = state.yf.cats.exp.reduce((s, c) => s + yfActual('expense', c), 0);
     return { sum, spend: yfActual('expense', null) };

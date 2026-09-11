@@ -87,13 +87,18 @@ const CSV_NEG = ['Date,Description,Amount',
     'nothing offered when every row is already in the ledger');
 
   section('5. the month check warns when a statement is filed elsewhere');
-  await page.evaluate(() => { state.yf.txns = []; state.me.imported = []; yfPersist(); mePersist(); renderME(); });
-  await page.selectOption('#meMonthSel', { index: 0 }).catch(() => {});
-  const viewing = await page.evaluate(() => meMonth);
-  await page.selectOption('#meImpAllot', { label: 'Credit Bill' }).catch(async () => {
-    await page.evaluate(() => { const s = document.getElementById('meImpAllot');
-      if (s.options.length > 1) { s.selectedIndex = 1; s.dispatchEvent(new Event('change', { bubbles: true })); } });
+  // "Allot to" only offers bills Yearly actually holds for the month in view, so
+  // the month being viewed needs a real bill before anything can be filed into it.
+  await page.evaluate(() => {
+    state.yf.txns = []; state.me.imported = [];
+    state.yf.txns.push({ id: 'cb', type: 'expense', date: meMonth + '-20', amt: 1910,
+      desc: 'Credit Bill', cat: 'Credit Bill', who: 'ABI' });
+    yfPersist(); mePersist(); renderME();
   });
+  await page.waitForTimeout(200);
+  const viewing = await page.evaluate(() => meMonth);
+  await page.evaluate(() => { const s = document.getElementById('meImpAllot');
+    s.value = 'Credit Bill'; s.dispatchEvent(new Event('change', { bubbles: true })); });
   await feed(CSV);
   const warn = await page.evaluate(() => {
     const n = document.getElementById('meMonthCheck');

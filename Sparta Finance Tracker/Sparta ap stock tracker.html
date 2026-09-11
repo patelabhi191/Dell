@@ -4295,6 +4295,10 @@ function normalizeYF(){
   // an allocation always knows which month's bill it belongs to; fall back to
   // its own date for anything written before allotM existed
   y.txns.forEach(t=>{ if(t.allot && !t.allotM) t.allotM=(t.date||'').slice(0,7); });
+  // Bills the old auto-create invented become ordinary ones: same amount, now
+  // visible and editable in Yearly like any other row. Dropping the flag moves
+  // no totals -- yfSpendOf never cared whether a bill was typed or invented.
+  y.txns.forEach(t=>{ if(t.derived) delete t.derived; });
   return y;
 }
 normalizeYF();
@@ -4446,10 +4450,8 @@ function yfHighlights(d){
   if(ti&&totInc>0&&Object.keys(ci).length>1) push('topCatInc','inc','Main income source',
     ti+' — '+yf$2(ci[ti])+', '+Math.round(ci[ti]/totInc*100)+'% of what came in.');
   const exps=txns.filter(t=>t.type==='expense');
-  // a derived bill is bookkeeping, not a purchase — never call it the largest expense
-  const realExp=exps.filter(t=>!t.derived);
-  if(realExp.length>1){                    // with one expense it is just the only expense
-    const big=realExp.reduce((a,b)=>b.amt>a.amt?b:a);
+  if(exps.length>1){                       // with one expense it is just the only expense
+    const big=exps.reduce((a,b)=>b.amt>a.amt?b:a);
     push('bigTx','exp','Largest single expense',
       yf$2(big.amt)+(big.desc?' on '+big.desc:'')+' ('+big.cat+') — '+big.date+'.');
   }
@@ -5019,11 +5021,10 @@ function meFillMonthSelect(){
 // purchase on the August statement belongs to August, not July.
 const meMonthOf=t=>t.allot?(t.allotM||(t.date||'').slice(0,7)):(t.date||'').slice(0,7);
 // month-only entries never had a day chosen, so showing one would invent a fact
-// An allocation is not extra spending and a derived bill was never typed by
-// anyone — both look exactly like ordinary rows otherwise, so say so.
+// An allocation is not extra spending, and otherwise looks exactly like an
+// ordinary row — so say so.
 const txTags=t=>(t.allot?'<span class="acct-tag tag-other" style="margin:0 0 0 6px">\u2192 '+
-    String(t.allot).replace(/</g,'&lt;')+'</span>':'')+
-  (t.derived?'<span class="acct-tag tag-other" style="margin:0 0 0 6px">auto</span>':'');
+    String(t.allot).replace(/</g,'&lt;')+'</span>':'');
 const txDate=t=>{
   if(!t.mOnly) return t.date||'';
   const m=parseInt((t.date||'').slice(5,7),10)-1;
@@ -5114,47 +5115,52 @@ function meSaveTx(){
   if(over) toast('Over-allotted '+meMoney(over)+' past the '+allot);
   yfPersist(); renderME(); if(typeof renderYF==='function') renderYF();
 }
-/* Every bill created by allotting (rather than typed in) carries derived:true
-   and simply equals what has been itemised into it. Recomputed after any change
-   to a transaction; typing a real amount clears the flag and fixes the bill. */
-function yfSyncDerivedBills(){
-  const all=state.yf.txns||[];
-  all.forEach(b=>{
-    if(!b.derived) return;
-    const m=(b.date||'').slice(0,7);
-    b.amt=+all.reduce((s,t)=>s+(t.allot===b.cat&&t.allotM===m?t.amt:0),0).toFixed(2);
-  });
-}
 // the bill an allocation lands on: same category, same bill month, not itself an allocation
 function yfFindBill(cat,month){
   return (state.yf.txns||[]).find(t=>t.type==='expense'&&!t.allot&&t.cat===cat&&(t.date||'').slice(0,7)===month);
 }
-/* Everything that has to happen after money is allotted to a bill: start the
-   bill if there isn't one, bring derived bills back in step, and report a fixed
-   bill that no longer covers what has been itemised into it. Manual entry and
-   CSV import both need all three, and two copies would drift — which here means
-   silently wrong figures rather than an error. Returns the overage, or 0. */
+/* One job now: report a bill that no longer covers what has been itemised into
+   it. Nothing is created here — the Allot to list only offers bills Yearly
+   already holds, so there is never a missing one to invent. Manual entry and CSV
+   import share this, since two copies would drift, and drift here means silently
+   wrong figures rather than an error. Returns the overage, or 0. */
 function yfAttachAllot(cat,month,who){
+  void who;                                  // bills are typed in Yearly, never invented here
   if(!cat) return 0;
-  if(!yfFindBill(cat,month)){
-    state.yf.txns.push({id:uid(),type:'expense',date:month+'-15',amt:0,
-      desc:cat+' (from itemised)',cat,who:who||'ABI',derived:true});
-  }
-  yfSyncDerivedBills();
   const bill=yfFindBill(cat,month);
-  if(!bill||bill.derived) return 0;
+  if(!bill) return 0;
   const used=(state.yf.txns||[]).reduce((s,t)=>s+(t.allot===cat&&t.allotM===month?t.amt:0),0);
   return used>bill.amt+0.005?+(used-bill.amt).toFixed(2):0;
 }
-function meFillAllotSelect(){
-  [['meAllot',meAllotNote],['meImpAllot',meImpAllotNote]].forEach(([id,note])=>{
-    const sel=$(id); if(!sel) return;
-    const cur=sel.value;
-    sel.innerHTML='<option value="">\u2014 none \u2014</option>'+
-      (state.yf.cats.exp||[]).map(c=>'<option>'+c.replace(/</g,'&lt;')+'</option>').join('');
-    if(cur) sel.value=cur;
-    note();
+/* The bills you can itemise into: the real expenses Yearly Finance holds for
+   one month. Not every category -- offering a category with no bill behind it
+   is what used to make the app invent one. Two entries sharing a category in a
+   month merge into a single option showing their combined total, because the
+   unit being allotted into is "that month's Credit Bill spend". */
+function yfBillsIn(month){
+  const by={};
+  (state.yf.txns||[]).forEach(t=>{
+    if(t.type!=='expense'||t.allot||!t.cat) return;
+    if((t.date||'').slice(0,7)!==month) return;
+    by[t.cat]=(by[t.cat]||0)+t.amt;
   });
+  return Object.keys(by).sort((a,b)=>a.localeCompare(b)).map(c=>({cat:c,amt:+by[c].toFixed(2)}));
+}
+function meFillAllotSelect(){
+  // the manual form files into its own Month picker; the importer files into
+  // whichever month the tab is showing
+  [['meAllot',meAllotNote,meFormMonth()],['meImpAllot',meImpAllotNote,meMonth]]
+    .forEach(([id,note,month])=>{
+      const sel=$(id); if(!sel) return;
+      const cur=sel.value;
+      const q=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+      const bills=yfBillsIn(month);
+      sel.innerHTML='<option value="">\u2014 none \u2014</option>'+
+        bills.map(b=>`<option value="${q(b.cat)}">${q(b.cat)} \u2014 ${meMoney(b.amt)}</option>`).join('');
+      // a bill picked for another month is not on this list; fall back to none
+      sel.value=(cur&&bills.some(b=>b.cat===cur))?cur:'';
+      note();
+    });
 }
 /* Whether the picker holds a month the user deliberately chose. Without this
    the picker cannot tell a real choice from a leftover default, and switching
@@ -5193,24 +5199,32 @@ function meFillTxCat(){
 function meImpAllotNote(){
   const el=$('meImpAllotNote'); if(!el) return;
   const v=$('meImpAllot')?$('meImpAllot').value:'';
+  const none=$('meImpAllot')&&$('meImpAllot').options.length<2;
   el.textContent=v
     ? ('Every imported row joins '+meMonthName(meMonth)+"'s "+v+
        ' \u2014 rows keep their own dates but will not add to the total.')
+    : none
+    ? ('No expenses entered in Yearly Finance for '+meMonthName(meMonth)+
+       ' yet \u2014 add one there first to itemise into it.')
     : 'Leave as none to import rows as ordinary expenses on their own dates.';
 }
 function meAllotNote(){
   const el=$('meAllotNote'); if(!el) return;
   const v=$('meAllot')?$('meAllot').value:'';
   const m=meFormMonth();
+  const none=$('meAllot')&&$('meAllot').options.length<2;
   el.textContent=v?('Itemised out of '+meMonthName(m)+"'s "+v+' \u2014 it will not add to the total.')
-                  :('Recorded under '+meMonthName(m)+'.');
+    :none?('No expenses entered in Yearly Finance for '+meMonthName(m)+
+           ' yet \u2014 add one there first to itemise into it.')
+    :('Recorded under '+meMonthName(m)+'.');
 }
 function meStartEdit(id){
   const t=(state.yf.txns||[]).find(x=>x.id===id); if(!t) return;
   meEditId=id;
   meFillCatSelect();
-  meFillAllotSelect(); meFillFormMonth();
+  meFillFormMonth();
   if($('meFormMonth')) $('meFormMonth').value=t.allot?(t.allotM||meMonth):(t.date||'').slice(0,7);
+  meFillAllotSelect();          // after the month is set, so the bills match it
   $('meAmt').value=t.amt; $('meDesc').value=t.desc||'';
   if($('meAllot')) $('meAllot').value=t.allot||'';
   $('meCat').value=t.cat;
@@ -5415,7 +5429,10 @@ function renderME(){
     : 'Nothing here yet \u2014 import a statement above, or add expenses on the Yearly Finance tab.';
   const n=Object.keys(state.me.rules).length;
   $('meRuleCount').textContent=n?n+' merchant rule'+(n===1?'':'s')+' learned':'no rules learned yet';
-  meFillCatSelect(); meFillAllotSelect(); meFillFormMonth(); renderMEChart(); renderMEMatrix(); renderMEGear();
+  // meFillFormMonth FIRST: meFillAllotSelect reads that picker to decide which
+  // month's bills to offer, so filling it second left the list built from the
+  // previous month's stale value.
+  meFillCatSelect(); meFillFormMonth(); meFillAllotSelect(); renderMEChart(); renderMEMatrix(); renderMEGear();
  }catch(e){ console.error('me render:',e) }
 }
 
@@ -5603,7 +5620,9 @@ if($('meFile')){
   if($('meTxMonth')) $('meTxMonth').onchange=()=>meGoMonth($('meTxMonth').value);
   if($('meTxCat')) $('meTxCat').onchange=()=>{ meTxCat=$('meTxCat').value; renderME() };
   if($('meAllot')) $('meAllot').onchange=meAllotNote;
-  if($('meFormMonth')) $('meFormMonth').onchange=()=>{ meFormMonthPicked=true; meAllotNote() };
+  // the bills on offer belong to the month being filed into, so the list is
+  // rebuilt whenever that month changes
+  if($('meFormMonth')) $('meFormMonth').onchange=()=>{ meFormMonthPicked=true; meFillAllotSelect() };
   if($('meImpAllot')) $('meImpAllot').onchange=meImpAllotNote;
   if($('meWhoSeg')){
     $('meWhoSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
