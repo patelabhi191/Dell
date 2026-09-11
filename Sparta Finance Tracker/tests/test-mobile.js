@@ -142,6 +142,30 @@ const VIEWS = ['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan'];
   }
   await page.setViewportSize({ width: 390, height: 850 });
 
+  section('7. Yearly\'s wave reaches ~70% down, without moving sideways');
+  // Stretched vertically (scale(1,1.27) ahead of the rotate) so the ribbon runs
+  // further down the page. The horizontal extent is what proves it is a pure
+  // vertical change -- a translate or a uniform scale would move it too.
+  await page.setViewportSize({ width: 1360, height: 900 });
+  await go('yearly');
+  await page.addStyleTag({ content: '.wv{animation:none!important}' });
+  await page.waitForTimeout(250);
+  const yw = await page.evaluate(() => {
+    const g = document.querySelector('.wv-yf g');
+    const r = g.getBoundingClientRect();
+    return { tf: g.getAttribute('transform'), left: +r.left.toFixed(0), right: +r.right.toFixed(0),
+             pct: +((r.bottom / innerHeight) * 100).toFixed(1) };
+  });
+  check(yw.pct >= 68 && yw.pct <= 74, 'the design covers about 70% from the top', `${yw.pct}%`);
+  check(yw.left === 657 && yw.right === 1346,
+    'and sits exactly where it did horizontally', `${yw.left} → ${yw.right}`);
+  check(/^scale\(1,1\.27\) rotate\(48 980 60\)$/.test(yw.tf),
+    'the stretch is applied after the rotate, so the angle is unchanged', yw.tf);
+  const others = await page.evaluate(() => ['wv-me', 'wv-arc'].map(c =>
+    document.querySelector('.' + c + ' g').getAttribute('transform')));
+  check(others.every(t => /^rotate\(/.test(t)), 'Monthly and Archives are left alone',
+    JSON.stringify(others));
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nMOBILE: ${pass} passed, ${fail} failed`);

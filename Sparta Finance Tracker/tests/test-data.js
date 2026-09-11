@@ -24,8 +24,9 @@ const near = (a, b, eps = 0.005) => Math.abs(a - b) < eps;
     ['Loblaws', null, 'Groceries', 'rule', 'saved rule wins'],
     ['Loblaws', 'Dining Out', 'Groceries', 'rule', 'rule beats file column'],
     ['Shell Gas', null, 'Taxi', 'rule', 'user rule overrides keyword'],
-    ['SOMETHING ODD', 'Rent', 'Rent', 'file', 'file column used when no rule'],
+    ['SOMETHING ODD', 'Transit', 'Transit', 'file', 'file column used when no rule'],
     ['SOMETHING ODD', 'Travel', 'Other', 'none', 'a category no longer on the list is ignored'],
+    ['SOMETHING ODD', 'Rent', 'Other', 'none', 'Rent left the Monthly list, so the file column cannot reach it'],
     ['SOMETHING ODD', 'NotACategory', 'Other', 'none', 'unknown file cat ignored'],
     ['ZZZ UNKNOWN MERCHANT', null, 'Other', 'none', 'falls through to Other'],
     // the renamed and added categories, reached by keyword
@@ -39,6 +40,30 @@ const near = (a, b, eps = 0.005) => Math.abs(a - b) < eps;
   ];
   const catResults = await page.evaluate(cases =>
     cases.map(([d, f]) => meCategorise(d, f)), CAT_CASES);
+
+  // ── the Monthly category list: alphabetical, and four names kept off it ──
+  const list = await page.evaluate(() => {
+    const saved = state.yf.txns;            // restored below: later checks read it
+    state.yf.txns = [
+      { id: 'a', type: 'expense', date: '2026-09-01', amt: 1, cat: 'Credit Bill' },
+      { id: 'b', type: 'expense', date: '2026-09-02', amt: 1, cat: 'Rent' },
+      { id: 'c', type: 'expense', date: '2026-09-03', amt: 1, cat: 'Taxi' },
+      { id: 'd', type: 'expense', date: '2026-09-04', amt: 1, cat: 'Entertainment' },
+      { id: 'e', type: 'expense', date: '2026-09-05', amt: 1, cat: 'Aardvark food' }];
+    const all = meAllCats();
+    const kept = meAllCats('Rent').includes('Rent');
+    state.yf.txns = saved;
+    return { all, kept };
+  });
+  const sorted = list.all.slice().sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
+  check(JSON.stringify(list.all) === JSON.stringify(sorted), 'the category list is sorted A→Z',
+    list.all.slice(0, 3).join(' / ') + ' … ' + list.all.slice(-2).join(' / '));
+  const banned = ['Rent', 'Credit Bill', 'Taxi', 'Entertainment'].filter(c => list.all.includes(c));
+  check(banned.length === 0, 'Rent, Credit Bill, Taxi and Entertainment are not offered',
+    banned.length ? JSON.stringify(banned) : 'none of the four');
+  check(list.all[0] === 'Aardvark food',
+    'a name the ledger already uses still appears, sorted in rather than appended', list.all[0]);
+  check(list.kept, 'but the row being edited keeps its own name, so editing cannot blank it');
   CAT_CASES.forEach(([d, f, wantCat, wantWhy, note], i) => {
     const got = catResults[i];
     check(got.cat === wantCat && got.why === wantWhy,
