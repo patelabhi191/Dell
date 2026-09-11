@@ -1,12 +1,17 @@
 /* Bills & allocations accounting (Phase 1).
 
-   An expense carrying `allot` is an allocation: a detail line explaining part of
-   a bill already recorded under that category. Filing is either/or, so it carries
-   NO category of its own, and it takes part in neither side of the sum — it must
-   never add to a total, and it never moves money between categories either.
-   The load-bearing test here is the INVARIANT — for any ledger, the category
-   actuals must sum to the spend total. A break there silently misstates the
-   user's finances rather than throwing. */
+   An expense carrying `allot` is an allocation against a bill already recorded
+   under that category. It must never add to a total, and what it does to the
+   CATEGORY breakdown depends on whether it carries a category of its own:
+
+     WITH one    (an imported statement row) it reclassifies — adds to its own
+                 category, comes back out of the bill's.
+     WITHOUT one (typed on Add Expense, where filing is either/or) it is only a
+                 note and touches neither.
+
+   The load-bearing test here is the INVARIANT — for any ledger, under either
+   shape, the category actuals must sum to the spend total. A break there
+   silently misstates the user's finances rather than throwing. */
 const { serve, stub, launch } = require('./lib');
 const { APP } = require('./paths');
 
@@ -18,11 +23,9 @@ const check = (ok, label, extra = '') => {
 const YEAR = 2026;
 const start_ok = st => st.cat.length > 1 && st.allot.length > 1
   && /none/.test(st.cat[0]) && /none/.test(st.allot[0]);
-const tx = (o, i) => {
-  const r = Object.assign({ id: 'b' + i, type: 'expense', who: 'ABI', desc: '' }, o);
-  if (r.allot) delete r.cat;          // filing is either/or: a bill, or a category
-  return r;
-};
+// Fixtures say what they mean: an allocation keeps `cat` when the case is an
+// imported statement, and omits it when the case is a typed either/or note.
+const tx = (o, i) => Object.assign({ id: 'b' + i, type: 'expense', who: 'ABI', desc: '' }, o);
 
 const load = (page, txns) => page.evaluate(([t, y]) => {
   state.yfYear = y;
@@ -103,23 +106,23 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   console.log("\n── 2. no double counting ──");
   const r2 = await load(page, cases['bill + allocations (the credit-card case)'].map(tx));
   check(r2.spend === 2000, 'year total stays $2,000 after itemising $198', String(r2.spend));
-  check(r2.actuals['Credit Bill'] === 2000, 'the bill stays whole at $2,000 — itemising explains it, it does not split it',
+  check(r2.actuals['Credit Bill'] === 1802, 'Credit Bill shows the $1,802 remainder',
     String(r2.actuals['Credit Bill']));
-  check(!r2.actuals['Groceries'] && !r2.actuals['TV/Phone/Internet'] && !r2.actuals['Dining Out'],
-    'and the detail lines land in no category at all',
+  check(r2.actuals['Groceries'] === 100 && r2.actuals['TV/Phone/Internet'] === 58
+    && r2.actuals['Dining Out'] === 40, 'and the itemised categories carry 100 / 58 / 40',
     JSON.stringify([r2.actuals['Groceries'], r2.actuals['TV/Phone/Internet'], r2.actuals['Dining Out']]));
 
   // ── 3. Scenario 1: derived bill leaves no phantom remainder ──
   console.log('\n── 3. a bill fully accounted for by its detail lines ──');
   const r3 = await load(page, cases['bill exactly matching what was itemised into it'].map(tx));
   check(r3.spend === 198, 'total is the bill, counted once', String(r3.spend));
-  check(r3.actuals['Credit Bill'] === 198, 'the bill reads its own $198, not zero',
+  check(r3.actuals['Credit Bill'] === 0, 'Credit Bill nets to zero — every cent of it is accounted for',
     String(r3.actuals['Credit Bill']));
 
   // ── 4. over-allocation shows as negative rather than being hidden ──
   console.log('\n── 4. over-allocation ──');
   const r4 = await load(page, cases['over-allocated bill'].map(tx));
-  check(r4.actuals['Credit Bill'] === 2000, 'the bill still reads its own $2,000',
+  check(r4.actuals['Credit Bill'] === -100, 'Credit Bill reads −$100, surfacing the overage',
     String(r4.actuals['Credit Bill']));
   check(r4.spend === 2000, 'total is still the bill, not the over-allocation', String(r4.spend));
 
@@ -210,9 +213,9 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   // imported rows keep real July dates but are allotted to August
   await page.evaluate(([y]) => {
     state.yf.txns.push(
-      { id: 'j1', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'Loblaws', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
-      { id: 'j2', type: 'expense', date: `${y}-07-28`, amt: 58, desc: 'Bell', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
-      { id: 'a1', type: 'expense', date: `${y}-08-10`, amt: 40, desc: 'Taco Bell', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` });
+      { id: 'j1', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'Loblaws', cat: 'Groceries', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
+      { id: 'j2', type: 'expense', date: `${y}-07-28`, amt: 58, desc: 'Bell', cat: 'TV/Phone/Internet', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
+      { id: 'a1', type: 'expense', date: `${y}-08-10`, amt: 40, desc: 'Taco Bell', cat: 'Dining Out', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` });
     renderYF(); renderME();
   }, [YEAR]);
   const jul = await rows(`${YEAR}-07`), aug = await rows(`${YEAR}-08`);
@@ -223,7 +226,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     JSON.stringify(aug.map(r => r.date)));
   const cyc = await page.evaluate(() => ({ spend: yfActual('expense', null), cb: yfActual('expense', 'Credit Bill') }));
   check(cyc.spend === 2000, 'year total still $2,000', String(cyc.spend));
-  check(cyc.cb === 2000, 'Credit Bill stays whole at $2,000', String(cyc.cb));
+  check(cyc.cb === 1802, 'Credit Bill nets to $1,802', String(cyc.cb));
 
   console.log('\n── 10. nothing is invented: you can only itemise into a bill that exists ──');
   await reset();
@@ -287,7 +290,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   await reset();
   const dc = await page.evaluate(([y]) => {
     state.yf.txns = [{ id: 'i1', type: 'expense', date: `${y}-07-04`, amt: 300, desc: 'Loblaws',
-      who: 'ABI', allot: 'Credit Bill', allotM: `${y}-07` }];
+      cat: 'Groceries', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-07` }];
     yfAttachAllot('Credit Bill', `${y}-07`, 'ABI');          // the old auto-create path
     const rowsAfter = state.yf.txns.length;
     state.yf.txns.push({ id: 'b1', type: 'expense', date: `${y}-07-20`, amt: 1910,
@@ -299,7 +302,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(dc.rowsAfter === 1, 'itemising into a missing bill adds no row', String(dc.rowsAfter));
   check(dc.bills === 1, 'so the month ends with ONE Credit Bill, not two', String(dc.bills));
   check(dc.total === 1910, 'the year total is $1,910, not $2,210', String(dc.total));
-  check(dc.cb === 1910, 'and Credit Bill reads its own $1,910 — the $300 explains it, it does not shrink it',
+  check(dc.cb === 1610, 'and Credit Bill nets to $1,610 after the $300 itemised out',
     String(dc.cb));
 
   console.log('\n── 11c. rows the old code invented migrate without moving a total ──');
@@ -331,8 +334,30 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   const trend = await page.evaluate(y => meMonthlyByCat(String(y)), YEAR);
   check(trend['Credit Bill'][7] === 2000 && trend['Credit Bill'][6] === 0,
     'the August bill is charted under August', JSON.stringify({ jul: trend['Credit Bill'][6], aug: trend['Credit Bill'][7] }));
-  check(!trend['Grocery'], 'and the 20 July detail line is charted in no category of its own',
+  check(!trend['Grocery'], 'an uncategorised note is charted in no category of its own',
     JSON.stringify(Object.keys(trend)));
+
+  // ...but a CATEGORISED allocation is exactly what an imported statement row is,
+  // and the whole point of importing is to see those categories on the chart.
+  await page.evaluate(([y]) => {
+    state.yf.txns = [
+      { id: 'b', type: 'expense', date: `${y}-08-20`, amt: 2000, desc: 'Aug', cat: 'Credit Bill', who: 'ABI' },
+      { id: 'g', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'Loblaws', cat: 'Groceries', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
+      { id: 't', type: 'expense', date: `${y}-07-22`, amt: 33, desc: 'Presto', cat: 'Transit', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` }];
+    renderYF(); renderME();
+  }, [YEAR]);
+  const impTrend = await page.evaluate(y => meMonthlyByCat(String(y)), YEAR);
+  check(impTrend['Groceries'] && impTrend['Groceries'][7] === 100
+    && impTrend['Transit'] && impTrend['Transit'][7] === 33,
+    'an imported statement puts its categories on the chart, under the bill month',
+    JSON.stringify({ groc: impTrend['Groceries'] && impTrend['Groceries'][7],
+                     transit: impTrend['Transit'] && impTrend['Transit'][7] }));
+  check(Math.abs(impTrend['Credit Bill'][7] - 1867) < 0.005,
+    'and the bill is charted net of them, so August still totals $2,000',
+    String(impTrend['Credit Bill'][7]));
+  const augCol = Object.values(impTrend).reduce((s, a) => s + a[7], 0);
+  check(Math.abs(augCol - 2000) < 0.005, 'the August column sums to the month spend',
+    augCol.toFixed(2));
 
   console.log('\n── 13. backfill + invariant hold after all of it ──');
   const back = await page.evaluate(([y]) => {
@@ -386,7 +411,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(impJul.length === 0, 'nothing lands under July', JSON.stringify(impJul.map(r => r.desc)));
   check(impAug.length === 4, 'all three plus the bill show under August', String(impAug.length));
   const impTot = await page.evaluate(() => ({ spend: yfActual('expense', null), cb: yfActual('expense', 'Credit Bill') }));
-  check(impTot.spend === 2000 && impTot.cb === 2000, 'total stays $2,000, and so does Credit Bill',
+  check(impTot.spend === 2000 && impTot.cb === 1802, 'total stays $2,000, Credit Bill nets to $1,802',
     JSON.stringify(impTot));
 
   console.log('\n── 15. importing when the month has no bill invents nothing ──');
@@ -726,6 +751,52 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   });
   check(refused.added === 0, 'saving with neither set adds nothing', String(refused.added));
   check(/Pick a category, or a bill/.test(refused.toast), 'and says which choice is missing', refused.toast);
+
+  console.log('\n── 30. an import keeps its categories AND its bill ──');
+  await reset();
+  await page.evaluate(([y]) => {
+    state.yf.txns = [{ id: 'b', type: 'expense', date: `${y}-08-20`, amt: 2000,
+      desc: 'Aug statement', cat: 'Credit Bill', who: 'ABI' }];
+    render();
+  }, [YEAR]);
+  await importRows(`${YEAR}-08`, 'Credit Bill', STMT);
+  const both = await page.evaluate(() => {
+    const rows = (state.yf.txns || []).filter(t => t.allot);
+    return { cats: rows.map(t => t.cat), allots: [...new Set(rows.map(t => t.allot))],
+             blank: rows.filter(t => !t.cat).length,
+             learned: Object.keys(state.me.rules).length };
+  });
+  check(both.blank === 0, 'every imported row keeps the category the categoriser gave it',
+    JSON.stringify(both.cats));
+  check(JSON.stringify(both.allots) === JSON.stringify(['Credit Bill']),
+    'and carries the bill alongside it, not instead of it', JSON.stringify(both.allots));
+
+  console.log('\n── 31. rows imported without a category are recovered ──');
+  // A build in between filed imported rows with no category, which left them
+  // grey and absent from both the breakdown and the trend. Recovery is keyed on
+  // the import log, so a typed either/or note is never swept up with them.
+  await reset();
+  const rec = await page.evaluate(([y]) => {
+    state.yf.txns = [
+      { id: 'b', type: 'expense', date: `${y}-08-20`, amt: 2000, desc: 'Aug statement', cat: 'Credit Bill', who: 'ABI' },
+      { id: 'i1', type: 'expense', date: `${y}-08-06`, amt: 33, desc: 'PRESTO APPL/S6 TORONTO', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
+      { id: 'i2', type: 'expense', date: `${y}-08-02`, amt: 17.35, desc: 'FARM BOY #24 TORONTO', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
+      // typed on Add Expense: uncategorised on purpose, and NOT in the import log
+      { id: 'm1', type: 'expense', date: `${y}-08-15`, amt: 20, desc: 'Park entry', who: 'ABI', mOnly: true, allot: 'Credit Bill', allotM: `${y}-08` }];
+    state.me.imported = ['i1', 'i2'].map(id => meFingerprint(state.yf.txns.find(t => t.id === id)));
+    meMonth = `${y}-08`; renderME();
+    const by = id => (state.yf.txns.find(t => t.id === id) || {}).cat;
+    return { i1: by('i1'), i2: by('i2'), m1: by('m1') || null,
+             spend: yfActual('expense', null),
+             sum: state.yf.cats.exp.reduce((s, c) => s + yfActual('expense', c), 0) };
+  }, [YEAR]);
+  check(rec.i1 === 'Transit' && rec.i2 === 'Groceries',
+    'the categoriser re-derives them from the descriptions still on the rows',
+    JSON.stringify([rec.i1, rec.i2]));
+  check(rec.m1 === null, 'a typed either/or note is left uncategorised, as intended', String(rec.m1));
+  check(rec.spend === 2000, 'recovery moves no money — the total is untouched', String(rec.spend));
+  check(Math.abs(rec.sum - rec.spend) < 0.005, 'and the invariant still holds afterwards',
+    `${rec.sum.toFixed(2)} vs ${rec.spend.toFixed(2)}`);
 
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();

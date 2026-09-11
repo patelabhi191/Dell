@@ -4307,22 +4307,32 @@ function yfPlanned(cat){ const p=state.yf.planned[state.yfYear]||{}; return p[ca
 /* ---------- bills & allocations ----------
    An expense carrying `allot` is an ALLOCATION: a detail line explaining part of
    a bill already recorded under that category. It carries NO category of its own
-   -- filing is either/or, a category or a bill, never both. The bill counted that
-   money once already, so an allocation must never add to a total: a $550 trip
-   itemised into $20 of parking and $100 of food is still $550 of spending.
+   The bill counted that money once already, so an allocation must NEVER add to
+   a total. What it does to the CATEGORY breakdown depends on whether it carries
+   a category of its own, and there are two real shapes:
 
-   Allocations therefore take part in NEITHER side of the sum:
+   1. WITH a category -- an imported statement. The categoriser names every row
+      (Transit, Groceries, ...) and "Allot all to" points them at the bill. Such
+      a row is a reclassification: it adds to its own category and comes back out
+      of the bill's, so a $1,991 statement itemised into $33 of Transit reads
+      Transit $33 + Credit Bill $1,958, still $1,991 of spending.
+
+   2. WITHOUT a category -- typed in on Add Expense, where filing is either/or.
+      It is a pure annotation: a $550 trip noted as $20 parking and $100 food is
+      still $550 under Travel, and the notes land nowhere.
 
      spend       = sum of expenses that are NOT allocations
-     actual(cat) = everything filed under cat, allocations excluded
+     actual(cat) = everything filed under cat  -  everything CATEGORISED out of cat
 
-   Summing actual() over every category gives back spend exactly.
-   tests/test-bills.js pins that identity down. What was itemised into a bill is
-   not lost -- the Yearly category table reports it as "billed / itemised / over"
-   beside the bill, which is where that detail belongs. */
+   Summing actual() over every category gives back spend exactly under both
+   shapes: a categorised allocation adds itself once and subtracts itself once,
+   and an uncategorised one appears in neither term. tests/test-bills.js pins
+   that identity down. Either way the Yearly category table reports the detail
+   as "billed / itemised / over" beside the bill. */
 const yfSpendOf=list=>list.reduce((s,t)=>s+(t.type==='expense'&&!t.allot?t.amt:0),0);
 function yfCatOf(list,cat){
-  return list.reduce((s,t)=>(t.type!=='expense'||t.allot)?s:s+(t.cat===cat?t.amt:0),0);
+  return list.reduce((s,t)=>t.type!=='expense'?s
+    :s+(t.cat===cat?t.amt:0)-((t.allot===cat&&t.cat)?t.amt:0),0);
 }
 function yfActual(type,cat){
   const list=yfTxns().filter(t=>t.type===type);
@@ -4427,11 +4437,13 @@ function yfHighlights(d){
   }
 
   // ---- categories & contributors ----
-  // an allocation has no category and is not spending, so it stays out of the
-  // map entirely -- the bill it explains is already counted under its own name
+  // a categorised allocation reclassifies: it lands in its own category and
+  // comes back out of the bill's. An uncategorised one is only a note, so it
+  // touches neither. Both leave the map summing to the real spend.
   const catTot=type=>{const m={};
-    txns.filter(t=>t.type===type&&!(type==='expense'&&t.allot)).forEach(t=>{
-      m[t.cat]=(m[t.cat]||0)+t.amt;
+    txns.filter(t=>t.type===type).forEach(t=>{
+      if(t.cat) m[t.cat]=(m[t.cat]||0)+t.amt;
+      if(type==='expense'&&t.allot&&t.cat) m[t.allot]=(m[t.allot]||0)-t.amt;
     });
     Object.keys(m).forEach(k=>{ if(Math.abs(m[k])<0.005) delete m[k] });
     return m;};
@@ -5068,6 +5080,31 @@ function meCategorise(desc, fileCat){
 function meIsExcluded(desc){ const d=meNorm(desc); return ME_EXCLUDE.some(w=>d.includes(w)) }
 const meFingerprint=t=>[t.date,Math.round(t.amt*100),meMerchantKey(t.desc)].join('|');
 
+/* One-off repair. A build in between filed imported rows with an allot and NO
+   category, which left them grey, absent from the breakdown and absent from the
+   12-month trend. The categoriser is deterministic, so their categories can be
+   worked out again from the descriptions that are still on the rows.
+
+   Only rows that genuinely came from a CSV are touched, and membership is not
+   guessed: every import records its fingerprint in state.me.imported, and that
+   is the same meFingerprint() computed here. An uncategorised allocation typed
+   on Add Expense is deliberate (the either/or rule) and is never in that list,
+   so it is left exactly as it is. Runs after meCategorise and state.me.rules
+   exist, and cannot run twice -- every row it fixes now has a category. */
+function meRecoverImportCats(){
+  const seen=new Set(state.me.imported||[]);
+  const rows=(state.yf.txns||[]).filter(t=>
+    t.type==='expense' && t.allot && !t.cat && !t.mOnly && t.desc
+    && seen.has(meFingerprint(t)));
+  if(!rows.length) return 0;
+  rows.forEach(t=>{
+    t.cat=meCategorise(t.desc,null).cat;
+    if(!state.yf.cats.exp.includes(t.cat)) state.yf.cats.exp.push(t.cat);
+  });
+  yfPersist();
+  return rows.length;
+}
+
 
 /* ---- palette: one distinct colour per category, tuned for the dark metal face ---- */
 const ME_COLORS={'Groceries':'#7FBF6A','Household supplies':'#C9A87C','Health/medical':'#D9705E',
@@ -5080,7 +5117,10 @@ const ME_COLORS={'Groceries':'#7FBF6A','Household supplies':'#C9A87C','Health/me
   'Taxi':'#B5CC5E','Entertainment':'#A78BFA','Maintenance':'#E8875C','Travel':'#5EEAD4',
   // Yearly Finance ships its own expense categories; without entries here they
   // all fall back to grey, which would wash out the rows that use them
-  'Food':'#F0956B','Credit Bill':'#8FA6E8','Home':'#C58BE0','Transportation':'#5FB8A8',
+  'Food':'#F0956B','Home':'#C58BE0','Transportation':'#5FB8A8',
+  // same hue as before, deeper: the old #8FA6E8 was pale enough to read as
+  // plain white text on the dark panel, which looked like no colour at all
+  'Credit Bill':'#6D82E8',
   'Personal':'#D98BC4','Grocery':'#93C572','Misc':'#A6AFC0','Debt':'#CF5F7A',
   'Education\\Tuition':'#7FB3E8','Custom category 2':'#B0A0D0','Investment':'#6EDCA8',
   'Other Bank':'#C0B15E'};
@@ -5308,8 +5348,10 @@ function meMonthlyByCat(year){
     if(key.slice(0,4)!==year) return;
     const m=parseInt(key.slice(5,7),10)-1;
     if(m<0||m>11) return;
-    if(t.allot) return;                          // a detail line, not a category
+    if(!t.cat) return;                           // an uncategorised note charts nowhere
     (out[t.cat]=out[t.cat]||Array(12).fill(0))[m]+=t.amt;
+    // ...and back out of the bill it was itemised from
+    if(t.allot) (out[t.allot]=out[t.allot]||Array(12).fill(0))[m]-=t.amt;
   });
   Object.keys(out).forEach(c=>{ if(out[c].every(v=>Math.abs(v)<0.005)) delete out[c] });
   return out;
@@ -5406,6 +5448,7 @@ function renderME(){
  try{
   if(!$('meTotal')) return;
   normalizeYF(); normalizeME();
+  meRecoverImportCats();          // before anything reads a category off a row
   meFillMonthSelect();
   const txns=meTxns();
   // the list shows every entry, but only non-allocations are spend
@@ -5438,8 +5481,9 @@ function renderME(){
   // category breakdown
   const byCat={};
   txns.forEach(t=>{
-    if(t.allot) return;                            // explains a bill, is not spend
+    if(!t.cat) return;                             // a note with no category of its own
     byCat[t.cat]=(byCat[t.cat]||0)+t.amt;
+    if(t.allot) byCat[t.allot]=(byCat[t.allot]||0)-t.amt;
   });
   Object.keys(byCat).forEach(c=>{ if(Math.abs(byCat[c])<0.005) delete byCat[c] });
   const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
@@ -5637,18 +5681,18 @@ function meApplyImport(){
   const impSrc=($('meImpSrc')?$('meImpSrc').value:'').trim().slice(0,40);
   chosen.forEach(p=>{
     // a statement's own dates are kept; allotM is what files it under this month
-    const row={id:uid(),type:'expense',date:p.date,amt:p.amt,desc:p.desc,who:'ABI'};
-    // either/or, same as manual entry: allotted rows are detail lines against a
-    // bill and carry no category, so there is also no category to learn a rule from
+    // An import ALWAYS keeps the category the categoriser worked out -- that is
+    // the whole point of reviewing the preview. "Allot all to" sits on top of it
+    // and says which bill these rows came off, so a statement row reads
+    // "Transit -> Credit Bill": what it was, and what it was paid with.
+    // (Add Expense is the either/or one: there you pick a category OR a bill.)
+    const row={id:uid(),type:'expense',date:p.date,amt:p.amt,desc:p.desc,cat:p.cat,who:'ABI'};
     if(impAllot){ row.allot=impAllot; row.allotM=meMonth }
-    else {
-      row.cat=p.cat;
-      if(p.changed||p.why==='none'){                      // teach the categoriser
-        const key=meMerchantKey(p.desc);
-        if(key && state.me.rules[key]!==p.cat){ state.me.rules[key]=p.cat; learned++ }
-      }
-      if(!state.yf.cats.exp.includes(p.cat)) state.yf.cats.exp.push(p.cat);
+    if(p.changed||p.why==='none'){                        // teach the categoriser
+      const key=meMerchantKey(p.desc);
+      if(key && state.me.rules[key]!==p.cat){ state.me.rules[key]=p.cat; learned++ }
     }
+    if(!state.yf.cats.exp.includes(p.cat)) state.yf.cats.exp.push(p.cat);
     if(impSrc) row.src=impSrc;
     state.yf.txns.push(row);
     state.me.imported.push(p.fp);
