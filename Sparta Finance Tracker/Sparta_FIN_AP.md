@@ -2,11 +2,41 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~260KB, ~4800 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-08-14c` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-10F` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why, and `tests/` for the 87-check suite that verifies it.
 
 This doc exists to onboard a new coding session (e.g. Claude Code) quickly. Read this before touching the file.
+
+---
+
+## 0. What the two money tabs are FOR
+
+Get this wrong and the rest of the design goes wrong with it.
+
+**Yearly Finance — the overall view.** The basics, big amounts only: Rent, Credit Bill,
+Income. The question it answers is *where did the money go this year, and how much did
+I save?*
+
+**Monthly Expense — deep tracking.** Where the money actually goes week to week: am I
+spending too much on Dining Out, on Entertainment? The question it answers is *what are
+my habits?*
+
+**They are separate components that happen to share one transaction ledger
+(`state.yf.txns`).** Sharing the ledger is deliberate — a Monthly expense is genuinely
+part of the year, and it is what makes bills/allocations work. Sharing the CATEGORY
+LISTS is not:
+
+- Yearly's list is `state.yf.cats.exp`, editable by the user on the Yearly tab.
+- Monthly's list is `ME_CATS`, a fixed constant in the file.
+- **Neither ever writes into or reads from the other.** A name can appear on both and it
+  is still two different categories: Yearly's Rent is Yearly's, Monthly's is Monthly's.
+- Do not "helpfully" auto-populate one from the other. That was the original behaviour
+  and it leaked Yearly's Food / Rent / Credit Bill onto the Monthly picker.
+
+Because the ledger IS shared, Yearly's category table lists its own categories *plus* any
+other name this year's expenses use — otherwise Monthly's spending would sit inside
+Yearly's Totals row with no row of its own, and the category rows would stop adding up.
 
 ---
 

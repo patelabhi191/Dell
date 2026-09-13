@@ -4675,9 +4675,19 @@ function renderYF(){
       <td style="white-space:nowrap"><button class="yf-catbtn" data-ren="${esc(cat)}" data-t="${type}" title="Rename">\u270e</button><button class="yf-catbtn del" data-del="${esc(cat)}" data-t="${type}" title="Delete">\u2715</button></td>
     </tr>`;
   };
+  /* Yearly's list is Yearly's own, and Monthly no longer writes into it. But the
+     two tabs share one ledger, so money filed under a Monthly-only category is
+     still part of this year and still inside the Totals row above. Without a row
+     of its own it would be counted but invisible, and the category rows would
+     stop adding up to the total sitting right above them. So: Yearly's own
+     categories first, then any other name this year's expenses actually use. */
+  const yearOnly=[...new Set(yfTxns()
+    .filter(t=>t.type==='expense'&&t.cat&&!yfCats('expense').includes(t.cat))
+    .map(t=>t.cat))].sort((a,b)=>a.localeCompare(b));
   $('yfExpBody').innerHTML=
     `<tr style="font-weight:700"><td style="text-align:left">Totals</td><td>${yf$(expPlanT)}</td><td>${yf$(totExp)}</td><td class="${expPlanT-totExp<0?'yf-neg':'yf-pos'}">${yf$(expPlanT-totExp)}</td><td>${yf$(totExp/nowM)}</td><td></td></tr>`+
-    yfCats('expense').map(c=>catRow(c,'expense',true)).join('');
+    yfCats('expense').map(c=>catRow(c,'expense',true)).join('')+
+    yearOnly.map(c=>catRow(c,'expense',true)).join('');
   $('yfIncBody').innerHTML=
     `<tr style="font-weight:700"><td style="text-align:left">Totals</td><td>${yf$(incPlanT)}</td><td>${yf$(totInc)}</td><td class="${totInc-incPlanT>=0?'yf-pos':'yf-neg'}">${yf$(totInc-incPlanT)}</td><td></td></tr>`+
     yfCats('income').map(c=>catRow(c,'income',false)).join('');
@@ -4971,17 +4981,14 @@ yfFillCats(); yfFillYearSel();
 
 
 /* ============ Monthly Expense ============ */
-// A-Z, and the dropdowns keep it that way -- see meAllCats().
-const ME_CATS=['Dining Out','Fees/Fine','General','Groceries','Health/medical',
+/* MONTHLY'S OWN CATEGORIES. Fixed, A-Z, and entirely separate from Yearly's
+   state.yf.cats.exp. The two tabs share one transaction ledger but NOT one
+   category list: a name may appear on both and it is still two categories --
+   Yearly's Rent is Yearly's, Monthly's is Monthly's. Nothing here is ever copied
+   into Yearly's list, and nothing from Yearly's list is ever offered here. */
+const ME_CATS=['Dining Out','Fees/Subscription','General','Groceries','Health/medical',
   'Household supplies','Indoor Entertainment','Other','Outdoor Entertainment',
   'Shopping','Taxi/Rental','Transit','TV/Phone/Internet'];
-/* Names that must never be offered as a Monthly category. Rent is tracked on
-   Yearly; Credit Bill is a bill you itemise INTO (it stays on "Allot to", which
-   reads the ledger, not this list); Taxi and Entertainment are the names
-   Taxi/Rental and Indoor/Outdoor Entertainment replaced. Rows already saved
-   under them keep their category and their colour -- this hides the name from
-   the picker, it does not rewrite anything. */
-const ME_HIDDEN=['Rent','Credit Bill','Taxi','Entertainment'];
 
 // seed built-in merchant keywords (lower-case fragments -> category)
 const ME_KEYWORDS=[
@@ -4996,7 +5003,7 @@ const ME_KEYWORDS=[
   [['air canada','westjet','porter','expedia','booking.com','airbnb','hotel','airline',
     'park','zoo','campground','national park'],'Outdoor Entertainment'],
   [['nsf','overdraft','interest charge','annual fee','late fee','service charge',
-    'parking ticket','fine'],'Fees/Fine'],
+    'membership fee','subscription','membership'],'Fees/Subscription'],
   [['dollarama','amazon','winners','homesense'],'Household supplies']
 ];
 // payments/transfers are NOT expenses - importing them double-counts everything
@@ -5105,7 +5112,6 @@ function meRecoverImportCats(){
   if(!rows.length) return 0;
   rows.forEach(t=>{
     t.cat=meCategorise(t.desc,null).cat;
-    if(!state.yf.cats.exp.includes(t.cat)) state.yf.cats.exp.push(t.cat);
   });
   yfPersist();
   return rows.length;
@@ -5116,7 +5122,8 @@ function meRecoverImportCats(){
 const ME_COLORS={'Groceries':'#7FBF6A','Household supplies':'#C9A87C','Health/medical':'#D9705E',
   'General':'#6FA8DC','TV/Phone/Internet':'#63C7D6','Dining Out':'#E8B15C',
   'Taxi/Rental':'#B5CC5E','Transit':'#8FD17A','Indoor Entertainment':'#A78BFA',
-  'Outdoor Entertainment':'#5EEAD4','Shopping':'#E8875C','Fees/Fine':'#D96C8A',
+  'Outdoor Entertainment':'#5EEAD4','Shopping':'#E8875C','Fees/Subscription':'#D96C8A',
+  'Fees/Fine':'#D96C8A',            // the name it replaced: old rows keep the colour
   'Other':'#94A3B8','Rent':'#E58BB0',
   // the names these four replaced: entries saved under them are not migrated,
   // so they keep their old colour until they are re-picked by hand
@@ -5135,17 +5142,23 @@ const ME_DEFAULT_CHART=['Groceries','Indoor Entertainment','Health/medical','Gen
 
 /* ---- add / edit ---- */
 let meEditId=null;
-/* Every Monthly category picker comes from here: the fixed list plus any name
-   the ledger already uses (so a row is never orphaned by a rename), minus the
-   hidden ones, sorted A-Z as one list so the extras interleave rather than
-   piling up at the bottom. `keep` forces one name back in -- meFillCatSelect
-   passes the category of the row being edited, or editing a row filed under a
-   hidden name would silently blank it. */
+/* Every Monthly ENTRY picker comes from here: Monthly's own fixed list, nothing
+   else. It used to fold in every category found in the shared ledger, which is
+   exactly how Yearly's names (Food, Credit Bill, Rent) leaked onto this tab.
+   `keep` forces one extra name back in -- meFillCatSelect passes the category of
+   the row being edited, so a row saved under a name no longer on the list stays
+   visible and selectable instead of being silently blanked on save. */
 function meAllCats(keep){
-  const extra=[...new Set((state.yf.txns||[]).filter(t=>t.type==='expense').map(t=>t.cat))]
-    .filter(c=>c && !ME_CATS.includes(c));
-  return ME_CATS.concat(extra)
-    .filter(c=>c===keep||!ME_HIDDEN.includes(c))
+  return (keep&&!ME_CATS.includes(keep)?ME_CATS.concat([keep]):ME_CATS.slice())
+    .sort((a,b)=>a.localeCompare(b,'en',{sensitivity:'base'}));
+}
+/* The trend filter is a different question: it should offer what the chart can
+   actually draw, so it lists Monthly's own categories plus whatever this year's
+   rows are really filed under. That is reading your own data, not borrowing
+   Yearly's list. */
+function meChartableCats(year){
+  const inUse=Object.keys(meMonthlyByCat(String(year)));
+  return [...new Set(ME_CATS.concat(inUse))]
     .sort((a,b)=>a.localeCompare(b,'en',{sensitivity:'base'}));
 }
 /* Filing is either/or: a row is spending in a category, or a detail line against
@@ -5202,9 +5215,9 @@ function meSaveTx(){
     if($('meAllot')) $('meAllot').value='';
     if($('meCat')) $('meCat').value='';
   }
-  // a category typed here that Yearly has never seen joins its list, so the row
-  // shows up on the Yearly tab under this month like any other expense
-  if(cat&&!state.yf.cats.exp.includes(cat)) state.yf.cats.exp.push(cat);
+  // Monthly does NOT write into Yearly's category list. The row still belongs to
+  // the year -- one shared ledger -- and Yearly's table picks it up as a row of
+  // its own, but Yearly's editable list stays yours to curate.
   const over=yfAttachAllot(allot,month,who);
   meMonth=month; meFormMonthPicked=false;         // show the month just written to
   if(over) toast('Over-allotted '+meMoney(over)+' past the '+allot);
@@ -5444,7 +5457,7 @@ function renderMEMatrix(){
 function renderMEGear(){
   const list=$('mePopList'); if(!list) return;
   const chosen=meChartCats();
-  list.innerHTML=meAllCats().map(c=>`
+  list.innerHTML=meChartableCats(meYear()).map(c=>`
     <label><input type="checkbox" data-mecat="${c.replace(/"/g,'&quot;')}" ${chosen.includes(c)?'checked':''}>
     <span class="dot" style="background:${meColor(c)};color:${meColor(c)}"></span>${c}</label>`).join('');
   list.querySelectorAll('[data-mecat]').forEach(cb=>cb.onchange=()=>{
@@ -5705,7 +5718,6 @@ function meApplyImport(){
       const key=meMerchantKey(p.desc);
       if(key && state.me.rules[key]!==p.cat){ state.me.rules[key]=p.cat; learned++ }
     }
-    if(!state.yf.cats.exp.includes(p.cat)) state.yf.cats.exp.push(p.cat);
     if(impSrc) row.src=impSrc;
     state.yf.txns.push(row);
     state.me.imported.push(p.fp);
@@ -5742,7 +5754,7 @@ if($('meFile')){
     const pop=$('mePop'); if(!pop||!pop.classList.contains('open')) return;
     if(!pop.contains(e.target) && e.target!==$('meGear')) pop.classList.remove('open');
   });
-  $('mePopAll').onclick=()=>{ state.me.chartCats=meAllCats().slice(); mePersist(); renderMEChart(); renderMEGear() };
+  $('mePopAll').onclick=()=>{ state.me.chartCats=meChartableCats(meYear()); mePersist(); renderMEChart(); renderMEGear() };
   $('mePopNone').onclick=()=>{ state.me.chartCats=[]; mePersist(); renderMEChart(); renderMEGear() };
   // moving to another month clears any stale pick so the form follows the view
   const meGoMonth=m=>{ meMonth=m; meFormMonthPicked=false; meTxCat='all'; renderME() };

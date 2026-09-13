@@ -36,7 +36,9 @@ const near = (a, b, eps = 0.005) => Math.abs(a - b) < eps;
     ['CINEPLEX ODEON', null, 'Indoor Entertainment', 'kw', 'Entertainment became Indoor'],
     ['MARRIOTT HOTEL', null, 'Outdoor Entertainment', 'kw', 'Travel became Outdoor Entertainment'],
     ['HOME DEPOT #7', null, 'Shopping', 'kw', 'Maintenance became Shopping'],
-    ['NSF FEE', null, 'Fees/Fine', 'kw', 'bank fees have a category'],
+    ['NSF FEE', null, 'Fees/Subscription', 'kw', 'bank fees have a category'],
+    ['NETFLIX SUBSCRIPTION', null, 'TV/Phone/Internet', 'kw', 'streaming stays with TV/Phone'],
+    ['MEMBERSHIP FEE INSTALLMENT', null, 'Fees/Subscription', 'kw', 'and memberships land there too'],
   ];
   const catResults = await page.evaluate(cases =>
     cases.map(([d, f]) => meCategorise(d, f)), CAT_CASES);
@@ -58,11 +60,13 @@ const near = (a, b, eps = 0.005) => Math.abs(a - b) < eps;
   const sorted = list.all.slice().sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
   check(JSON.stringify(list.all) === JSON.stringify(sorted), 'the category list is sorted A→Z',
     list.all.slice(0, 3).join(' / ') + ' … ' + list.all.slice(-2).join(' / '));
-  const banned = ['Rent', 'Credit Bill', 'Taxi', 'Entertainment'].filter(c => list.all.includes(c));
-  check(banned.length === 0, 'Rent, Credit Bill, Taxi and Entertainment are not offered',
-    banned.length ? JSON.stringify(banned) : 'none of the four');
-  check(list.all[0] === 'Aardvark food',
-    'a name the ledger already uses still appears, sorted in rather than appended', list.all[0]);
+  const banned = ['Rent', 'Credit Bill', 'Taxi', 'Entertainment', 'Food'].filter(c => list.all.includes(c));
+  check(banned.length === 0, "Yearly's names are not offered on Monthly",
+    banned.length ? JSON.stringify(banned) : 'none of them');
+  check(!list.all.includes('Aardvark food'),
+    'and neither is a name that exists only in the shared ledger — the lists are separate',
+    JSON.stringify(list.all.slice(0, 2)));
+  check(list.all.length === 13, "Monthly offers exactly its own 13 categories", String(list.all.length));
   check(list.kept, 'but the row being edited keeps its own name, so editing cannot blank it');
   CAT_CASES.forEach(([d, f, wantCat, wantWhy, note], i) => {
     const got = catResults[i];

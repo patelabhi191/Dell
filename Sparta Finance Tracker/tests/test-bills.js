@@ -54,6 +54,14 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   page.on('pageerror', e => errs.push(e.message));
   await page.goto(url, { waitUntil: 'load' });
   await page.waitForTimeout(300);
+  /* Every category the LEDGER uses. Yearly's own list no longer collects
+     Monthly's names -- the two tabs keep separate category lists -- so summing
+     actual() over yf.cats.exp alone would silently miss Monthly's spending and
+     the invariant check would pass while money went unaccounted. */
+  await page.evaluate(() => {
+    window.yfLedgerCats = () => [...new Set([].concat(state.yf.cats.exp,
+      (state.yf.txns || []).filter(t => t.type === 'expense' && t.cat).map(t => t.cat)))];
+  });
 
   // ── 1. THE INVARIANT: category actuals always sum to the spend total ──
   console.log('\n── 1. invariant: Σ actual(cat) === spend ──');
@@ -615,7 +623,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(topped.cb === 900 && topped.spend === 900,
     'the bill holds at $900 with $400 now itemised against it; total still $900', JSON.stringify(topped));
   const inv23 = await page.evaluate(() => {
-    const sum = state.yf.cats.exp.reduce((s, c) => s + yfActual('expense', c), 0);
+    const sum = yfLedgerCats().reduce((s, c) => s + yfActual('expense', c), 0);
     return { sum, spend: yfActual('expense', null) };
   });
   check(Math.abs(inv23.sum - inv23.spend) < 0.005, 'invariant holds across months',
@@ -701,7 +709,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
         r.querySelector('.me-bar-name').textContent + ' ' + r.querySelector('.me-bar-amt').textContent),
       travel: yfActual('expense', 'Travel'), groc: yfActual('expense', 'Groceries'),
       spend: yfActual('expense', null),
-      sum: state.yf.cats.exp.reduce((t, c) => t + yfActual('expense', c), 0) };
+      sum: yfLedgerCats().reduce((t, c) => t + yfActual('expense', c), 0) };
   }, [YEAR]);
   check(trip.total === '$630.00', 'the month totals $630 — the $120 of detail adds nothing', trip.total);
   check(trip.travel === 550, 'the trip stays whole at $550, not $430', String(trip.travel));
@@ -798,7 +806,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     const by = id => (state.yf.txns.find(t => t.id === id) || {}).cat;
     return { i1: by('i1'), i2: by('i2'), m1: by('m1') || null,
              spend: yfActual('expense', null),
-             sum: state.yf.cats.exp.reduce((s, c) => s + yfActual('expense', c), 0) };
+             sum: yfLedgerCats().reduce((s, c) => s + yfActual('expense', c), 0) };
   }, [YEAR]);
   check(rec.i1 === 'Transit' && rec.i2 === 'Groceries',
     'the categoriser re-derives them from the descriptions still on the rows',
@@ -833,7 +841,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
       .find(r => r.children[0].textContent.trim().startsWith('Credit Bill'));
     return { cb: +yfActual('expense', 'Credit Bill').toFixed(2),
              spend: +yfActual('expense', null).toFixed(2),
-             sum: +state.yf.cats.exp.reduce((t2, c) => t2 + yfActual('expense', c), 0).toFixed(2),
+             sum: +yfLedgerCats().reduce((t2, c) => t2 + yfActual('expense', c), 0).toFixed(2),
              note: tr ? tr.children[0].textContent.replace(/\s+/g, ' ').trim() : '',
              over: tr ? /\bover\b/.test(tr.children[0].innerHTML) : false,
              warn: yfAttachAllot('Credit Bill', `${y}-07`, 'ABI') };
@@ -887,6 +895,41 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   // back to its default -- painting the most over-allotted category as the LONGEST bar
   check(bar && parseFloat(bar.w) === 0, 'a negative amount clamps to a zero-width fill, not a full one',
     bar ? `${bar.amt} -> width ${JSON.stringify(bar.w)}` : '');
+
+  console.log('\n── 34. Yearly and Monthly keep separate category lists ──');
+  await reset();
+  const sep = await page.evaluate(([y]) => {
+    state.yf.cats.exp = ['Rent', 'Food', 'Credit Bill'];
+    state.yf.txns = [
+      { id: 'yr', type: 'expense', date: `${y}-07-01`, amt: 1450, desc: 'Yearly rent', cat: 'Rent', who: 'ABI' },
+      { id: 'yf', type: 'expense', date: `${y}-07-03`, amt: 60, desc: 'Yearly food', cat: 'Food', who: 'ABI' }];
+    state.yfYear = y; meMonth = `${y}-07`; render(); renderYF(); renderME();
+    const offered = meAllCats();
+    // file a Monthly expense under a category only Monthly has
+    document.getElementById('meAmt').value = '75';
+    document.getElementById('meDesc').value = 'Netflix';
+    document.getElementById('meCat').value = 'Fees/Subscription';
+    document.getElementById('meAllot').value = '';
+    meSaveTx();
+    meMonth = `${y}-07`; renderME(); renderYF();
+    const rows = [...document.querySelectorAll('#yfExpBody tr')].map(tr => ({
+      name: tr.children[0].textContent.trim().split('$')[0].trim(),
+      act: parseFloat(tr.children[2].textContent.replace(/[^0-9.-]/g, '')) }));
+    return { offered, yfList: state.yf.cats.exp.slice(), rows,
+             totals: rows[0].act,
+             sumRows: +rows.slice(1).reduce((t, r) => t + r.act, 0).toFixed(2) };
+  }, [YEAR]);
+  check(!sep.offered.some(c => ['Rent', 'Food', 'Credit Bill'].includes(c)),
+    "Yearly's categories are never offered on Monthly", JSON.stringify(sep.offered.slice(0, 3)));
+  check(JSON.stringify(sep.yfList) === JSON.stringify(['Rent', 'Food', 'Credit Bill']),
+    "and saving a Monthly expense does not add its category to Yearly's list",
+    JSON.stringify(sep.yfList));
+  check(sep.rows.some(r => r.name === 'Fees/Subscription' && r.act === 75),
+    'Yearly still reports the money as a row of its own — one shared ledger',
+    JSON.stringify(sep.rows.map(r => r.name)));
+  check(sep.sumRows === sep.totals,
+    'so the category rows still add up to the Totals row above them',
+    `${sep.sumRows} vs ${sep.totals}`);
 
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
