@@ -249,24 +249,28 @@ const cards = page => page.evaluate(() =>
   check(hov.hover === true && hov.timer === null, 'hovering flags hover and clears the timer',
     JSON.stringify(hov));
 
-  // Prove the tick guard deterministically rather than racing the pointer:
-  // page.hover() can scroll the panel, and a stray mouseleave landing after the
-  // mouseenter would silently un-pause and make a wall-clock assertion flaky.
-  const guarded = await page.evaluate(async () => {
-    yfHiHover = true;
-    yfHiStart();                     // a live timer, but hover is set
-    const before = yfHiIdx;
-    await new Promise(r => setTimeout(r, 5600));
-    return { before, after: yfHiIdx, hadTimer: yfHiTimer !== null };
-  });
-  check(guarded.hadTimer && guarded.after === guarded.before,
-    'a running tick does not advance while hover is set', JSON.stringify(guarded));
-
   await page.mouse.move(0, 0);
   await page.waitForTimeout(250);
   const left = await page.evaluate(() => ({ hover: yfHiHover, timer: yfHiTimer }));
   check(left.hover === false && left.timer !== null, 'leaving clears the flag and resumes',
     JSON.stringify(left));
+
+  // Prove the tick guard deterministically rather than racing the pointer, and
+  // do it AFTER the leave check with the pointer already off the panel. Running
+  // it while the pointer physically hovered meant any scroll or layout shift in
+  // the 5.6s wait dispatched a mouseleave, cleared yfHiHover and let the tick
+  // advance — about one run in three. Nothing can clear the flag out here.
+  const guarded = await page.evaluate(async () => {
+    yfHiHover = true;
+    yfHiStart();                     // a live timer, but hover is set
+    const before = yfHiIdx;
+    await new Promise(r => setTimeout(r, 5600));
+    const out = { before, after: yfHiIdx, hadTimer: yfHiTimer !== null };
+    yfHiHover = false; yfHiStart();  // hand the panel back in its normal state
+    return out;
+  });
+  check(guarded.hadTimer && guarded.after === guarded.before,
+    'a running tick does not advance while hover is set', JSON.stringify(guarded));
 
   console.log('\n── 6. no timer leak (the main risk) ──');
   await page.click('#viewSeg button[data-view="monthly"]');

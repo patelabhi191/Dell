@@ -472,7 +472,8 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   await page.evaluate(([y]) => {
     state.yf.txns = [
       { id: 'b', type: 'expense', date: `${y}-08-20`, amt: 2000, desc: 'Aug statement', cat: 'Credit Bill', who: 'ABI' },
-      { id: 'g', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'Loblaws', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
+      { id: 'g', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'Loblaws', cat: 'Groceries', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
+      { id: 'n', type: 'expense', date: `${y}-08-05`, amt: 30, desc: 'Note only', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` },
       { id: 'p', type: 'expense', date: `${y}-08-04`, amt: 45, desc: 'Cash lunch', cat: 'Food', who: 'ABI' }];
     meMonth = `${y}-08`; render(); renderYF(); renderME();
   }, [YEAR]);
@@ -485,8 +486,11 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   });
   check(/→ Credit Bill/.test(pills['Loblaws'] || ''), 'an allocation carries a "→ Credit Bill" pill',
     (pills['Loblaws'] || '').slice(0, 90));
-  check(/—/.test(pills['Loblaws'] || ''), 'and a dash where its category would be, since it has none',
-    (pills['Loblaws'] || '').slice(0, 40));
+  check(/Groceries/.test(pills['Loblaws'] || ''),
+    'a charge off the bill shows what it was AND what paid for it',
+    (pills['Loblaws'] || '').replace(/<[^>]*>/g, ' ').trim().slice(0, 50));
+  check(/—/.test(pills['Note only'] || ''), 'a note with no category of its own shows a dash',
+    (pills['Note only'] || '').slice(0, 40));
   check(!/acct-tag/.test(pills['Cash lunch'] || ''), 'ordinary spending carries no pill');
   // There is no "auto" marking any more: bills are only ever typed into Yearly,
   // so there is no such thing as a bill nobody entered.
@@ -504,15 +508,16 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     };
     return { cb: row('Credit Bill'), food: row('Food') };
   });
-  check(/2,000 billed/.test(note.cb) && /100 itemised/.test(note.cb),
-    'Credit Bill reads "$2,000 billed · $100 itemised"', note.cb.replace(/<[^>]*>/g, ' ').trim());
+  check(/2,000 billed/.test(note.cb) && /100 itemised/.test(note.cb) && /30 noted/.test(note.cb),
+    'Credit Bill separates what moved out of it from what was only noted against it',
+    note.cb.replace(/<[^>]*>/g, ' ').trim());
   check(!/billnote/.test(note.food), 'a category with nothing itemised has no sub-line');
 
   console.log('\n── 21. over-allotment is named, not left as a bare negative ──');
   await page.evaluate(([y]) => {
     state.yf.txns = [
       { id: 'b', type: 'expense', date: `${y}-08-20`, amt: 100, desc: 'small', cat: 'Credit Bill', who: 'ABI' },
-      { id: 'g', type: 'expense', date: `${y}-08-04`, amt: 250, desc: 'big buy', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` }];
+      { id: 'g', type: 'expense', date: `${y}-08-04`, amt: 250, desc: 'big buy', cat: 'Shopping', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-08` }];
     renderYF();
   }, [YEAR]);
   const overNote = await page.evaluate(() => {
@@ -719,7 +724,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(med.known, 'the category joins the Yearly list');
   check(med.yearly === 60, 'and Yearly reports $60 under it', String(med.yearly));
 
-  console.log('\n── 29. the two fields are mutually exclusive on screen ──');
+  console.log('\n── 29. Category and Allot to are independent ──');
   const pair = await page.evaluate(([y]) => {
     state.yf.txns = [{ id: 'b', type: 'expense', date: `${y}-07-20`, amt: 900,
       desc: 'Credit Bill', cat: 'Credit Bill', who: 'ABI' }];
@@ -728,19 +733,24 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     const snap = () => ({ cat: [...cat.options].map(o => o.textContent),
                           allot: [...allot.options].map(o => o.textContent) });
     const start = snap();
-    allot.value = 'Credit Bill'; meSyncPair(); const withBill = snap();
-    allot.value = ''; meSyncPair(); const back = snap();
-    cat.value = 'Groceries'; meSyncPair(); const withCat = snap();
-    return { start, withBill, back, withCat,
-             disabled: cat.disabled || allot.disabled };
+    allot.value = 'Credit Bill'; meAllotNote(); const withBill = snap();
+    cat.value = 'Groceries'; meAllotNote();
+    const both = { cat: cat.value, allot: allot.value, note: document.getElementById('meAllotNote').textContent };
+    allot.value = ''; meAllotNote();
+    const catOnly = { cat: cat.value, allot: allot.value };
+    return { start, withBill, both, catOnly, disabled: cat.disabled || allot.disabled };
   }, [YEAR]);
   check(start_ok(pair.start), 'both fields start open, on "none"', JSON.stringify(pair.start.cat.slice(0, 1)));
-  check(pair.withBill.cat.length === 1 && pair.withBill.cat[0] === '\u2014',
-    'choosing a bill collapses Category to a dash', JSON.stringify(pair.withBill.cat));
-  check(pair.back.cat.length > 1, 'clearing the bill brings the categories back', String(pair.back.cat.length));
-  check(pair.withCat.allot.length === 1 && pair.withCat.allot[0] === '\u2014',
-    'choosing a category collapses Allot to a dash', JSON.stringify(pair.withCat.allot));
-  check(!pair.disabled, 'neither field is ever disabled — a dash, not a greyed control');
+  check(pair.withBill.cat.length > 1,
+    'choosing a bill leaves every category still selectable', String(pair.withBill.cat.length));
+  check(pair.both.cat === 'Groceries' && pair.both.allot === 'Credit Bill',
+    'both can be set at once — what it was, and what paid for it',
+    JSON.stringify([pair.both.cat, pair.both.allot]));
+  check(/moves out of the bill/.test(pair.both.note),
+    'and the note says the money moves out of the bill, not on top of it', pair.both.note);
+  check(pair.catOnly.cat === 'Groceries' && pair.catOnly.allot === '',
+    'clearing the bill leaves the category untouched', JSON.stringify(pair.catOnly));
+  check(!pair.disabled, 'neither field is ever disabled');
 
   const refused = await page.evaluate(() => {
     const before = state.yf.txns.length;
@@ -797,6 +807,86 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(rec.spend === 2000, 'recovery moves no money — the total is untouched', String(rec.spend));
   check(Math.abs(rec.sum - rec.spend) < 0.005, 'and the invariant still holds afterwards',
     `${rec.sum.toFixed(2)} vs ${rec.spend.toFixed(2)}`);
+
+  console.log('\n── 32. a $1,850 bill vs statements that under-, over- and exactly-shoot ──');
+  // The three cases asked for by hand, pinned so the figures cannot drift apart
+  // from the sub-line that describes them.
+  const billCase = (rows, manualCat) => page.evaluate(([y, rs, mc]) => {
+    state.yf.txns = [{ id: 'bill', type: 'expense', date: `${y}-07-19`, amt: 1850,
+      desc: 'Credit Card July', cat: 'Credit Bill', who: 'ABI' }];
+    rs.forEach((r, i) => {
+      const t = { id: 'r' + i, type: 'expense', date: `${y}-07-0${i + 1}`, amt: r.a,
+        desc: r.d, who: 'ABI', allot: 'Credit Bill', allotM: `${y}-07` };
+      if (r.c) t.cat = r.c;
+      state.yf.txns.push(t);
+    });
+    if (mc !== undefined) {
+      const t = { id: 'man', type: 'expense', date: `${y}-07-15`, amt: 11, mOnly: true,
+        desc: 'Missed by the statement', who: 'ABI', allot: 'Credit Bill', allotM: `${y}-07` };
+      if (mc) t.cat = mc;
+      state.yf.txns.push(t);
+    }
+    state.yf.txns.forEach(t => {
+      if (t.cat && !state.yf.cats.exp.includes(t.cat)) state.yf.cats.exp.push(t.cat); });
+    state.yfYear = y; meMonth = `${y}-07`; render(); renderYF(); renderME();
+    const tr = [...document.querySelectorAll('#yfExpBody tr')]
+      .find(r => r.children[0].textContent.trim().startsWith('Credit Bill'));
+    return { cb: +yfActual('expense', 'Credit Bill').toFixed(2),
+             spend: +yfActual('expense', null).toFixed(2),
+             sum: +state.yf.cats.exp.reduce((t2, c) => t2 + yfActual('expense', c), 0).toFixed(2),
+             note: tr ? tr.children[0].textContent.replace(/\s+/g, ' ').trim() : '',
+             over: tr ? /\bover\b/.test(tr.children[0].innerHTML) : false,
+             warn: yfAttachAllot('Credit Bill', `${y}-07`, 'ABI') };
+  }, [YEAR, rows, manualCat]);
+
+  const S = [{ d: 'FARM BOY', a: 900, c: 'Groceries' }, { d: 'PRESTO', a: 400, c: 'Transit' },
+             { d: 'FIDO', a: 340, c: 'TV/Phone/Internet' }, { d: 'CINEPLEX', a: 200, c: 'Indoor Entertainment' }];
+  const under = S.map(r => ({ ...r })); under[2].a = 300;      // totals 1800
+  const over  = S.map(r => ({ ...r })); over[2].a  = 400;      // totals 1900
+
+  await reset();
+  const u = await billCase(under);
+  check(u.cb === 50, 'under by $50: the remainder stays as the Credit Bill balance', String(u.cb));
+  check(!u.over && u.warn === 0, 'and nothing is flagged — being under is not an error');
+  check(u.spend === 1850 && u.sum === u.spend, 'the month is still $1,850 and the categories sum to it',
+    `${u.sum} vs ${u.spend}`);
+
+  await reset();
+  const o = await billCase(over);
+  check(o.cb === -50, 'over by $50: Credit Bill goes to −$50', String(o.cb));
+  check(o.over && o.warn === 50, 'the row is flagged and the overage is reported', `warn ${o.warn}`);
+  check(o.spend === 1850 && o.sum === o.spend, 'the month is still $1,850 — the bill is the spending',
+    `${o.sum} vs ${o.spend}`);
+
+  await reset();
+  const m = await billCase(S, 'Groceries');   // 1840 imported + 11 typed, categorised
+  check(m.cb === -1, '$1,840 imported plus an $11 charge typed in reads −$1', String(m.cb));
+  check(/1,851 itemised/.test(m.note) && m.over,
+    'and the sub-line agrees with the figure beside it', m.note);
+
+  await reset();
+  const n = await billCase(S, '');            // same, but left uncategorised: a note
+  check(n.cb === 10, 'left uncategorised the $11 is a note, so the bill keeps its $10',
+    String(n.cb));
+  check(/1,840 itemised/.test(n.note) && /11 noted/.test(n.note) && !n.over,
+    'the sub-line says so plainly, and does not cry over', n.note);
+  check(n.sum === n.spend, 'both shapes keep the invariant', `${n.sum} vs ${n.spend}`);
+
+  console.log('\n── 33. an over-allotted category does not draw a full-width bar ──');
+  await reset();
+  await billCase(over);                       // Credit Bill at −$50, so the bar is negative
+  const bar = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#meBars .me-bar-row')];
+    const cb = rows.find(r => /Credit Bill/.test(r.querySelector('.me-bar-name').textContent));
+    return cb ? { w: cb.querySelector('.me-bar-fill').style.width,
+                  amt: cb.querySelector('.me-bar-amt').textContent } : null;
+  });
+  check(bar && /^-/.test(bar.amt), 'the bar under test really is negative',
+    bar ? bar.amt : 'no Credit Bill bar');
+  // width:-5.6% is invalid CSS, so the declaration was dropped and the fill fell
+  // back to its default -- painting the most over-allotted category as the LONGEST bar
+  check(bar && parseFloat(bar.w) === 0, 'a negative amount clamps to a zero-width fill, not a full one',
+    bar ? `${bar.amt} -> width ${JSON.stringify(bar.w)}` : '');
 
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();

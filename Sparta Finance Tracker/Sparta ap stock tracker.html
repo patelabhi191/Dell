@@ -4653,10 +4653,16 @@ function renderYF(){
     let note='';
     if(type==='expense'){
       const billed=txns.reduce((s,t)=>s+(t.type==='expense'&&t.cat===cat&&!t.allot?t.amt:0),0);
-      const itemised=txns.reduce((s,t)=>s+(t.allot===cat?t.amt:0),0);
-      if(itemised>0){
+      // Only a CATEGORISED allocation moves money out of the bill, so only that
+      // is "itemised" -- counting the notes here too made the sub-line say
+      // "over" while the ACTUAL beside it still showed a positive remainder.
+      const itemised=txns.reduce((s,t)=>s+((t.allot===cat&&t.cat)?t.amt:0),0);
+      const noted=txns.reduce((s,t)=>s+((t.allot===cat&&!t.cat)?t.amt:0),0);
+      if(itemised>0||noted>0){
         const over=itemised-billed;
-        note=`<div class="yf-billnote${over>0.005?' over':''}">${yf$(billed)} billed \u00b7 ${yf$(itemised)} itemised`+
+        note=`<div class="yf-billnote${over>0.005?' over':''}">${yf$(billed)} billed`+
+             (itemised>0?` \u00b7 ${yf$(itemised)} itemised`:'')+
+             (noted>0?` \u00b7 ${yf$(noted)} noted`:'')+
              (over>0.005?` \u00b7 ${yf$(over)} over`:'')+`</div>`;
       }
     }
@@ -5146,19 +5152,23 @@ function meAllCats(keep){
    a Yearly bill, never both. Whichever field is not in play shows a single dash
    rather than being disabled -- a greyed control reads as broken, a dash reads as
    "not this one". Picking the dash in either field hands the choice back. */
-const ME_DASH='<option value="">\u2014</option>';
+/* Category and "Allot to" are independent, exactly as an import writes them:
+   a charge that came off a bill has BOTH -- what it was, and what paid for it.
+   Leaving Category on "none" while picking a bill is still allowed and still
+   means "a note against this bill", which is how a trip is broken down without
+   moving money out of it. One of the two is required; either may be blank. */
 function meFillCatSelect(){
   const sel=$('meCat'); if(!sel) return;
   const cur=sel.value;
-  if($('meAllot')&&$('meAllot').value){ sel.innerHTML=ME_DASH; sel.value=''; return }
   // the row being edited keeps its own category on the list even if hidden
   const editing=meEditId&&(state.yf.txns||[]).find(t=>t.id===meEditId);
   sel.innerHTML='<option value="">\u2014 none \u2014</option>'+
     meAllCats(editing&&editing.cat).map(c=>`<option>${c}</option>`).join('');
   sel.value=(cur&&[...sel.options].some(o=>o.value===cur))?cur:'';
 }
-// the other half of the pair: refill both so whichever was just cleared comes back
-function meSyncPair(){ meFillAllotSelect(); meFillCatSelect(); }
+// kept as the one entry point the month picker and the tests call: the bills on
+// offer depend on the month, and both notes restate what the pair now means
+function meSyncPair(){ meFillAllotSelect(); meFillCatSelect(); meAllotNote(); }
 function meSaveTx(){
   markUserEdit();
   normalizeYF(); normalizeME();
@@ -5166,8 +5176,8 @@ function meSaveTx(){
         cat=$('meCat').value, desc=$('meDesc').value.trim(), who=$('meWho').value||'ABI',
         allot=($('meAllot')?$('meAllot').value:'')||'';
   if(!(amt>0)){ toast('Enter an amount greater than 0'); return }
-  // either/or, and one of them is required: with neither there is nothing saying
-  // what this money was, and the row would vanish from every breakdown
+  // at least one is required: with neither there is nothing saying what this
+  // money was, and the row would vanish from every breakdown
   if(!allot&&!cat){ toast('Pick a category, or a bill to allot this to'); return }
   // no date field: the month picked on the form is the month this belongs to
   const month=meFormMonth();
@@ -5177,20 +5187,18 @@ function meSaveTx(){
     if(t){
       t.amt=+amt.toFixed(2); t.desc=desc; t.who=who;
       if(t.mOnly) t.date=date;                   // keep a real imported date intact
-      // an allocation carries no category, and a categorised row carries no bill
-      if(allot){ t.allot=allot; t.allotM=month; delete t.cat }
-      else { t.cat=cat; delete t.allot; delete t.allotM }
+      if(cat) t.cat=cat; else delete t.cat;
+      if(allot){ t.allot=allot; t.allotM=month } else { delete t.allot; delete t.allotM }
       toast('Expense updated');
     }
     meCancelEdit();
   } else {
     const row={id:uid(),type:'expense',date,amt:+amt.toFixed(2),desc,who,mOnly:true};
-    if(allot){ row.allot=allot; row.allotM=month } else { row.cat=cat }
+    if(cat) row.cat=cat;
+    if(allot){ row.allot=allot; row.allotM=month }
     state.yf.txns.push(row);
-    toast('Added '+meMoney(amt)+' \u2014 '+(allot?'itemised into '+allot:cat));
+    toast('Added '+meMoney(amt)+' \u2014 '+(cat||'no category')+(allot?' \u2192 '+allot:''));
     $('meAmt').value=''; $('meDesc').value='';
-    // clear the pair too, or the next entry starts with one half dashed out and
-    // no obvious way back -- the same reason amount and description are cleared
     if($('meAllot')) $('meAllot').value='';
     if($('meCat')) $('meCat').value='';
   }
@@ -5216,7 +5224,9 @@ function yfAttachAllot(cat,month,who){
   if(!cat) return 0;
   const bill=yfFindBill(cat,month);
   if(!bill) return 0;
-  const used=(state.yf.txns||[]).reduce((s,t)=>s+(t.allot===cat&&t.allotM===month?t.amt:0),0);
+  // categorised allocations only -- an uncategorised note does not draw the bill
+  // down, so it cannot push it over either
+  const used=(state.yf.txns||[]).reduce((s,t)=>s+((t.allot===cat&&t.allotM===month&&t.cat)?t.amt:0),0);
   return used>bill.amt+0.005?+(used-bill.amt).toFixed(2):0;
 }
 /* The bills you can itemise into: the real expenses Yearly Finance holds for
@@ -5240,10 +5250,6 @@ function meFillAllotSelect(){
     .forEach(([id,note,month])=>{
       const sel=$(id); if(!sel) return;
       const cur=sel.value;
-      // the manual form only: a category already chosen takes this field out of play
-      if(id==='meAllot'&&$('meCat')&&$('meCat').value){
-        sel.innerHTML=ME_DASH; sel.value=''; note(); return;
-      }
       const q=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
       const bills=yfBillsIn(month);
       sel.innerHTML='<option value="">\u2014 none \u2014</option>'+
@@ -5303,24 +5309,31 @@ function meAllotNote(){
   const el=$('meAllotNote'); if(!el) return;
   const v=$('meAllot')?$('meAllot').value:'';
   const m=meFormMonth();
+  const c=$('meCat')?$('meCat').value:'';
   const none=$('meAllot')&&$('meAllot').options.length<2;
-  el.textContent=v?('Itemised out of '+meMonthName(m)+"'s "+v+' \u2014 it will not add to the total.')
-    :none?('No expenses entered in Yearly Finance for '+meMonthName(m)+
-           ' yet \u2014 add one there first to itemise into it.')
-    :('Recorded under '+meMonthName(m)+'.');
+  el.textContent=
+    (v&&c) ? ('Charged to '+meMonthName(m)+"'s "+v+' and counted under '+c+
+              ' \u2014 it moves out of the bill, not on top of it.')
+   :v       ? ('A note against '+meMonthName(m)+"'s "+v+
+              ' \u2014 it will not add to the total, and the bill stays whole. '+
+              'Pick a category too if this is a charge the statement missed.')
+   :c       ? ('Recorded under '+meMonthName(m)+'.')
+   :none    ? ('No expenses entered in Yearly Finance for '+meMonthName(m)+
+               ' yet \u2014 add one there first to itemise into it.')
+   :          ('Pick a category, or a bill to allot this to.');
 }
 function meStartEdit(id){
   const t=(state.yf.txns||[]).find(x=>x.id===id); if(!t) return;
   meEditId=id;
   meFillFormMonth();
   if($('meFormMonth')) $('meFormMonth').value=t.allot?(t.allotM||meMonth):(t.date||'').slice(0,7);
-  // seed the half this row actually uses, THEN refill so the other half dashes out
+  // a row can carry either or both, so restore both after the lists are built
   if($('meAllot')) $('meAllot').value='';
   if($('meCat')) $('meCat').value='';
   meFillCatSelect(); meFillAllotSelect();
-  if(t.allot){ if($('meAllot')) $('meAllot').value=t.allot; }
-  else if($('meCat')) $('meCat').value=t.cat||'';
-  meSyncPair();
+  if($('meAllot')) $('meAllot').value=t.allot||'';
+  if($('meCat')) $('meCat').value=t.cat||'';
+  meAllotNote();
   $('meAmt').value=t.amt; $('meDesc').value=t.desc||'';
   $('meWho').value=t.who||'ABI';
   $('meFormTitle').textContent='EDIT EXPENSE';
@@ -5493,7 +5506,7 @@ function renderME(){
   $('meBars').innerHTML=cats.map(([c,v])=>`
     <div class="me-bar-row">
       <div class="me-bar-name" title="${c}">${c}</div>
-      <div class="me-bar-track"><div class="me-bar-fill" style="width:${(v/max*100).toFixed(1)}%"></div></div>
+      <div class="me-bar-track"><div class="me-bar-fill" style="width:${Math.max(0,v/max*100).toFixed(1)}%"></div></div>
       <div class="me-bar-amt">${meMoney(v)}</div>
     </div>`).join('');
   $('meBarsEmpty').style.display=cats.length?'none':'block';
@@ -5738,8 +5751,8 @@ if($('meFile')){
   if($('meTxMonth')) $('meTxMonth').onchange=()=>meGoMonth($('meTxMonth').value);
   if($('meTxCat')) $('meTxCat').onchange=()=>{ meTxCat=$('meTxCat').value; renderME() };
   // either/or: whichever field just changed decides whether the other is in play
-  if($('meAllot')) $('meAllot').onchange=meSyncPair;
-  if($('meCat')) $('meCat').onchange=meSyncPair;
+  if($('meAllot')) $('meAllot').onchange=meAllotNote;
+  if($('meCat')) $('meCat').onchange=meAllotNote;
   // the bills on offer belong to the month being filed into, so the list is
   // rebuilt whenever that month changes
   if($('meFormMonth')) $('meFormMonth').onchange=()=>{ meFormMonthPicked=true; meSyncPair() };
