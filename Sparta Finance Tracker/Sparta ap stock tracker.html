@@ -4664,27 +4664,10 @@ function renderYF(){
   const esc=c=>c.replace(/"/g,'&quot;');
   const catRow=(cat,type,withMonthly)=>{
     const plan=yfPlanned(cat), act=yfActual(type,cat), diff=plan-act;
-    // a category money has been itemised out of shows what it was billed and how
-    // much of that is accounted for; the bare remainder alone reads as a mystery
-    let note='';
-    if(type==='expense'){
-      const billed=txns.reduce((s,t)=>s+(t.type==='expense'&&t.cat===cat?t.amt:0),0);
-      /* How much of this bill has been broken down on Monthly. The allocations
-         live on the other tab and are deliberately absent from txns, so this one
-         figure reads the whole year across the divide -- it is a report ABOUT
-         Monthly's work, not Monthly's money leaking in. The bill's own ACTUAL is
-         untouched by it. */
-      const itemised=(state.yf.txns||[]).reduce((s,t)=>
-        s+((t.allot===cat&&(t.allotM||t.date||'').slice(0,4)===String(state.yfYear))?t.amt:0),0);
-      if(itemised>0){
-        const left=billed-itemised;
-        note=`<div class="yf-billnote${left<-0.005?' over':''}">${yf$(itemised)} itemised on Monthly`+
-             (left>0.005?` \u00b7 ${yf$(left)} not itemised`
-              :left<-0.005?` \u00b7 ${yf$(-left)} over`:' \u00b7 fully itemised')+`</div>`;
-      }
-    }
+    // Numbers only, the same as every other row. What Monthly itemised into a
+    // bill is reported on the bill's own line in TRANSACTIONS, not here.
     return `<tr>
-      <td style="text-align:left">${cat}${note}</td>
+      <td style="text-align:left">${cat}</td>
       <td><input class="yf-plan-in" data-cat="${esc(cat)}" type="number" step="1" min="0" value="${plan||''}" placeholder="0"></td>
       <td>${yf$(act)}</td>
       <td class="${diff<0?'yf-neg':diff>0?'yf-pos':''}">${diff>0?'+':''}${yf$(Math.abs(diff)).replace('$',diff<0?'\u2212$':'$')}</td>
@@ -4724,7 +4707,7 @@ function renderYF(){
     tr.innerHTML=`<td style="text-align:left">${txDate(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.type==='income'?'tag-inc':'tag-exp'}" style="margin:0">${t.type==='income'?'IN':'EXP'}</span></td>
       <td class="${t.type==='income'?'yf-pos':'yf-neg'}" style="font-weight:600">${yf$2(t.amt)}</td>
-      <td style="text-align:left;max-width:180px;overflow:hidden;text-overflow:ellipsis">${(t.desc||'').replace(/</g,'&lt;')}</td>
+      <td style="text-align:left;max-width:220px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(t.desc||'').replace(/</g,'&lt;')}</div>${yfItemNote(t)}</td>
       <td style="text-align:left">${txCat(t)}${txTags(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
       <td style="white-space:nowrap"><button class="yf-edit" data-eid="${t.id}" title="Edit">\u270e</button><button class="rm" data-did="${t.id}" title="Delete">\u2715</button></td>`;
@@ -5099,6 +5082,25 @@ const txTags=t=>(t.allot?'<span class="acct-tag tag-other" style="margin:0 0 0 6
     tagEsc(t.src)+'</span>':'');
 // an allocation has no category of its own; a dash reads better than a blank cell
 const txCat=t=>t.cat?tagEsc(t.cat):'\u2014';
+/* What Monthly has itemised into THIS bill. Allocations are filed by allotM, so
+   a bill is matched on its own category and its own month -- a December purchase
+   on January's bill counts toward January. Differences of a dollar or less are
+   treated as exact: statements round, and "$766 Itemised, $1 Left" is noise.
+
+     $766 Itemised                 within a dollar either way
+     $700 Itemised, $66 Left       less has been itemised than the bill
+     $800 Itemised, $34 More       more has been itemised than the bill      */
+function yfItemNote(t){
+  if(t.type!=='expense'||!t.cat||t.allot) return '';
+  const m=(t.date||'').slice(0,7);
+  const it=(state.yf.txns||[]).reduce((s,x)=>s+((x.allot===t.cat&&x.allotM===m)?x.amt:0),0);
+  if(it<=0) return '';
+  const diff=+(t.amt-it).toFixed(2);
+  const body=Math.abs(diff)<=1 ? `${yf$(it)} Itemised`
+    : diff>0 ? `${yf$(it)} Itemised, ${yf$(diff)} Left`
+             : `${yf$(it)} Itemised, ${yf$(-diff)} More`;
+  return `<div class="yf-billnote${diff<-1?' over':''}">${body}</div>`;
+}
 const txDate=t=>{
   if(!t.mOnly) return t.date||'';
   const m=parseInt((t.date||'').slice(5,7),10)-1;

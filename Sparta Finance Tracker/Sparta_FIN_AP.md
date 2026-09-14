@@ -46,10 +46,19 @@ inferred**, because a name cannot decide it: both tabs may legitimately have a "
 | `tab:'me'` | **never**, in any form | yes — list, bars and trend |
 
 So a $1,500 credit-card bill is one $1,500 row on Yearly however finely Monthly broke it
-down. What Monthly has done is reported beside it as a note — *"$386 itemised on Monthly ·
-$1,114 not itemised"* — which is a report **about** the other tab's work, not that tab's
-money leaking in. Itemising never shrinks a bill and never makes it negative; an overage
-is named in the note.
+down. Itemising never shrinks a bill and never makes it negative.
+
+What Monthly has done is reported on the bill's own line in **TRANSACTIONS**, under the
+description — never in the EXPENSES table, which stays numbers only like every other row:
+
+| | |
+|---|---|
+| `$766 Itemised` | within **$1** either way — statements round, so that is treated as exact |
+| `$950 Itemised, $250 Left` | less itemised than the bill |
+| `$434 Itemised, $34 More` | more itemised than the bill |
+
+A bill is matched on its own category and its own month, and allocations are filed by
+`allotM`, so a December purchase counts toward January's bill.
 
 The only thing that crosses over is **"Allot to"**, which reads Yearly's bills for the
 month. Nothing else.
