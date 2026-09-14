@@ -134,13 +134,14 @@ const YEAR = 2026;
      user typed off the PDF reconciles exactly. */
   section('5. July 500, August 750: the payment makes the statement reconcile');
   const rec = await page.evaluate(([y]) => {
-    load([
+    window.SEED5 = y => ([
       { id: 'jul', type: 'expense', date: `${y}-07-19`, amt: 500, desc: 'July card', cat: 'Credit Bill', who: 'POO', tab: 'yf' },
       { id: 'aug', type: 'expense', date: `${y}-08-19`, amt: 750, desc: 'Aug card',  cat: 'Credit Bill', who: 'POO', tab: 'yf' },
       { id: 'c1', type: 'expense', date: `${y}-08-03`, amt: 800, desc: 'Costco', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'aug', allotM: `${y}-08` },
       { id: 'c2', type: 'expense', date: `${y}-08-11`, amt: 450, desc: 'Ikea',   cat: 'Shopping',  who: 'ABI', tab: 'me', allot: 'aug', allotM: `${y}-08` },
       { id: 'pay', type: 'expense', date: `${y}-08-02`, amt: -500, desc: 'PAYMENT THANK YOU', cat: 'Bill Payment', who: 'ABI', tab: 'me', allot: 'aug', allotM: `${y}-08` },
     ]);
+    load(SEED5(y));
     return { note: noteOf('aug'), paid: paidOf('aug'),
              over: yfAttachAllot('aug'), julNote: noteOf('jul'), julPaid: paidOf('jul') };
   }, [YEAR]);
@@ -151,6 +152,41 @@ const YEAR = 2026;
   check(rec.over === 0, 'nothing is flagged as over-allotted', String(rec.over));
   check(rec.julNote === '' && rec.julPaid === '',
     "July's bill is untouched by any of it", JSON.stringify([rec.julNote, rec.julPaid]));
+
+  /* The note used to bail when the total came to zero or less, which was safe
+     while that total could only be charges -- zero meant "no rows". Payments can
+     carry it below zero, and the bail then hid the note on exactly the bills
+     least accounted for: $1,449 cleared against a $791 bill with only $1,200 of
+     charges found reported NOTHING, which reads as reconciled. */
+  section('5b. payments outweighing the charges still report');
+  const short = await page.evaluate(([y]) => {
+    const mk = (charges, paid, amt) => {
+      load([
+        { id: 'amex', type: 'expense', date: `${y}-07-19`, amt, desc: 'Amex Blue', cat: 'Credit Bill', who: 'ABI', tab: 'yf' },
+        { id: 'c', type: 'expense', date: `${y}-07-05`, amt: charges, desc: 'Charges', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'amex', allotM: `${y}-07` },
+        { id: 'p', type: 'expense', date: `${y}-07-02`, amt: -paid, desc: 'PAYMENT', cat: 'Bill Payment', who: 'ABI', tab: 'me', allot: 'amex', allotM: `${y}-07` }]);
+      return { note: noteOf('amex'), paid: paidOf('amex') };
+    };
+    const bare = (() => {
+      load([{ id: 'amex', type: 'expense', date: `${y}-07-19`, amt: 791.34, desc: 'Amex Blue', cat: 'Credit Bill', who: 'ABI', tab: 'yf' }]);
+      return noteOf('amex');
+    })();
+    const out = { under: mk(1200, 1449, 791.34), zero: mk(1449, 1449, 791.34),
+                  exact: mk(2240.34, 1449, 791.34), bare };
+    // put section 5's ledger back: the sections after this one build on it
+    load(SEED5(y));
+    return out;
+  }, [YEAR]);
+  check(/^-\$249 Itemised, \$1,040 Left$/.test(short.under.note),
+    'a bill cleared by more than was charged to it says so, signed', short.under.note);
+  check(/\$1,449 Bill Paid/.test(short.under.paid),
+    'with what was cleared still on its own line', short.under.paid);
+  check(/^\$0 Itemised, \$791 Left$/.test(short.zero.note),
+    'charges exactly cancelling the payments reads $0, not silence', short.zero.note);
+  check(/^\$791 Itemised$/.test(short.exact.note),
+    'and the reconciled case is unchanged', short.exact.note);
+  check(short.bare === '',
+    'a bill with nothing filed against it still reports nothing at all', short.bare);
 
   section('6. the payment shows in the list and nowhere else');
   const hidden = await page.evaluate(([y]) => {
@@ -246,10 +282,11 @@ const YEAR = 2026;
   check(add.allot === 'aug' && add.cat === 'Bill Payment', 'filed against the bill',
     JSON.stringify([add.allot, add.cat]));
   check(/\$300 Bill Paid/.test(add.paid), 'and the bill says so under its amount', add.paid);
-  /* Nothing has been itemised into this bill yet -- only cleared -- so there is
-     no itemisation to report. "$-300 Itemised" would be nonsense; the payment is
-     reported on its own line instead. Add a purchase and the netting shows. */
-  check(add.note === '', 'a bill with only a payment reports no itemisation', add.note);
+  /* Only a payment against it so far, so the lines filed here net to minus $300 --
+     and $750 of bill plus $300 cleared means $1,050 of charges are still missing.
+     Both numbers are the point; staying silent was the bug. */
+  check(/^-\$300 Itemised, \$1,050 Left$/.test(add.note),
+    'a bill with only a payment against it reports the shortfall, not silence', add.note);
   const net = await page.evaluate(([y]) => {
     state.yf.txns.push({ id: 'buy', type: 'expense', date: `${y}-08-04`, amt: 600,
       desc: 'Costco', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'aug', allotM: `${y}-08` });

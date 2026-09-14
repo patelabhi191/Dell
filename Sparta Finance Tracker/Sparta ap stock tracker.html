@@ -2649,7 +2649,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-14A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-14B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -4353,6 +4353,8 @@ normalizeYF();
 state.yfYear = new Date().getFullYear();
 let yfEditId=null, yfFilter='all', yfChartMode='both', yfTxMonth='all', yfWhoFilter='ALL', yfTxCat='all';
 const yf$=v=>'$'+Math.round(v).toLocaleString('en-CA');
+// the minus goes in FRONT of the sign, not after it: -$249, never $-249
+const yfSign$=v=>(v<0?'-':'')+yf$(Math.abs(v));
 const yf$2=v=>'$'+(v||0).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
 function yfPersist(){ store.set('sparta.yf.data', state.yf); if(typeof cloudSaveDebounced==='function') cloudSaveDebounced(); }
 /* THE ONE LINK BETWEEN THE TABS. A Monthly line's `allot` is the ID of the
@@ -5167,12 +5169,19 @@ const txCat=t=>t.cat?tagEsc(t.cat):'\u2014';
      $800 Itemised, $34 More       more has been itemised than the bill      */
 function yfItemNote(t){
   if(t.type!=='expense'||!t.cat||t.allot) return '';
-  const it=+yfKidsOf(t.id).reduce((s,x)=>s+x.amt,0).toFixed(2);
-  if(it<=0) return '';
+  /* Nothing filed against it means there is nothing to report -- but a bill with
+     rows against it ALWAYS reports, whatever they come to. This used to bail on
+     `it<=0`, written when the total could only be charges and a zero meant "no
+     rows". Payments can carry it to zero or below, and the bail then hid the note
+     on exactly the bills least accounted for: a $791 bill with $1,449 cleared and
+     only $1,200 of charges found said nothing at all, which reads as reconciled. */
+  const kids=yfKidsOf(t.id);
+  if(!kids.length) return '';
+  const it=+kids.reduce((s,x)=>s+x.amt,0).toFixed(2);
   const diff=+(t.amt-it).toFixed(2);
-  const body=Math.abs(diff)<=1 ? `${yf$(it)} Itemised`
-    : diff>0 ? `${yf$(it)} Itemised, ${yf$(diff)} Left`
-             : `${yf$(it)} Itemised, ${yf$(-diff)} More`;
+  const body=Math.abs(diff)<=1 ? `${yfSign$(it)} Itemised`
+    : diff>0 ? `${yfSign$(it)} Itemised, ${yf$(diff)} Left`
+             : `${yfSign$(it)} Itemised, ${yf$(-diff)} More`;
   return `<div class="yf-billnote${diff<-1?' over':''}">${body}</div>`;
 }
 /* What was PAID against this bill. A card statement lists last month's balance

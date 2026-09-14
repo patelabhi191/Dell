@@ -58,6 +58,13 @@ places — never in the EXPENSES table, which stays numbers only like every othe
 | `$766 Itemised` | within **$1** either way — statements round, so that is treated as exact |
 | `$950 Itemised, $250 Left` | less itemised than the bill |
 | `$434 Itemised, $34 More` | more itemised than the bill |
+| `-$249 Itemised, $1,040 Left` | more was **cleared** than was charged — the net goes negative and is reported signed |
+
+A bill with **any** row filed against it always reports, whatever the rows come to;
+only a bill with nothing filed is silent. The note used to bail when the total came to
+zero or less, which was safe while that total could only be charges — and became a bug
+once payments could carry it below zero, hiding the note on exactly the bills least
+accounted for.
 
 **Under the amount** — what was paid against it, when anything was:
 
@@ -449,7 +456,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — thirteen suites, **806 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — thirteen suites, **811 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.
