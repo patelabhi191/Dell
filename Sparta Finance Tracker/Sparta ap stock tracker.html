@@ -412,6 +412,12 @@ label{font-size:11px;color:var(--text-faint);font-weight:600;letter-spacing:.08e
 .formcard{padding:22px}
 .hform{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hform .full{grid-column:1/-1}
+/* A grid item defaults to min-width:auto, so its min-content can push a 1fr
+   column wider than its share. A date input's min-content is wide enough to do
+   that: at 320px the two columns computed to 248px inside a 243px box and the
+   right-hand fields spilled off-screen with nothing to scroll. */
+.hform>*,.cashform>*{min-width:0}
+.hform input,.hform select,.cashform input,.cashform select{max-width:100%}
 .note{font-size:11.5px;color:var(--text-faint);line-height:1.5;margin-top:12px}
 .note a{color:var(--teal);text-decoration:none}
 
@@ -5780,9 +5786,10 @@ function meRenderPreview(skippedPay,skippedDup,restoring){
 function meImpMonthChip(){
   const el=$('meApplyMonth'); if(!el) return;
   const allot=($('meImpAllot')?$('meImpAllot').value:'')||'';
-  el.innerHTML=allot
-    ? 'ALL ROWS \u2192 <b>'+meMonthName(meMonth)+'</b>'
-    : 'MONTH <b>'+meMonthName(meMonth)+'</b> \u00b7 rows keep their own dates';
+  /* Short on purpose: the panel is half-width now, and the long form pushed this
+     onto a second line, away from the button it belongs to. Whether rows keep
+     their own dates is already spelled out in #meMonthCheck above the preview. */
+  el.innerHTML=(allot?'ALL \u2192 <b>':'MONTH <b>')+meMonthName(meMonth).toUpperCase()+'</b>';
 }
 function meApplyImport(){
   markUserEdit();

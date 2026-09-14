@@ -166,6 +166,68 @@ const VIEWS = ['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan'];
   check(others.every(t => /^rotate\(/.test(t)), 'Monthly and Archives are left alone',
     JSON.stringify(others));
 
+  section('8. every view: controls reachable, scrollers reach their far edge');
+  /* Rooted on the view container. An earlier version of this sweep selected
+     `main *` — there is no <main> in this app, so it matched nothing and passed
+     on every tab at every width while telling us nothing. Smooth scrolling is
+     disabled first, or the footer check reads a position mid-animation. */
+  await page.addStyleTag({ content: 'html{scroll-behavior:auto!important}' });
+  const VIEW_IDS = { dash: 'dashView', contrib: 'contribView', yearly: 'yearlyView',
+                     monthly: 'monthlyView', archive: 'archiveView', plan: 'planView' };
+  for (const W of [390, 320]) {
+    await page.setViewportSize({ width: W, height: 780 });
+    await page.waitForTimeout(200);
+    for (const [v, id] of Object.entries(VIEW_IDS)) {
+      await go(v);
+      const r = await page.evaluate(vid => {
+        const root = document.getElementById(vid);
+        const inScroller = el => { let p = el.parentElement;
+          while (p && p !== document.body) { const o = getComputedStyle(p).overflowX;
+            if ((o === 'auto' || o === 'scroll') && p.clientWidth < p.scrollWidth) return true;
+            p = p.parentElement; }
+          return false; };
+        const ctrls = [], wide = [], stuck = [];
+        root.querySelectorAll('button,select,input,textarea,a[href]').forEach(el => {
+          const b = el.getBoundingClientRect();
+          if (b.width === 0 && b.height === 0) return;
+          if ((b.right > innerWidth + 1 || b.left < -1) && !inScroller(el))
+            ctrls.push((el.id || el.tagName) + '@' + Math.round(b.right));
+        });
+        // collect first, act after — interleaving the reads and writes below
+        // thrashes layout badly enough to take minutes
+        const cand = [];
+        root.querySelectorAll('*').forEach(el => {
+          if (el.scrollWidth > el.clientWidth + 1) cand.push(el); });
+        cand.forEach(el => {
+          const o = getComputedStyle(el).overflowX;
+          if (o === 'auto' || o === 'scroll') {
+            const max = el.scrollWidth - el.clientWidth;
+            el.scrollLeft = max; const got = Math.round(el.scrollLeft); el.scrollLeft = 0;
+            if (Math.abs(got - max) > 2) stuck.push((el.className || el.tagName) + ' ' + got + '/' + max);
+          } else if (!inScroller(el) && el.getBoundingClientRect().right > innerWidth + 1)
+            wide.push((el.id || el.className || el.tagName).toString().slice(0, 30));
+        });
+        window.scrollTo(0, document.documentElement.scrollHeight);
+        const f = document.querySelector('footer').getBoundingClientRect();
+        const footerSeen = f.top < innerHeight + 2 && f.bottom > -2;
+        window.scrollTo(0, 0);
+        return { ctrls: ctrls.slice(0, 3), wide: [...new Set(wide)].slice(0, 3),
+                 stuck: stuck.slice(0, 3), footerSeen,
+                 subjects: root.querySelectorAll('*').length };
+      }, id);
+      // Non-vacuity guard: an earlier sweep matched nothing and passed everywhere.
+      // Archives is still a placeholder, so it legitimately holds only a few nodes.
+      const floor = v === 'archive' ? 3 : 20;
+      check(r.subjects >= floor, `${W} ${v}: the sweep actually has something to inspect`,
+        `${r.subjects} elements`);
+      check(r.ctrls.length === 0, `${W} ${v}: every control reachable`, r.ctrls.join(' | '));
+      check(r.wide.length === 0, `${W} ${v}: nothing overflows without a scroller`, r.wide.join(' | '));
+      check(r.stuck.length === 0, `${W} ${v}: sideways scrollers reach their far edge`, r.stuck.join(' | '));
+      check(r.footerSeen, `${W} ${v}: the page scrolls down to the footer`);
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 850 });
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nMOBILE: ${pass} passed, ${fail} failed`);

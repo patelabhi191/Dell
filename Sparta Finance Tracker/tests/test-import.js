@@ -165,9 +165,19 @@ const CSV_NEG = ['Date,Description,Amount',
     if (sel.options.length > 1) { sel.value = sel.options[1].value; sel.onchange(); allotted = el.textContent; }
     return { plain, allotted, month: meMonthName(meMonth) };
   });
-  check(chip.plain.includes(chip.month), 'the chip names the month the picker is on', chip.plain);
-  check(/keep their own dates/.test(chip.plain),
-    'and says rows keep their own dates when nothing is allotted', chip.plain);
+  check(chip.plain.toLowerCase().includes(chip.month.toLowerCase()),
+    'the chip names the month the picker is on', chip.plain);
+  /* Deliberately short. The long form ("· rows keep their own dates") pushed the
+     chip onto a second line once Import and Add Expense became half-width panels,
+     away from the button it belongs to. That detail is already spelled out in
+     #meMonthCheck directly above the preview, so it is not lost. */
+  check(chip.plain.length <= 24, 'and stays short enough to sit beside the button',
+    `${chip.plain.length} chars`);
+  const beside = await page.evaluate(() => {
+    const c = document.getElementById('meApplyMonth'), b = document.getElementById('meApply');
+    return Math.abs(c.getBoundingClientRect().top - b.getBoundingClientRect().top);
+  });
+  check(beside < 20, 'which it does, on the same row as Add to expenses', `${Math.round(beside)}px lower`);
 
   section('7. the 12-month trend filter is actually clickable');
   await page.evaluate(() => { document.getElementById('mePreviewWrap').style.display = 'none'; });
