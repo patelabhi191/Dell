@@ -34,9 +34,29 @@ LISTS is not:
 - Do not "helpfully" auto-populate one from the other. That was the original behaviour
   and it leaked Yearly's Food / Rent / Credit Bill onto the Monthly picker.
 
-Because the ledger IS shared, Yearly's category table lists its own categories *plus* any
-other name this year's expenses use — otherwise Monthly's spending would sit inside
-Yearly's Totals row with no row of its own, and the category rows would stop adding up.
+### How the shared ledger is kept apart
+
+Every expense row carries **`t.tab`** — `'yf'` if it was typed on Yearly, `'me'` if it was
+typed or imported on Monthly (every allocation is `'me'`). Ownership is **stored, not
+inferred**, because a name cannot decide it: both tabs may legitimately have a "Rent".
+
+| | Yearly shows | Monthly shows |
+|---|---|---|
+| `tab:'yf'` (a bill) | yes — one row, its full amount | in the **list** only, so it can be itemised — never in the bar graph or the trend |
+| `tab:'me'` | **never**, in any form | yes — list, bars and trend |
+
+So a $1,500 credit-card bill is one $1,500 row on Yearly however finely Monthly broke it
+down. What Monthly has done is reported beside it as a note — *"$386 itemised on Monthly ·
+$1,114 not itemised"* — which is a report **about** the other tab's work, not that tab's
+money leaking in. Itemising never shrinks a bill and never makes it negative; an overage
+is named in the note.
+
+The only thing that crosses over is **"Allot to"**, which reads Yearly's bills for the
+month. Nothing else.
+
+Consequence, and it is deliberate: Yearly's total counts Yearly's rows only. Spending
+typed straight onto Monthly is not in it. Yearly is the coarse view — big things — and
+the credit-card bill is how card spending reaches it.
 
 ---
 
