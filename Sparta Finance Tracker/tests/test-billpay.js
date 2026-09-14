@@ -40,9 +40,9 @@ const YEAR = 2026;
 
   await page.evaluate(() => {
     // the note as a person reads it, stripped of markup
-    window.noteOf = id => {
+    window.spendOf = id => {
       const t = (state.yf.txns || []).find(x => x.id === id);
-      return t ? yfItemNote(t).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim() : '';
+      return t ? yfSpendNote(t).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim() : '';
     };
     window.paidOf = id => {
       const t = (state.yf.txns || []).find(x => x.id === id);
@@ -58,7 +58,7 @@ const YEAR = 2026;
 
   /* ── 1. two bills, one category, one month ───────────────────────────────
      The screenshot that started this: a $1,000 Amex and a $500 PC card, both
-     filed under Credit Bill in July, each reporting "$1,205 Itemised" against
+     filed under Credit Bill in July, each reporting the pair's combined total against
      its own amount because the pool was keyed by the name they shared. */
   section('1. two bills sharing a category keep separate books');
   const split = await page.evaluate(([y]) => {
@@ -69,11 +69,11 @@ const YEAR = 2026;
       { id: 'a2', type: 'expense', date: `${y}-07-06`, amt: 305, desc: 'Presto',  cat: 'Transit',   who: 'ABI', tab: 'me', allot: 'amex', allotM: `${y}-07` },
       { id: 'p1', type: 'expense', date: `${y}-07-08`, amt: 200, desc: 'Fido',    cat: 'TV/Phone/Internet', who: 'ABI', tab: 'me', allot: 'pc', allotM: `${y}-07` },
     ]);
-    return { amex: noteOf('amex'), pc: noteOf('pc') };
+    return { amex: spendOf('amex'), pc: spendOf('pc') };
   }, [YEAR]);
-  check(/\$1,005 Itemised, \$5 More/.test(split.amex),
+  check(/^\$1,005 Spend$/.test(split.amex),
     'the $1,000 Amex reports only what was filed against IT', split.amex);
-  check(/\$200 Itemised, \$300 Left/.test(split.pc),
+  check(/^\$200 Spend$/.test(split.pc),
     'and the $500 PC card reports only its own', split.pc);
   check(split.amex !== split.pc,
     'the two no longer read the same figure against different amounts');
@@ -123,10 +123,10 @@ const YEAR = 2026;
     state.yfYear = y; renderYF();
     window.prompt = () => 'Card Bill';
     yfRenameCat('expense', 'Credit Bill'); renderYF();
-    return { allot: state.yf.txns.find(t => t.id === 'a').allot, note: noteOf('b') };
+    return { allot: state.yf.txns.find(t => t.id === 'a').allot, note: spendOf('b') };
   }, [YEAR]);
   check(ren.allot === 'b', 'the allocation still points at the same row', String(ren.allot));
-  check(/\$200 Itemised/.test(ren.note), 'and the bill still reports it', ren.note);
+  check(/^\$200 Spend$/.test(ren.note), 'and the bill still reports it', ren.note);
 
   /* ── 5. the scenario this was built for ──────────────────────────────────
      July's bill is 500, August's is 750. August's statement lists 1,250 of
@@ -142,34 +142,39 @@ const YEAR = 2026;
       { id: 'pay', type: 'expense', date: `${y}-08-02`, amt: -500, desc: 'PAYMENT THANK YOU', cat: 'Bill Payment', who: 'ABI', tab: 'me', allot: 'aug', allotM: `${y}-08` },
     ]);
     load(SEED5(y));
-    return { note: noteOf('aug'), paid: paidOf('aug'),
-             over: yfAttachAllot('aug'), julNote: noteOf('jul'), julPaid: paidOf('jul') };
+    const aug = state.yf.txns.find(t => t.id === 'aug');
+    return { note: spendOf('aug'), paid: paidOf('aug'), amt: aug.amt,
+             spend: yfBillSpend(aug), paidN: yfBillPaid(aug),
+             over: yfAttachAllot('aug'), julNote: spendOf('jul'), julPaid: paidOf('jul') };
   }, [YEAR]);
-  check(/^\$750 Itemised$/.test(rec.note),
-    'August reads exactly itemised: 1,250 of purchases less the 500 cleared', rec.note);
+  check(/^\$1,250 Spend$/.test(rec.note),
+    'August reports the $1,250 charged to it, under the amount', rec.note);
   check(/^\$500 Bill Paid$/.test(rec.paid),
-    'and carries what was paid as its own line under the amount', rec.paid);
+    'and the $500 that cleared July, under the description', rec.paid);
+  check(rec.spend - rec.paidN === rec.amt,
+    'the two together still account for the bill: 1,250 - 500 = the 750 off the PDF',
+    JSON.stringify([rec.spend, rec.paidN, rec.amt]));
   check(rec.over === 0, 'nothing is flagged as over-allotted', String(rec.over));
   check(rec.julNote === '' && rec.julPaid === '',
     "July's bill is untouched by any of it", JSON.stringify([rec.julNote, rec.julPaid]));
 
-  /* The note used to bail when the total came to zero or less, which was safe
-     while that total could only be charges -- zero meant "no rows". Payments can
-     carry it below zero, and the bail then hid the note on exactly the bills
-     least accounted for: $1,449 cleared against a $791 bill with only $1,200 of
-     charges found reported NOTHING, which reads as reconciled. */
-  section('5b. payments outweighing the charges still report');
+  /* The reported figure used to be the two netted together, and it bailed out
+     when that net came to zero or less -- so $1,449 cleared against a $791 bill
+     with only $1,200 of charges found reported NOTHING, which reads as
+     reconciled. Splitting the two facts removes the failure by construction:
+     each note answers for its own rows and neither can cancel the other. */
+  section('5b. neither note can be cancelled out by the other');
   const short = await page.evaluate(([y]) => {
     const mk = (charges, paid, amt) => {
       load([
         { id: 'amex', type: 'expense', date: `${y}-07-19`, amt, desc: 'Amex Blue', cat: 'Credit Bill', who: 'ABI', tab: 'yf' },
         { id: 'c', type: 'expense', date: `${y}-07-05`, amt: charges, desc: 'Charges', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'amex', allotM: `${y}-07` },
         { id: 'p', type: 'expense', date: `${y}-07-02`, amt: -paid, desc: 'PAYMENT', cat: 'Bill Payment', who: 'ABI', tab: 'me', allot: 'amex', allotM: `${y}-07` }]);
-      return { note: noteOf('amex'), paid: paidOf('amex') };
+      return { note: spendOf('amex'), paid: paidOf('amex') };
     };
     const bare = (() => {
       load([{ id: 'amex', type: 'expense', date: `${y}-07-19`, amt: 791.34, desc: 'Amex Blue', cat: 'Credit Bill', who: 'ABI', tab: 'yf' }]);
-      return noteOf('amex');
+      return spendOf('amex');
     })();
     const out = { under: mk(1200, 1449, 791.34), zero: mk(1449, 1449, 791.34),
                   exact: mk(2240.34, 1449, 791.34), bare };
@@ -177,14 +182,15 @@ const YEAR = 2026;
     load(SEED5(y));
     return out;
   }, [YEAR]);
-  check(/^-\$249 Itemised, \$1,040 Left$/.test(short.under.note),
-    'a bill cleared by more than was charged to it says so, signed', short.under.note);
-  check(/\$1,449 Bill Paid/.test(short.under.paid),
-    'with what was cleared still on its own line', short.under.paid);
-  check(/^\$0 Itemised, \$791 Left$/.test(short.zero.note),
-    'charges exactly cancelling the payments reads $0, not silence', short.zero.note);
-  check(/^\$791 Itemised$/.test(short.exact.note),
-    'and the reconciled case is unchanged', short.exact.note);
+  check(/^\$1,200 Spend$/.test(short.under.note) && /^\$1,449 Bill Paid$/.test(short.under.paid),
+    'cleared by more than was charged: both figures still shown, neither netted away',
+    JSON.stringify([short.under.note, short.under.paid]));
+  check(/^\$1,449 Spend$/.test(short.zero.note) && /^\$1,449 Bill Paid$/.test(short.zero.paid),
+    'charges equal to the payments read as themselves, not as silence',
+    JSON.stringify([short.zero.note, short.zero.paid]));
+  check(/^\$2,240 Spend$/.test(short.exact.note) && /^\$1,449 Bill Paid$/.test(short.exact.paid),
+    'and the reconciling case reads the same way — no special case anywhere',
+    JSON.stringify([short.exact.note, short.exact.paid]));
   check(short.bare === '',
     'a bill with nothing filed against it still reports nothing at all', short.bare);
 
@@ -274,28 +280,27 @@ const YEAR = 2026;
     set('aug', 'Bill Payment', 300); meSaveTx();       // with a bill: stored negative
     window.toast = rt;
     const row = state.yf.txns[state.yf.txns.length - 1];
-    return { refused, amt: row.amt, cat: row.cat, allot: row.allot, note: noteOf('aug'), paid: paidOf('aug') };
+    return { refused, amt: row.amt, cat: row.cat, allot: row.allot, note: spendOf('aug'), paid: paidOf('aug') };
   }, [YEAR]);
   check(add.refused.added === 0 && /needs a bill/.test(add.refused.msg),
     'a payment with no bill is refused, and told why', add.refused.msg);
   check(add.amt === -300, 'typed in plain, stored negative', String(add.amt));
   check(add.allot === 'aug' && add.cat === 'Bill Payment', 'filed against the bill',
     JSON.stringify([add.allot, add.cat]));
-  check(/\$300 Bill Paid/.test(add.paid), 'and the bill says so under its amount', add.paid);
-  /* Only a payment against it so far, so the lines filed here net to minus $300 --
-     and $750 of bill plus $300 cleared means $1,050 of charges are still missing.
-     Both numbers are the point; staying silent was the bug. */
-  check(/^-\$300 Itemised, \$1,050 Left$/.test(add.note),
-    'a bill with only a payment against it reports the shortfall, not silence', add.note);
+  check(/^\$300 Bill Paid$/.test(add.paid), 'and the bill says so under its description', add.paid);
+  /* Only a payment against it so far: there is a Bill Paid line and no Spend
+     line, rather than one netted figure that would have to go negative. */
+  check(add.note === '',
+    'with no charges yet there is no Spend line to print', add.note);
   const net = await page.evaluate(([y]) => {
     state.yf.txns.push({ id: 'buy', type: 'expense', date: `${y}-08-04`, amt: 600,
       desc: 'Costco', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'aug', allotM: `${y}-08` });
     renderYF(); renderME();
-    return { note: noteOf('aug'), paid: paidOf('aug') };
+    return { note: spendOf('aug'), paid: paidOf('aug') };
   }, [YEAR]);
-  check(/\$300 Itemised, \$450 Left/.test(net.note),
-    'with a $600 purchase it nets to $300 against a $750 bill', net.note);
-  check(/\$300 Bill Paid/.test(net.paid), 'and the paid line is unchanged by it', net.paid);
+  check(/^\$600 Spend$/.test(net.note),
+    'and a $600 purchase gives it one, reporting the purchase itself', net.note);
+  check(/^\$300 Bill Paid$/.test(net.paid), 'with the paid line unchanged beside it', net.paid);
 
   /* A payment is stored negative but typed in plain, so the edit form has to hand
      back what was typed. Handing back "-300" made saving fail the amount>0 guard,

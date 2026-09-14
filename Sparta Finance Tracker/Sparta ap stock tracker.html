@@ -727,7 +727,6 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 @media (prefers-reduced-motion:reduce){.yf-hi-slide{transition:none}}
 /* under a bill's name in the category table: what was billed vs itemised out */
 .yf-billnote{font-size:10px;color:var(--text-faint);font-weight:500;letter-spacing:0;margin-top:2px}
-.yf-billnote.over{color:var(--yf-exp)}
 .yf-addcat{display:flex;gap:8px;margin-top:10px}
 .yf-addcat input{flex:1;padding:8px 10px;font-size:12.5px}
 .yf-addcat .btn{padding:8px 14px;font-size:12px}
@@ -2649,7 +2648,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-14B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-14C</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -4779,8 +4778,8 @@ function renderYF(){
     const tr=document.createElement('tr');
     tr.innerHTML=`<td style="text-align:left">${txDate(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.type==='income'?'tag-inc':'tag-exp'}" style="margin:0">${t.type==='income'?'IN':'EXP'}</span></td>
-      <td class="${t.type==='income'?'yf-pos':'yf-neg'}" style="font-weight:600">${yf$2(t.amt)}${yfPaidNote(t)}</td>
-      <td style="text-align:left;max-width:220px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(t.desc||'').replace(/</g,'&lt;')}</div>${yfItemNote(t)}</td>
+      <td class="${t.type==='income'?'yf-pos':'yf-neg'}" style="font-weight:600">${yf$2(t.amt)}${yfSpendNote(t)}</td>
+      <td style="text-align:left;max-width:220px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(t.desc||'').replace(/</g,'&lt;')}</div>${yfPaidNote(t)}</td>
       <td style="text-align:left">${txCat(t)}${txTags(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
       <td style="white-space:nowrap"><button class="yf-edit" data-eid="${t.id}" title="Edit">\u270e</button><button class="rm" data-did="${t.id}" title="Delete">\u2715</button></td>`;
@@ -5155,44 +5154,40 @@ const txTags=t=>(t.allot&&yfBillOf(t)?'<span class="acct-tag tag-other" style="m
     tagEsc(t.src)+'</span>':'');
 // an allocation has no category of its own; a dash reads better than a blank cell
 const txCat=t=>t.cat?tagEsc(t.cat):'\u2014';
-/* What Monthly has itemised into THIS bill -- the lines pointing at this row's
-   id, so two cards billed in the same month report separately. The sum is NET of
-   any Bill Payment, which is the whole reconciliation: a statement showing
-   $1,250 of purchases less a $500 payment of last month's balance leaves the
-   $750 the user read off the PDF and typed in here.
+/* THE TWO FACTS A BILL CARRIES. Each sits with the money it explains, and each
+   stands on its own -- they are never combined:
 
-   Differences of a dollar or less are treated as exact: statements round, and
-   "$766 Itemised, $1 Left" is noise.
+     Amount column      $2,240 Spend       everything charged to this bill
+     Description        $1,449 Bill Paid   what was cleared off it
 
-     $766 Itemised                 within a dollar either way
-     $700 Itemised, $66 Left       less has been itemised than the bill
-     $800 Itemised, $34 More       more has been itemised than the bill      */
-function yfItemNote(t){
-  if(t.type!=='expense'||!t.cat||t.allot) return '';
-  /* Nothing filed against it means there is nothing to report -- but a bill with
-     rows against it ALWAYS reports, whatever they come to. This used to bail on
-     `it<=0`, written when the total could only be charges and a zero meant "no
-     rows". Payments can carry it to zero or below, and the bail then hid the note
-     on exactly the bills least accounted for: a $791 bill with $1,449 cleared and
-     only $1,200 of charges found said nothing at all, which reads as reconciled. */
-  const kids=yfKidsOf(t.id);
-  if(!kids.length) return '';
-  const it=+kids.reduce((s,x)=>s+x.amt,0).toFixed(2);
-  const diff=+(t.amt-it).toFixed(2);
-  const body=Math.abs(diff)<=1 ? `${yfSign$(it)} Itemised`
-    : diff>0 ? `${yfSign$(it)} Itemised, ${yf$(diff)} Left`
-             : `${yfSign$(it)} Itemised, ${yf$(-diff)} More`;
-  return `<div class="yf-billnote${diff<-1?' over':''}">${body}</div>`;
+   Both are summed over the lines pointing at this row's id, so two cards billed
+   in the same month report separately.
+
+   There was a third figure here, "Itemised", which was the two netted together.
+   It is gone. Netting only reconciles if you also hold the PREVIOUS month's bill
+   in your head -- August's $750 balance is only $1,250 of charges less the $500
+   that cleared July -- and a single number that needs another statement to
+   justify it is worse than two numbers that need nothing. */
+function yfIsBill(t){ return !!(t && t.type==='expense' && t.cat && !t.allot) }
+// Charged to this bill: everything filed against it EXCEPT the payments. Refunds
+// are ordinary negative rows and belong in it, so the total can come out below
+// zero on a month that was mostly returns -- hence the signed formatting.
+function yfBillSpend(t){
+  if(!yfIsBill(t)) return 0;
+  return +yfKidsOf(t.id).reduce((s,x)=>s+(x.cat===ME_BILLPAY?0:x.amt),0).toFixed(2);
 }
-/* What was PAID against this bill. A card statement lists last month's balance
-   being cleared, and clearing a balance is not spending -- it nets this bill
-   down. Those lines are stored as negative rows under the Bill Payment category,
-   so the total is flipped back positive to read. It rides under the figure in
-   the Amount column, next to the money it explains, while "itemised" stays with
-   the description. */
+// Cleared off this bill. Payments are stored negative, so the sum is flipped
+// back positive to read.
 function yfBillPaid(t){
-  if(!t||t.type!=='expense'||!t.cat||t.allot) return 0;
+  if(!yfIsBill(t)) return 0;
   return +yfKidsOf(t.id).reduce((s,x)=>s+(x.cat===ME_BILLPAY?-x.amt:0),0).toFixed(2);
+}
+// Each note appears only when there is something to report: no rows of that kind
+// filed against the bill, no line. A bill nothing has been filed against stays
+// bare, exactly as it did before any of this existed.
+function yfSpendNote(t){
+  if(!yfIsBill(t) || !yfKidsOf(t.id).some(x=>x.cat!==ME_BILLPAY)) return '';
+  return `<div class="yf-billnote">${yfSign$(yfBillSpend(t))} Spend</div>`;
 }
 function yfPaidNote(t){
   const p=yfBillPaid(t);

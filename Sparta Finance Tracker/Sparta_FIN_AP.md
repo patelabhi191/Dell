@@ -48,29 +48,28 @@ inferred**, because a name cannot decide it: both tabs may legitimately have a "
 So a $1,500 credit-card bill is one $1,500 row on Yearly however finely Monthly broke it
 down. Itemising never shrinks a bill and never makes it negative.
 
-What Monthly has done is reported on the bill's own line in **TRANSACTIONS**, in two
-places — never in the EXPENSES table, which stays numbers only like every other row:
+What Monthly has done is reported on the bill's own line in **TRANSACTIONS** as
+**two separate facts**, each sitting beside the money it explains — never in the EXPENSES
+table, which stays numbers only like every other row:
 
-**Under the description** — what was itemised into it, net of any payment:
+| Column | Note | What it is |
+|---|---|---|
+| **Amount** | `$2,240 Spend` | everything filed against this bill **except** the payments. Refunds are ordinary negative rows and count into it, so it can come out below zero and is printed signed |
+| **Description** | `$1,449 Bill Paid` | the Bill Payment rows filed against this bill, flipped positive to read |
 
-| | |
-|---|---|
-| `$766 Itemised` | within **$1** either way — statements round, so that is treated as exact |
-| `$950 Itemised, $250 Left` | less itemised than the bill |
-| `$434 Itemised, $34 More` | more itemised than the bill |
-| `-$249 Itemised, $1,040 Left` | more was **cleared** than was charged — the net goes negative and is reported signed |
+Each appears only when it has something to report: no rows of that kind, no line. A bill
+nothing has been filed against carries neither.
 
-A bill with **any** row filed against it always reports, whatever the rows come to;
-only a bill with nothing filed is silent. The note used to bail when the total came to
-zero or less, which was safe while that total could only be charges — and became a bug
-once payments could carry it below zero, hiding the note on exactly the bills least
-accounted for.
+There used to be a third figure, **`Itemised`**, which was the two netted together. It is
+gone. Netting only reconciles if you also hold the *previous* month's bill in your head —
+August's $750 balance is $1,250 of charges less the $500 that cleared July — and a single
+number that needs another statement to justify it is worse than two numbers that need
+nothing. It also carried a bug of its own: it bailed out when the net came to zero or
+less, so the bills least accounted for were the ones that said nothing at all.
 
-**Under the amount** — what was paid against it, when anything was:
-
-| | |
-|---|---|
-| `$500 Bill Paid` | the sum of the Bill Payment rows filed against this bill |
+The arithmetic still holds, it is just not printed: `Spend − Bill Paid` is the balance on
+the PDF. The over-allotment warning on import is the one place that still uses the net,
+because "more has been filed here than this bill can explain" is exactly that comparison.
 
 A bill reports **only the lines pointing at its own `id`** (see `allot` in §2), and
 allocations are filed by `allotM`, so a December purchase counts toward January's bill.
@@ -85,13 +84,13 @@ July's bill is $500, August's is $750. August's statement lists $1,250 of purcha
 the $500 that cleared July**, because that payment appeared on the August cycle. The user
 types $750 off the PDF, and the arithmetic has to agree with that.
 
-It does, because a payment is kept as a real row rather than dropped:
+It does, and both halves of it stay on screen rather than being collapsed into one:
 
 ```
-$1,250  purchases    allotted to August's bill, each under its own Monthly category
-  -$500  payment      allotted to August's bill, category "Bill Payment"
-  ------
-   $750  itemised     = the balance on the PDF     ->  "$750 Itemised"
+$1,250  Spend        every charge allotted to August's bill, under its own Monthly category
+ -$500  Bill Paid    the July balance that cleared, category "Bill Payment"
+ ------
+  $750               = the balance on the PDF, which is what the user typed in
 ```
 
 **Bill Payment is not spending.** It is a balance being cleared, so it is left out of the

@@ -72,7 +72,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     window.yfNoteFor = cat => {
       const t = (state.yf.txns || []).find(x =>
         x.tab !== 'me' && x.type === 'expense' && x.cat === cat && !x.allot);
-      return t ? yfItemNote(t).replace(/<[^>]*>/g, '').trim() : '';
+      return t ? yfSpendNote(t).replace(/<[^>]*>/g, '').trim() : '';
     };
     /* The bill pickers are keyed by bill ID: one month can hold two bills under
        the same category, and a name cannot tell them apart. These fixtures still
@@ -570,14 +570,14 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     [...document.querySelectorAll('#yfTxBody tr')].some(r => /Loblaws/.test(r.textContent)));
   check(yfHasAlloc === false, 'and the Yearly log still hides the allotted row');
 
-  console.log('\n── 20. bill rows say what was billed and itemised ──');
+  console.log('\n── 20. bill rows say what was charged to them ──');
   const note = await page.evaluate(() => {
     const row = n => yfNoteFor(n);
     return { cb: row('Credit Bill'), food: row('Food') };
   });
-  check(/\$130 Itemised, \$1,870 Left/.test(note.cb),
-    'the bill reports what Monthly has broken down and what is still unaccounted', note.cb);
-  check(note.food === '', 'a category with nothing itemised has no note at all',
+  check(/^\$130 Spend$/.test(note.cb),
+    'the bill reports what Monthly has charged to it', note.cb);
+  check(note.food === '', 'a category with nothing charged to it has no note at all',
     JSON.stringify(note.food));
 
   console.log('\n── 21. over-allotment is named, not left as a bare negative ──');
@@ -591,7 +591,8 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     const tr = ({ children: [{ textContent: yfNoteFor('Credit Bill'), innerHTML: yfNoteFor('Credit Bill') }] });
     return tr ? tr.children[0].innerHTML : '';
   });
-  check(/\$250 Itemised, \$150 More/.test(overNote), 'names the $150 gone past the bill', overNote);
+  check(/^\$250 Spend$/.test(overNote),
+    'the $250 charged to a $100 bill is reported as it stands, not as a negative', overNote);
 
   // ───────── Yearly log excludes allotted rows; Monthly picks its own month ─────────
   console.log('\n── 22. Yearly lists bank movements, not the breakdown ──');
@@ -921,8 +922,8 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   await reset();
   const u = await billCase(under);
   check(u.cb === 1850, 'under by $50: the bill still reads its own $1,850', String(u.cb));
-  check(/\$1,800 Itemised, \$50 Left/.test(u.note),
-    'and the note carries the $50 that is still unaccounted', u.note);
+  check(/^\$1,800 Spend$/.test(u.note),
+    'and the note carries what the statement actually came to', u.note);
   check(!u.over && u.warn === 0, 'nothing is flagged — being under is not an error');
   check(u.spend === 1850 && u.sum === u.spend,
     "Yearly's total is the bill, and its categories sum to it", `${u.sum} vs ${u.spend}`);
@@ -930,8 +931,8 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   await reset();
   const o = await billCase(over);
   check(o.cb === 1850, 'over by $50: the bill STILL reads $1,850, it does not go negative', String(o.cb));
-  check(/\$1,900 Itemised, \$50 More/.test(o.note),
-    'and the $50 gone past it is named in the note', o.note);
+  check(/^\$1,900 Spend$/.test(o.note),
+    'and the note reports the $1,900 charged to it', o.note);
   check(o.warn === 50, 'and reported as a warning on import', `warn ${o.warn}`);
   check(o.spend === 1850 && o.sum === o.spend, "Yearly's total is unmoved by any of it",
     `${o.sum} vs ${o.spend}`);
@@ -940,13 +941,13 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   const m = await billCase(S, 'Groceries');   // 1840 imported + 11 typed, categorised
   check(m.cb === 1850, '$1,840 imported plus an $11 charge typed in leaves the bill at $1,850',
     String(m.cb));
-  check(/\$1,851 Itemised$/.test(m.note),
-    'and $1 past a $1,850 bill is inside the tolerance, so the note reads exact', m.note);
+  check(/^\$1,851 Spend$/.test(m.note),
+    'and the typed charge is counted with the imported ones', m.note);
 
   await reset();
   const n = await billCase(S, '');            // same $11, left uncategorised
-  check(n.cb === 1850 && /\$1,851 Itemised$/.test(n.note),
-    'an uncategorised $11 still counts as accounted for against the bill', n.note);
+  check(n.cb === 1850 && /^\$1,851 Spend$/.test(n.note),
+    'an uncategorised $11 still counts as charged to the bill', n.note);
   check(n.sum === n.spend, 'every shape keeps the invariant', `${n.sum} vs ${n.spend}`);
   // where the two DO differ is Monthly's breakdown: only a categorised row lands there
   const bars = await page.evaluate(() => [...document.querySelectorAll('#meBars .me-bar-row')]
@@ -1074,8 +1075,8 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     return { note: tr ? tr.children[0].textContent.replace(/\s+/g, ' ').trim() : '',
              warn: yfAttachAllot((yfBillsIn(`${y}-08`).find(b => b.cat === 'Spare') || {}).id) };
   }, [YEAR]);
-  check(/\$140 Itemised, \$40 More/.test(agree.note) && agree.warn === 40,
-    'the note and the overage warning use one definition of "itemised"',
+  check(/^\$140 Spend$/.test(agree.note) && agree.warn === 40,
+    'the note and the overage warning count the same rows',
     `${agree.note} | warn ${agree.warn}`);
 
   console.log('\n── 36. a Yearly bill is read-only on Monthly, and deleting it detaches ──');
@@ -1149,7 +1150,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   }, [YEAR]);
   check(ren.points === 'b', 'renaming a bill category leaves its allocations pointing at the same row',
     `points at "${ren.points}"`);
-  check(/\$200 Itemised/.test(ren.note), 'so the renamed bill keeps its itemisation note', ren.note);
+  check(/^\$200 Spend$/.test(ren.note), 'so the renamed bill keeps its note', ren.note);
 
   // B. An allocation is filed by allotM, which can sit in a different YEAR than
   //    the purchase date — a December statement line on January's bill.
@@ -1162,7 +1163,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     const tr = ({ children: [{ textContent: yfNoteFor('Credit Bill'), innerHTML: yfNoteFor('Credit Bill') }] });
     return tr ? tr.children[0].textContent.replace(/\s+/g, ' ').trim() : '';
   });
-  check(/\$300 Itemised, \$700 Left/.test(xy),
+  check(/^\$300 Spend$/.test(xy),
     'a December purchase counts toward January\'s bill, across the year boundary', xy);
 
   // C. The import dedup set included Yearly bills, so a genuine Monthly purchase
@@ -1176,42 +1177,59 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   });
   check(!dup.blocks, 'a Yearly bill is not in the import dedup set, so it cannot swallow a row');
 
-  console.log('\n── 38. the itemisation reads on the bill\'s transaction line, not in EXPENSES ──');
+  console.log('\n── 38. a bill reports two facts, each beside the money it explains ──');
+  /* $X Spend rides under the AMOUNT, $Y Bill Paid under the DESCRIPTION, and
+     neither is ever combined into one figure. There used to be a third, netted
+     one -- "$750 Itemised" -- which only reconciles if you also hold the previous
+     month's bill in your head, so it was removed. Each note appears only when it
+     has something to report, and the EXPENSES table stays numbers only. */
   await reset();
   const notes = await page.evaluate(([y]) => {
     state.yf.cats.exp = ['Credit Bill', 'Travel'];
     const bill = (id, mm, amt, desc) => ({ id, type: 'expense', date: `${y}-${mm}-19`, amt,
       desc, cat: 'Credit Bill', who: 'ABI', tab: 'yf' });
-    const alloc = (id, mm, amt) => ({ id, type: 'expense', date: `${y}-${mm}-04`, amt,
-      desc: 'purchase', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'Credit Bill', allotM: `${y}-${mm}` });
+    const alloc = (id, mm, amt, bid) => ({ id, type: 'expense', date: `${y}-${mm}-04`, amt,
+      desc: 'purchase', cat: 'Groceries', who: 'ABI', tab: 'me', allot: bid, allotM: `${y}-${mm}` });
+    const pay = (id, mm, amt, bid) => ({ id, type: 'expense', date: `${y}-${mm}-02`, amt: -amt,
+      desc: 'PAYMENT', cat: 'Bill Payment', who: 'ABI', tab: 'me', allot: bid, allotM: `${y}-${mm}` });
     state.yf.txns = [
-      bill('b1', '07', 765, 'Amex July'), alloc('x1', '07', 500), alloc('x2', '07', 266),   // $1 out
-      bill('b2', '08', 1200, 'Amex August'), alloc('y1', '08', 950),                        // $250 left
-      bill('b3', '09', 400, 'Amex September'), alloc('z1', '09', 434),                      // $34 more
-      bill('b5', '10', 300, 'Amex October'), alloc('w1', '10', 301),                        // exactly $1 out
+      bill('b1', '07', 765, 'Amex July'), alloc('x1', '07', 500, 'b1'), alloc('x2', '07', 266, 'b1'),
+      bill('b2', '08', 1200, 'Amex August'), alloc('y1', '08', 950, 'b2'), pay('y2', '08', 400, 'b2'),
+      bill('b3', '09', 400, 'Amex September'), pay('z1', '09', 120, 'b3'),
+      bill('b5', '10', 300, 'Amex October'), alloc('w1', '10', 700, 'b5'), alloc('w2', '10', -250, 'b5'),
       { id: 'b4', type: 'expense', date: `${y}-07-24`, amt: 500, desc: 'Niagara', cat: 'Travel', who: 'ABI', tab: 'yf' }];
     state.yfYear = y; renderYF();
-    const byDesc = {};
+    const by = {};
     [...document.querySelectorAll('#yfTxBody tr')].forEach(tr => {
-      byDesc[tr.children[3].querySelector('div').textContent.trim()] =
-        tr.children[3].textContent.replace(/\s+/g, ' ').trim();
+      by[tr.children[3].querySelector('div').textContent.trim()] = {
+        amt: tr.children[2].textContent.replace(/\s+/g, ' ').trim(),
+        desc: tr.children[3].textContent.replace(/\s+/g, ' ').trim() };
     });
-    return { byDesc,
+    return { by,
       expHasNote: [...document.querySelectorAll('#yfExpBody tr')]
-        .some(tr => /Itemised|itemised/.test(tr.children[0].textContent)) };
+        .some(tr => /Spend|Bill Paid|Itemised/i.test(tr.children[0].textContent)) };
   }, [YEAR]);
-  check(!notes.expHasNote, 'the EXPENSES table carries no itemisation text at all — numbers only');
-  check(/\$766 Itemised$/.test(notes.byDesc['Amex July']),
-    'within a dollar reads as exact: "$766 Itemised"', notes.byDesc['Amex July']);
-  check(/\$301 Itemised$/.test(notes.byDesc['Amex October']),
-    'and exactly a dollar out is still exact — the tolerance is inclusive',
-    notes.byDesc['Amex October']);
-  check(/\$950 Itemised, \$250 Left$/.test(notes.byDesc['Amex August']),
-    'short of the bill reads "$950 Itemised, $250 Left"', notes.byDesc['Amex August']);
-  check(/\$434 Itemised, \$34 More$/.test(notes.byDesc['Amex September']),
-    'past the bill reads "$434 Itemised, $34 More"', notes.byDesc['Amex September']);
-  check(notes.byDesc['Niagara'] === 'Niagara',
-    'an expense nothing was itemised into carries no note', notes.byDesc['Niagara']);
+  check(!notes.expHasNote, 'the EXPENSES table carries no note text at all — numbers only');
+  check(/\$766 Spend$/.test(notes.by['Amex July'].amt)
+    && notes.by['Amex July'].desc === 'Amex July',
+    'charges only: $766 Spend under the amount, nothing under the description',
+    JSON.stringify(notes.by['Amex July']));
+  check(/\$950 Spend$/.test(notes.by['Amex August'].amt)
+    && /\$400 Bill Paid$/.test(notes.by['Amex August'].desc),
+    'both: $950 Spend under the amount, $400 Bill Paid under the description',
+    JSON.stringify(notes.by['Amex August']));
+  check(notes.by['Amex September'].amt === '$400.00'
+    && /\$120 Bill Paid$/.test(notes.by['Amex September'].desc),
+    'a payment and no charges shows Bill Paid alone — no empty Spend line',
+    JSON.stringify(notes.by['Amex September']));
+  check(/\$450 Spend$/.test(notes.by['Amex October'].amt),
+    'a refund counts into Spend as the negative it is: $700 − $250',
+    notes.by['Amex October'].amt);
+  check(notes.by['Niagara'].desc === 'Niagara' && notes.by['Niagara'].amt === '$500.00',
+    'an expense with nothing filed against it carries neither note',
+    JSON.stringify(notes.by['Niagara']));
+  check(!/Itemised/i.test(JSON.stringify(notes.by)),
+    'and the word "Itemised" appears nowhere on the tab');
 
   console.log('\n── 39. a Monthly category may pair with a bill; a Yearly one never may ──');
   await reset();
