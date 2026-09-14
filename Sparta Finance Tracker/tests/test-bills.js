@@ -1029,6 +1029,58 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     'the note and the overage warning use one definition of "itemised"',
     `${agree.note} | warn ${agree.warn}`);
 
+  console.log('\n── 36. a Yearly bill is read-only on Monthly, and deleting it detaches ──');
+  /* Monthly lists Yearly's bills so they can be itemised against. It used to
+     offer edit and delete on them too: opening one in the Monthly form let it be
+     given an "Allot to", which allotted a bill to another bill and dropped it
+     out of Yearly's total entirely ($1,900 -> $400 in the audit). Deleting one
+     left every allocation pointing at a bill that no longer existed — excluded
+     from spend for carrying an allot, excluded from Yearly for being Monthly's,
+     so its money sat in no total anywhere. */
+  await reset();
+  const ro = await page.evaluate(([y]) => {
+    state.yf.cats.exp = ['Credit Bill', 'Spare'];
+    state.yf.txns = [
+      { id: 'bill', type: 'expense', date: `${y}-07-19`, amt: 1500, desc: 'Credit Card July', cat: 'Credit Bill', who: 'ABI', tab: 'yf' },
+      { id: 'sp', type: 'expense', date: `${y}-07-20`, amt: 400, desc: 'Spare bill', cat: 'Spare', who: 'ABI', tab: 'yf' },
+      { id: 'a1', type: 'expense', date: `${y}-07-06`, amt: 160, desc: 'FARM BOY', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'Credit Bill', allotM: `${y}-07` },
+      { id: 'a2', type: 'expense', date: `${y}-07-08`, amt: 40, desc: 'PRESTO', cat: 'Transit', who: 'ABI', tab: 'me', allot: 'Credit Bill', allotM: `${y}-07` }];
+    state.yfYear = y; meMonth = `${y}-07`; render(); renderYF(); renderME();
+    const row = d => [...document.querySelectorAll('#meBody tr')]
+      .find(r => r.children[1].textContent.trim() === d);
+    const bill = row('Credit Card July'), own = row('FARM BOY');
+    return {
+      billEdit: !!bill.querySelector('[data-meedit]'), billDel: !!bill.querySelector('[data-medel]'),
+      billBadge: bill.children[5].textContent.trim(),
+      ownEdit: !!own.querySelector('[data-meedit]'), ownDel: !!own.querySelector('[data-medel]') };
+  }, [YEAR]);
+  check(!ro.billEdit && !ro.billDel && ro.billBadge === 'YEARLY',
+    'the Yearly bill carries a YEARLY marker instead of edit and delete',
+    JSON.stringify(ro));
+  check(ro.ownEdit && ro.ownDel, "Monthly's own rows keep both buttons");
+
+  const gone = await page.evaluate(([y]) => {
+    window.confirm = () => true;
+    const beforeTotal = yfActual('expense', null);
+    yfDelete('bill');
+    meMonth = `${y}-07`; renderME();
+    return { beforeTotal, afterTotal: yfActual('expense', null),
+             orphans: state.yf.txns.filter(t => t.allot === 'Credit Bill').length,
+             detached: state.yf.txns.filter(t => ['a1', 'a2'].includes(t.id))
+               .map(t => `${t.id}:${t.allot || 'none'}:${t.cat}`),
+             meTotal: document.getElementById('meTotal').textContent };
+  }, [YEAR]);
+  check(gone.orphans === 0, 'deleting the bill leaves no allocation pointing at it',
+    String(gone.orphans));
+  check(gone.detached.every(d => /:none:/.test(d)),
+    'they become ordinary Monthly expenses and keep their categories',
+    JSON.stringify(gone.detached));
+  check(gone.meTotal === '$600.00',
+    'so their money counts on Monthly instead of vanishing from every total', gone.meTotal);
+  check(gone.beforeTotal - gone.afterTotal === 1500,
+    "and Yearly drops by exactly the bill, nothing more",
+    `${gone.beforeTotal} -> ${gone.afterTotal}`);
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nBILLS & ALLOCATIONS: ${pass} passed, ${fail} failed`);

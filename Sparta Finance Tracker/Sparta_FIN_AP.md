@@ -54,6 +54,11 @@ is named in the note.
 The only thing that crosses over is **"Allot to"**, which reads Yearly's bills for the
 month. Nothing else.
 
+A Yearly bill listed on Monthly is **read-only there** — a YEARLY marker replaces the edit
+and delete buttons. It is on that tab to be itemised against, not edited. Deleting a bill
+on Yearly **detaches** whatever Monthly itemised into it, turning those rows back into
+ordinary Monthly expenses; orphaning them would leave their money in no total at all.
+
 Consequence, and it is deliberate: Yearly's total counts Yearly's rows only. Spending
 typed straight onto Monthly is not in it. Yearly is the coarse view — big things — and
 the credit-card bill is how card spending reaches it.

@@ -797,6 +797,10 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
 /* which month the import lands in -- the same month the picker at the top right
    is showing, repeated down here where the decision is actually committed */
+/* a Yearly bill listed on Monthly: shown so it can be itemised against, edited
+   only on the tab that owns it */
+.me-yfonly{font-size:9px;letter-spacing:.12em;font-weight:700;color:#7C8BA3;
+  border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:3px 8px;white-space:nowrap}
 .me-impmonth{white-space:nowrap;padding:6px 12px;font-size:10.5px;
   background:rgba(94,234,212,.10);border-color:rgba(94,234,212,.30);color:#8FE3D4}
 .me-impmonth b{color:#CFF6EE;font-weight:700;letter-spacing:.04em}
@@ -4848,10 +4852,23 @@ function yfCancelEdit(){
 function yfDelete(id){
   markUserEdit();
   const t=state.yf.txns.find(x=>x.id===id); if(!t) return;
-  if(!confirm(`Delete this ${t.type} of ${yf$2(t.amt)} (${t.cat})?`)) return;
+  /* Anything Monthly itemised into this bill would otherwise be left pointing at
+     a bill that no longer exists: excluded from spend because it carries an
+     allot, and excluded from Yearly because it is Monthly's -- its money would
+     sit in no total anywhere. Say so, and detach rather than orphan, which turns
+     those rows back into ordinary Monthly expenses that count for themselves. */
+  const m=(t.date||'').slice(0,7);
+  const kids=state.yf.txns.filter(x=>x.allot===t.cat&&x.allotM===m&&x.id!==id);
+  const warn=kids.length
+    ? `\n\n${kids.length} Monthly ${kids.length===1?'entry':'entries'} (${yf$2(kids.reduce((s,x)=>s+x.amt,0))}) `+
+      `were itemised into it. They will stay on Monthly as ordinary expenses.`
+    : '';
+  if(!confirm(`Delete this ${t.type} of ${yf$2(t.amt)} (${t.cat})?${warn}`)) return;
+  kids.forEach(x=>{ delete x.allot; delete x.allotM });
   state.yf.txns=state.yf.txns.filter(x=>x.id!==id);
   if(yfEditId===id) yfCancelEdit();
-  yfPersist(); renderYF(); toast('Transaction deleted');
+  yfPersist(); renderYF(); if(typeof renderME==='function') renderME();
+  toast('Transaction deleted'+(kids.length?` \u2014 ${kids.length} itemised ${kids.length===1?'entry':'entries'} detached`:''));
 }
 function yfFillTxMonth(){
   const sel=$('yfTxMonth'); if(!sel) return;
@@ -5579,7 +5596,9 @@ function renderME(){
       <td style="font-weight:600;color:${cc}">${meMoney(t.amt)}</td>
       <td style="text-align:left;color:${cc}">${txCat(t)}${txTags(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
-      <td style="white-space:nowrap"><button class="yf-edit" data-meedit="${t.id}" title="Edit">\u270e</button><button class="rm" data-medel="${t.id}" title="Delete">\u2715</button></td>`;
+      <td style="white-space:nowrap">${t.tab==='yf'
+        ? '<span class="me-yfonly" title="Entered on Yearly Finance \u2014 edit it there">YEARLY</span>'
+        : `<button class="yf-edit" data-meedit="${t.id}" title="Edit">\u270e</button><button class="rm" data-medel="${t.id}" title="Delete">\u2715</button>`}</td>`;
     tb.appendChild(tr);
   });
   $('meTable').style.display=listRows.length?'table':'none';
@@ -5816,9 +5835,14 @@ if($('meFile')){
   }
   $('meBody').addEventListener('click',e=>{
     const ed=e.target.closest('[data-meedit]');
-    if(ed){ meStartEdit(ed.dataset.meedit); return }
+    if(ed){
+      const r=(state.yf.txns||[]).find(x=>x.id===ed.dataset.meedit);
+      if(r&&r.tab==='yf'){ toast('Entered on Yearly Finance \u2014 edit it there'); return }
+      meStartEdit(ed.dataset.meedit); return;
+    }
     const b=e.target.closest('[data-medel]'); if(!b) return;
     const t=(state.yf.txns||[]).find(x=>x.id===b.dataset.medel); if(!t) return;
+    if(t.tab==='yf'){ toast('Entered on Yearly Finance \u2014 delete it there'); return }
     if(!confirm(`Delete ${meMoney(t.amt)} \u2014 ${t.desc||t.cat}?`)) return;
     state.yf.txns=state.yf.txns.filter(x=>x.id!==t.id);
     if(meEditId===t.id) meCancelEdit();
