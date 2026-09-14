@@ -725,7 +725,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   }, [YEAR]);
   check(trip.total === '$630.00', 'the month totals $630 — the $120 of detail adds nothing', trip.total);
   check(trip.travel === 550, 'the trip stays whole at $550 on Yearly, not $430', String(trip.travel));
-  check(JSON.stringify(trip.bars) === JSON.stringify(['Groceries $80.00']),
+  check(JSON.stringify(trip.bars) === JSON.stringify(['GROCERIES $80.00']),
     "and Monthly's breakdown shows only Monthly's own spending, not the trip",
     JSON.stringify(trip.bars));
   check(Math.abs(trip.sum - trip.spend) < 0.005, 'Σ actual === spend still, with allocations in neither side',
@@ -904,7 +904,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   // where the two DO differ is Monthly's breakdown: only a categorised row lands there
   const bars = await page.evaluate(() => [...document.querySelectorAll('#meBars .me-bar-row')]
     .map(b => b.querySelector('.me-bar-name').textContent));
-  check(!bars.includes('Credit Bill'),
+  check(!bars.some(b => /credit bill/i.test(b)),
     "and the bill is never a bar on Monthly — that graph is about habits", JSON.stringify(bars));
 
   console.log('\n── 33. a negative category does not draw a full-width bar ──');
@@ -921,7 +921,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   }, [YEAR]);
   const bar = await page.evaluate(() => {
     const rows = [...document.querySelectorAll('#meBars .me-bar-row')];
-    const cb = rows.find(r => /Groceries/.test(r.querySelector('.me-bar-name').textContent));
+    const cb = rows.find(r => /Groceries/i.test(r.querySelector('.me-bar-name').textContent));
     return cb ? { w: cb.querySelector('.me-bar-fill').style.width,
                   amt: cb.querySelector('.me-bar-amt').textContent } : null;
   });
@@ -1165,6 +1165,64 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     'past the bill reads "$434 Itemised, $34 More"', notes.byDesc['Amex September']);
   check(notes.byDesc['Niagara'] === 'Niagara',
     'an expense nothing was itemised into carries no note', notes.byDesc['Niagara']);
+
+  console.log('\n── 39. a Monthly category may pair with a bill; a Yearly one never may ──');
+  await reset();
+  const pair2 = await page.evaluate(([y]) => {
+    state.yf.cats.exp = ['Credit Bill', 'Rent'];
+    state.yf.txns = [
+      { id: 'b', type: 'expense', date: `${y}-07-19`, amt: 1500, desc: 'Amex July', cat: 'Credit Bill', who: 'ABI', tab: 'yf' },
+      // a Monthly row saved under a YEARLY name — the only route by which such a
+      // name reaches the Monthly picker, since meFillCatSelect keeps the edited
+      // row's own category on the list rather than blanking it
+      { id: 'old', type: 'expense', date: `${y}-07-05`, amt: 60, desc: 'legacy row', cat: 'Rent', who: 'ABI', tab: 'me', mOnly: true }];
+    state.yfYear = y; meMonth = `${y}-07`; render(); renderYF(); renderME();
+    const set = (a, c) => { document.getElementById('meAllot').value = a;
+                            document.getElementById('meCat').value = c; };
+    // allowed: Monthly category + bill
+    document.getElementById('meAmt').value = '40';
+    document.getElementById('meDesc').value = 'Coffee on the card';
+    set('Credit Bill', 'Dining Out');
+    const n0 = state.yf.txns.length;
+    meSaveTx();
+    const saved = state.yf.txns[state.yf.txns.length - 1];
+    // refused: Yearly category + bill
+    meStartEdit('old');
+    const offered = [...document.getElementById('meCat').options].map(o => o.textContent);
+    const before = JSON.stringify(state.yf.txns.find(t => t.id === 'old'));
+    let msg = ''; const rt = window.toast; window.toast = m => { msg = m };
+    document.getElementById('meAllot').value = 'Credit Bill';
+    meSaveTx();
+    window.toast = rt;
+    return { added: state.yf.txns.length - n0 - 0, cat: saved.cat, allot: saved.allot || null,
+             hasRent: offered.includes('Rent'), msg,
+             unchanged: before === JSON.stringify(state.yf.txns.find(t => t.id === 'old')) };
+  }, [YEAR]);
+  check(pair2.cat === 'Dining Out' && pair2.allot === 'Credit Bill',
+    'a Monthly category and a bill save together — what it was, and what paid for it',
+    JSON.stringify([pair2.cat, pair2.allot]));
+  check(pair2.hasRent, "the edited row's Yearly name stays on the list so it is not blanked");
+  check(/Yearly Finance category/.test(pair2.msg),
+    'but saving a Yearly category against a bill is refused', pair2.msg);
+  check(pair2.unchanged, 'and that row is left exactly as it was');
+
+  console.log('\n── 40. the top bar graph matches the trend chart ──');
+  const cols = await page.evaluate(([y]) => {
+    state.me.chartCats = ['Groceries', 'Transit', 'Dining Out'];
+    state.yf.txns = ['Groceries', 'Transit', 'Dining Out'].map((c, i) => ({
+      id: 'c' + i, type: 'expense', date: `${y}-07-0${i + 1}`, amt: 100 - i * 10,
+      desc: c, cat: c, who: 'ABI', tab: 'me' }));
+    meMonth = `${y}-07`; renderME();
+    return [...document.querySelectorAll('#meBars .me-bar-row')].map(b => {
+      const n = b.querySelector('.me-bar-name');
+      return { text: n.textContent, colour: n.style.color, want: meColor(n.title) };
+    });
+  }, [YEAR]);
+  check(cols.every(c => c.text === c.text.toUpperCase()),
+    'every bar label is upper-cased', JSON.stringify(cols.map(c => c.text)));
+  check(cols.length > 0 && cols.every(c => c.colour && c.want.toLowerCase().startsWith('#')),
+    'and each carries its own category colour, the same meColor() the trend uses',
+    JSON.stringify(cols.map(c => c.text + ' ' + c.colour)));
 
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();

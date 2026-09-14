@@ -799,6 +799,12 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    is showing, repeated down here where the decision is actually committed */
 /* a Yearly bill listed on Monthly: shown so it can be itemised against, edited
    only on the tab that owns it */
+/* Import and Add Expense are two inputs to the same ledger, so they share a row.
+   Each half owns its own scroll, and they stack below 1000px where two columns
+   of form fields stop being usable. */
+.me-entry{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;align-items:start}
+.me-entry>.skeu-panel{min-width:0}
+@media(max-width:1000px){.me-entry{grid-template-columns:1fr}}
 .me-yfonly{font-size:9px;letter-spacing:.12em;font-weight:700;color:#7C8BA3;
   border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:3px 8px;white-space:nowrap}
 .me-impmonth{white-space:nowrap;padding:6px 12px;font-size:10.5px;
@@ -839,8 +845,11 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .skeu-drop-sub{font-size:11.5px;color:#8695AB}
 /* category bars */
 .me-bars{display:flex;flex-direction:column;gap:7px}
-.me-bar-row{display:grid;grid-template-columns:130px 1fr 92px;gap:10px;align-items:center;font-size:12.5px}
-.me-bar-name{color:#C6D2E4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.me-bar-row{display:grid;grid-template-columns:172px 1fr 92px;gap:10px;align-items:center;font-size:12.5px}
+/* colour and casing are set per row in renderME: each name takes its own
+   category colour, the same one the 12-month trend draws its line in */
+.me-bar-name{color:#C6D2E4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-weight:600;letter-spacing:.04em}
 .me-bar-track{height:14px;border-radius:999px;overflow:hidden;
   background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.10)}
 .me-bar-fill{height:100%;border-radius:999px;
@@ -1125,7 +1134,7 @@ select{color-scheme:dark}
   /* wide tables scroll rather than squash */
   #yfTxTable,#meTable,#mePreview,#ctable{min-width:520px}
   #yfExpTable,#yfIncTable{min-width:440px}
-  .me-bar-row{grid-template-columns:96px 1fr 78px;font-size:11.5px}
+  .me-bar-row{grid-template-columns:118px 1fr 78px;font-size:11px}
   .me-cards{gap:8px}
   .skeu-readout{font-size:26px}
   .modal-card{max-width:100%;padding:18px}
@@ -2469,8 +2478,9 @@ select{color-scheme:dark}
       <div class="empty" id="meBarsEmpty">No expenses recorded for this month yet.</div>
     </section>
 
-    <!-- import -->
-    <section class="skeu-panel" style="margin-top:8px">
+    <!-- import + add: two ways into the same ledger, so they sit side by side -->
+    <div class="me-entry">
+    <section class="skeu-panel">
       <h3 class="skeu-h">IMPORT STATEMENT <span class="skeu-chip">CSV</span></h3>
       <label class="skeu-drop" id="meDrop">
         <span class="skeu-drop-icon">⤓</span>
@@ -2519,7 +2529,7 @@ select{color-scheme:dark}
 
 
     <!-- add / edit -->
-    <section class="skeu-panel" style="margin-top:8px">
+    <section class="skeu-panel">
       <h3 class="skeu-h"><span id="meFormTitle">ADD EXPENSE</span>
         <span style="display:flex;gap:8px;align-items:center;font-weight:500">
           <label for="meFormMonth" style="margin:0;font-size:10.5px;white-space:nowrap">Month</label>
@@ -2554,6 +2564,7 @@ select{color-scheme:dark}
         </div>
       </div>
     </section>
+    </div>
 
     <!-- 12 month trend -->
     <section class="skeu-panel" style="margin-top:8px">
@@ -5247,6 +5258,15 @@ function meSaveTx(){
   // at least one is required: with neither there is nothing saying what this
   // money was, and the row would vanish from every breakdown
   if(!allot&&!cat){ toast('Pick a category, or a bill to allot this to'); return }
+  /* A Monthly category and a bill together is the normal case: what the charge
+     was, and what paid for it. A YEARLY category and a bill is not, ever -- the
+     bill IS a Yearly category, so the row would be filed against Yearly twice.
+     Only reachable when editing a row saved under a Yearly name, which
+     meFillCatSelect keeps on the list so the row is not silently blanked. */
+  if(allot&&cat&&!ME_CATS.includes(cat)&&(state.yf.cats.exp||[]).includes(cat)){
+    toast(`"${cat}" is a Yearly Finance category \u2014 pick a Monthly one, or clear Allot to`);
+    return;
+  }
   // no date field: the month picked on the form is the month this belongs to
   const month=meFormMonth();
   const date=month+'-15';
@@ -5580,7 +5600,7 @@ function renderME(){
   const max=cats.length?cats[0][1]:1;
   $('meBars').innerHTML=cats.map(([c,v])=>`
     <div class="me-bar-row">
-      <div class="me-bar-name" title="${c}">${c}</div>
+      <div class="me-bar-name" title="${c}" style="color:${meColor(c)}">${c.toUpperCase()}</div>
       <div class="me-bar-track"><div class="me-bar-fill" style="width:${Math.max(0,v/max*100).toFixed(1)}%"></div></div>
       <div class="me-bar-amt">${meMoney(v)}</div>
     </div>`).join('');

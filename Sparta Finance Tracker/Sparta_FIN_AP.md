@@ -63,6 +63,12 @@ A bill is matched on its own category and its own month, and allocations are fil
 The only thing that crosses over is **"Allot to"**, which reads Yearly's bills for the
 month. Nothing else.
 
+On Add Expense a Monthly category and an "Allot to" may be set **together** — what the
+charge was, and what paid for it, the same pair an import writes. What may never be set
+together is a **Yearly** category and an "Allot to": the bill already *is* a Yearly
+category, so the row would be filed against Yearly twice. Only reachable while editing a
+row saved under a Yearly name, and refused on save.
+
 A Yearly bill listed on Monthly is **read-only there** — a YEARLY marker replaces the edit
 and delete buttons. It is on that tab to be itemised against, not edited. Deleting a bill
 on Yearly **detaches** whatever Monthly itemised into it, turning those rows back into
