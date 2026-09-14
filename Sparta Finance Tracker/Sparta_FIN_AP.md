@@ -84,7 +84,7 @@ the credit-card bill is how card spending reaches it.
 
 One `<html>` file, three parts in order:
 1. `<style>` — all CSS, including per-tab theme overrides (see §5)
-2. Markup — header, tab bar, five view `<div>`s (`dashView`, `contribView`, `yearlyView`, `monthlyView`, `archiveView`), modals, PIN gate
+2. Markup — header, tab bar, six view `<div>`s (`dashView`, `contribView`, `yearlyView`, `monthlyView`, `archiveView`, `planView`), modals, PIN gate
 3. `<script>` — two script blocks:
    - **First block**: the editable `FIREBASE SETUP` config (see §4) — kept separate and clearly marked so a user can edit just this without touching logic
    - **Second block**: all application JS (state, render functions, event wiring)
@@ -262,7 +262,9 @@ Fully user-editable, shared between both tabs since they share `state.yf.cats` a
 Default expense categories (`YF_EXP`, 15): Food, Credit Bill, Health/medical, Home, Transportation, Personal, Grocery, Misc, Travel, Debt, Other, Education\Tuition, Custom category 2, Investment, Other Bank.
 Default income categories (`YF_INC`, 6): Gift/Stocks, Paycheck, Bonus, Temp, US/CA Support, Other.
 
-Monthly Expense's CSV importer has its **own** 12-category list (`ME_CATS`) used only as the categorization target — Groceries, Household supplies, Health/medical, General, TV/Phone/Internet, Dining Out, Taxi, Entertainment, Other, Rent, Maintenance, Travel — with a keyword waterfall (`ME_KEYWORDS`) and an exclusion list for card payments/transfers (`ME_EXCLUDE`) so statement payments don't get double-counted as expenses.
+Monthly Expense has its **own** fixed 13-category list (`ME_CATS`), A–Z and entirely separate from Yearly's — Dining Out, Fees/Subscription, General, Groceries, Health/medical, Household supplies, Indoor Entertainment, Other, Outdoor Entertainment, Shopping, Taxi/Rental, Transit, TV/Phone/Internet. It is the target for both the CSV categoriser and Add Expense. A keyword waterfall (`ME_KEYWORDS`) drives the categoriser, and an exclusion list (`ME_EXCLUDE`) drops card payments and transfers so settling a statement is not counted as spending.
+
+The list is **fixed**: it is a constant in the file, not user-editable, and it is never written to from Yearly nor read from it. See §0 for why.
 
 ---
 

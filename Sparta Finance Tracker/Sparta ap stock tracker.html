@@ -243,8 +243,7 @@ body.contrib-view .cbar{background:rgba(0,0,0,.4)}
 /* ---------- Top bar ---------- */
 header{display:flex;align-items:center;justify-content:space-between;gap:0px;margin-bottom:0px;flex-wrap:wrap}
 .tabbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
-.tabbar .seg{-webkit-overflow-scrolling:touch}
-.tabbar .seg{flex-wrap:nowrap}
+.tabbar .seg{-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
 .tabbar .seg button{padding:9px 22px;font-size:13.5px;white-space:nowrap}
 .yearbar{display:none;align-items:center;gap:10px}
 .yearbar.show{display:flex}
@@ -609,7 +608,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   -webkit-backdrop-filter:blur(24px) saturate(165%);
   border:1px solid rgba(255,255,255,.22);
   box-shadow:0 8px 32px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.30), inset 0 -1px 0 rgba(255,255,255,.06);
-  position:relative;overflow:hidden}
+  position:relative;overflow:hidden;border-radius:14px}
 /* soft light sweep across the top edge */
 #yearlyView .panel::after{
   content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;
@@ -621,7 +620,6 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 #yearlyView .htable thead th{
   background:rgba(255,255,255,.05);backdrop-filter:blur(6px)}
 /* tighter, continuous look for this tab only */
-#yearlyView .panel{border-radius:14px}
 #yearlyView .statrow{gap:8px}
 #yearlyView>.statrow{margin:8px 0}
 @media(max-width:900px){.yf-cards{grid-template-columns:1fr}}
@@ -659,7 +657,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   animation:sheen 4.5s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.sparkle-green{animation:none;background-position:50% 0}}
 /* compact transaction history */
-#yfTxTable td{padding:5px 8px;font-size:12px}
+#yfTxTable td{padding:5px 8px;font-size:12.5px}
 #yfTxTable th{padding:7px 8px}
 #yfTxTable .acct-tag{padding:1px 7px;font-size:9.5px}
 #yfTxTable .rm,#yfTxTable .yf-edit{padding:2px 5px;font-size:12px}
@@ -710,7 +708,6 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .yf-mtable td:first-child,.yf-mtable th:first-child{text-align:left;font-weight:600}
 .yf-neg{color:var(--yf-exp)} .yf-pos{color:var(--yf-inc)}
 .yf-plan-in{width:86px;text-align:right;padding:6px 8px;font-size:12.5px;margin-left:auto}
-#yfTxTable td{font-size:12.5px}
 #yfExpTable td,#yfIncTable td{padding:4px 7px;font-size:12px}
 #yfExpTable th,#yfIncTable th{padding:6px 7px}
 .yf-catbtn{border:none;background:transparent;color:var(--text-faint);font-size:12px;padding:2px 5px;border-radius:6px;cursor:pointer}
@@ -723,9 +720,6 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .yf-hi-slide.on{opacity:1;visibility:visible}
 .yf-hi-t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:9px}
 .yf-hi-l{font-size:15px;line-height:1.5;font-family:var(--font-display);font-weight:600}
-.yf-hi-inc{color:var(--yf-inc)}
-.yf-hi-exp{color:var(--yf-exp)}
-.yf-hi-neutral{color:var(--text-dim)}
 .yf-hi-dots{display:flex;gap:7px;margin-top:16px}
 .yf-hi-dot{width:7px;height:7px;padding:0;border-radius:50%;border:none;cursor:pointer;
   background:rgba(234,240,250,.25);transition:background .2s,transform .2s}
@@ -2257,7 +2251,7 @@ select{color-scheme:dark}
       </table>
       </div>
       <div class="empty" id="cEmpty">No deposits logged yet — add one from the TFSA or FHSA card above.</div>
-      <p class="note">Each deposit is filed under the year you pick, and repeat deposits in the same year add up. The log is editable — remove any entry with ✕, then re-add it with the correct amount or year. Annual limits default to the real CRA amount for whichever year you're viewing (TFSA varies by year; FHSA is C$8,000 since 2023). A new year is added automatically on Jan 1; until CRA announces that year's indexed TFSA limit, the previous year's figure is carried forward as a placeholder \u2014 update it when the official number lands — raise the limit field if you have carry-forward room (FHSA allows up to C$8,000 carried forward, so up to C$16,000 in a year; TFSA room accumulates since 2009). FHSA lifetime maximum is C$40,000. Withdrawals do not restore contribution room in the current year, so the log intentionally only tracks deposits. Check CRA My Account for your exact numbers.</p>
+      <p class="note">Each deposit is filed under the year you pick, and repeat deposits in the same year add up. The log is editable — remove any entry with ✕, then re-add it with the correct amount or year. Annual limits default to the real CRA amount for whichever year you're viewing (TFSA varies by year; FHSA is C$8,000 since 2023). A new year is added automatically on Jan 1; until CRA announces that year's indexed TFSA limit, the previous year's figure is carried forward as a placeholder — update it when the official number lands — raise the limit field if you have carry-forward room (FHSA allows up to C$8,000 carried forward, so up to C$16,000 in a year; TFSA room accumulates since 2009). FHSA lifetime maximum is C$40,000. Withdrawals do not restore contribution room in the current year, so the log intentionally only tracks deposits. Check CRA My Account for your exact numbers.</p>
       </div>
     </section>
     <section class="panel cash" style="margin-top:20px">
@@ -2272,7 +2266,7 @@ select{color-scheme:dark}
         <button class="btn" id="addYearBtn">+ Add year</button>
         <button class="btn primary" id="saveYears">Save</button>
       </div>
-      <p class="note">Add a year, type the TFSA/FHSA totals in CAD, then click Save — the row locks to read-only and is written into the deposit log above (marked \"yearly entry\"). Use \u2715 on a saved row to delete it and re-enter. Saved yearly entries are record-only: they count toward your limits and the FHSA lifetime total, but do not add to your available cash, since that money was contributed in the past. Years where you logged individual deposits show automatically and are managed from the log.</p>
+      <p class="note">Add a year, type the TFSA/FHSA totals in CAD, then click Save — the row locks to read-only and is written into the deposit log above (marked \"yearly entry\"). Use ✕ on a saved row to delete it and re-enter. Saved yearly entries are record-only: they count toward your limits and the FHSA lifetime total, but do not add to your available cash, since that money was contributed in the past. Years where you logged individual deposits show automatically and are managed from the log.</p>
     </section>
   </div>
 
