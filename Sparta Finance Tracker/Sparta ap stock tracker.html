@@ -4319,9 +4319,6 @@ function yfPersist(){ store.set('sparta.yf.data', state.yf); if(typeof cloudSave
    stay on Monthly. A $1,500 credit-card bill therefore reads as one $1,500 row
    here no matter how finely it was broken down over there. */
 function yfTxns(){ return state.yf.txns.filter(t=>t.date && t.date.slice(0,4)===String(state.yfYear) && t.tab!=='me'); }
-// the whole year, both tabs -- only for figures that must look across the divide,
-// such as how much of a bill has been itemised on Monthly
-function yfYearAll(){ return state.yf.txns.filter(t=>t.date && t.date.slice(0,4)===String(state.yfYear)); }
 function yfCats(type){ return type==='income'?state.yf.cats.inc:state.yf.cats.exp; }
 function yfPlanned(cat){ const p=state.yf.planned[state.yfYear]||{}; return p[cat]||0; }
 /* ---------- bills & allocations ----------
@@ -4677,7 +4674,8 @@ function renderYF(){
          figure reads the whole year across the divide -- it is a report ABOUT
          Monthly's work, not Monthly's money leaking in. The bill's own ACTUAL is
          untouched by it. */
-      const itemised=yfYearAll().reduce((s,t)=>s+(t.allot===cat?t.amt:0),0);
+      const itemised=(state.yf.txns||[]).reduce((s,t)=>
+        s+((t.allot===cat&&(t.allotM||t.date||'').slice(0,4)===String(state.yfYear))?t.amt:0),0);
       if(itemised>0){
         const left=billed-itemised;
         note=`<div class="yf-billnote${left<-0.005?' over':''}">${yf$(itemised)} itemised on Monthly`+
@@ -4786,8 +4784,16 @@ function yfRenameCat(type,oldName){
   // Monthly's Rent are two different categories, and renaming one is not the other.
   let moved=0;
   state.yf.txns.forEach(t=>{ if(t.tab!=='me'&&t.type===type&&t.cat===oldName){ t.cat=name; moved++ } });
+  /* `allot` is a REFERENCE to a Yearly category, and the one link that crosses
+     between the tabs, so a rename has to carry it. Leaving it behind pointed
+     every allocation at a bill that no longer existed: the bill lost its
+     "itemised" note and the money sat in no total at all -- the same orphaning
+     that deleting a bill used to cause. */
+  let repointed=0;
+  if(type==='expense') state.yf.txns.forEach(t=>{ if(t.allot===oldName){ t.allot=name; repointed++ } });
   yfPersist(); renderYF(); yfFillCats();
-  toast(`Renamed to "${name}"`+(moved?` \u2014 ${moved} transaction${moved>1?'s':''} updated`:''));
+  toast(`Renamed to "${name}"`+(moved?` \u2014 ${moved} transaction${moved>1?'s':''} updated`:'')
+    +(repointed?`, ${repointed} itemised entr${repointed>1?'ies':'y'} repointed`:''));
 }
 function yfDeleteCat(type,name){
   markUserEdit();
@@ -5646,7 +5652,10 @@ function meHandleCSV(text){
   }
 
   const seen=new Set((state.me.imported||[]));
-  const existing=new Set((state.yf.txns||[]).map(meFingerprint));
+  // Monthly's rows only. A Yearly bill is not a statement line, and letting one
+  // into this set meant an identical Monthly purchase was skipped as a duplicate
+  // -- the import reported "nothing new" and the row was never added.
+  const existing=new Set((state.yf.txns||[]).filter(t=>t.tab==='me').map(meFingerprint));
   mePending=[];
   // Only the LEDGER can block a row. The remembered-fingerprint list used to
   // block too, which meant a row deleted by mistake -- or lost because the cloud

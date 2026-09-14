@@ -1081,6 +1081,54 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     "and Yearly drops by exactly the bill, nothing more",
     `${gone.beforeTotal} -> ${gone.afterTotal}`);
 
+  console.log('\n── 37. the three remaining ways a bill lost track of its itemisation ──');
+  await reset();
+  // A. `allot` is a reference to a Yearly category name. Renaming the category
+  //    left every allocation pointing at a name that no longer existed.
+  const ren = await page.evaluate(([y]) => {
+    state.yf.cats.exp = ['Credit Bill'];
+    state.yf.txns = [
+      { id: 'b', type: 'expense', date: `${y}-07-19`, amt: 1500, desc: 'Bill', cat: 'Credit Bill', who: 'ABI', tab: 'yf' },
+      { id: 'a', type: 'expense', date: `${y}-07-06`, amt: 200, desc: 'FARM BOY', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'Credit Bill', allotM: `${y}-07` }];
+    state.yfYear = y; renderYF();
+    window.prompt = () => 'Card Bill';
+    yfRenameCat('expense', 'Credit Bill');
+    renderYF();
+    const tr = [...document.querySelectorAll('#yfExpBody tr')]
+      .find(r => r.children[0].textContent.trim().startsWith('Card Bill'));
+    return { points: state.yf.txns.find(t => t.id === 'a').allot,
+             note: tr ? tr.children[0].textContent.replace(/\s+/g, ' ').trim() : '' };
+  }, [YEAR]);
+  check(ren.points === 'Card Bill', 'renaming a bill category repoints its allocations',
+    `points at "${ren.points}"`);
+  check(/200 itemised/.test(ren.note), 'so the renamed bill keeps its itemisation note', ren.note);
+
+  // B. An allocation is filed by allotM, which can sit in a different YEAR than
+  //    the purchase date — a December statement line on January's bill.
+  const xy = await page.evaluate(() => {
+    state.yf.cats.exp = ['Credit Bill'];
+    state.yf.txns = [
+      { id: 'b', type: 'expense', date: '2027-01-19', amt: 1000, desc: 'Jan bill', cat: 'Credit Bill', who: 'ABI', tab: 'yf' },
+      { id: 'a', type: 'expense', date: '2026-12-28', amt: 300, desc: 'Dec purchase', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'Credit Bill', allotM: '2027-01' }];
+    state.yfYear = 2027; renderYF();
+    const tr = [...document.querySelectorAll('#yfExpBody tr')]
+      .find(r => r.children[0].textContent.trim().startsWith('Credit Bill'));
+    return tr ? tr.children[0].textContent.replace(/\s+/g, ' ').trim() : '';
+  });
+  check(/300 itemised/.test(xy) && /700 not itemised/.test(xy),
+    'a December purchase counts toward January\'s bill, across the year boundary', xy);
+
+  // C. The import dedup set included Yearly bills, so a genuine Monthly purchase
+  //    matching a bill's date, amount and merchant was skipped as "already imported".
+  const dup = await page.evaluate(() => {
+    state.yf.txns = [{ id: 'b', type: 'expense', date: '2026-07-06', amt: 160,
+      desc: 'FARM BOY #24', cat: 'Credit Bill', who: 'ABI', tab: 'yf' }];
+    state.me.imported = []; meMonth = '2026-07'; renderME();
+    const existing = new Set((state.yf.txns || []).filter(t => t.tab === 'me').map(meFingerprint));
+    return { blocks: existing.has(meFingerprint(state.yf.txns[0])) };
+  });
+  check(!dup.blocks, 'a Yearly bill is not in the import dedup set, so it cannot swallow a row');
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nBILLS & ALLOCATIONS: ${pass} passed, ${fail} failed`);
