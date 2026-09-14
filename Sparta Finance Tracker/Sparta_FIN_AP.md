@@ -143,7 +143,17 @@ sparta.pinOn  sparta.pinCode  (sparta.pinHash — legacy, cleared on read, do no
 ### Yearly Finance data shape
 ```js
 state.yf = {
-  txns: [{id, type:'income'|'expense', date:'YYYY-MM-DD', amt, desc, cat}],
+  txns: [{
+    id, type:'income'|'expense', date:'YYYY-MM-DD', amt, desc, cat, who:'ABI'|'POO',
+    tab:'yf'|'me',   // WHICH TAB OWNS THE ROW — see §0. Never guess this from the
+                     // category name; both tabs may have a "Rent".
+    allot,           // optional: the Yearly CATEGORY NAME this row is itemised into
+    allotM,          // 'YYYY-MM' — the bill month it is filed under, which may sit
+                     // in a different year than `date` (a December statement line
+                     // on January's bill)
+    mOnly,           // true for a month-only entry typed on Add Expense (no day picked)
+    src              // optional: the statement source typed at import time
+  }],
   planned: { '2026': {CategoryName: amount, ...} },   // per-year planned amounts
   start: { '2026': amount },                          // per-year opening balance (set in Settings)
   cats: { exp: [...15 default categories], inc: [...6 default categories] }   // user-editable
@@ -156,10 +166,12 @@ state.yf = {
 state.me = {
   rules: { 'merchant key': 'Category' },   // learned from user corrections, keyed by first 3 words of description
   imported: [ 'fingerprint', ... ],        // dedup fingerprints from CSV imports, capped at 5000
-  chartCats: ['Groceries','Entertainment','Health/medical','General']   // default trend-chart selection
+  chartCats: ['Groceries','Indoor Entertainment','Health/medical','General']  // default trend selection
 }
 ```
-Monthly Expense is a **view**, not a separate ledger — it reads/writes `state.yf.txns` filtered to `type:'expense'`. Category CRUD (add/rename/delete) in Yearly Finance and category selection in Monthly Expense operate on the same `state.yf.cats.exp` array.
+Monthly Expense shares the **ledger** (`state.yf.txns`) but not the **category list**.
+It has its own fixed `ME_CATS` constant; Yearly's `state.yf.cats.exp` is a separate,
+user-editable list. Neither is ever written to from the other side. See §0 and §6.
 
 ### `normalizeYF()` / `normalizeME()`
 Both are idempotent shape-repair functions. Call them defensively at the top of any new function that reads `state.yf`/`state.me` before the data is guaranteed initialized (e.g. right after a Firebase pull, or in any new Archives function that touches historical transactions).
@@ -168,13 +180,13 @@ Both are idempotent shape-repair functions. Call them defensively at the top of 
 
 ## 3. Tab Navigation
 
-Five tabs: `dash`, `contrib`, `yearly`, `monthly`, `archive`.
+Six tabs: `dash`, `contrib`, `yearly`, `monthly`, `archive`, `plan`.
 
 ```js
-const TAB_DEFAULT = ['dash','contrib','yearly','monthly','archive'];
+const TAB_DEFAULT = ['dash','contrib','yearly','monthly','archive','plan'];
 ```
 
-- **`applyView(view)`** (~line 2897) is the single router. It shows exactly one view container, toggles body theme classes (`dash-view`, `contrib-view`, `yearly-view`, `monthly-view`, `archive-view`), locks the currency/account selectors on every tab except Dashboard, forces CAD on Contributions, and calls `render()`.
+- **`applyView(view)`** (~line 2897) is the single router. It shows exactly one view container, toggles body theme classes (`dash-view`, `contrib-view`, `yearly-view`, `monthly-view`, `archive-view`, `plan-view`), locks the currency/account selectors on every tab except Dashboard, forces CAD on Contributions, and calls `render()`.
 - **Tab order is user-configurable** (Settings → drag chips or ▲▼). `tabOrder()` reads `sparta.tabOrder` from storage, falls back to `TAB_DEFAULT`, and self-heals if a tab is added/removed from the default list later. `applyTabOrder()` physically reorders the DOM buttons via `appendChild`.
 - **The app opens on whichever tab is first in the configured order** — `applyView(tabOrder()[0]||'dash')` runs at boot. It does **not** remember the last-viewed tab across reloads (that was removed deliberately per user request).
 - Each of Yearly Finance and Monthly Expense has its own year/month selector in the tab bar (`yfYearWrap`, `meMonthWrap`), shown only while that tab is active.
@@ -242,8 +254,9 @@ var fbBooting = true;   // var, not let — read across the whole app before its
 | Yearly Finance | Glassmorphism, deeper blur | `#yearlyView .panel` — 24px blur |
 | Monthly Expense | iOS-style ultra-transparent glass | `#monthlyView .skeu-panel` (class name is legacy from an earlier skeuomorphic design, now glass — 40px blur, radial highlights, refracted rim) |
 | Archives | **Minimal, flat, indigo `#8B93F8` accent** | No blur, no shadow, 1px hairlines. **This is the theme to extend when building Archives out** — do not add glassmorphism here, it was deliberately made distinct |
+| Plan | Teal glass over `#071520` | `.plan-skin`, with a `.planfield` backdrop of drifting wave bands and planning motifs |
 
-Each tab (except Archives, currently) has an animated SVG background field (`.tickerfield`, `.cashfield`, `.financefield`, `.monthlyfield`, `.archivefield`) toggled via body class, opacity-faded in/out over 0.7s. Icons drift slowly (`tkdrift` keyframe, 30–38s cycles). If Archives gets real content, consider adding a matching `.archivefield` icon set (vault, ledger, filing cabinet motifs already partially exist — check `#archiveField` in markup).
+Each tab has an animated SVG background field (`.tickerfield`, `.cashfield`, `.financefield`, `.monthlyfield`, `.archivefield`, `.planfield`) toggled via body class, opacity-faded in/out over 0.7s. Yearly, Monthly and Archives also carry a fluid wave layer (`.wv-yf`, `.wv-me`, `.wv-arc`); Yearly's is stretched `scale(1,1.27)` ahead of its rotate so it reaches ~70% down the viewport without moving sideways. **Fading a field out is not enough — each also needs `animation-play-state:paused` when hidden** (bug class 8). Icons drift slowly (`tkdrift` keyframe, 30–38s cycles). If Archives gets real content, consider adding a matching `.archivefield` icon set (vault, ledger, filing cabinet motifs already partially exist — check `#archiveField` in markup).
 
 Color tokens used across Yearly/Monthly for financial meaning (reuse these, don't invent new ones):
 - Income / Start: `--yf-inc` teal-ish, blue
@@ -252,19 +265,65 @@ Color tokens used across Yearly/Monthly for financial meaning (reuse these, don'
 
 ---
 
-## 6. Category System (Yearly Finance / Monthly Expense)
+## 6. Category System — two separate lists
 
-Fully user-editable, shared between both tabs since they share `state.yf.cats` and `state.yf.txns`:
+**They are not shared.** A name may exist on both tabs and it is still two different
+categories. See §0 for why, and guard it: anything keyed on the category *name* alone
+will do the wrong thing the moment both tabs have a "Rent".
+
+### Yearly Finance — `state.yf.cats`, user-editable
 - **Add**: validated (non-empty, ≤30 chars, case-insensitive dedup)
-- **Rename**: propagates to every transaction using the old name, across all years, and to `planned` amounts
-- **Delete**: blocked if any transaction (in any year) uses the category — must show $0 usage first
+- **Rename**: rewrites `cat` on every **Yearly** transaction using the old name, across
+  all years, and the `planned` amounts. It also **repoints `allot`** on every allocation
+  aimed at that name — `allot` is a reference to a Yearly category, and leaving it behind
+  orphaned the itemisation (bill loses its note, money lands in no total).
+  Monthly rows sharing the name are untouched.
+- **Delete**: blocked if a **Yearly** transaction uses it. A Monthly row of the same name
+  does not block it and is left alone.
+- **Deleting a bill row** (`yfDelete`) names how much Monthly itemised into it and
+  **detaches** those rows, turning them back into ordinary Monthly expenses. Orphaning
+  them would leave their money in no total anywhere.
 
 Default expense categories (`YF_EXP`, 15): Food, Credit Bill, Health/medical, Home, Transportation, Personal, Grocery, Misc, Travel, Debt, Other, Education\Tuition, Custom category 2, Investment, Other Bank.
 Default income categories (`YF_INC`, 6): Gift/Stocks, Paycheck, Bonus, Temp, US/CA Support, Other.
 
-Monthly Expense has its **own** fixed 13-category list (`ME_CATS`), A–Z and entirely separate from Yearly's — Dining Out, Fees/Subscription, General, Groceries, Health/medical, Household supplies, Indoor Entertainment, Other, Outdoor Entertainment, Shopping, Taxi/Rental, Transit, TV/Phone/Internet. It is the target for both the CSV categoriser and Add Expense. A keyword waterfall (`ME_KEYWORDS`) drives the categoriser, and an exclusion list (`ME_EXCLUDE`) drops card payments and transfers so settling a statement is not counted as spending.
+### Monthly Expense — `ME_CATS`, fixed
+
+Monthly Expense has its **own** 13-category list (`ME_CATS`), A–Z and entirely separate from Yearly's — Dining Out, Fees/Subscription, General, Groceries, Health/medical, Household supplies, Indoor Entertainment, Other, Outdoor Entertainment, Shopping, Taxi/Rental, Transit, TV/Phone/Internet. It is the target for both the CSV categoriser and Add Expense. A keyword waterfall (`ME_KEYWORDS`) drives the categoriser, and an exclusion list (`ME_EXCLUDE`) drops card payments and transfers so settling a statement is not counted as spending.
 
 The list is **fixed**: it is a constant in the file, not user-editable, and it is never written to from Yearly nor read from it. See §0 for why.
+
+### Monthly Expense specifics
+
+- **Import Statement** and **Add Expense** are two inputs to the same ledger and sit side
+  by side (`.me-entry`, 1fr 1fr), stacking below 1000px. The chip beside *Add to expenses*
+  names the month being filed into; it is kept short deliberately, or it wraps off the
+  button row in a half-width panel.
+- **Statement source** is free text, stored as `row.src`, shown as a tag beside the
+  `→ bill` tag. There is no sign override — auto-detect reads the convention off the file.
+- **"Allot to"** offers only the Yearly expenses that exist for the month being filed into,
+  labelled with their amounts. The manual form follows its own Month picker; the importer
+  follows the tab's month. It is scoped to `tab!=='me'`, so a Monthly row can never be
+  offered as something to itemise into. This is the **only** thing that crosses the tabs.
+- **Pairing on Add Expense**: a Monthly category and a bill may be set **together** (what
+  the charge was, and what paid for it — the same pair an import writes). A **Yearly**
+  category together with a bill is refused; the bill already is a Yearly category, so the
+  row would be filed against Yearly twice. At least one of the two is required.
+- **The two graphs describe habits**, so they carry `tab==='me'` rows only — a Yearly bill
+  appears in the list but on neither graph. The top bar labels are upper-cased and take the
+  same `meColor()` the trend chart draws each line in.
+- **Import dedup** (`state.me.imported`, fingerprints capped at 5000) is built from
+  Monthly's rows only; including a Yearly bill let one swallow an identical CSV row.
+
+### Migrations that run on load
+
+Each is idempotent and safe to leave in place — they repair ledgers written by older builds.
+
+| Where | What |
+|---|---|
+| `normalizeYF()` | backfills `who`, `allotM` from the row's date, drops the retired `derived` flag, and backfills `tab` by row shape |
+| `meTagImported()` | second stage of the `tab` backfill, using the import log, which only Monthly has loaded |
+| `meRecoverImportCats()` | re-derives the category of imported rows a middle build saved without one, keyed on the import log so a deliberate uncategorised note is never swept up |
 
 ---
 
@@ -283,26 +342,59 @@ Full-screen gate (`#pinGate`), shown only if `sparta.pinOn === 'true'` and `spar
 
 These have each caused real, shipped bugs in this project. When making changes, actively guard against them:
 
+0. **A name used as an identity.** `allot` stores a Yearly *category name*, and it is the
+   only reference that crosses between the tabs. Every operation that changes or removes
+   that name has to carry the references with it. Rename, delete and the year boundary
+   were three faces of this one weakness, each found separately. If a fourth appears, the
+   durable fix is to point allocations at the bill's **`id`** instead of its name.
+
 1. **Silent `str.replace()` no-ops.** A string-match edit that doesn't find its target fails silently and leaves stale code + a handler bound to a nonexistent element — which then **aborts the entire init script**, taking down unrelated features. Always `grep -c` to confirm a replacement landed before moving on.
 2. **Temporal Dead Zone crashes.** A `let`/`const` referenced before its own declaration line executes (common when one part of init calls a function defined later in the same script) throws and kills everything after it. Several critical flags (`fbBooting`, `legacyFbFound`) are declared with `var` specifically so they're hoisted and safe to reference early. Follow this pattern for new cross-cutting flags.
 3. **Partial-object crashes after a cloud pull.** `store.get(key, default)` only applies the default when the key is *entirely absent* — a partial object from a wiped/edited Firebase record bypasses the default and crashes downstream code expecting a full shape. This is why `normalizeYF()`/`normalizeME()` exist and are called defensively in multiple places, not just once at boot.
 4. **Currency conversion creeping into CAD-only tabs.** Grep for `state.fx`, `toBase(`, `rate()` in any new Contributions/Yearly/Monthly/Archives code — none of these tabs should reference them.
+5. **`min-width:auto` on a grid or flex item.** An item's min-content can push a `1fr`
+   column past its share, overflowing the container with nothing to scroll. It has bitten
+   Dashboard, Plan and (at 320px only) the Yearly transaction form, where a date input's
+   min-content pushed two columns to 248px inside a 243px box. Add `min-width:0` to grid
+   children that hold inputs.
+6. **Stacking contexts.** A parent with `position:relative;z-index:N` scopes its children's
+   z-index. Hit three times — the Plan aurora, the trend-filter popover the chart painted
+   over, and the Yearly panels. Fix with matching specificity, not a bigger number.
+7. **A test selector that matches nothing passes.** The mobile sweep selected `main *`;
+   there is no `<main>` in this file, so it silently passed on every tab at every width
+   while proving nothing. Any sweep that iterates a collection should assert the
+   collection is non-empty first — `test-mobile.js` §8 does.
+8. **`opacity:0` does not stop an animation.** The per-tab backdrop fields need an explicit
+   `animation-play-state:paused` when hidden, or every tab's animation runs at once.
 
 ---
 
-## 9. Testing Policy (current instruction — supersedes earlier turns in this project)
+## 9. Testing Policy
 
-**Do not run full test suites, Playwright visual sweeps, or mobile audits unless explicitly asked.** Earlier in this project, every change was followed by extensive automated regression testing; the user has since asked to stop this by default.
+**Unit tests, not regression sweeps** — that is the standing instruction. In practice the
+suite under `tests/` has become the only thing making a 6,400-line single file safe to
+change, so it is kept green rather than skipped.
 
-- Only write a small, targeted unit test if verifying a specific piece of new logic is genuinely useful (e.g. a pure function's output, a calculation).
-- Do not proactively run cross-tab regression, multi-viewport screenshots, or simulated year-rollover tests unless the user asks for them.
-- Still use `node --check` for basic syntax validation — that's not "testing," it's confirming the edit didn't break parsing.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — twelve suites, **741 checks**.
+  Needs `node_modules` (Playwright); link it, run, then remove the link.
+- Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
+  §0 has one, because each was re-litigated at least once.
+- `node --check` on the extracted `<script>` blocks after every edit. That is not testing,
+  it is confirming the file still parses.
+- **Verify against the app, not against the tests written beside it.** Three audits in a
+  row found bugs the suite was blind to, all in paths nobody had written a test for.
 
 ---
 
 ## 10. Known Gaps / Next Steps (as of this handoff)
 
-- **Archives tab is an empty placeholder.** This is the primary target for new work. It currently renders one `<section class="panel cash">` with a note saying "tell me what you'd like archived." No data model, no functions exist for it yet.
+- **Archives tab is an empty placeholder.** Still the primary target for new work: one
+  `<section class="panel cash">` and a note. No data model, no functions. It does have a
+  wave backdrop and motif set already.
+- **Plan tab** exists and is built out (segments, dated items, running balance, lowest
+  point) — see `tests/test-plan.js` for the behaviour it guarantees.
+- **Possible next step, if bills keep causing trouble:** point `allot` at the bill's `id`
+  rather than its category name, which removes bug class 0 by construction.
 - Plausible Archives scope, based on prior conversation: read-only view of closed positions, prior-year Yearly Finance summaries (the year selector was removed from Yearly Finance's main view when it became a static current-year badge — Archives could be where historical years live), or compacted history snapshots.
 - No live Firebase listener (§4) — acceptable per user, don't add without asking.
 - No xlsx import support (CSV only, by design — avoids bundling SheetJS in a single-file app).
