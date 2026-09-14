@@ -967,6 +967,68 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     "and that total is Yearly's own spending only — Monthly's $75 is not in it",
     String(sep.totals));
 
+  console.log('\n── 35. the same name on both tabs stays two different categories ──');
+  /* Name-based logic breaks exactly here, so each of these was a real leak found
+     by auditing rather than by a failing test: renaming Yearly's Rent rewrote
+     Monthly's Rent rows, a Monthly row blocked deleting a Yearly category of the
+     same name, yfFindBill could return a Monthly row as the bill to itemise into,
+     and the overage warning used a narrower definition of "itemised" than the
+     note printed beside it. */
+  await reset();
+  const same = await page.evaluate(([y]) => {
+    state.yf.cats.exp = ['Rent', 'Groceries', 'Spare'];
+    state.yf.txns = [
+      { id: 'yr', type: 'expense', date: `${y}-07-01`, amt: 1450, desc: 'Yearly rent', cat: 'Rent', who: 'ABI', tab: 'yf' },
+      { id: 'mr', type: 'expense', date: `${y}-07-05`, amt: 40, desc: 'Monthly rent-ish', cat: 'Rent', who: 'ABI', tab: 'me' },
+      { id: 'mg', type: 'expense', date: `${y}-07-06`, amt: 25, desc: 'Monthly groceries', cat: 'Groceries', who: 'ABI', tab: 'me' }];
+    state.yfYear = y; renderYF();
+    window.prompt = () => 'Housing';
+    yfRenameCat('expense', 'Rent');
+    const byId = id => (state.yf.txns.find(t => t.id === id) || {}).cat;
+    // Yearly has no Groceries row; only Monthly does, which must not block deletion
+    let msg = ''; const realToast = window.toast; window.toast = m => { msg = m };
+    window.confirm = () => true;
+    yfDeleteCat('expense', 'Groceries');
+    window.toast = realToast;
+    return { yearly: byId('yr'), monthly: byId('mr'), list: state.yf.cats.exp.slice(),
+             delMsg: msg, monthlyGroc: byId('mg') };
+  }, [YEAR]);
+  check(same.yearly === 'Housing' && same.monthly === 'Rent',
+    "renaming Yearly's Rent leaves Monthly's Rent alone",
+    JSON.stringify([same.yearly, same.monthly]));
+  check(!/Cannot delete/.test(same.delMsg),
+    'a Monthly row does not block deleting the Yearly category it shares a name with',
+    JSON.stringify(same.delMsg));
+  check(!same.list.includes('Groceries') && same.monthlyGroc === 'Groceries',
+    "the name leaves Yearly's list while Monthly's row keeps it", JSON.stringify(same.list));
+
+  const asBill = await page.evaluate(([y]) => {
+    state.yf.txns = [
+      { id: 'yb', type: 'expense', date: `${y}-08-10`, amt: 900, desc: 'Yearly bill', cat: 'Spare', who: 'ABI', tab: 'yf' },
+      { id: 'mb', type: 'expense', date: `${y}-08-11`, amt: 70, desc: 'Monthly buy', cat: 'Dining Out', who: 'ABI', tab: 'me' }];
+    meMonth = `${y}-08`; renderME();
+    return { opts: [...document.getElementById('meAllot').options].map(o => o.textContent),
+             found: !!yfFindBill('Dining Out', `${y}-08`) };
+  }, [YEAR]);
+  check(asBill.opts.some(o => /Spare/.test(o)) && !asBill.opts.some(o => /Dining Out/.test(o)),
+    'Allot to offers Yearly bills only', JSON.stringify(asBill.opts));
+  check(!asBill.found, 'and yfFindBill will not return a Monthly row as a bill');
+
+  const agree = await page.evaluate(([y]) => {
+    state.yf.txns = [
+      { id: 'b', type: 'expense', date: `${y}-08-10`, amt: 100, desc: 'Small bill', cat: 'Spare', who: 'ABI', tab: 'yf' },
+      { id: 'a1', type: 'expense', date: `${y}-08-12`, amt: 80, desc: 'categorised', cat: 'Dining Out', who: 'ABI', tab: 'me', allot: 'Spare', allotM: `${y}-08` },
+      { id: 'a2', type: 'expense', date: `${y}-08-13`, amt: 60, desc: 'note only', who: 'ABI', tab: 'me', allot: 'Spare', allotM: `${y}-08` }];
+    state.yfYear = y; meMonth = `${y}-08`; renderYF(); renderME();
+    const tr = [...document.querySelectorAll('#yfExpBody tr')]
+      .find(r => r.children[0].textContent.trim().startsWith('Spare'));
+    return { note: tr ? tr.children[0].textContent.replace(/\s+/g, ' ').trim() : '',
+             warn: yfAttachAllot('Spare', `${y}-08`, 'ABI') };
+  }, [YEAR]);
+  check(/140 itemised/.test(agree.note) && /40 over/.test(agree.note) && agree.warn === 40,
+    'the note and the overage warning use one definition of "itemised"',
+    `${agree.note} | warn ${agree.warn}`);
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nBILLS & ALLOCATIONS: ${pass} passed, ${fail} failed`);

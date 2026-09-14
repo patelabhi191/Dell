@@ -4777,15 +4777,18 @@ function yfRenameCat(type,oldName){
   Object.values(state.yf.planned).forEach(p=>{
     if(p && Object.prototype.hasOwnProperty.call(p,oldName)){ p[name]=p[oldName]; delete p[oldName]; }
   });
-  // update every transaction that used the old name (all years)
+  // Every YEARLY transaction that used the old name, across all years. Monthly's
+  // rows are left alone even when they share the name -- Yearly's Rent and
+  // Monthly's Rent are two different categories, and renaming one is not the other.
   let moved=0;
-  state.yf.txns.forEach(t=>{ if(t.type===type&&t.cat===oldName){ t.cat=name; moved++ } });
+  state.yf.txns.forEach(t=>{ if(t.tab!=='me'&&t.type===type&&t.cat===oldName){ t.cat=name; moved++ } });
   yfPersist(); renderYF(); yfFillCats();
   toast(`Renamed to "${name}"`+(moved?` \u2014 ${moved} transaction${moved>1?'s':''} updated`:''));
 }
 function yfDeleteCat(type,name){
   markUserEdit();
-  const used=state.yf.txns.filter(t=>t.type===type&&t.cat===name);
+  // Monthly rows sharing the name are not this category and must not block it
+  const used=state.yf.txns.filter(t=>t.tab!=='me'&&t.type===type&&t.cat===name);
   if(used.length){
     toast(`Cannot delete "${name}" \u2014 ${used.length} transaction${used.length>1?'s':''} use it. Its amount must be $0 first.`);
     return;
@@ -4856,7 +4859,7 @@ function yfFillTxMonth(){
   // only months that actually have records in the selected year
   // always list all twelve; months holding records are marked so empties are obvious
   const have=new Set((state.yf.txns||[])
-    .filter(t=>(t.date||'').slice(0,4)===yr && t.date)
+    .filter(t=>t.tab!=='me' && t.date && t.date.slice(0,4)===yr)
     .map(t=>t.date.slice(5,7)));
   sel.innerHTML='<option value="all">All months</option>'+
     YF_MONTHS.map((nm,i)=>{
@@ -5252,7 +5255,7 @@ function meSaveTx(){
 }
 // the bill an allocation lands on: same category, same bill month, not itself an allocation
 function yfFindBill(cat,month){
-  return (state.yf.txns||[]).find(t=>t.type==='expense'&&!t.allot&&t.cat===cat&&(t.date||'').slice(0,7)===month);
+  return (state.yf.txns||[]).find(t=>t.tab!=='me'&&t.type==='expense'&&!t.allot&&t.cat===cat&&(t.date||'').slice(0,7)===month);
 }
 /* One job now: report a bill that no longer covers what has been itemised into
    it. Nothing is created here — the Allot to list only offers bills Yearly
@@ -5264,9 +5267,10 @@ function yfAttachAllot(cat,month,who){
   if(!cat) return 0;
   const bill=yfFindBill(cat,month);
   if(!bill) return 0;
-  // categorised allocations only -- an uncategorised note does not draw the bill
-  // down, so it cannot push it over either
-  const used=(state.yf.txns||[]).reduce((s,t)=>s+((t.allot===cat&&t.allotM===month&&t.cat)?t.amt:0),0);
+  // Everything allotted to this bill, categorised or not -- the same definition the
+  // bill's own note uses. Two definitions of "itemised" is how the note once said
+  // "over" while the figure beside it still showed a remainder.
+  const used=(state.yf.txns||[]).reduce((s,t)=>s+((t.allot===cat&&t.allotM===month)?t.amt:0),0);
   return used>bill.amt+0.005?+(used-bill.amt).toFixed(2):0;
 }
 /* The bills you can itemise into: the real expenses Yearly Finance holds for
