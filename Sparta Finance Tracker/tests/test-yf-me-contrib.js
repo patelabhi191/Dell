@@ -121,7 +121,15 @@ const MONTH = new Date().toISOString().slice(0, 7);
     await page.click('#viewSeg button[data-view="monthly"]');
     await page.waitForTimeout(150);
     await page.evaluate(() => {
-      mePending = [{ include: true, date: `${new Date().getFullYear()}-02-10`, amt: 12.34, desc: 'Imported Row', cat: 'General', fp: 'fp-test-1', why: 'kw' }];
+      // an import must land on a Yearly expense, so give it one to land on
+      const y = new Date().getFullYear();
+      state.yf.txns = [{ id: 'bill', type: 'expense', date: `${y}-02-20`, amt: 500,
+        desc: 'Feb statement', cat: 'Credit Bill', who: 'ABI', tab: 'yf' }];
+      if (!state.yf.cats.exp.includes('Credit Bill')) state.yf.cats.exp.push('Credit Bill');
+      meMonth = `${y}-02`; renderME();
+      mePending = [{ include: true, date: `${y}-02-10`, amt: 12.34, desc: 'Imported Row', cat: 'General', fp: 'fp-test-1', why: 'kw' }];
+      meFillAllotSelect();
+      document.getElementById('meImpAllot').value = 'Credit Bill';
       meApplyImport();
     });
     const added = await page.evaluate(() => state.yf.txns.find(t => t.desc === 'Imported Row'));

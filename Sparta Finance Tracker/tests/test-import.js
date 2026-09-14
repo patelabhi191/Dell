@@ -42,6 +42,22 @@ const CSV_NEG = ['Date,Description,Amount',
     await page.waitForTimeout(500);
   };
   const preview = () => page.evaluate(() => mePending.map(p => ({ d: p.date, n: p.desc, a: p.amt })));
+  /* "Allot all to" is required before an import can be committed, so every
+     commit below needs a Yearly expense in the tab's month to land on. */
+  const seedBill = () => page.evaluate(() => {
+    const m = meMonth;
+    if (!(state.yf.txns || []).some(t => t.tab !== 'me' && (t.date || '').slice(0, 7) === m))
+      state.yf.txns.push({ id: 'bill' + m, type: 'expense', date: m + '-20', amt: 5000,
+        desc: 'Statement ' + m, cat: 'Credit Bill', who: 'ABI', tab: 'yf' });
+    if (!state.yf.cats.exp.includes('Credit Bill')) state.yf.cats.exp.push('Credit Bill');
+    renderME();
+  });
+  const commit = async () => {
+    await seedBill();
+    await page.selectOption('#meImpAllot', 'Credit Bill');
+    await page.click('#meApply');
+    await page.waitForTimeout(450);
+  };
 
   await go('monthly');
 
@@ -58,7 +74,7 @@ const CSV_NEG = ['Date,Description,Amount',
     'a negative renders as -$45.25, not $-45.25', await page.evaluate(() => meMoney(-45.25)));
 
   section('2. a refund reduces the month total rather than adding to it');
-  await page.click('#meApply'); await page.waitForTimeout(400);
+  await commit();
   const sums = await page.evaluate(() => {
     const t = state.yf.txns.filter(x => (x.date || '').startsWith('2026-07'));
     return { n: t.length, net: +t.reduce((s, x) => s + x.amt, 0).toFixed(2) };
@@ -77,7 +93,7 @@ const CSV_NEG = ['Date,Description,Amount',
     'only the missing row is offered, not the two still present', JSON.stringify(back.map(r => r.n)));
   check((await page.textContent('#meSummary')).includes('restored'),
     'and it is reported as a restore', (await page.textContent('#meSummary')));
-  await page.click('#meApply'); await page.waitForTimeout(400);
+  await commit();
   check(await page.evaluate(() => state.yf.txns.filter(t => /SHELL/.test(t.desc)).length) === 1,
     'restored exactly once');
 
@@ -139,11 +155,14 @@ const CSV_NEG = ['Date,Description,Amount',
   await feed(CSV, 'src.csv');
   await preview();
   await page.fill('#meImpSrc', 'Amex <Gold> & Co');
-  await page.click('#meApply'); await page.waitForTimeout(350);
+  await commit();
   const src = await page.evaluate(() => {
-    // the rows are dated July; the tab opens on the current month, so go there
-    meMonth = '2026-07'; renderME();
-    const rows = (state.yf.txns || []).filter(t => t.type === 'expense');
+    // Allotted rows follow their BILL's month, not their own date, so stay on the
+    // month the import was committed into rather than jumping to July.
+    renderME();
+    // Monthly's own rows only — the bill seeded for the import to land on is
+    // Yearly's and was never imported, so it carries no source.
+    const rows = (state.yf.txns || []).filter(t => t.type === 'expense' && t.tab === 'me');
     return { srcs: [...new Set(rows.map(t => t.src))],
              tag: document.getElementById('meBody').innerHTML };
   });
@@ -179,11 +198,50 @@ const CSV_NEG = ['Date,Description,Amount',
   });
   check(beside < 20, 'which it does, on the same row as Add to expenses', `${Math.round(beside)}px lower`);
 
+  section('6e. an import will not commit until a bill is chosen');
+  await page.evaluate(() => { state.yf.txns = []; state.me.imported = []; renderME(); });
+  await feed(CSV, 'gate.csv');
+  await preview();
+  const gateNone = await page.evaluate(() => ({
+    disabled: document.getElementById('meApply').disabled,
+    warn: document.getElementById('meImpGate').textContent,
+    shown: document.getElementById('meImpGate').style.display }));
+  check(gateNone.disabled, 'with no Yearly expense in the month, Add to expenses is disabled');
+  check(/no expense in Yearly Finance/.test(gateNone.warn) && gateNone.shown === 'block',
+    'and the reminder says to add one there first', gateNone.warn);
+  await seedBill();
+  const gateSet = await page.evaluate(() => ({
+    disabled: document.getElementById('meApply').disabled,
+    warn: document.getElementById('meImpGate').textContent }));
+  check(gateSet.disabled, 'a bill existing is not enough — Allot all to is still on none');
+  check(/is on .none./.test(gateSet.warn), 'and the reminder now names that instead', gateSet.warn);
+  const blocked = await page.evaluate(() => {
+    const before = state.yf.txns.length;
+    let msg = ''; const rt = window.toast; window.toast = m => { msg = m };
+    meApplyImport(); window.toast = rt;
+    return { added: state.yf.txns.length - before, msg };
+  });
+  check(blocked.added === 0 && /Allot all to/.test(blocked.msg),
+    'and calling it directly is refused too, not just disabled in the UI', blocked.msg);
+  await page.selectOption('#meImpAllot', 'Credit Bill');
+  await page.waitForTimeout(150);
+  check(await page.evaluate(() => !document.getElementById('meApply').disabled),
+    'choosing the bill releases the button');
+
   section('7. the 12-month trend filter is actually clickable');
   await page.evaluate(() => { document.getElementById('mePreviewWrap').style.display = 'none'; });
   await page.click('#meGear'); await page.waitForTimeout(250);
   const hit = await page.evaluate(() => {
     const cb = document.querySelector('#mePopList [data-mecat]');
+    /* elementFromPoint only sees the viewport, and with the two entry panels
+       stacked full width again the popover can sit below the fold — the hit test
+       then reads null rather than whatever is on top. scrollIntoView does not
+       help here because the popover is absolutely positioned, so scroll the
+       window to put it in the middle of the screen and re-measure. */
+    const abs = cb.getBoundingClientRect().top + scrollY;
+    // behavior:'instant' matters — html has scroll-behavior:smooth, so a plain
+    // scrollTo animates and the re-measure below reads the pre-scroll position
+    window.scrollTo({ top: Math.max(0, abs - innerHeight / 2), behavior: 'instant' });
     const r = cb.getBoundingClientRect();
     const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
     return { onTop: !!(top && top.closest('#mePop')), what: top ? top.tagName + (top.id ? '#' + top.id : '') : null };

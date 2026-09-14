@@ -295,10 +295,15 @@ The list is **fixed**: it is a constant in the file, not user-editable, and it i
 
 ### Monthly Expense specifics
 
-- **Import Statement** and **Add Expense** are two inputs to the same ledger and sit side
-  by side (`.me-entry`, 1fr 1fr), stacking below 1000px. The chip beside *Add to expenses*
-  names the month being filed into; it is kept short deliberately, or it wraps off the
-  button row in a half-width panel.
+- **Import Statement** and **Add Expense** are full width, one under the other. Add
+  Expense is `.me-addform`, two rows of three — *Amount / Description / Allot to*, then
+  *Add expense / Contributor / Category* — which halves the height it used to take.
+  The chip beside *Add to expenses* names the month being filed into.
+- **An import will not commit without a bill.** "Allot all to" starts on none, which used
+  to file a whole statement as loose expenses. `meImpGate()` now disables the button and
+  shows an amber reminder naming which of the two things is missing: the month has no
+  Yearly expense to itemise into, or it has one and none is chosen. `meApplyImport()`
+  refuses as well, so the gate is not UI-only.
 - **Statement source** is free text, stored as `row.src`, shown as a tag beside the
   `→ bill` tag. There is no sign override — auto-detect reads the convention off the file.
 - **"Allot to"** offers only the Yearly expenses that exist for the month being filed into,

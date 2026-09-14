@@ -466,20 +466,35 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(await page.evaluate(() => state.yf.txns.filter(t => t.allot).length) === 3,
     'all three rows imported despite the overage');
 
-  console.log('\n── 17. REGRESSION: leaving it on none behaves as before ──');
+  console.log('\n── 17. an import must land on a bill; "none" is refused ──');
+  /* Leaving "Allot all to" on none used to file a whole statement as loose
+     expenses. It is now held shut: the button is disabled and the handler
+     refuses, so a statement can only be committed against a Yearly expense. */
   await reset();
-  await importRows(`${YEAR}-08`, '', STMT);
-  const plainImp = await page.evaluate(() => state.yf.txns.map(t => ({ d: t.date, allot: t.allot || null, a: t.amt })));
-  check(plainImp.length === 3 && plainImp.every(r => r.allot === null),
-    'rows import as ordinary expenses, no allot', JSON.stringify(plainImp.map(r => r.allot)));
-  check(await page.evaluate(() => yfActual('expense', null)) === 0,
-    "they are Monthly's rows, so Yearly's total stays at zero", '0');
-  check(await page.evaluate(() => (state.yf.txns || []).every(t => t.tab === 'me')),
-    'every imported row is tagged as Monthly-owned');
-  const pJul = await rows(`${YEAR}-07`), pAug = await rows(`${YEAR}-08`);
-  check(pJul.length === 2 && pAug.length === 1,
-    'and group by their own dates — 2 in July, 1 in August',
-    JSON.stringify({ jul: pJul.length, aug: pAug.length }));
+  await page.evaluate(([y]) => {
+    state.yf.txns = [{ id: 'bill', type: 'expense', date: `${y}-08-20`, amt: 2000,
+      desc: 'Aug statement', cat: 'Credit Bill', who: 'ABI', tab: 'yf' }];
+    render();
+  }, [YEAR]);
+  const impRefused = await page.evaluate(([y, rs]) => {
+    meMonth = `${y}-08`; renderME();
+    mePending = rs.map((r, i) => ({ include: true, date: r.d, amt: r.a, desc: r.desc,
+      cat: r.c, why: 'rule', changed: false, fp: 'fp' + Math.random() + i }));
+    meFillAllotSelect();
+    document.getElementById('meImpAllot').value = '';
+    meRenderPreview(0, 0, 0);
+    const before = state.yf.txns.length;
+    let msg = ''; const rt = window.toast; window.toast = m => { msg = m };
+    meApplyImport();
+    window.toast = rt;
+    return { added: state.yf.txns.length - before, msg,
+             disabled: document.getElementById('meApply').disabled,
+             warn: document.getElementById('meImpGate').textContent };
+  }, [YEAR, STMT]);
+  check(impRefused.added === 0, 'nothing is imported with Allot all to on none', String(impRefused.added));
+  check(/Allot all to/.test(impRefused.msg), 'and it says which choice is missing', impRefused.msg);
+  check(impRefused.disabled, 'the button is disabled, so it cannot be clicked in the first place');
+  check(/is on .none./.test(impRefused.warn), 'with a reminder beside it', impRefused.warn);
 
   console.log('\n── 18. invariant over an imported ledger ──');
   const impInv = await page.evaluate(() => {

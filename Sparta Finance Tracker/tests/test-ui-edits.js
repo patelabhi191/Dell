@@ -130,8 +130,13 @@ async function open(browser, url) {
       heading: Math.round(document.getElementById('meFormTitle').getBoundingClientRect().top),
     };
   });
-  check(meRows.amt === meRows.allot, 'Monthly form row 1: Amount + Allot to', JSON.stringify(meRows));
-  check(meRows.desc === meRows.cat, 'Monthly form row 2: Description + Category');
+  /* The form was reflowed to two rows of three to halve its height:
+       row 1  Amount | Description | Allot to
+       row 2  Add expense | Contributor | Category  */
+  check(meRows.amt === meRows.desc && meRows.desc === meRows.allot,
+    'Monthly form row 1: Amount + Description + Allot to', JSON.stringify(meRows));
+  check(meRows.cat === meRows.who && meRows.cat > meRows.amt,
+    'Monthly form row 2: Contributor + Category, below row 1', JSON.stringify(meRows));
   // align-self:end shrinks the button's cell to the bottom of its row track, so
   // its top sits below the Contributor cell's; what matters is that it sits
   // inside that row's vertical band
@@ -140,8 +145,9 @@ async function open(browser, url) {
     `save-cell ${meRows.save} within ${meRows.who}..${meRows.whoBottom}`);
   check(Math.abs(meRows.month - meRows.heading) < 20, 'Month sits on the heading line',
     `month ${meRows.month} vs heading ${meRows.heading}`);
-  check(meRows.amt > meRows.heading && meRows.desc > meRows.amt && meRows.who > meRows.desc,
-    'and the three rows run in order under the heading');
+  check(meRows.amt > meRows.heading && meRows.who > meRows.amt,
+    'and the two rows run in order under the heading',
+    `heading ${meRows.heading} < row1 ${meRows.amt} < row2 ${meRows.who}`);
 
   check(errs.length === 0, 'no page errors across the whole run', errs.length ? JSON.stringify(errs.slice(0, 5)) : '');
 

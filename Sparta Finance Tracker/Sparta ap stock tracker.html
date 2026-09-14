@@ -799,12 +799,14 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    is showing, repeated down here where the decision is actually committed */
 /* a Yearly bill listed on Monthly: shown so it can be itemised against, edited
    only on the tab that owns it */
-/* Import and Add Expense are two inputs to the same ledger, so they share a row.
-   Each half owns its own scroll, and they stack below 1000px where two columns
-   of form fields stop being usable. */
-.me-entry{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;align-items:start}
-.me-entry>.skeu-panel{min-width:0}
-@media(max-width:1000px){.me-entry{grid-template-columns:1fr}}
+/* Add Expense in two rows of three: amount / description / allot, then the
+   button / contributor / category. Halves the height the form used to take. */
+.me-addform{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:760px){.me-addform{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.me-addform{grid-template-columns:1fr}}
+/* the reminder that holds the import shut until a bill is chosen */
+.me-impgate{margin:10px 0 0;color:var(--amber);font-weight:600}
+.skeu-btn.is-off{opacity:.45;cursor:not-allowed}
 .me-yfonly{font-size:9px;letter-spacing:.12em;font-weight:700;color:#7C8BA3;
   border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:3px 8px;white-space:nowrap}
 .me-impmonth{white-space:nowrap;padding:6px 12px;font-size:10.5px;
@@ -2478,9 +2480,8 @@ select{color-scheme:dark}
       <div class="empty" id="meBarsEmpty">No expenses recorded for this month yet.</div>
     </section>
 
-    <!-- import + add: two ways into the same ledger, so they sit side by side -->
-    <div class="me-entry">
-    <section class="skeu-panel">
+    <!-- import -->
+    <section class="skeu-panel" style="margin-top:8px">
       <h3 class="skeu-h">IMPORT STATEMENT <span class="skeu-chip">CSV</span></h3>
       <label class="skeu-drop" id="meDrop">
         <span class="skeu-drop-icon">⤓</span>
@@ -2518,53 +2519,52 @@ select{color-scheme:dark}
             <tbody id="mePreviewBody"></tbody>
           </table>
         </div>
+        <div class="note me-impgate" id="meImpGate" style="display:none"></div>
         <div class="duo" style="margin-top:12px;align-items:center;flex-wrap:wrap">
           <button class="skeu-btn primary" id="meApply">Add to expenses</button>
           <button class="skeu-btn" id="meCancel">Cancel</button>
           <span class="skeu-chip me-impmonth" id="meApplyMonth"></span>
         </div>
       </div>
-      <p class="note" id="meNote">Upload a statement and the categoriser runs a waterfall: your saved rules first, then the file's own category column, then built-in merchant keywords, then Other. Card payments and transfers between your own accounts are excluded, since those settle the bill rather than spend. Refunds and credits come in as negative amounts, so they offset the category they came from. A row is skipped only if it is already in the ledger — re-importing a statement therefore restores anything that went missing. Confirming a category here teaches a rule, so the same merchant is never asked about twice.</p>
     </section>
 
 
     <!-- add / edit -->
-    <section class="skeu-panel">
+    <section class="skeu-panel" style="margin-top:8px">
       <h3 class="skeu-h"><span id="meFormTitle">ADD EXPENSE</span>
         <span style="display:flex;gap:8px;align-items:center;font-weight:500">
           <label for="meFormMonth" style="margin:0;font-size:10.5px;white-space:nowrap">Month</label>
           <select id="meFormMonth" style="width:auto;min-width:130px;padding:7px 30px 7px 11px;font-size:13px"></select>
         </span>
       </h3>
-      <div class="hform">
+      <div class="hform me-addform">
         <div>
           <label for="meAmt">Amount ($)</label>
           <input id="meAmt" type="number" step="0.01" placeholder="42.50">
-        </div>
-        <div>
-          <label for="meAllot">Allot to</label>
-          <select id="meAllot"></select>
         </div>
         <div>
           <label for="meDesc">Description</label>
           <input id="meDesc" placeholder="Loblaws">
         </div>
         <div>
-          <label for="meCat">Category</label>
-          <select id="meCat"></select>
+          <label for="meAllot">Allot to</label>
+          <select id="meAllot"></select>
         </div>
         <div class="duo" style="align-self:end;align-items:center;flex-wrap:wrap">
           <button class="skeu-btn primary" id="meSave">Add expense</button>
           <button class="skeu-btn" id="meCancelEdit" style="display:none">Cancel edit</button>
-          <div class="note" id="meAllotNote" style="margin:0"></div>
         </div>
         <div>
           <label for="meWho">Contributor</label>
           <select id="meWho"><option>ABI</option><option>POO</option></select>
         </div>
+        <div>
+          <label for="meCat">Category</label>
+          <select id="meCat"></select>
+        </div>
+        <div class="full"><div class="note" id="meAllotNote" style="margin:0"></div></div>
       </div>
     </section>
-    </div>
 
     <!-- 12 month trend -->
     <section class="skeu-panel" style="margin-top:8px">
@@ -5397,7 +5397,7 @@ function meImpAllotNote(){
     : none
     ? ('No expenses entered in Yearly Finance for '+meMonthName(meMonth)+
        ' yet \u2014 add one there first to itemise into it.')
-    : 'Leave as none to import rows as ordinary expenses on their own dates.';
+    : 'Pick the Yearly expense these rows came off \u2014 an import has to land on one.';
 }
 function meAllotNote(){
   const el=$('meAllotNote'); if(!el) return;
@@ -5780,16 +5780,39 @@ function meRenderPreview(skippedPay,skippedDup,restoring){
 function meImpMonthChip(){
   const el=$('meApplyMonth'); if(!el) return;
   const allot=($('meImpAllot')?$('meImpAllot').value:'')||'';
-  /* Short on purpose: the panel is half-width now, and the long form pushed this
-     onto a second line, away from the button it belongs to. Whether rows keep
-     their own dates is already spelled out in #meMonthCheck above the preview. */
+  // Short on purpose. Whether rows keep their own dates is already spelled out in
+  // #meMonthCheck above the preview.
   el.innerHTML=(allot?'ALL \u2192 <b>':'MONTH <b>')+meMonthName(meMonth).toUpperCase()+'</b>';
+  meImpGate();
+}
+/* An import must land on a bill. "Allot all to" starts on none, which quietly
+   filed a whole statement as loose expenses -- so the commit button is held shut
+   until one is picked, and says which of the two things is missing: no Yearly
+   expense exists for this month to itemise into, or one exists and has not been
+   chosen. Both are fixed on the Yearly tab or in that dropdown, not here. */
+function meImpGate(){
+  const btn=$('meApply'), sel=$('meImpAllot'), warn=$('meImpGate');
+  if(!btn||!sel) return;
+  const none=sel.options.length<2;                       // month has no Yearly expense
+  const ok=!!sel.value;
+  btn.disabled=!ok;
+  btn.classList.toggle('is-off',!ok);
+  if(warn){
+    warn.style.display=ok?'none':'block';
+    warn.textContent=none
+      ? 'Nothing to allot to \u2014 '+meMonthName(meMonth)+' has no expense in Yearly Finance yet. '+
+        'Add one there first, then import.'
+      : 'Set \u201cAllot all to\u201d before adding \u2014 it is on \u201cnone\u201d.';
+  }
 }
 function meApplyImport(){
   markUserEdit();
   normalizeYF(); normalizeME();
   const chosen=mePending.filter(p=>p.include);
   if(!chosen.length){ toast('Nothing selected'); return }
+  if(!($('meImpAllot')&&$('meImpAllot').value)){
+    toast('Set \u201cAllot all to\u201d first \u2014 it is on \u201cnone\u201d'); return;
+  }
   let learned=0;
   const impAllot=($('meImpAllot')?$('meImpAllot').value:'')||'';
   const impSrc=($('meImpSrc')?$('meImpSrc').value:'').trim().slice(0,40);
