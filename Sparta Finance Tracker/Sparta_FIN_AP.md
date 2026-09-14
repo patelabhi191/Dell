@@ -48,8 +48,10 @@ inferred**, because a name cannot decide it: both tabs may legitimately have a "
 So a $1,500 credit-card bill is one $1,500 row on Yearly however finely Monthly broke it
 down. Itemising never shrinks a bill and never makes it negative.
 
-What Monthly has done is reported on the bill's own line in **TRANSACTIONS**, under the
-description — never in the EXPENSES table, which stays numbers only like every other row:
+What Monthly has done is reported on the bill's own line in **TRANSACTIONS**, in two
+places — never in the EXPENSES table, which stays numbers only like every other row:
+
+**Under the description** — what was itemised into it, net of any payment:
 
 | | |
 |---|---|
@@ -57,11 +59,57 @@ description — never in the EXPENSES table, which stays numbers only like every
 | `$950 Itemised, $250 Left` | less itemised than the bill |
 | `$434 Itemised, $34 More` | more itemised than the bill |
 
-A bill is matched on its own category and its own month, and allocations are filed by
-`allotM`, so a December purchase counts toward January's bill.
+**Under the amount** — what was paid against it, when anything was:
+
+| | |
+|---|---|
+| `$500 Bill Paid` | the sum of the Bill Payment rows filed against this bill |
+
+A bill reports **only the lines pointing at its own `id`** (see `allot` in §2), and
+allocations are filed by `allotM`, so a December purchase counts toward January's bill.
 
 The only thing that crosses over is **"Allot to"**, which reads Yearly's bills for the
-month. Nothing else.
+month — **one option per bill row**, labelled by its description (`Credit Amex — $1,000`),
+not one merged option per category. Nothing else crosses.
+
+### Bill Payment — how a card statement reconciles
+
+July's bill is $500, August's is $750. August's statement lists $1,250 of purchases **and
+the $500 that cleared July**, because that payment appeared on the August cycle. The user
+types $750 off the PDF, and the arithmetic has to agree with that.
+
+It does, because a payment is kept as a real row rather than dropped:
+
+```
+$1,250  purchases    allotted to August's bill, each under its own Monthly category
+  -$500  payment      allotted to August's bill, category "Bill Payment"
+  ------
+   $750  itemised     = the balance on the PDF     ->  "$750 Itemised"
+```
+
+**Bill Payment is not spending.** It is a balance being cleared, so it is left out of the
+top bar graph, the 12-month trend, Category by month, the table's category filter and the
+month total. The one place it appears is **This Month's list**, where every payment against
+one bill draws as a **single line pinned directly under that bill**: "Previous Month Bill
+×2", dated the earliest of them, summed, attributed to whoever the *bill* belongs to. The
+rows behind it are untouched — re-importing the same statement still recognises each one —
+and the `⌄` toggle opens them for editing.
+
+Rules that hold everywhere:
+
+* the amount is **forced negative**, however the statement states it (some cards file a
+  payment as a credit, some as a positive line);
+* a payment must name a bill — refused on Add Expense without one, because a negative row
+  in no total at all is worse than no row;
+* `Bill Payment` sits **last** on every category picker, after the A–Z spending ones;
+* only **card**-payment wordings route here (`payment thank you`, `autopay`, `pre-auth
+  payment`, `online payment`, `payment received`, `cc payment`, `bill payment`). **Bank
+  transfers** (`transfer to`, `transfer from`, `e-transfer`) are still dropped on import —
+  importing one double-counts money already on the statement as the charge it paid for.
+
+Caveat worth knowing: the merged line always reads "Previous Month Bill", which is the
+common case but not always literally true (a mid-cycle payment, or one clearing an older
+balance). Expanding the line shows each row's real description.
 
 On Add Expense a Monthly category and an "Allot to" may be set **together** — what the
 charge was, and what paid for it, the same pair an import writes. What may never be set
@@ -147,7 +195,13 @@ state.yf = {
     id, type:'income'|'expense', date:'YYYY-MM-DD', amt, desc, cat, who:'ABI'|'POO',
     tab:'yf'|'me',   // WHICH TAB OWNS THE ROW — see §0. Never guess this from the
                      // category name; both tabs may have a "Rent".
-    allot,           // optional: the Yearly CATEGORY NAME this row is itemised into
+    allot,           // optional: the ID of the Yearly expense row this line is
+                     // itemised into. NOT its category name -- a month can hold two
+                     // bills under one name (a $1,000 Amex and a $500 PC card, both
+                     // "Credit Bill"), and a name made them one shared pool, so each
+                     // reported the pair's combined figure against its own amount.
+                     // Resolve it with yfBillOf(t) / yfBillById(id); yfKidsOf(id) is
+                     // every line filed against one bill.
     allotM,          // 'YYYY-MM' — the bill month it is filed under, which may sit
                      // in a different year than `date` (a December statement line
                      // on January's bill)
@@ -274,10 +328,10 @@ will do the wrong thing the moment both tabs have a "Rent".
 ### Yearly Finance — `state.yf.cats`, user-editable
 - **Add**: validated (non-empty, ≤30 chars, case-insensitive dedup)
 - **Rename**: rewrites `cat` on every **Yearly** transaction using the old name, across
-  all years, and the `planned` amounts. It also **repoints `allot`** on every allocation
-  aimed at that name — `allot` is a reference to a Yearly category, and leaving it behind
-  orphaned the itemisation (bill loses its note, money lands in no total).
-  Monthly rows sharing the name are untouched.
+  all years, and the `planned` amounts. It has **nothing to repoint** — `allot` holds the
+  bill row's `id`, so renaming the category it sits under cannot break the link. (When
+  `allot` held the *name*, a rename orphaned every allocation: the bill lost its note and
+  the money landed in no total.) Monthly rows sharing the name are untouched.
 - **Delete**: blocked if a **Yearly** transaction uses it. A Monthly row of the same name
   does not block it and is left alone.
 - **Deleting a bill row** (`yfDelete`) names how much Monthly itemised into it and
@@ -289,7 +343,15 @@ Default income categories (`YF_INC`, 6): Gift/Stocks, Paycheck, Bonus, Temp, US/
 
 ### Monthly Expense — `ME_CATS`, fixed
 
-Monthly Expense has its **own** 13-category list (`ME_CATS`), A–Z and entirely separate from Yearly's — Dining Out, Fees/Subscription, General, Groceries, Health/medical, Household supplies, Indoor Entertainment, Other, Outdoor Entertainment, Shopping, Taxi/Rental, Transit, TV/Phone/Internet. It is the target for both the CSV categoriser and Add Expense. A keyword waterfall (`ME_KEYWORDS`) drives the categoriser, and an exclusion list (`ME_EXCLUDE`) drops card payments and transfers so settling a statement is not counted as spending.
+Monthly Expense has its **own** 13-category list (`ME_CATS`), A–Z and entirely separate from Yearly's — Dining Out, Fees/Subscription, General, Groceries, Health/medical, Household supplies, Indoor Entertainment, Other, Outdoor Entertainment, Shopping, Taxi/Rental, Transit, TV/Phone/Internet. It is the target for both the CSV categoriser and Add Expense. A keyword waterfall (`ME_KEYWORDS`) drives the categoriser.
+
+A **fourteenth** category, `Bill Payment` (`ME_BILLPAY`), is offered on the pickers after
+those thirteen but is deliberately **not** in `ME_CATS`: it is not spending. `ME_NONSPEND`
+lists it and `meIsNonSpend(c)` is the single test every chart, the month total and the
+category filter consult — scattering that check is how a non-spend category leaks onto a
+graph. `meIsMonthlyCat(c)` asks the combined question ("is this Monthly's at all?").
+See §0 for what it is for. `ME_PAYMENT` routes card-payment wordings into it on import;
+`ME_EXCLUDE` still drops bank transfers outright.
 
 The list is **fixed**: it is a constant in the file, not user-editable, and it is never written to from Yearly nor read from it. See §0 for why.
 
@@ -306,8 +368,11 @@ The list is **fixed**: it is a constant in the file, not user-editable, and it i
   refuses as well, so the gate is not UI-only.
 - **Statement source** is free text, stored as `row.src`, shown as a tag beside the
   `→ bill` tag. There is no sign override — auto-detect reads the convention off the file.
-- **"Allot to"** offers only the Yearly expenses that exist for the month being filed into,
-  labelled with their amounts. The manual form follows its own Month picker; the importer
+- **"Allot to"** offers only the Yearly expenses that exist for the month being filed into
+  — **one option per bill row**, valued by its `id` and labelled `description — $amount`
+  (`Credit Amex — $1,000`). They used to be merged by category, so two cards billed in July
+  offered a single option and both rows then reported the pair's combined itemisation
+  against their own amount. The manual form follows its own Month picker; the importer
   follows the tab's month. It is scoped to `tab!=='me'`, so a Monthly row can never be
   offered as something to itemise into. This is the **only** thing that crosses the tabs.
 - **Pairing on Add Expense**: a Monthly category and a bill may be set **together** (what
@@ -327,6 +392,7 @@ Each is idempotent and safe to leave in place — they repair ledgers written by
 | Where | What |
 |---|---|
 | `normalizeYF()` | backfills `who`, `allotM` from the row's date, drops the retired `derived` flag, and backfills `tab` by row shape |
+| `normalizeYF()` — `allot` repoint | rewrites a name-keyed `allot` to the bill row's `id`. Where one month held two bills under the same name, **the larger takes them** (nothing records which was meant; re-point by editing the row). One naming a bill that no longer exists is **detached**, same as `yfDelete` does, rather than left in no total. Runs *after* the `tab` backfill, which still reads the old shape |
 | `meTagImported()` | second stage of the `tab` backfill, using the import log, which only Monthly has loaded |
 | `meRecoverImportCats()` | re-derives the category of imported rows a middle build saved without one, keyed on the import log so a deliberate uncategorised note is never swept up |
 
@@ -347,11 +413,14 @@ Full-screen gate (`#pinGate`), shown only if `sparta.pinOn === 'true'` and `spar
 
 These have each caused real, shipped bugs in this project. When making changes, actively guard against them:
 
-0. **A name used as an identity.** `allot` stores a Yearly *category name*, and it is the
-   only reference that crosses between the tabs. Every operation that changes or removes
-   that name has to carry the references with it. Rename, delete and the year boundary
-   were three faces of this one weakness, each found separately. If a fourth appears, the
-   durable fix is to point allocations at the bill's **`id`** instead of its name.
+0. **A name used as an identity — now fixed, and worth keeping fixed.** `allot` used to
+   store a Yearly *category name*. Rename, delete and the year boundary were three faces
+   of that one weakness, each found separately; the fourth was the one that finally forced
+   the rewrite — two bills under one name in one month became a single pool, and each
+   reported the pair's combined itemisation against its own amount. `allot` now holds the
+   bill row's **`id`**, resolved through `yfBillOf(t)` / `yfBillById(id)` / `yfKidsOf(id)`.
+   **Do not reintroduce name matching** for anything that identifies a row. A category name
+   is a label the user can change and can legitimately reuse; only `id` is identity.
 
 1. **Silent `str.replace()` no-ops.** A string-match edit that doesn't find its target fails silently and leaves stale code + a handler bound to a nonexistent element — which then **aborts the entire init script**, taking down unrelated features. Always `grep -c` to confirm a replacement landed before moving on.
 2. **Temporal Dead Zone crashes.** A `let`/`const` referenced before its own declaration line executes (common when one part of init calls a function defined later in the same script) throws and kills everything after it. Several critical flags (`fbBooting`, `legacyFbFound`) are declared with `var` specifically so they're hoisted and safe to reference early. Follow this pattern for new cross-cutting flags.
@@ -380,7 +449,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — twelve suites, **741 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — thirteen suites, **806 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.
@@ -398,8 +467,6 @@ change, so it is kept green rather than skipped.
   wave backdrop and motif set already.
 - **Plan tab** exists and is built out (segments, dated items, running balance, lowest
   point) — see `tests/test-plan.js` for the behaviour it guarantees.
-- **Possible next step, if bills keep causing trouble:** point `allot` at the bill's `id`
-  rather than its category name, which removes bug class 0 by construction.
 - Plausible Archives scope, based on prior conversation: read-only view of closed positions, prior-year Yearly Finance summaries (the year selector was removed from Yearly Finance's main view when it became a static current-year badge — Archives could be where historical years live), or compacted history snapshots.
 - No live Firebase listener (§4) — acceptable per user, don't add without asking.
 - No xlsx import support (CSV only, by design — avoids bundling SheetJS in a single-file app).

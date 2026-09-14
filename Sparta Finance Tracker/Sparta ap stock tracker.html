@@ -809,6 +809,11 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .skeu-btn.is-off{opacity:.45;cursor:not-allowed}
 .me-yfonly{font-size:9px;letter-spacing:.12em;font-weight:700;color:#7C8BA3;
   border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:3px 8px;white-space:nowrap}
+/* the merged payment line belongs to the bill above it, so it is tinted rather
+   than ruled off; the rows behind it are indented one step when expanded */
+.me-payrow>td{background:rgba(109,130,232,.08)}
+.me-paykid>td{background:rgba(148,163,184,.05);font-size:11px;opacity:.85}
+.me-paykid>td:first-child{padding-left:24px}
 .me-impmonth{white-space:nowrap;padding:6px 12px;font-size:10.5px;
   background:rgba(94,234,212,.10);border-color:rgba(94,234,212,.30);color:#8FE3D4}
 .me-impmonth b{color:#CFF6EE;font-weight:700;letter-spacing:.04em}
@@ -877,6 +882,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .me-why.file{color:#7FB6D9;border-color:rgba(127,182,217,.4)}
 .me-why.kw{color:var(--sk-amber);border-color:rgba(94,234,212,.4)}
 .me-why.none{color:#93A2B8}
+.me-why.pay{color:var(--sk-green);border-color:rgba(74,222,128,.4)}
 
 
 /* gear popover */
@@ -2643,7 +2649,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-10F</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-14A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -4316,6 +4322,30 @@ function normalizeYF(){
      anything else was typed on Yearly. meTagImported() refines this on the
      Monthly tab, where the import log is available. */
   y.txns.forEach(t=>{ if(!t.tab) t.tab=(t.allot||t.mOnly||t.src)?'me':'yf'; });
+  /* `allot` used to hold the bill's CATEGORY NAME, which merged every bill
+     sharing that name in a month into one pool: a $1,000 Amex and a $500 PC card
+     both reported the pair's combined total against their own amount. It now
+     holds the bill's id. Repoint each old reference at the row it meant. Where a
+     month really did hold two bills under one name there is no record of which
+     was intended, so the larger takes them -- the statement they almost
+     certainly came off -- and either can be re-pointed by editing the row.
+     Anything with no bill left to attach to is detached rather than orphaned,
+     exactly as deleting a bill does: it goes back to being an ordinary Monthly
+     expense that counts for itself instead of sitting in no total at all.
+     Runs after the tab backfill above, which still reads the old shape. */
+  const yfIds=new Set(y.txns.map(t=>t.id));
+  let yfRepointed=0;
+  y.txns.forEach(t=>{
+    if(!t.allot || yfIds.has(t.allot)) return;
+    const m=t.allotM||(t.date||'').slice(0,7);
+    const bill=y.txns.filter(x=>x.tab!=='me' && x.type==='expense' && !x.allot
+        && x.cat===t.allot && (x.date||'').slice(0,7)===m)
+      .sort((a,b)=>b.amt-a.amt||String(a.date).localeCompare(String(b.date)))[0];
+    if(bill){ t.allot=bill.id; t.allotM=(bill.date||'').slice(0,7) }
+    else { delete t.allot; delete t.allotM }
+    yfRepointed++;
+  });
+  if(yfRepointed && typeof yfPersist==='function') yfPersist();
   return y;
 }
 normalizeYF();
@@ -4325,6 +4355,33 @@ let yfEditId=null, yfFilter='all', yfChartMode='both', yfTxMonth='all', yfWhoFil
 const yf$=v=>'$'+Math.round(v).toLocaleString('en-CA');
 const yf$2=v=>'$'+(v||0).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
 function yfPersist(){ store.set('sparta.yf.data', state.yf); if(typeof cloudSaveDebounced==='function') cloudSaveDebounced(); }
+/* THE ONE LINK BETWEEN THE TABS. A Monthly line's `allot` is the ID of the
+   Yearly expense it itemises into -- the bill itself, not what the bill is
+   called. Every figure a bill reports (itemised, bill paid, over) is summed over
+   the lines pointing at that id, so two bills in one month keep separate books
+   even when both are filed under "Credit Bill". */
+function yfBillOf(t){
+  if(!t || !t.allot) return null;
+  return (state.yf.txns||[]).find(x=>x.id===t.allot) || null;
+}
+function yfBillById(id){ return id?((state.yf.txns||[]).find(x=>x.id===id)||null):null }
+// What a bill is called on screen: its own description, falling back to its
+// category. User text either way, so anything printing it must escape it.
+function yfBillLabel(b){ return b ? (String(b.desc||'').trim() || b.cat || 'Bill') : '' }
+function yfBillLabelById(id){ return yfBillLabel(yfBillById(id)) }
+// every Monthly line filed against one bill, allocations and payments alike
+function yfKidsOf(id){ return id?(state.yf.txns||[]).filter(x=>x.allot===id):[] }
+/* NOT SPENDING. A card statement lists last month's balance being cleared, and
+   clearing a balance is not a habit -- it nets its bill down. Such a line is a
+   real row filed against the bill like any other, but under a category every
+   chart, the month total and the category filter leave out, so the only place it
+   appears is this month's list. Last on every picker for the same reason: it is
+   not one of the things you spend on. */
+const ME_BILLPAY='Bill Payment';
+const ME_NONSPEND=[ME_BILLPAY];
+const meIsNonSpend=c=>ME_NONSPEND.indexOf(c)>-1;
+// ME_CATS is spending only, so "is this Monthly's?" has to ask both lists
+const meIsMonthlyCat=c=>ME_CATS.indexOf(c)>-1||meIsNonSpend(c);
 /* Yearly's view of the ledger: its OWN rows only. Monthly's expenses -- both
    the allocations itemising a bill and anything typed straight onto Monthly --
    stay on Monthly. A $1,500 credit-card bill therefore reads as one $1,500 row
@@ -4470,7 +4527,10 @@ function yfHighlights(d){
   const catTot=type=>{const m={};
     txns.filter(t=>t.type===type).forEach(t=>{
       if(t.cat) m[t.cat]=(m[t.cat]||0)+t.amt;
-      if(type==='expense'&&t.allot&&t.cat) m[t.allot]=(m[t.allot]||0)-t.amt;
+      if(type==='expense'&&t.allot&&t.cat){
+        const b=yfBillOf(t);                       // the bill's own category, not a name on the row
+        if(b&&b.cat) m[b.cat]=(m[b.cat]||0)-t.amt;
+      }
     });
     Object.keys(m).forEach(k=>{ if(Math.abs(m[k])<0.005) delete m[k] });
     return m;};
@@ -4717,7 +4777,7 @@ function renderYF(){
     const tr=document.createElement('tr');
     tr.innerHTML=`<td style="text-align:left">${txDate(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.type==='income'?'tag-inc':'tag-exp'}" style="margin:0">${t.type==='income'?'IN':'EXP'}</span></td>
-      <td class="${t.type==='income'?'yf-pos':'yf-neg'}" style="font-weight:600">${yf$2(t.amt)}</td>
+      <td class="${t.type==='income'?'yf-pos':'yf-neg'}" style="font-weight:600">${yf$2(t.amt)}${yfPaidNote(t)}</td>
       <td style="text-align:left;max-width:220px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(t.desc||'').replace(/</g,'&lt;')}</div>${yfItemNote(t)}</td>
       <td style="text-align:left">${txCat(t)}${txTags(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
@@ -4778,16 +4838,11 @@ function yfRenameCat(type,oldName){
   // Monthly's Rent are two different categories, and renaming one is not the other.
   let moved=0;
   state.yf.txns.forEach(t=>{ if(t.tab!=='me'&&t.type===type&&t.cat===oldName){ t.cat=name; moved++ } });
-  /* `allot` is a REFERENCE to a Yearly category, and the one link that crosses
-     between the tabs, so a rename has to carry it. Leaving it behind pointed
-     every allocation at a bill that no longer existed: the bill lost its
-     "itemised" note and the money sat in no total at all -- the same orphaning
-     that deleting a bill used to cause. */
-  let repointed=0;
-  if(type==='expense') state.yf.txns.forEach(t=>{ if(t.allot===oldName){ t.allot=name; repointed++ } });
+  /* Nothing to repoint: an allocation references the bill's id, so renaming the
+     category it sits under cannot break the link. This used to orphan every
+     itemised entry -- the bill lost its note and the money sat in no total. */
   yfPersist(); renderYF(); yfFillCats();
-  toast(`Renamed to "${name}"`+(moved?` \u2014 ${moved} transaction${moved>1?'s':''} updated`:'')
-    +(repointed?`, ${repointed} itemised entr${repointed>1?'ies':'y'} repointed`:''));
+  toast(`Renamed to "${name}"`+(moved?` \u2014 ${moved} transaction${moved>1?'s':''} updated`:''));
 }
 function yfDeleteCat(type,name){
   markUserEdit();
@@ -4857,8 +4912,7 @@ function yfDelete(id){
      allot, and excluded from Yearly because it is Monthly's -- its money would
      sit in no total anywhere. Say so, and detach rather than orphan, which turns
      those rows back into ordinary Monthly expenses that count for themselves. */
-  const m=(t.date||'').slice(0,7);
-  const kids=state.yf.txns.filter(x=>x.allot===t.cat&&x.allotM===m&&x.id!==id);
+  const kids=yfKidsOf(id).filter(x=>x.id!==id);
   const warn=kids.length
     ? `\n\n${kids.length} Monthly ${kids.length===1?'entry':'entries'} (${yf$2(kids.reduce((s,x)=>s+x.amt,0))}) `+
       `were itemised into it. They will stay on Monthly as ordinary expenses.`
@@ -5037,9 +5091,15 @@ const ME_KEYWORDS=[
     'membership fee','subscription','membership'],'Fees/Subscription'],
   [['dollarama','amazon','winners','homesense'],'Household supplies']
 ];
-// payments/transfers are NOT expenses - importing them double-counts everything
-const ME_EXCLUDE=['payment thank you','payment - thank','autopay','pre-auth payment','online payment',
-  'transfer to','transfer from','e-transfer','bill payment','payment received','cc payment'];
+/* A payment on a CARD statement is a real line that has to be kept: it is what
+   makes the statement reconcile. August's balance of $750 is $1,250 of purchases
+   less the $500 that cleared July, so dropping the payment left the bill looking
+   $500 over-itemised. These come in as Bill Payment rows, forced negative. */
+const ME_PAYMENT=['payment thank you','payment - thank','autopay','pre-auth payment',
+  'online payment','payment received','cc payment','bill payment'];
+/* A BANK transfer is not card activity at all -- importing one double-counts
+   money that is already on the card statement as the charge it paid for. */
+const ME_EXCLUDE=['transfer to','transfer from','e-transfer'];
 
 state.me = store.get('sparta.me', {});
 function normalizeME(){
@@ -5087,30 +5147,47 @@ const meMonthOf=t=>t.allot?(t.allotM||(t.date||'').slice(0,7)):(t.date||'').slic
 // ordinary row — so say so. `src` is whatever statement the row was imported
 // from, typed in at import time; both are user text, so both are escaped.
 const tagEsc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const txTags=t=>(t.allot?'<span class="acct-tag tag-other" style="margin:0 0 0 6px">\u2192 '+
-    tagEsc(t.allot)+'</span>':'')+
+const txTags=t=>(t.allot&&yfBillOf(t)?'<span class="acct-tag tag-other" style="margin:0 0 0 6px">\u2192 '+
+    tagEsc(yfBillLabel(yfBillOf(t)))+'</span>':'')+
   (t.src?'<span class="acct-tag tag-other" style="margin:0 0 0 6px;opacity:.75">'+
     tagEsc(t.src)+'</span>':'');
 // an allocation has no category of its own; a dash reads better than a blank cell
 const txCat=t=>t.cat?tagEsc(t.cat):'\u2014';
-/* What Monthly has itemised into THIS bill. Allocations are filed by allotM, so
-   a bill is matched on its own category and its own month -- a December purchase
-   on January's bill counts toward January. Differences of a dollar or less are
-   treated as exact: statements round, and "$766 Itemised, $1 Left" is noise.
+/* What Monthly has itemised into THIS bill -- the lines pointing at this row's
+   id, so two cards billed in the same month report separately. The sum is NET of
+   any Bill Payment, which is the whole reconciliation: a statement showing
+   $1,250 of purchases less a $500 payment of last month's balance leaves the
+   $750 the user read off the PDF and typed in here.
+
+   Differences of a dollar or less are treated as exact: statements round, and
+   "$766 Itemised, $1 Left" is noise.
 
      $766 Itemised                 within a dollar either way
      $700 Itemised, $66 Left       less has been itemised than the bill
      $800 Itemised, $34 More       more has been itemised than the bill      */
 function yfItemNote(t){
   if(t.type!=='expense'||!t.cat||t.allot) return '';
-  const m=(t.date||'').slice(0,7);
-  const it=(state.yf.txns||[]).reduce((s,x)=>s+((x.allot===t.cat&&x.allotM===m)?x.amt:0),0);
+  const it=+yfKidsOf(t.id).reduce((s,x)=>s+x.amt,0).toFixed(2);
   if(it<=0) return '';
   const diff=+(t.amt-it).toFixed(2);
   const body=Math.abs(diff)<=1 ? `${yf$(it)} Itemised`
     : diff>0 ? `${yf$(it)} Itemised, ${yf$(diff)} Left`
              : `${yf$(it)} Itemised, ${yf$(-diff)} More`;
   return `<div class="yf-billnote${diff<-1?' over':''}">${body}</div>`;
+}
+/* What was PAID against this bill. A card statement lists last month's balance
+   being cleared, and clearing a balance is not spending -- it nets this bill
+   down. Those lines are stored as negative rows under the Bill Payment category,
+   so the total is flipped back positive to read. It rides under the figure in
+   the Amount column, next to the money it explains, while "itemised" stays with
+   the description. */
+function yfBillPaid(t){
+  if(!t||t.type!=='expense'||!t.cat||t.allot) return 0;
+  return +yfKidsOf(t.id).reduce((s,x)=>s+(x.cat===ME_BILLPAY?-x.amt:0),0).toFixed(2);
+}
+function yfPaidNote(t){
+  const p=yfBillPaid(t);
+  return p>0 ? `<div class="yf-billnote">${yf$(p)} Bill Paid</div>` : '';
 }
 const txDate=t=>{
   if(!t.mOnly) return t.date||'';
@@ -5131,7 +5208,7 @@ function meCategorise(desc, fileCat){
   const key=meMerchantKey(desc);
   if(key && state.me.rules[key]) return {cat:state.me.rules[key], why:'rule', label:'your rule'};
   if(fileCat){
-    const hit=ME_CATS.find(c=>meNorm(c)===meNorm(fileCat));
+    const hit=meAllCats().find(c=>meNorm(c)===meNorm(fileCat));
     if(hit) return {cat:hit, why:'file', label:'from file'};
   }
   const d=meNorm(desc);
@@ -5141,6 +5218,7 @@ function meCategorise(desc, fileCat){
   return {cat:'Other', why:'none', label:'needs review'};
 }
 function meIsExcluded(desc){ const d=meNorm(desc); return ME_EXCLUDE.some(w=>d.includes(w)) }
+function meIsPayment(desc){ const d=meNorm(desc); return ME_PAYMENT.some(w=>d.includes(w)) }
 const meFingerprint=t=>[t.date,Math.round(t.amt*100),meMerchantKey(t.desc)].join('|');
 
 /* One-off repair. A build in between filed imported rows with an allot and NO
@@ -5202,9 +5280,15 @@ const ME_COLORS={'Groceries':'#7FBF6A','Household supplies':'#C9A87C','Health/me
   'Credit Bill':'#6D82E8',
   'Personal':'#D98BC4','Grocery':'#93C572','Misc':'#A6AFC0','Debt':'#CF5F7A',
   'Education\\Tuition':'#7FB3E8','Custom category 2':'#B0A0D0','Investment':'#6EDCA8',
-  'Other Bank':'#C0B15E'};
+  'Other Bank':'#C0B15E',
+  // a payment is money coming back OFF a bill, so it gets its own muted green
+  // rather than falling through to the grey an unrecognised category gets
+  'Bill Payment':'#6FB58C'};
 const meColor=c=>ME_COLORS[c]||'#94A3B8';
 const ME_DEFAULT_CHART=['Groceries','Indoor Entertainment','Health/medical','General'];
+// which merged payment lines are expanded, by bill id. View state, not data:
+// forgotten on reload, exactly like the table's category filter.
+const mePayOpen=new Set();
 
 /* ---- add / edit ---- */
 let meEditId=null;
@@ -5215,8 +5299,9 @@ let meEditId=null;
    the row being edited, so a row saved under a name no longer on the list stays
    visible and selectable instead of being silently blanked on save. */
 function meAllCats(keep){
-  return (keep&&!ME_CATS.includes(keep)?ME_CATS.concat([keep]):ME_CATS.slice())
+  const spend=(keep&&!ME_CATS.includes(keep)&&!meIsNonSpend(keep)?ME_CATS.concat([keep]):ME_CATS.slice())
     .sort((a,b)=>a.localeCompare(b,'en',{sensitivity:'base'}));
+  return spend.concat(ME_NONSPEND);      // pinned last: not a thing you spend on
 }
 /* The trend filter is a different question: it should offer what the chart can
    actually draw, so it lists Monthly's own categories plus whatever this year's
@@ -5224,7 +5309,7 @@ function meAllCats(keep){
    Yearly's list. */
 function meChartableCats(year){
   const inUse=Object.keys(meMonthlyByCat(String(year)));
-  return [...new Set(ME_CATS.concat(inUse))]
+  return [...new Set(ME_CATS.concat(inUse))].filter(c=>!meIsNonSpend(c))
     .sort((a,b)=>a.localeCompare(b,'en',{sensitivity:'base'}));
 }
 /* Filing is either/or: a row is spending in a category, or a detail line against
@@ -5258,12 +5343,20 @@ function meSaveTx(){
   // at least one is required: with neither there is nothing saying what this
   // money was, and the row would vanish from every breakdown
   if(!allot&&!cat){ toast('Pick a category, or a bill to allot this to'); return }
+  /* A payment only means something against a bill -- it is the balance being
+     cleared, so there has to be a balance. Without one it would be a negative row
+     in no total at all. The amount is typed in plain and stored negative, so the
+     form never asks anyone to remember a minus sign. */
+  if(meIsNonSpend(cat)&&!allot){
+    toast('A bill payment needs a bill \u2014 pick one in \u201cAllot to\u201d'); return;
+  }
+  const signed=meIsNonSpend(cat) ? -Math.abs(amt) : amt;
   /* A Monthly category and a bill together is the normal case: what the charge
      was, and what paid for it. A YEARLY category and a bill is not, ever -- the
      bill IS a Yearly category, so the row would be filed against Yearly twice.
      Only reachable when editing a row saved under a Yearly name, which
      meFillCatSelect keeps on the list so the row is not silently blanked. */
-  if(allot&&cat&&!ME_CATS.includes(cat)&&(state.yf.cats.exp||[]).includes(cat)){
+  if(allot&&cat&&!meIsMonthlyCat(cat)&&(state.yf.cats.exp||[]).includes(cat)){
     toast(`"${cat}" is a Yearly Finance category \u2014 pick a Monthly one, or clear Allot to`);
     return;
   }
@@ -5273,7 +5366,7 @@ function meSaveTx(){
   if(meEditId){
     const t=(state.yf.txns||[]).find(x=>x.id===meEditId);
     if(t){
-      t.amt=+amt.toFixed(2); t.desc=desc; t.who=who;
+      t.amt=+signed.toFixed(2); t.desc=desc; t.who=who;
       if(t.mOnly) t.date=date;                   // keep a real imported date intact
       if(cat) t.cat=cat; else delete t.cat;
       if(allot){ t.allot=allot; t.allotM=month } else { delete t.allot; delete t.allotM }
@@ -5281,11 +5374,11 @@ function meSaveTx(){
     }
     meCancelEdit();
   } else {
-    const row={id:uid(),type:'expense',date,amt:+amt.toFixed(2),desc,who,mOnly:true,tab:'me'};
+    const row={id:uid(),type:'expense',date,amt:+signed.toFixed(2),desc,who,mOnly:true,tab:'me'};
     if(cat) row.cat=cat;
     if(allot){ row.allot=allot; row.allotM=month }
     state.yf.txns.push(row);
-    toast('Added '+meMoney(amt)+' \u2014 '+(cat||'no category')+(allot?' \u2192 '+allot:''));
+    toast('Added '+meMoney(row.amt)+' \u2014 '+(cat||'no category')+(allot?' \u2192 '+yfBillLabelById(allot):''));
     $('meAmt').value=''; $('meDesc').value='';
     if($('meAllot')) $('meAllot').value='';
     if($('meCat')) $('meCat').value='';
@@ -5293,46 +5386,41 @@ function meSaveTx(){
   // Monthly does NOT write into Yearly's category list. The row still belongs to
   // the year -- one shared ledger -- and Yearly's table picks it up as a row of
   // its own, but Yearly's editable list stays yours to curate.
-  const over=yfAttachAllot(allot,month,who);
+  const over=yfAttachAllot(allot);
   meMonth=month; meFormMonthPicked=false;         // show the month just written to
-  if(over) toast('Over-allotted '+meMoney(over)+' past the '+allot);
+  if(over) toast('Over-allotted '+meMoney(over)+' past the '+yfBillLabelById(allot));
   yfPersist(); renderME(); if(typeof renderYF==='function') renderYF();
-}
-// the bill an allocation lands on: same category, same bill month, not itself an allocation
-function yfFindBill(cat,month){
-  return (state.yf.txns||[]).find(t=>t.tab!=='me'&&t.type==='expense'&&!t.allot&&t.cat===cat&&(t.date||'').slice(0,7)===month);
 }
 /* One job now: report a bill that no longer covers what has been itemised into
    it. Nothing is created here — the Allot to list only offers bills Yearly
    already holds, so there is never a missing one to invent. Manual entry and CSV
    import share this, since two copies would drift, and drift here means silently
    wrong figures rather than an error. Returns the overage, or 0. */
-function yfAttachAllot(cat,month,who){
-  void who;                                  // bills are typed in Yearly, never invented here
-  if(!cat) return 0;
-  const bill=yfFindBill(cat,month);
-  if(!bill) return 0;
-  // Everything allotted to this bill, categorised or not -- the same definition the
-  // bill's own note uses. Two definitions of "itemised" is how the note once said
-  // "over" while the figure beside it still showed a remainder.
-  const used=(state.yf.txns||[]).reduce((s,t)=>s+((t.allot===cat&&t.allotM===month)?t.amt:0),0);
+function yfAttachAllot(id){
+  const bill=yfBillById(id);
+  if(!bill) return 0;                        // bills are typed in Yearly, never invented here
+  // Everything filed against this bill -- categorised, uncategorised and payments
+  // alike -- which is the definition the bill's own note uses. Two definitions of
+  // "itemised" is how the note once said "over" while the figure beside it still
+  // showed a remainder.
+  const used=yfKidsOf(id).reduce((s,t)=>s+t.amt,0);
   return used>bill.amt+0.005?+(used-bill.amt).toFixed(2):0;
 }
-/* The bills you can itemise into: the real expenses Yearly Finance holds for
-   one month. Not every category -- offering a category with no bill behind it
-   is what used to make the app invent one. Two entries sharing a category in a
-   month merge into a single option showing their combined total, because the
-   unit being allotted into is "that month's Credit Bill spend". */
+/* The bills you can itemise into: the real expenses Yearly Finance holds for one
+   month, EACH LISTED ON ITS OWN. Not every category -- offering a category with
+   no bill behind it is what used to make the app invent one. Entries sharing a
+   category used to merge into one option, so two cards billed in July offered a
+   single "Credit Bill - $1,500" and whichever you picked, both rows then reported
+   the pair's combined itemisation against their own amount. Each row is its own
+   option now, labelled by its description ("Credit Amex - $1,000"). */
 function yfBillsIn(month){
-  const by={};
-  (state.yf.txns||[]).forEach(t=>{
-    // Yearly's expenses only -- this list is the one thing that crosses over,
-    // and it must not offer a Monthly row as something to itemise into
-    if(t.tab==='me'||t.type!=='expense'||t.allot||!t.cat) return;
-    if((t.date||'').slice(0,7)!==month) return;
-    by[t.cat]=(by[t.cat]||0)+t.amt;
-  });
-  return Object.keys(by).sort((a,b)=>a.localeCompare(b)).map(c=>({cat:c,amt:+by[c].toFixed(2)}));
+  return (state.yf.txns||[]).filter(t=>
+      // Yearly's expenses only -- this list is the one thing that crosses over,
+      // and it must not offer a Monthly row as something to itemise into
+      t.tab!=='me' && t.type==='expense' && !t.allot && t.cat
+      && (t.date||'').slice(0,7)===month)
+    .map(t=>({id:t.id, cat:t.cat, amt:+(t.amt||0).toFixed(2), label:yfBillLabel(t)}))
+    .sort((a,b)=>a.label.localeCompare(b.label)||b.amt-a.amt);
 }
 function meFillAllotSelect(){
   // the manual form files into its own Month picker; the importer files into
@@ -5344,9 +5432,9 @@ function meFillAllotSelect(){
       const q=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
       const bills=yfBillsIn(month);
       sel.innerHTML='<option value="">\u2014 none \u2014</option>'+
-        bills.map(b=>`<option value="${q(b.cat)}">${q(b.cat)} \u2014 ${meMoney(b.amt)}</option>`).join('');
+        bills.map(b=>`<option value="${q(b.id)}">${q(b.label)} \u2014 ${meMoney(b.amt)}</option>`).join('');
       // a bill picked for another month is not on this list; fall back to none
-      sel.value=(cur&&bills.some(b=>b.cat===cur))?cur:'';
+      sel.value=(cur&&bills.some(b=>b.id===cur))?cur:'';
       note();
     });
 }
@@ -5379,7 +5467,10 @@ function meFillTxCat(){
   // appear would just empty the table
   // Monthly's own categories present this month. A Yearly bill in the list keeps
   // its own name in the Category column, but Yearly's names are not offered here.
-  const have=[...new Set(meTxns().filter(t=>t.tab==='me').map(t=>t.cat).filter(Boolean))]
+  // Bill Payment is left off: the payment line is pinned under its bill, so
+  // filtering to it alone would show a row with nothing to sit beneath
+  const have=[...new Set(meTxns().filter(t=>t.tab==='me').map(t=>t.cat)
+      .filter(c=>c&&!meIsNonSpend(c)))]
     .sort((a,b)=>a.localeCompare(b));
   if(meTxCat!=='all' && !have.includes(meTxCat)) meTxCat='all';   // no longer reachable
   const q=c=>c.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
@@ -5401,12 +5492,16 @@ function meImpAllotNote(){
 }
 function meAllotNote(){
   const el=$('meAllotNote'); if(!el) return;
-  const v=$('meAllot')?$('meAllot').value:'';
+  const id=$('meAllot')?$('meAllot').value:'';
+  const v=id?yfBillLabelById(id):'';
   const m=meFormMonth();
   const c=$('meCat')?$('meCat').value:'';
   const none=$('meAllot')&&$('meAllot').options.length<2;
   el.textContent=
-    (v&&c) ? ('Charged to '+meMonthName(m)+"'s "+v+' and counted under '+c+
+    (c===ME_BILLPAY) ? (v ? ('Clears '+v+" \u2014 it comes off that bill instead of adding to it, "+
+              'and shows only in this month\u2019s list.')
+                          : 'A bill payment has to say which bill it clears \u2014 pick one in Allot to.')
+   :(v&&c) ? ('Charged to '+meMonthName(m)+"'s "+v+' and counted under '+c+
               ' \u2014 it moves out of the bill, not on top of it.')
    :v       ? ('A note against '+meMonthName(m)+"'s "+v+
               ' \u2014 it will not add to the total, and the bill stays whole. '+
@@ -5428,7 +5523,9 @@ function meStartEdit(id){
   if($('meAllot')) $('meAllot').value=t.allot||'';
   if($('meCat')) $('meCat').value=t.cat||'';
   meAllotNote();
-  $('meAmt').value=t.amt; $('meDesc').value=t.desc||'';
+  // a payment is stored negative but typed in plain, so hand back what was typed
+  $('meAmt').value=meIsNonSpend(t.cat)?Math.abs(t.amt):t.amt;
+  $('meDesc').value=t.desc||'';
   $('meWho').value=t.who||'ABI';
   $('meFormTitle').textContent='EDIT EXPENSE';
   $('meSave').textContent='Update expense';
@@ -5457,7 +5554,7 @@ function meMonthlyByCat(year){
     if(m<0||m>11) return;
     // Monthly's own rows only. A Yearly bill sitting in this month is one lump
     // that says nothing about habits -- it belongs in the list, not on the chart.
-    if(t.tab==='me'&&t.cat) (out[t.cat]=out[t.cat]||Array(12).fill(0))[m]+=t.amt;
+    if(t.tab==='me'&&t.cat&&!meIsNonSpend(t.cat)) (out[t.cat]=out[t.cat]||Array(12).fill(0))[m]+=t.amt;
   });
   Object.keys(out).forEach(c=>{ if(out[c].every(v=>Math.abs(v)<0.005)) delete out[c] });
   return out;
@@ -5550,6 +5647,42 @@ function renderMEGear(){
 }
 
 /* ---- rendering ---- */
+/* ONE LINE PER BILL. A statement reports the balance it cleared as a single
+   fact, so three payments of $200, $150 and $150 read as "$500 cleared", dated
+   the earliest of them and filed under whoever the bill belongs to. The rows
+   behind it are untouched -- re-importing the statement still recognises each
+   one, and the toggle opens them for editing. */
+function meRenderPayRow(tb,e){
+  const cc=meColor(ME_BILLPAY);
+  const open=mePayOpen.has(e.billId), n=e.rows.length;
+  const who=(e.bill&&e.bill.who)||e.rows[0].who||'ABI';
+  const tr=document.createElement('tr');
+  tr.className='me-payrow';
+  tr.innerHTML=`<td style="text-align:left">${txDate(e.first)}</td>
+    <td style="text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis;color:${cc}">Previous Month Bill${n>1?` \u00d7${n}`:''}</td>
+    <td style="font-weight:600;color:${cc}">${meMoney(e.amt)}</td>
+    <td style="text-align:left;color:${cc}">${tagEsc(ME_BILLPAY)}${e.bill
+      ? '<span class="acct-tag tag-other" style="margin:0 0 0 6px">\u2192 '+tagEsc(yfBillLabel(e.bill))+'</span>' : ''}</td>
+    <td style="text-align:left"><span class="acct-tag ${who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${who}</span></td>
+    <td style="white-space:nowrap"><button class="yf-edit" data-mepay="${tagEsc(e.billId)}"
+      title="${open?'Hide':'Show'} the ${n} payment${n===1?'':'s'} behind this">${open?'\u25b4':'\u25be'}</button></td>`;
+  tb.appendChild(tr);
+  if(!open) return;
+  e.rows.forEach(t=>{
+    const r=document.createElement('tr');
+    r.className='me-paykid';
+    // no "-> bill" tag down here: the line above already says which bill these
+    // cleared, and repeating it on every row is noise
+    r.innerHTML=`<td style="text-align:left">${txDate(t)}</td>
+      <td style="text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis">${(t.desc||'').replace(/</g,'&lt;')}</td>
+      <td style="font-weight:600">${meMoney(t.amt)}</td>
+      <td style="text-align:left">${txCat(t)}${t.src
+        ? '<span class="acct-tag tag-other" style="margin:0 0 0 6px;opacity:.75">'+tagEsc(t.src)+'</span>' : ''}</td>
+      <td style="text-align:left"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
+      <td style="white-space:nowrap"><button class="yf-edit" data-meedit="${t.id}" title="Edit">\u270e</button><button class="rm" data-medel="${t.id}" title="Delete">\u2715</button></td>`;
+    tb.appendChild(r);
+  });
+}
 function renderME(){
  try{
   if(!$('meTotal')) return;
@@ -5559,7 +5692,9 @@ function renderME(){
   meFillMonthSelect();
   const txns=meTxns();
   // the list shows every entry, but only non-allocations are spend
-  const spend=txns.filter(t=>!t.allot);
+  // a payment carries an allot, so it is already out; the category test keeps it
+  // out of a month where one was entered without a bill
+  const spend=txns.filter(t=>!t.allot&&!meIsNonSpend(t.cat));
   const total=spend.reduce((s,t)=>s+t.amt,0);
   $('meTotal').textContent=meMoney(total);
   const itemised=txns.reduce((s,t)=>s+(t.allot?t.amt:0),0);
@@ -5570,7 +5705,8 @@ function renderME(){
   const [y,m]=meMonth.split('-').map(Number);
   const prev=new Date(y,m-2,1);
   const prevKey=prev.getFullYear()+'-'+String(prev.getMonth()+1).padStart(2,'0');
-  const prevTotal=(state.yf.txns||[]).filter(t=>t.type==='expense'&&!t.allot&&(t.date||'').slice(0,7)===prevKey
+  const prevTotal=(state.yf.txns||[]).filter(t=>t.type==='expense'&&!t.allot&&!meIsNonSpend(t.cat)
+    &&(t.date||'').slice(0,7)===prevKey
     &&(meWhoFilter==='ALL'||t.who===meWhoFilter))
     .reduce((s,t)=>s+t.amt,0);
   if(prevTotal>0){
@@ -5590,7 +5726,7 @@ function renderME(){
   txns.forEach(t=>{
     // same rule as the trend: the breakdown answers "where do my habits go", so
     // a Yearly bill is excluded and its itemisation is what shows instead
-    if(t.tab!=='me'||!t.cat) return;
+    if(t.tab!=='me'||!t.cat||meIsNonSpend(t.cat)) return;
     byCat[t.cat]=(byCat[t.cat]||0)+t.amt;
   });
   Object.keys(byCat).forEach(c=>{ if(Math.abs(byCat[c])<0.005) delete byCat[c] });
@@ -5614,7 +5750,38 @@ function renderME(){
   // describing the whole month — same rule as the Yearly transaction filter
   const listRows=txns.filter(t=>meTxCat==='all'||t.cat===meTxCat);
   const tb=$('meBody'); tb.innerHTML='';
-  listRows.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(t=>{
+  /* Payments are drawn as ONE line per bill, sitting directly under it. The rows
+     themselves are untouched -- re-importing the same statement still recognises
+     each one, and each can still be edited or deleted -- it is only the display
+     that merges, because "three payments of $200, $150 and $150" is one fact
+     about the bill above: $500 of it was already cleared. Expanding the line
+     shows the real rows. */
+  const sorted=listRows.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const groups=new Map();                         // bill id -> its payment rows
+  sorted.forEach(t=>{ if(meIsNonSpend(t.cat)&&t.allot){
+    if(!groups.has(t.allot)) groups.set(t.allot,[]);
+    groups.get(t.allot).push(t);
+  }});
+  // a payment with no bill behind it has nothing to sit under, so it stays an
+  // ordinary row rather than disappearing
+  const entries=sorted.filter(t=>!(meIsNonSpend(t.cat)&&t.allot)).map(t=>({kind:'tx',t}));
+  groups.forEach((rows,billId)=>{
+    const bill=yfBillById(billId);
+    const first=rows.reduce((a,b)=>a.date<=b.date?a:b);
+    const entry={kind:'pay',billId,bill,rows,first,date:first.date,
+                 amt:+rows.reduce((s,x)=>s+x.amt,0).toFixed(2)};
+    let at=entries.findIndex(e=>e.kind==='tx'&&e.t.id===billId);
+    if(at<0){
+      // bill not in view (filtered out, or never shown here): fall back to the
+      // date order the rest of the table is in, which is newest first
+      const j=entries.findIndex(e=>e.kind==='tx'&&e.t.date<entry.date);
+      at=j<0?entries.length-1:j-1;
+    }
+    entries.splice(at+1,0,entry);
+  });
+  entries.forEach(entry=>{
+    if(entry.kind==='pay'){ meRenderPayRow(tb,entry); return }
+    const t=entry.t;
     const tr=document.createElement('tr');
     // description, amount and category share the category's colour, so a row
     // reads as one thing and matches the dot beside it in the matrix above
@@ -5683,13 +5850,15 @@ function meHandleCSV(text){
   // block too, which meant a row deleted by mistake -- or lost because the cloud
   // never synced -- could never be brought back: re-importing the same statement
   // just said "nothing new". It now reports those instead, as rows to restore.
-  let skippedPay=0, skippedDup=0, restoring=0;
+  let skippedTr=0, skippedDup=0, restoring=0, payments=0;
   rows.slice(1).forEach(r=>{
     const date=meParseDate(r[cDate]); if(!date) return;
     const desc=String(cDesc>-1?r[cDesc]:'').trim();
-    // exclusion runs FIRST: some banks list card payments as positive, which would
-    // otherwise sail through as an expense and double-count the whole statement
-    if(meIsExcluded(desc)){ skippedPay++; return }
+    // Both tests run FIRST, before the amount is read. A card payment is kept as a
+    // Bill Payment row; a bank transfer is still dropped, because importing one
+    // double-counts money already on the statement as the charge it paid for.
+    const isPay=meIsPayment(desc);
+    if(!isPay && meIsExcluded(desc)){ skippedTr++; return }
     let amt;
     if(cDeb>-1){
       const dv=numify(r[cDeb]);
@@ -5702,15 +5871,22 @@ function meHandleCSV(text){
     }
     else { const v=numify(r[cAmt]); amt=isNaN(v)?NaN:(signMode==='neg'?-v:v); }
     if(isNaN(amt)||amt===0) return;                      // only blanks and zeros are skipped
+    // Cards file a payment whichever way suits them -- some as a credit, some as a
+    // positive line. It always comes OFF the bill, so the sign is forced rather
+    // than trusted; a positive one sailing through double-counted the statement.
+    if(isPay) amt=-Math.abs(amt);
     const t={date,desc,amt:+amt.toFixed(2)};
     const fp=meFingerprint(t);
     if(existing.has(fp)){ skippedDup++; return }
     if(seen.has(fp)) restoring++;            // imported before, not in the ledger now
-    const {cat,why,label}=meCategorise(desc, cCat>-1?r[cCat]:'');
+    const {cat,why,label}=isPay
+      ? {cat:ME_BILLPAY, why:'pay', label:'bill payment'}
+      : meCategorise(desc, cCat>-1?r[cCat]:'');
+    if(isPay) payments++;
     mePending.push(Object.assign(t,{cat,why,label,include:true,fp}));
   });
   if(!mePending.length){ toast(`Nothing new to import${skippedDup?` — all ${skippedDup} rows are already in the ledger`:''}`); $('mePreviewWrap').style.display='none'; return }
-  meRenderPreview(skippedPay,skippedDup,restoring);
+  meRenderPreview(skippedTr,skippedDup,restoring,payments);
 }
 function meParseDate(v){
   const s=String(v||'').trim(); if(!s) return null;
@@ -5721,7 +5897,7 @@ function meParseDate(v){
   const d=new Date(s);
   return isNaN(d.getTime())?null:isoLocal(d);
 }
-function meRenderPreview(skippedPay,skippedDup,restoring){
+function meRenderPreview(skippedTr,skippedDup,restoring,payments){
   const tb=$('mePreviewBody'); tb.innerHTML='';
   mePending.forEach((p,i)=>{
     const tr=document.createElement('tr');
@@ -5740,9 +5916,11 @@ function meRenderPreview(skippedPay,skippedDup,restoring){
   });
   const bits=[`${mePending.length} to add`];
   if(restoring) bits.push(`${restoring} being restored`);
-  if(skippedPay) bits.push(`${skippedPay} payment/transfer skipped`);
+  if(payments) bits.push(`${payments} bill payment${payments===1?'':'s'}`);
+  if(skippedTr) bits.push(`${skippedTr} transfer${skippedTr===1?'':'s'} skipped`);
   if(skippedDup) bits.push(`${skippedDup} already in the ledger`);
-  const refunds=mePending.filter(p=>p.amt<0).length;
+  // a payment is negative too, but it is already counted as a payment above
+  const refunds=mePending.filter(p=>p.amt<0&&!meIsNonSpend(p.cat)).length;
   if(refunds) bits.push(`${refunds} refund${refunds===1?'':'s'}`);
   $('meSummary').textContent=bits.join(' \u00b7 ');
   // Which month do these actually land in? Rows keep their own dates unless an
@@ -5759,9 +5937,9 @@ function meRenderPreview(skippedPay,skippedDup,restoring){
       const off=keys.filter(k=>k!==meMonth).reduce((s,k)=>s+months[k],0);
       note.innerHTML = off
         ? `<b style="color:var(--amber)">Check the month.</b> These rows are dated ${span}, but ` +
-          `<b>all ${mePending.length}</b> will be filed under <b>${meMonthName(meMonth)}</b>'s ${allot} ` +
+          `<b>all ${mePending.length}</b> will be filed under <b>${meMonthName(meMonth)}</b>'s ${tagEsc(yfBillLabelById(allot))} ` +
           `because "Allot all to" is set. Switch the month at the top first if that is not what you want.`
-        : `Dated ${span} \u2014 filed under ${meMonthName(meMonth)}'s ${allot}.`;
+        : `Dated ${span} \u2014 filed under ${meMonthName(meMonth)}'s ${tagEsc(yfBillLabelById(allot))}.`;
       note.style.display='block';
     } else {
       note.textContent = keys.length>1
@@ -5835,12 +6013,12 @@ function meApplyImport(){
   });
   if(state.me.imported.length>5000) state.me.imported=state.me.imported.slice(-5000);
   // same three steps manual entry takes: start the bill, resync, report an overage
-  const impOver=yfAttachAllot(impAllot,meMonth,'ABI');
+  const impOver=yfAttachAllot(impAllot);
   mePending=[]; $('mePreviewWrap').style.display='none'; $('meDetect').style.display='none';
   $('meFile').value=''; $('meFileName').textContent='or click to choose a file';
   yfPersist(); mePersist(); renderME(); if(typeof renderYF==='function') renderYF();
   toast(`Added ${chosen.length} expense${chosen.length===1?'':'s'}${learned?` — learned ${learned} rule${learned===1?'':'s'}`:''}`);
-  if(impOver) setTimeout(()=>toast('Over-allotted '+meMoney(impOver)+' past the '+impAllot),1200);
+  if(impOver) setTimeout(()=>toast('Over-allotted '+meMoney(impOver)+' past the '+yfBillLabelById(impAllot)),1200);
 }
 function meReadFile(f){
   if(!f) return;
@@ -5889,6 +6067,12 @@ if($('meFile')){
     });
   }
   $('meBody').addEventListener('click',e=>{
+    const pay=e.target.closest('[data-mepay]');
+    if(pay){
+      const k=pay.dataset.mepay;
+      mePayOpen.has(k)?mePayOpen.delete(k):mePayOpen.add(k);
+      renderME(); return;
+    }
     const ed=e.target.closest('[data-meedit]');
     if(ed){
       const r=(state.yf.txns||[]).find(x=>x.id===ed.dataset.meedit);

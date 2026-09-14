@@ -57,8 +57,14 @@ const near = (a, b, eps = 0.005) => Math.abs(a - b) < eps;
     state.yf.txns = saved;
     return { all, kept };
   });
-  const sorted = list.all.slice().sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
-  check(JSON.stringify(list.all) === JSON.stringify(sorted), 'the category list is sorted A→Z',
+  /* Bill Payment is pinned to the bottom on purpose -- it is not a thing you
+     spend on, so it sits after the spending categories rather than in among them
+     at "B". Everything ahead of it is A to Z. */
+  const spendCats = list.all.slice(0, -1);
+  const sorted = spendCats.slice().sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
+  check(list.all[list.all.length - 1] === 'Bill Payment',
+    'Bill Payment is last on the list, after the spending categories', list.all[list.all.length - 1]);
+  check(JSON.stringify(spendCats) === JSON.stringify(sorted), 'and the rest are sorted A→Z',
     list.all.slice(0, 3).join(' / ') + ' … ' + list.all.slice(-2).join(' / '));
   const banned = ['Rent', 'Credit Bill', 'Taxi', 'Entertainment', 'Food'].filter(c => list.all.includes(c));
   check(banned.length === 0, "Yearly's names are not offered on Monthly",
@@ -66,7 +72,9 @@ const near = (a, b, eps = 0.005) => Math.abs(a - b) < eps;
   check(!list.all.includes('Aardvark food'),
     'and neither is a name that exists only in the shared ledger — the lists are separate',
     JSON.stringify(list.all.slice(0, 2)));
-  check(list.all.length === 13, "Monthly offers exactly its own 13 categories", String(list.all.length));
+  check(list.all.length === 14,
+    "Monthly offers exactly its own 13 spending categories plus Bill Payment",
+    String(list.all.length));
   check(list.kept, 'but the row being edited keeps its own name, so editing cannot blank it');
   CAT_CASES.forEach(([d, f, wantCat, wantWhy, note], i) => {
     const got = catResults[i];
@@ -87,8 +95,16 @@ const near = (a, b, eps = 0.005) => Math.abs(a - b) < eps;
 
   // ── 2. Exclusions and dedup fingerprints ──────────────────────────────────
   console.log('\n── exclusions + dedup ──');
-  const EXCL = [['PAYMENT THANK YOU', true], ['AUTOPAY 1234', true],
+  /* Two lists now. A CARD payment is kept, as a Bill Payment row -- dropping it
+     left the bill reading over-itemised by exactly the balance it cleared. A BANK
+     transfer is still dropped: importing one double-counts money already on the
+     statement as the charge it paid for. */
+  const PAY = [['PAYMENT THANK YOU', true], ['AUTOPAY 1234', true],
   ['ONLINE PAYMENT', true], ['LOBLAWS #123', false], ['RENT', false]];
+  const payRes = await page.evaluate(rows => rows.map(([d]) => meIsPayment(d)), PAY);
+  PAY.forEach(([d, want], i) => check(payRes[i] === want, `meIsPayment("${d}") === ${want}`));
+  const EXCL = [['TRANSFER TO SAVINGS', true], ['E-TRANSFER JOE', true],
+  ['TRANSFER FROM CHEQUING', true], ['PAYMENT THANK YOU', false], ['LOBLAWS #123', false]];
   const exclRes = await page.evaluate(rows => rows.map(([d]) => meIsExcluded(d)), EXCL);
   EXCL.forEach(([d, want], i) => check(exclRes[i] === want, `meIsExcluded("${d}") === ${want}`));
 

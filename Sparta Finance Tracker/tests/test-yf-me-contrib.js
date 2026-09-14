@@ -129,7 +129,8 @@ const MONTH = new Date().toISOString().slice(0, 7);
       meMonth = `${y}-02`; renderME();
       mePending = [{ include: true, date: `${y}-02-10`, amt: 12.34, desc: 'Imported Row', cat: 'General', fp: 'fp-test-1', why: 'kw' }];
       meFillAllotSelect();
-      document.getElementById('meImpAllot').value = 'Credit Bill';
+      // the picker is keyed by bill id, so pick the option that IS this bill
+      document.getElementById('meImpAllot').value = 'bill';
       meApplyImport();
     });
     const added = await page.evaluate(() => state.yf.txns.find(t => t.desc === 'Imported Row'));

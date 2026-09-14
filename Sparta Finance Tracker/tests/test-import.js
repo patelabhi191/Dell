@@ -36,6 +36,24 @@ const CSV_NEG = ['Date,Description,Amount',
   const browser = await launch();
   const { page, errs, ctx } = await open(browser, url);
   await page.setViewportSize({ width: 1440, height: 1100 });
+  /* The bill pickers are keyed by bill ID: one month can hold two bills under the
+     same category, and a name cannot tell them apart. These fixtures still read
+     in category names, so map one back to the option it means. */
+  const installBillHelpers = () => page.evaluate(() => {
+    window.billOpt = (selId, cat) => {
+      const el = document.getElementById(selId); if (!el) return '';
+      const o = [...el.options].find(o => {
+        const t = (state.yf.txns || []).find(x => x.id === o.value);
+        return t && t.cat === cat;
+      });
+      return o ? o.value : '';
+    };
+    window.pickBill = (selId, cat) => {
+      const el = document.getElementById(selId); if (!el) return '';
+      el.value = window.billOpt(selId, cat); return el.value;
+    };
+  });
+  await installBillHelpers();
   const go = async v => { await page.click(`#viewSeg button[data-view="${v}"]`); await page.waitForTimeout(300); };
   const feed = async (text, name = 'stmt.csv') => {
     await page.setInputFiles('#meFile', { name, mimeType: 'text/csv', buffer: Buffer.from(text) });
@@ -54,22 +72,30 @@ const CSV_NEG = ['Date,Description,Amount',
   });
   const commit = async () => {
     await seedBill();
-    await page.selectOption('#meImpAllot', 'Credit Bill');
+    await page.selectOption('#meImpAllot', await page.evaluate(() => billOpt('meImpAllot', 'Credit Bill')));
     await page.click('#meApply');
     await page.waitForTimeout(450);
   };
 
   await go('monthly');
 
-  section('1. refunds arrive as negative expenses; card payments stay excluded');
+  section('1. refunds arrive negative; a card payment arrives as a Bill Payment');
   await feed(CSV);
   const rows = await preview();
-  check(rows.length === 3, 'purchase, gas and refund all queued', JSON.stringify(rows.map(r => r.a)));
+  check(rows.length === 4, 'purchase, gas, refund and the payment all queued',
+    JSON.stringify(rows.map(r => r.a)));
   const refund = rows.find(r => /REFUND/.test(r.n));
   check(refund && refund.a === -45.25, 'the refund comes in NEGATIVE, so it offsets its category',
     refund ? String(refund.a) : 'missing');
-  check(!rows.some(r => /PAYMENT THANK YOU/.test(r.n)),
-    'the card payment is still excluded — it is settling the bill, not spending');
+  /* A payment used to be dropped, which left the bill looking over-itemised by
+     exactly the balance it cleared. It is kept now, under a category no chart
+     draws, and forced negative however the file states it. */
+  const pay = await page.evaluate(() => mePending.find(p => /PAYMENT THANK YOU/.test(p.desc)) || null);
+  check(!!pay, 'the card payment is kept, not dropped');
+  check(pay && pay.cat === 'Bill Payment', 'and filed under Bill Payment',
+    pay ? pay.cat : 'missing');
+  check(pay && pay.amt === -500, 'with the sign forced negative — it comes OFF the bill',
+    pay ? String(pay.amt) : 'missing');
   check(await page.evaluate(() => meMoney(-45.25)) === '-$45.25',
     'a negative renders as -$45.25, not $-45.25', await page.evaluate(() => meMoney(-45.25)));
 
@@ -79,8 +105,16 @@ const CSV_NEG = ['Date,Description,Amount',
     const t = state.yf.txns.filter(x => (x.date || '').startsWith('2026-07'));
     return { n: t.length, net: +t.reduce((s, x) => s + x.amt, 0).toFixed(2) };
   });
-  check(sums.n === 3, 'three rows landed');
-  check(sums.net === 135.25, 'net spend is 120.50 + 60.00 − 45.25', String(sums.net));
+  check(sums.n === 4, 'four rows landed — three charges and the payment', String(sums.n));
+  check(sums.net === -364.75, 'the ledger nets to 135.25 of charges less the 500 cleared',
+    String(sums.net));
+  // what the month REPORTS is the spending, with the payment left out of it
+  const shown = await page.evaluate(() => ({
+    total: document.getElementById('meTotal').textContent,
+    want: meMoney(+meTxns().filter(t => !t.allot && t.cat !== 'Bill Payment')
+      .reduce((s, t) => s + t.amt, 0).toFixed(2)) }));
+  check(shown.total === shown.want,
+    'and the month total counts every row except the payment', JSON.stringify(shown));
 
   section('3. a deleted row can be restored by re-importing the same file');
   await page.evaluate(() => { const i = state.yf.txns.findIndex(t => /SHELL/.test(t.desc));
@@ -114,7 +148,7 @@ const CSV_NEG = ['Date,Description,Amount',
   await page.waitForTimeout(200);
   const viewing = await page.evaluate(() => meMonth);
   await page.evaluate(() => { const s = document.getElementById('meImpAllot');
-    s.value = 'Credit Bill'; s.dispatchEvent(new Event('change', { bubbles: true })); });
+    window.pickBill('meImpAllot', 'Credit Bill'); s.dispatchEvent(new Event('change', { bubbles: true })); });
   await feed(CSV);
   const warn = await page.evaluate(() => {
     const n = document.getElementById('meMonthCheck');
@@ -223,7 +257,7 @@ const CSV_NEG = ['Date,Description,Amount',
   });
   check(blocked.added === 0 && /Allot all to/.test(blocked.msg),
     'and calling it directly is refused too, not just disabled in the UI', blocked.msg);
-  await page.selectOption('#meImpAllot', 'Credit Bill');
+  await page.selectOption('#meImpAllot', await page.evaluate(() => billOpt('meImpAllot', 'Credit Bill')));
   await page.waitForTimeout(150);
   check(await page.evaluate(() => !document.getElementById('meApply').disabled),
     'choosing the bill releases the button');

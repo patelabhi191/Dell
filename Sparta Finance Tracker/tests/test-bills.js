@@ -74,6 +74,26 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
         x.tab !== 'me' && x.type === 'expense' && x.cat === cat && !x.allot);
       return t ? yfItemNote(t).replace(/<[^>]*>/g, '').trim() : '';
     };
+    /* The bill pickers are keyed by bill ID: one month can hold two bills under
+       the same category, and a name cannot tell them apart. These fixtures still
+       read in category names, so map one back to the option it means. */
+    window.billOpt = (selId, cat) => {
+      const el = document.getElementById(selId); if (!el) return '';
+      const o = [...el.options].find(o => {
+        const t = (state.yf.txns || []).find(x => x.id === o.value);
+        return t && t.cat === cat;
+      });
+      return o ? o.value : '';
+    };
+    window.pickBill = (selId, cat) => {
+      const el = document.getElementById(selId); if (!el) return '';
+      el.value = window.billOpt(selId, cat); return el.value;
+    };
+    // what an allot picker is offering, named the way a person reads it
+    window.optCats = selId => [...document.getElementById(selId).options].map(o => {
+      const t = (state.yf.txns || []).find(x => x.id === o.value);
+      return t ? t.cat : o.value;
+    });
     window.yfLedgerCats = () => [...new Set([].concat(state.yf.cats.exp,
       (state.yf.txns || []).filter(t => t.type === 'expense' && t.cat).map(t => t.cat)))];
   });
@@ -197,7 +217,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
        is a no-op, so checking the value back is the test for "was it offered". */
     const catSel = document.getElementById('meCat'), allotSel = document.getElementById('meAllot');
     catSel.value = ''; allotSel.value = ''; meSyncPair();
-    if (al) { allotSel.value = al; meSyncPair(); allotSel.value = al; }
+    if (al) { window.pickBill('meAllot', al); meSyncPair(); window.pickBill('meAllot', al); }
     if (!allotSel.value) { allotSel.value = ''; meSyncPair(); catSel.value = c; meSyncPair(); catSel.value = c; }
     meSaveTx();
     return true;
@@ -281,7 +301,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
       { id: 'h', type: 'expense', date: `${y}-08-18`, amt: 1450, desc: 'Rent', cat: 'Home', who: 'ABI' }];
     yfPersist(); meMonth = `${y}-07`; renderME();
   }, [YEAR]);
-  const julOpts = await page.evaluate(() => [...document.getElementById('meAllot').options].map(o => o.value));
+  const julOpts = await page.evaluate(() => optCats('meAllot'));
   check(julOpts.length === 3 && julOpts.includes('Travel') && julOpts.includes('Credit Bill'),
     'July offers exactly its two expenses, not every category', JSON.stringify(julOpts));
   check(!julOpts.includes('Home'), "August's bill is not on July's list");
@@ -295,7 +315,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   await page.evaluate(([y]) => { const s = document.getElementById('meFormMonth');
     s.value = `${y}-08`; s.dispatchEvent(new Event('change', { bubbles: true })); }, [YEAR]);
   await page.waitForTimeout(150);
-  const augOpts = await page.evaluate(() => [...document.getElementById('meAllot').options].map(o => o.value));
+  const augOpts = await page.evaluate(() => optCats('meAllot'));
   check(augOpts.length === 2 && augOpts.includes('Home'), 'switching the form to August swaps the list',
     JSON.stringify(augOpts));
 
@@ -383,11 +403,21 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
 
   console.log('\n── 13. backfill + invariant hold after all of it ──');
   const back = await page.evaluate(([y]) => {
+    state.yf.txns = [
+      { id: 'cb', type: 'expense', date: `${y}-07-20`, amt: 900, desc: 'Card', cat: 'Credit Bill', who: 'ABI', tab: 'yf' },
+      { id: 'x', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'old', who: 'ABI', tab: 'me', allot: 'Credit Bill' }];
+    normalizeYF();
+    const a = state.yf.txns.find(t => t.id === 'x');
+    // and the same row with no bill behind it at all
     state.yf.txns = [{ id: 'x', type: 'expense', date: `${y}-07-20`, amt: 100, desc: 'old', who: 'ABI', tab: 'me', allot: 'Credit Bill' }];
     normalizeYF();
-    return state.yf.txns[0].allotM;
+    const orphan = state.yf.txns[0];
+    return { allotM: a.allotM, points: a.allot, orphanAllot: orphan.allot || null };
   }, [YEAR]);
-  check(back === `${YEAR}-07`, 'an allocation without allotM takes it from its date', back);
+  check(back.allotM === `${YEAR}-07`, 'an allocation without allotM takes it from its date', back.allotM);
+  check(back.points === 'cb', 'and its old category name is repointed at the bill row itself', String(back.points));
+  check(back.orphanAllot === null,
+    'one with no bill behind it is detached, not left pointing at nothing', String(back.orphanAllot));
 
   const inv = await load(page, [
     { date: `${YEAR}-08-20`, amt: 2000, cat: 'Credit Bill' },
@@ -406,7 +436,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     mePending = rs.map((r, i) => ({ include: true, date: r.d, amt: r.a, desc: r.desc,
       cat: r.c, why: 'rule', changed: false, fp: 'fp' + Math.random() + i }));
     meFillAllotSelect();
-    document.getElementById('meImpAllot').value = al || '';
+    document.getElementById('meImpAllot').value = al ? window.billOpt('meImpAllot', al) : '';
     meApplyImport();
     return true;
   }, [month, allot, rows]);
@@ -523,7 +553,8 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     });
     return out;
   });
-  check(/→ Credit Bill/.test(pills['Loblaws'] || ''), 'an allocation carries a "→ Credit Bill" pill',
+  check(/→ Aug statement/.test(pills['Loblaws'] || ''),
+    'an allocation carries a pill naming the bill it came off',
     (pills['Loblaws'] || '').slice(0, 90));
   check(/Groceries/.test(pills['Loblaws'] || ''),
     'a charge off the bill shows what it was AND what paid for it',
@@ -600,7 +631,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
        is a no-op, so checking the value back is the test for "was it offered". */
     const catSel = document.getElementById('meCat'), allotSel = document.getElementById('meAllot');
     catSel.value = ''; allotSel.value = ''; meSyncPair();
-    if (al) { allotSel.value = al; meSyncPair(); allotSel.value = al; }
+    if (al) { window.pickBill('meAllot', al); meSyncPair(); window.pickBill('meAllot', al); }
     if (!allotSel.value) { allotSel.value = ''; meSyncPair(); catSel.value = c; meSyncPair(); catSel.value = c; }
     meSaveTx();
     return true;
@@ -776,7 +807,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     const snap = () => ({ cat: [...cat.options].map(o => o.textContent),
                           allot: [...allot.options].map(o => o.textContent) });
     const start = snap();
-    allot.value = 'Credit Bill'; meAllotNote(); const withBill = snap();
+    window.pickBill('meAllot', 'Credit Bill'); meAllotNote(); const withBill = snap();
     cat.value = 'Groceries'; meAllotNote();
     const both = { cat: cat.value, allot: allot.value, note: document.getElementById('meAllotNote').textContent };
     allot.value = ''; meAllotNote();
@@ -786,7 +817,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   check(start_ok(pair.start), 'both fields start open, on "none"', JSON.stringify(pair.start.cat.slice(0, 1)));
   check(pair.withBill.cat.length > 1,
     'choosing a bill leaves every category still selectable', String(pair.withBill.cat.length));
-  check(pair.both.cat === 'Groceries' && pair.both.allot === 'Credit Bill',
+  check(pair.both.cat === 'Groceries' && pair.both.allot === 'b',
     'both can be set at once — what it was, and what paid for it',
     JSON.stringify([pair.both.cat, pair.both.allot]));
   check(/moves out of the bill/.test(pair.both.note),
@@ -815,13 +846,14 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   await importRows(`${YEAR}-08`, 'Credit Bill', STMT);
   const both = await page.evaluate(() => {
     const rows = (state.yf.txns || []).filter(t => t.allot);
+    const bill = (state.yf.txns || []).find(t => t.tab !== 'me' && t.cat === 'Credit Bill' && !t.allot);
     return { cats: rows.map(t => t.cat), allots: [...new Set(rows.map(t => t.allot))],
-             blank: rows.filter(t => !t.cat).length,
+             billId: bill && bill.id, blank: rows.filter(t => !t.cat).length,
              learned: Object.keys(state.me.rules).length };
   });
   check(both.blank === 0, 'every imported row keeps the category the categoriser gave it',
     JSON.stringify(both.cats));
-  check(JSON.stringify(both.allots) === JSON.stringify(['Credit Bill']),
+  check(both.allots.length === 1 && both.allots[0] === both.billId,
     'and carries the bill alongside it, not instead of it', JSON.stringify(both.allots));
 
   console.log('\n── 31. rows imported without a category are recovered ──');
@@ -878,7 +910,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
              sum: +yfLedgerCats().reduce((t2, c) => t2 + yfActual('expense', c), 0).toFixed(2),
              note: tr ? tr.children[0].textContent.replace(/\s+/g, ' ').trim() : '',
              over: tr ? /\bover\b/.test(tr.children[0].innerHTML) : false,
-             warn: yfAttachAllot('Credit Bill', `${y}-07`, 'ABI') };
+             warn: yfAttachAllot((yfBillsIn(`${y}-07`).find(b => b.cat === 'Credit Bill') || {}).id) };
   }, [YEAR, rows, manualCat]);
 
   const S = [{ d: 'FARM BOY', a: 900, c: 'Groceries' }, { d: 'PRESTO', a: 400, c: 'Transit' },
@@ -1026,11 +1058,11 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
       { id: 'mb', type: 'expense', date: `${y}-08-11`, amt: 70, desc: 'Monthly buy', cat: 'Dining Out', who: 'ABI', tab: 'me' }];
     meMonth = `${y}-08`; renderME();
     return { opts: [...document.getElementById('meAllot').options].map(o => o.textContent),
-             found: !!yfFindBill('Dining Out', `${y}-08`) };
+             found: yfBillsIn(`${y}-08`).some(b => b.cat === 'Dining Out') };
   }, [YEAR]);
-  check(asBill.opts.some(o => /Spare/.test(o)) && !asBill.opts.some(o => /Dining Out/.test(o)),
+  check(asBill.opts.some(o => /Yearly bill/.test(o)) && !asBill.opts.some(o => /Monthly buy/.test(o)),
     'Allot to offers Yearly bills only', JSON.stringify(asBill.opts));
-  check(!asBill.found, 'and yfFindBill will not return a Monthly row as a bill');
+  check(!asBill.found, 'and yfBillsIn will not return a Monthly row as a bill');
 
   const agree = await page.evaluate(([y]) => {
     state.yf.txns = [
@@ -1040,7 +1072,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     state.yfYear = y; meMonth = `${y}-08`; renderYF(); renderME();
     const tr = ({ children: [{ textContent: yfNoteFor('Spare'), innerHTML: yfNoteFor('Spare') }] });
     return { note: tr ? tr.children[0].textContent.replace(/\s+/g, ' ').trim() : '',
-             warn: yfAttachAllot('Spare', `${y}-08`, 'ABI') };
+             warn: yfAttachAllot((yfBillsIn(`${y}-08`).find(b => b.cat === 'Spare') || {}).id) };
   }, [YEAR]);
   check(/\$140 Itemised, \$40 More/.test(agree.note) && agree.warn === 40,
     'the note and the overage warning use one definition of "itemised"',
@@ -1115,7 +1147,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     return { points: state.yf.txns.find(t => t.id === 'a').allot,
              note: tr ? tr.children[0].textContent.replace(/\s+/g, ' ').trim() : '' };
   }, [YEAR]);
-  check(ren.points === 'Card Bill', 'renaming a bill category repoints its allocations',
+  check(ren.points === 'b', 'renaming a bill category leaves its allocations pointing at the same row',
     `points at "${ren.points}"`);
   check(/\$200 Itemised/.test(ren.note), 'so the renamed bill keeps its itemisation note', ren.note);
 
@@ -1192,7 +1224,7 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
       // row's own category on the list rather than blanking it
       { id: 'old', type: 'expense', date: `${y}-07-05`, amt: 60, desc: 'legacy row', cat: 'Rent', who: 'ABI', tab: 'me', mOnly: true }];
     state.yfYear = y; meMonth = `${y}-07`; render(); renderYF(); renderME();
-    const set = (a, c) => { document.getElementById('meAllot').value = a;
+    const set = (a, c) => { window.pickBill('meAllot', a);
                             document.getElementById('meCat').value = c; };
     // allowed: Monthly category + bill
     document.getElementById('meAmt').value = '40';
@@ -1206,14 +1238,14 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     const offered = [...document.getElementById('meCat').options].map(o => o.textContent);
     const before = JSON.stringify(state.yf.txns.find(t => t.id === 'old'));
     let msg = ''; const rt = window.toast; window.toast = m => { msg = m };
-    document.getElementById('meAllot').value = 'Credit Bill';
+    window.pickBill('meAllot', 'Credit Bill');
     meSaveTx();
     window.toast = rt;
     return { added: state.yf.txns.length - n0 - 0, cat: saved.cat, allot: saved.allot || null,
              hasRent: offered.includes('Rent'), msg,
              unchanged: before === JSON.stringify(state.yf.txns.find(t => t.id === 'old')) };
   }, [YEAR]);
-  check(pair2.cat === 'Dining Out' && pair2.allot === 'Credit Bill',
+  check(pair2.cat === 'Dining Out' && pair2.allot === 'b',
     'a Monthly category and a bill save together — what it was, and what paid for it',
     JSON.stringify([pair2.cat, pair2.allot]));
   check(pair2.hasRent, "the edited row's Yearly name stays on the list so it is not blanked");
