@@ -1,0 +1,7 @@
+node_modules/
+package-lock.json
+# Pre-change snapshot for test-regression.js — regenerate from git history:
+#   git show <ref>:"Sparta Finance Tracker/Sparta ap stock tracker.html" > tests/baseline.html
+baseline.html
+optimized.html
+ab-results.json
