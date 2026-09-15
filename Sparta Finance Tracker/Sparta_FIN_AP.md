@@ -190,9 +190,58 @@ The same `who` field extends to `state.yf.txns` (income **and** expense), which 
 sparta.ccy  sparta.fx  sparta.key  sparta.limits  sparta.fbOn  sparta.updatedAt  sparta.tabOrder
 sparta.dash.holdings  sparta.dash.cash  sparta.dash.history
 sparta.contrib.entries  sparta.contrib.limitsY  sparta.contrib.yearly  sparta.contrib.cadFixed
-sparta.yf.data  sparta.me
+sparta.yf.data  sparta.me  sparta.plan  sparta.notes
+sparta.localOff
 sparta.pinOn  sparta.pinCode  (sparta.pinHash — legacy, cleared on read, do not reuse)
 ```
+
+### `store` has two backings
+
+`store` (get/set/del) is the single choke point every other part of the app writes
+through. Normally it is `localStorage`. With **keep-data-here switched off**
+(`sparta.localOff`) it is an in-memory `Map` instead: the browser keeps nothing of its own,
+the cloud is the only copy, and closing the tab forgets everything. That mode exists so a
+browser used for trying things out cannot leave rows behind that later look, to the cloud
+merge, exactly like real work.
+
+`STORE_EXEMPT` names the keys that always reach the disk regardless — and it is exactly
+two things, neither of which is data:
+
+| Key | Why it is exempt |
+|---|---|
+| `sparta.localOff` | the switch itself. Held in the store it controls, it could not survive the reload it is a setting for |
+| `sparta.pinOn`, `sparta.pinCode` | read by the inline script at the top of `<body>`, **before** the app script exists — that is the only reason there is no flash of unlocked content (§7). A credential, not a row |
+
+**The switch is locked shut unless cloud sync is connected** (`localCanTurnOff()`). With no
+cloud and no local storage, a reload starts blank and the work is gone — worse than
+anything the switch prevents. Turning it on erases the `sparta.*` keys already on disk;
+leaving them would make the switch a lie, and would resurrect a stale copy over the cloud
+if it were ever switched back.
+
+### Clearing data — `RESET_ROWS` / `spartaReset()`
+
+Settings → **Clear data** is a checklist, one tick per store, and only what is ticked is
+emptied. `RESET_ROWS` is the single table the checkbox list, the handler and the tests all
+read.
+
+Yearly Finance and Monthly Expense are **row filters, not keys** — they share one ledger
+(`state.yf.txns`) and are told apart by `t.tab` (§0). Clearing Yearly alone leaves
+Monthly's allocations pointing at bills that no longer exist; `normalizeYF()` already
+detaches those, turning them back into ordinary Monthly expenses, so nothing lands in no
+total at all.
+
+Never touched by any tick, because they are credentials and preferences: `sparta.pinOn`,
+`sparta.pinCode`, `sparta.fbConfig`, `sparta.fbSyncKey`, `sparta.fbOn`, `sparta.tabOrder`,
+`sparta.ccy`, `sparta.fx`, `sparta.key`. `sparta.contrib.cadFixed` is also left set — it is
+a migration marker, and clearing it would let a later cloud pull of already-CAD figures be
+multiplied by the FX rate a second time.
+
+**A clear defaults to this browser only.** Every persist path ends in
+`cloudSaveDebounced()`, so without a guard a local clear would be pushed straight up and
+take the cloud copy with it. `fbLocalOnly` suppresses that for the duration. It is
+deliberately *not* `fbApplying` — that one means "we are applying cloud data", and
+overloading it reads as a bug later. "Also clear the cloud" is a separate, explicitly
+ticked box.
 
 ### Yearly Finance data shape
 ```js
@@ -296,6 +345,22 @@ let fbUserEdited = false;
 var fbBooting = true;   // var, not let — read across the whole app before its own declaration executes
 ```
 `persist()` only calls `markUserEdit()` (which unlocks writes) if `!fbBooting && !fbApplying`. `fbBooting` flips to `false` only after the initial connect attempt resolves (or after an 8s failsafe timeout). **This means page loads, price refreshes, and startup migrations can never write to Firebase — only genuine user actions can.** This was the fix for a critical bug where opening the app in a fresh/incognito browser would silently overwrite real cloud data with an empty local state.
+
+### `sparta.updatedAt` decides who wins a reconnect
+
+`fbConnect` picks a winner with `remoteStamp(remote) >= localStamp`, where `localStamp` is
+`state.bootStamp` — the timestamp this browser had **on load**, frozen so startup
+migrations cannot fabricate a fresh one. The cloud wins ties.
+
+Every store that can hold user data calls `touchUpdatedAt()`: `persist()`, `yfPersist`,
+`mePersist`, `planPersist`, `notesPersist`. **All five, not one.** It used to be bumped by
+`persist()` alone — Dashboard and Contributions — which meant an evening of Yearly work
+never moved the stamp, and a trivial Dashboard change on another device outranked that
+evening and overwrote it. If you add a sixth store, it calls `touchUpdatedAt()` too.
+
+`BOOT_HAD_LOCAL_DATA` reads `localStorage` **directly**, not through `store`, and that is
+deliberate: with keep-data-here switched off it finds nothing, sets `localStamp = 0`, and
+the cloud wins unconditionally — exactly right for cloud-only mode.
 
 ### Known limitation, by design
 **No live listener.** Firebase is read once on connect, not watched continuously. Two devices open simultaneously will not see each other's changes until reload. Last-writer-wins, no merge. This was an explicit trade-off (user confirmed they don't need real-time multi-device sync) — do not add a live listener without discussing bandwidth/conflict implications first.
@@ -446,6 +511,15 @@ These have each caused real, shipped bugs in this project. When making changes, 
    collection is non-empty first — `test-mobile.js` §8 does.
 8. **`opacity:0` does not stop an animation.** The per-tab backdrop fields need an explicit
    `animation-play-state:paused` when hidden, or every tab's animation runs at once.
+9. **A destructive action that quietly reaches the cloud.** Every persist path ends in
+   `cloudSaveDebounced()`, so anything that empties local state pushes that emptiness up
+   and destroys the cloud copy too. Clearing data defaults to this browser only, behind
+   `fbLocalOnly`. Any new bulk operation needs the same guard, and its own dedicated flag
+   rather than borrowing `fbApplying`, which means something else.
+10. **A label that outgrows what the code does.** "Reset all data" cleared Dashboard and
+   Contributions and nothing else, for as long as it took Yearly, Monthly, Plan and Notes
+   to be built around it. When a store is added, grep the *reset* and *export* paths as
+   well as the render paths — those are the ones with no visible symptom when missed.
 
 ---
 

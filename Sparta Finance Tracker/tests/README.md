@@ -23,6 +23,7 @@ npm install                 # playwright only
 | `test-yf-highlights.js` | Yearly Finance's Highlights carousel and the summary row above the cards: which slides qualify on thin vs. full years, the 60/40 top row with its reserved panel, the 8px grid rhythm shared with every other tab, card order and widths surviving the AVG/STATS swap, and the averages dividing by the current month rather than by 12 | 47 |
 | `test-dates.js` | Year boundaries: the contribution-room table rolling forward, pickers topping out at the right year, the last announced TFSA limit carrying into an unannounced year, and a page left open across midnight repainting itself into the new year | 26 |
 | `test-ui-edits.js` | The header and badge pass: ABI/POO naming, coloured Who badges with matching filter active states, the Contributor + Description one-line pairing, and the CAD/USD + account filters staying Dashboard-only while the who-filter lives in the header | 29 |
+| `test-storage.js` | The Clear-data checklist and the keep-data-here switch, plus the two bugs that prompted them. Each tick empties its own store and — the load-bearing half — leaves every other one standing, since wiping too much is the failure that cannot be undone. Yearly Finance and Monthly Expense share a single ledger and are told apart by `t.tab`, so those two ticks are row filters rather than key deletions: clearing Yearly keeps Monthly's rows and **detaches** what pointed at the bills it removed, rather than orphaning money into no total at all. The PIN, the Firebase settings and the tab order survive every combination, because wiping them would lock you out or disconnect your sync. A clear defaults to this browser only, and the `fbLocalOnly` guard is checked by driving the real 1200ms debounce and watching whether anything reaches a stubbed `fbDB` — with a companion assertion that the same call *does* write once the guard is down, so the check cannot pass vacuously. Also pins that all five persist paths advance `sparta.updatedAt` (it used to be `persist()` alone, so an evening of Yearly work never moved the stamp `fbConnect` uses and a trivial Dashboard change elsewhere outranked it), that `bootStamp` stays frozen, that the switch is locked shut with no cloud to fall back on and says why, and that with it off the only `sparta.*` keys reaching the disk are the switch itself and the PIN — the latter because the pre-boot inline script reads it directly and is the only thing preventing a flash of unlocked content | 40 |
 | `test-regression.js` | Diffs a **baseline snapshot** against the current file: rendered markup of all 5 tabs, 45 derived money values, post-boot `state`, and console errors | 15 |
 
 `test-regression.js` needs a pre-change snapshot:
@@ -31,7 +32,7 @@ npm install                 # playwright only
 git show <ref>:"Sparta Finance Tracker/Sparta ap stock tracker.html" > tests/baseline.html
 ```
 
-Without one, `run-all.sh` skips it and runs the other thirteen.
+Without one, `run-all.sh` skips it and runs the other fourteen.
 
 ## Benchmarks
 

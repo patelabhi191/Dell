@@ -1102,6 +1102,22 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 
 .taborder-line{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;align-items:center}
 .taborder-line #tabOrderReset{flex:none;white-space:nowrap}
+/* ---- clear-data checklist ---- */
+.reset-rows{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+/* the global label rule uppercases and letter-spaces; the tab NAME wants that,
+   the sentence under it does not -- set in caps it is a wall to read */
+.reset-row{display:flex;align-items:flex-start;gap:10px;padding:7px 9px;border-radius:9px;
+  cursor:pointer;transition:background .15s;margin-bottom:0}
+.reset-row:hover{background:rgba(255,255,255,.04)}
+.reset-row input{width:auto;flex:none;margin:2px 0 0;accent-color:var(--sk-red,#E55959)}
+.reset-row span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.reset-row b{font-size:12.5px;font-weight:600}
+.reset-row i{font-style:normal;font-size:10.5px;color:var(--text-faint);line-height:1.35;
+  text-transform:none;letter-spacing:.01em;font-weight:500}
+/* the cloud tick is the dangerous one, so it is ruled off and warm-toned */
+.reset-cloud{margin-top:6px;border-top:1px solid rgba(255,255,255,.08);border-radius:0;padding-top:11px}
+.reset-cloud b{color:var(--amber,#E8B04B)}
+#resetGo{width:100%;margin-top:10px}
 .taborder{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
 .taborder-row{display:flex;align-items:center;gap:7px;padding:7px 8px 7px 12px;border-radius:999px;
   background:var(--glass);border:1px solid var(--stroke);cursor:grab;font-size:12.5px;
@@ -1934,10 +1950,16 @@ select{color-scheme:dark}
     <div class="hform">
       <div class="duo full">
         <button class="btn" id="refreshNow">Refresh prices now</button>
-        <button class="btn ghost" id="clearAll">Reset all data</button>
       </div>
     </div>
     <p class="note" id="apiKeyNote">Live prices status shown below, under Cloud sync — the key itself lives in the file, next to the Firebase setup.</p>
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:18px 0">
+    <h3 style="font-family:var(--font-display);font-size:15px;margin-bottom:6px">Clear data</h3>
+    <p class="note" style="margin:0 0 10px">Tick what to empty. Everything unticked is left exactly as it is. Your PIN, your Firebase settings and your tab order are never touched.</p>
+    <div id="resetRows" class="reset-rows"></div>
+    <label class="reset-row reset-cloud"><input type="checkbox" id="resetCloud">
+      <span><b>Also clear the cloud</b><i>off by default — without this the cloud copy survives and a reconnect pulls it back</i></span></label>
+    <button class="btn ghost is-off" id="resetGo" disabled>Clear selected</button>
     <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:18px 0">
     <h3 style="font-family:var(--font-display);font-size:15px;margin-bottom:6px">Yearly starting balance</h3>
     <p class="note" style="margin:0 0 10px">What was in the bank on 1 January. Yearly Finance uses it as the opening figure for that year.</p>
@@ -1986,6 +2008,16 @@ select{color-scheme:dark}
       <button class="btn ghost" id="fbSetup">How do I set this up?</button>
       <button class="btn ghost" id="fbInfo">What is stored?</button>
     </div>
+    <div class="fbrow" style="margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.1)">
+      <div>
+        <div style="font-size:13px;font-weight:600">Keep data in this browser</div>
+        <div style="font-size:11.5px;color:var(--text-faint)" id="localOffNote">On — this browser keeps its own copy</div>
+      </div>
+      <label class="switch" title="Off means nothing is stored here — the cloud is the only copy">
+        <input type="checkbox" id="localToggle"><span class="track"><span class="knob"></span></span>
+      </label>
+    </div>
+    <p class="note">Turn this <b>off</b> and this browser stores nothing of its own: the app loads from the cloud each time and forgets everything when the tab closes. Useful for trying things out without leaving rows behind that later look like real work. It needs a working cloud connection — without one, a reload would start blank and the work would be gone — so the switch stays locked until sync is on. Your PIN is kept either way.</p>
     <p class="note">Sync is configured in the file itself, not here — open this HTML in a text editor and fill in the <b>FIREBASE SETUP</b> block at the very top. This switch only turns syncing on or off on this device; <b>Test connection</b> checks the settings work, and Push / Pull move data manually if the two copies ever disagree.</p>
     <div class="fbrow" style="margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.1)">
       <div>
@@ -2648,7 +2680,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-14C</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-15A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -2764,11 +2796,46 @@ window.addEventListener('error',e=>{
     setTimeout(()=>t.classList.remove('show'),6000);
   }
 });
-/* ============ storage (guarded so file also works in restricted previews) ============ */
-const store = {
+/* ============ storage (guarded so file also works in restricted previews) ============
+
+   Two backings. Normally every key lands in localStorage. With LOCAL STORAGE OFF
+   the browser keeps nothing of its own: writes go to a Map that dies with the
+   tab, and the cloud is the only place the data lives. That mode exists so a
+   browser used for trying things out cannot leave rows behind that later look,
+   to the cloud merge, exactly like real work.
+
+   Two keys are exempt and always reach the disk, because neither is data:
+
+     sparta.localOff   the switch itself. Held in the store it controls, it could
+                       not survive the reload it is a setting for.
+     sparta.pinOn      read by the inline script at the top of <body>, BEFORE this
+     sparta.pinCode    script exists, which is the only reason there is no flash
+                       of unlocked content. A credential, not a row of yours.  */
+const STORE_EXEMPT = ['sparta.localOff','sparta.pinOn','sparta.pinCode'];
+const LOCAL_OFF_KEY = 'sparta.localOff';
+const memStore = new Map();
+// var, not let: read from persist() and others that may run before this line
+var localOff = (function(){
+  try{ return localStorage.getItem(LOCAL_OFF_KEY)==='true' }catch(e){ return false }
+})();
+const storeDisk = {
   get(k,f){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):f }catch(e){ return f } },
   set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)) }catch(e){} },
   del(k){ try{ localStorage.removeItem(k) }catch(e){} }
+};
+const onDisk = k => !localOff || STORE_EXEMPT.indexOf(k)>-1;
+const store = {
+  get(k,f){
+    if(onDisk(k)) return storeDisk.get(k,f);
+    return memStore.has(k) ? memStore.get(k) : f;
+  },
+  set(k,v){
+    if(onDisk(k)) return storeDisk.set(k,v);
+    // structuredClone-free deep copy: callers hand us live state objects and
+    // would otherwise keep a reference to the same array they go on mutating
+    try{ memStore.set(k, JSON.parse(JSON.stringify(v))) }catch(e){ memStore.set(k,v) }
+  },
+  del(k){ if(onDisk(k)) return storeDisk.del(k); memStore.delete(k) }
 };
 
 // Dashboard and Contributions keep their own stores. loadNS reads the new
@@ -2806,6 +2873,18 @@ state.yearly.forEach(r=>{
   if(r.tfsaAbi==null && r.tfsaPoo==null && r.tfsa!=null){ r.tfsaAbi=r.tfsa; r.tfsaPoo=0; delete r.tfsa; }
   if(r.fhsaAbi==null && r.fhsaPoo==null && r.fhsa!=null){ r.fhsaAbi=r.fhsa; r.fhsaPoo=0; delete r.fhsa; }
 });
+/* WHEN DID THIS BROWSER LAST CHANGE ANYTHING. fbConnect picks a winner with
+   `remoteStamp(remote) >= localStamp`, so this figure decides whether the cloud
+   copy or this one survives a reconnect. It used to be bumped by persist()
+   alone -- Dashboard and Contributions -- which meant an evening of Yearly work
+   never moved it, and a trivial Dashboard change on another device outranked
+   that evening and overwrote it. Every store that can hold user data calls this.
+   state.bootStamp is deliberately NOT touched: it is frozen at load so startup
+   migrations cannot fabricate a fresh timestamp. */
+function touchUpdatedAt(){
+  state.updatedAt=Date.now();
+  store.set('sparta.updatedAt',state.updatedAt);
+}
 function persist(){
   store.set('sparta.dash.holdings',state.holdings);   // --- Dashboard store ---
   store.set('sparta.dash.cash',state.cash);
@@ -2818,8 +2897,7 @@ function persist(){
   store.set('sparta.contrib.limitsY',state.limitsY);
   store.set('sparta.contrib.yearly',state.yearly);
   store.set('sparta.fbOn',state.fbOn);
-  state.updatedAt=Date.now();
-  store.set('sparta.updatedAt',state.updatedAt);
+  touchUpdatedAt();
   // any persist once the app is up and running is, by definition, a user change
   if(typeof fbBooting!=='undefined' && !fbBooting && !fbApplying) markUserEdit();
   cloudSaveDebounced();
@@ -3417,12 +3495,106 @@ $('addCash').onclick=()=>moveCash(1);
 $('rmCash').onclick=()=>moveCash(-1);
 $('settingsBtn').onclick=()=>{const d=$('drawer');d.classList.toggle('open');$('settingsBtn').setAttribute('aria-expanded',d.classList.contains('open'))};
 $('refreshNow').onclick=()=>fetchPrices(true);
-$('clearAll').onclick=()=>{
-  if(confirm('Reset everything? Holdings, cash, and history will be cleared.')){
-    state={holdings:[],cash:{TFSA:0,FHSA:0,Other:0},history:[],apiKey:state.apiKey,ccy:state.ccy,fx:state.fx,
-           contribs:[],limits:{TFSA:7000,FHSA:8000},limitsY:{},cYear:new Date().getFullYear(),yearly:[],filter:'ALL',range:'1D'};
-    persist(); render(); toast('All data cleared');
-  }
+/* ============ selective reset ============
+   One table, read by the checkbox list, the handler and the tests alike.
+
+   Yearly Finance and Monthly Expense are ROW FILTERS, not keys. They share a
+   single ledger (state.yf.txns) and are told apart by `t.tab` on each row, so
+   "clear Yearly" drops that tab's rows and leaves the other tab's standing.
+   Clearing Yearly alone leaves Monthly's allocations pointing at bills that no
+   longer exist; normalizeYF() already detaches those, turning them back into
+   ordinary Monthly expenses, so nothing is left in no total at all.
+
+   NOTHING here touches the PIN, the Firebase config, the tab order or the
+   currency settings. Those are credentials and preferences, not your rows, and
+   wiping them would lock you out or disconnect your sync. */
+const RESET_ROWS=[
+  {id:'dash',    label:'Dashboard',       note:'holdings, cash, value history'},
+  {id:'contrib', label:'Contributions',   note:'deposits, limits, yearly room'},
+  {id:'yearly',  label:'Yearly Finance',  note:'its rows, categories, planned amounts, starting balances'},
+  {id:'monthly', label:'Monthly Expense', note:'its rows, merchant rules, import log'},
+  {id:'plan',    label:'Plan',            note:'segments and dated items'},
+  {id:'notes',   label:'Notes',           note:'Strategy and Eye on Stocks \u2014 a panel, not a tab'}
+];
+const RESET_CLEAR={
+  dash(){
+    state.holdings=[]; state.cash={TFSA:0,FHSA:0,Other:0}; state.history=[];
+    ['sparta.holdings','sparta.cash','sparta.history'].forEach(k=>store.del(k));   // legacy keys
+    persist();
+  },
+  contrib(){
+    state.contribs=[]; state.limitsY={}; state.yearly=[];
+    state.limits={TFSA:7000,FHSA:8000};
+    // sparta.contrib.cadFixed is a migration marker, not data: leaving it set
+    // stops a later cloud pull of already-CAD figures being multiplied by the rate
+    ['sparta.contribs','sparta.limitsY','sparta.limits'].forEach(k=>store.del(k));
+    persist();
+  },
+  yearly(){
+    normalizeYF();
+    state.yf.txns=(state.yf.txns||[]).filter(t=>t.tab==='me');   // Monthly's rows stay
+    state.yf.cats={exp:YF_EXP.slice(), inc:YF_INC.slice()};
+    state.yf.planned={}; state.yf.start={};
+    normalizeYF();                       // detaches whatever pointed at the bills just removed
+    yfPersist();
+  },
+  monthly(){
+    normalizeYF();
+    state.yf.txns=(state.yf.txns||[]).filter(t=>t.tab!=='me');   // Yearly's rows stay
+    state.me={}; normalizeME();
+    yfPersist(); mePersist();
+  },
+  plan(){ state.plan=null; normalizePlan(); planPersist() },
+  notes(){ state.notes=null; normalizeNotes(); notesPersist() }
+};
+function spartaReset(ids, alsoCloud){
+  const picked=RESET_ROWS.filter(r=>ids.indexOf(r.id)>-1);
+  if(!picked.length) return 0;
+  markUserEdit();
+  // a local-only clear must not travel: every persist below ends in a cloud save
+  fbLocalOnly=!alsoCloud;
+  try{ picked.forEach(r=>RESET_CLEAR[r.id]()) }
+  finally{ fbLocalOnly=false }
+  if(alsoCloud && typeof cloudPushAll==='function' && fbDB) cloudPushAll().catch(()=>{});
+  render();
+  if(typeof renderYF==='function') renderYF();
+  if(typeof renderME==='function') renderME();
+  if(typeof renderPlan==='function') renderPlan();
+  if(typeof renderNotes==='function') renderNotes();
+  return picked.length;
+}
+function resetPicked(){
+  return [...document.querySelectorAll('#resetRows input[type=checkbox]')]
+    .filter(c=>c.checked).map(c=>c.value);
+}
+function resetSync(){
+  const btn=$('resetGo'); if(!btn) return;
+  const n=resetPicked().length;
+  btn.disabled=!n;
+  btn.classList.toggle('is-off',!n);
+  btn.textContent=n?`Clear ${n} selected`:'Clear selected';
+}
+if($('resetRows')){
+  $('resetRows').innerHTML=RESET_ROWS.map(r=>
+    `<label class="reset-row"><input type="checkbox" value="${r.id}">`+
+    `<span><b>${r.label}</b><i>${r.note}</i></span></label>`).join('');
+  $('resetRows').addEventListener('change',resetSync);
+  resetSync();
+}
+if($('resetGo')) $('resetGo').onclick=()=>{
+  const ids=resetPicked(); if(!ids.length) return;
+  const alsoCloud=!!($('resetCloud')&&$('resetCloud').checked);
+  const names=RESET_ROWS.filter(r=>ids.indexOf(r.id)>-1).map(r=>r.label).join(', ');
+  const where=alsoCloud
+    ? 'This clears them HERE AND IN THE CLOUD, on every device. It cannot be undone.'
+    : 'This clears them in this browser only \u2014 the cloud copy is left alone, so a '+
+      'reconnect will pull them back.';
+  if(!confirm(`Clear ${names}?\n\n${where}`)) return;
+  spartaReset(ids, alsoCloud);
+  $('resetRows').querySelectorAll('input').forEach(c=>{ c.checked=false });
+  if($('resetCloud')) $('resetCloud').checked=false;
+  resetSync();
+  toast(`Cleared ${names}${alsoCloud?' \u2014 here and in the cloud':' \u2014 this browser only'}`);
 };
 ['fSym','fQty','fPrice','fManual'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')addHolding()}));
 $('cashAmt').addEventListener('keydown',e=>{if(e.key==='Enter')moveCash(1)});
@@ -3569,6 +3741,59 @@ $('fbToggle').onchange=async()=>{
   state.fbOn=$('fbToggle').checked; persist();
   if(state.fbOn){ await fbConnect(false) }
   else { fbDB=null; fbSetStatus('sync off'); toast('Sync off \u2014 local data kept') }
+  localRefreshPanel();          // cloud-only mode is only offered while sync can carry it
+};
+
+/* ============ keep-data-here switch ============
+   Off means this browser stores nothing of its own -- store falls back to an
+   in-memory Map (see STORE_EXEMPT) and the cloud is the only copy. It is locked
+   shut unless sync is actually connected: with no cloud and no local storage a
+   reload starts blank and the work is gone, which is a worse outcome than any
+   the switch is meant to prevent. */
+function localCanTurnOff(){ return !fbConfigProblem() && !!state.fbOn && !!fbDB }
+function localRefreshPanel(){
+  const tog=$('localToggle'), note=$('localOffNote');
+  if(!tog) return;
+  tog.checked=!localOff;
+  // already off stays changeable, so there is always a way back
+  tog.disabled=!localOff && !localCanTurnOff();
+  if(note) note.textContent = localOff
+    ? 'Off \u2014 nothing stored here, the cloud is the only copy'
+    : (localCanTurnOff() ? 'On \u2014 this browser keeps its own copy'
+                         : 'On \u2014 connect cloud sync to be able to turn this off');
+}
+function localSetOff(off){
+  localOff=off;
+  try{ localStorage.setItem(LOCAL_OFF_KEY, off?'true':'false') }catch(e){}
+  localRefreshPanel();
+}
+if($('localToggle')) $('localToggle').onchange=()=>{
+  const wantOn=$('localToggle').checked;
+  if(!wantOn){
+    if(!localCanTurnOff()){ localRefreshPanel(); toast('Connect cloud sync first'); return }
+    if(!confirm('Stop keeping data in this browser?\n\nThe cloud becomes the only copy. '+
+      'What is stored here now is erased, and nothing new is written \u2014 closing the tab '+
+      'forgets everything. Your PIN is kept.')){ localRefreshPanel(); return }
+    /* Erase what is already on disk. Leaving it would make the switch a lie --
+       the rows would still be sitting in the browser -- and turning the switch
+       back on later would resurrect a stale copy over whatever the cloud holds. */
+    try{
+      Object.keys(localStorage).filter(k=>/^sparta\./.test(k) && STORE_EXEMPT.indexOf(k)<0)
+        .forEach(k=>localStorage.removeItem(k));
+    }catch(e){}
+    localSetOff(true);
+    toast('This browser will not store data \u2014 the cloud is the only copy');
+  } else {
+    localSetOff(false);
+    // write the live state straight back down, so the browser is current rather
+    // than empty until the next edit happens to save something
+    persist();
+    if(typeof yfPersist==='function') yfPersist();
+    if(typeof mePersist==='function') mePersist();
+    if(typeof planPersist==='function') planPersist();
+    if(typeof notesPersist==='function') notesPersist();
+    toast('This browser will keep its own copy again');
+  }
 };
 $('fbTest').onclick=async()=>{
   const problem=fbConfigProblem();
@@ -3789,8 +4014,10 @@ async function fbConnect(silent){
       toast(legacy?'Connected \u2014 history converted to per-day storage':'Connected \u2014 local data pushed to Firebase');
     }
     fbSetStatus('connected \u00b7 auto-sync on',true);
+    localRefreshPanel();               // cloud-only mode just became available
   }catch(e){
     fbDB=null; fbSetStatus('connection failed');
+    localRefreshPanel();
     if(!silent)toast('Firebase: '+(e.message||'could not connect'));
   }
 }
@@ -3898,8 +4125,13 @@ function compactHistory(){
 
 let lastCoreJSON='';
 // core changes rarely (a buy, a deposit, a category edit) -> upload only when it really differs
+/* Set while a THIS-BROWSER-ONLY reset runs. Every persist path ends in
+   cloudSaveDebounced(), so without this a local clear would be pushed straight
+   up and take the cloud copy with it. Deliberately not fbApplying: that one
+   means "we are applying cloud data", and overloading it reads as a bug. */
+var fbLocalOnly=false;
 async function cloudSaveDebounced(){
-  if(fbApplying) return;
+  if(fbApplying||fbLocalOnly) return;
   if(!fbUserEdited) return;               // read-only until the user actually edits something
   if(!fbDB){                                      // lost/never-made connection: try once before giving up
     if(!state.fbOn || fbConfigProblem()) return;
@@ -4355,7 +4587,8 @@ const yf$=v=>'$'+Math.round(v).toLocaleString('en-CA');
 // the minus goes in FRONT of the sign, not after it: -$249, never $-249
 const yfSign$=v=>(v<0?'-':'')+yf$(Math.abs(v));
 const yf$2=v=>'$'+(v||0).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
-function yfPersist(){ store.set('sparta.yf.data', state.yf); if(typeof cloudSaveDebounced==='function') cloudSaveDebounced(); }
+function yfPersist(){ store.set('sparta.yf.data', state.yf); touchUpdatedAt();
+  if(typeof cloudSaveDebounced==='function') cloudSaveDebounced(); }
 /* THE ONE LINK BETWEEN THE TABS. A Monthly line's `allot` is the ID of the
    Yearly expense it itemises into -- the bill itself, not what the bill is
    called. Every figure a bill reports (itemised, bill paid, over) is summed over
@@ -5116,7 +5349,8 @@ let meMonth = isoLocal().slice(0,7);                          // 'YYYY-MM', loca
 let meTxCat='all';                    // table-only category filter, not persisted
 let mePending = [];
 let meWhoFilter='ALL';
-function mePersist(){ store.set('sparta.me', state.me); if(typeof cloudSaveDebounced==='function') cloudSaveDebounced() }
+function mePersist(){ store.set('sparta.me', state.me); touchUpdatedAt();
+  if(typeof cloudSaveDebounced==='function') cloudSaveDebounced() }
 
 const meMoney=n=>((n||0)<0?'-':'')+'$'+Math.abs(n||0)
   .toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -6117,7 +6351,7 @@ function normalizeNotes(){
 }
 normalizeNotes();
 let npSaveTimer=null;
-function notesPersist(){ store.set('sparta.notes', state.notes);
+function notesPersist(){ store.set('sparta.notes', state.notes); touchUpdatedAt();
   if(typeof cloudSaveDebounced==='function') cloudSaveDebounced() }
 // Typing must not hit localStorage and the cloud on every keystroke.
 function notesPersistSoon(){ clearTimeout(npSaveTimer); npSaveTimer=setTimeout(notesPersist,400) }
@@ -6232,7 +6466,7 @@ function normalizePlan(){
 normalizePlan();
 let plEditId=null;                       // one row at a time, across all segments
 let plSaveTimer=null;
-function planPersist(){ store.set('sparta.plan', state.plan);
+function planPersist(){ store.set('sparta.plan', state.plan); touchUpdatedAt();
   if(typeof cloudSaveDebounced==='function') cloudSaveDebounced() }
 function planPersistSoon(){ clearTimeout(plSaveTimer); plSaveTimer=setTimeout(planPersist,400) }
 
@@ -6709,6 +6943,7 @@ if($('pinKeys')){
 
 /* ============ init ============ */
 fbRefreshPanel();
+localRefreshPanel();
 if(!fbConfigProblem() && state.fbOn){
   fbReconnecting=true;
   fbConnect(true).finally(()=>{ fbReconnecting=false; fbBooting=false });
