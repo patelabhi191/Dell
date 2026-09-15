@@ -529,7 +529,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — thirteen suites, **812 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **852 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.
