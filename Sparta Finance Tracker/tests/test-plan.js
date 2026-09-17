@@ -155,7 +155,7 @@ const section = t => console.log(`\n── ${t} ──`);
   await page.waitForTimeout(150);
 
   section('8. persistence and cloud payload');
-  check(await page.evaluate(() => !!JSON.parse(localStorage.getItem('sparta.plan') || 'null')),
+  check(await page.evaluate(() => !!JSON.parse(localStorage.getItem(nsKey('sparta.plan')) || 'null')),
     'sparta.plan is written');
   const cp = await page.evaluate(() => corePayload().plan);
   check(cp && cp.segments[0].items.length === 3, 'corePayload() carries the plan', JSON.stringify(cp).slice(0, 70));

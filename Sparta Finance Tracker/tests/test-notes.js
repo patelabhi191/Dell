@@ -94,7 +94,7 @@ const section = t => console.log(`\n── ${t} ──`);
   check(kept.caret === 3, 'caret position survives render()', String(kept.caret));
 
   section('5. persistence');
-  check(await page.evaluate(() => !!JSON.parse(localStorage.getItem('sparta.notes') || 'null')),
+  check(await page.evaluate(() => !!JSON.parse(localStorage.getItem(nsKey('sparta.notes')) || 'null')),
     'sparta.notes is written');
   await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(400);
   await go('dash');
