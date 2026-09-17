@@ -265,10 +265,10 @@ const YEAR = 2026;
   // ── 5. the timestamp every merge decision rests on ───────────────────────
   section('5. every store advances sparta.updatedAt');
   const stamps = await page.evaluate(async () => {
-    const read = () => JSON.parse(localStorage.getItem('sparta.updatedAt') || '0');
+    const read = () => JSON.parse(localStorage.getItem(nsKey('sparta.updatedAt')) || '0');
     const out = {};
     const bump = async (name, fn) => {
-      localStorage.setItem('sparta.updatedAt', '1');
+      localStorage.setItem(nsKey('sparta.updatedAt'), '1');
       state.updatedAt = 1;
       fn();
       out[name] = read() > 1;
@@ -283,6 +283,26 @@ const YEAR = 2026;
   });
   ['yearly', 'monthly', 'plan', 'notes', 'dash'].forEach(k =>
     check(stamps[k] === true, `a ${k} save moves the stamp`, String(stamps[k])));
+  /* ...but an AUTOMATED save must not. A tab left open all day re-stamped itself
+     every 60 seconds off the price timer, so on its next connect it outranked a
+     phone that had genuinely been used at lunchtime and pushed its stale ledger
+     over the top. Nothing the user did changed, so nothing should claim it did. */
+  const auto = await page.evaluate(() => {
+    const read = () => JSON.parse(localStorage.getItem(nsKey('sparta.updatedAt')) || '0');
+    localStorage.setItem(nsKey('sparta.updatedAt'), '1'); state.updatedAt = 1;
+    fbUserEdited = false;
+    automated(() => persist());
+    const afterAuto = { stamp: read(), edited: fbUserEdited, flag: fbAutomated };
+    persist();                                   // the same call, not automated
+    return { afterAuto, afterUser: { stamp: read(), edited: fbUserEdited } };
+  });
+  check(auto.afterAuto.stamp === 1 && auto.afterAuto.edited === false,
+    'an automated save leaves the stamp and the user-edited flag alone',
+    JSON.stringify(auto.afterAuto));
+  check(auto.afterAuto.flag === false, 'and lowers its guard again afterwards');
+  check(auto.afterUser.stamp > 1 && auto.afterUser.edited === true,
+    'while the very same call does both when a person made it — not a vacuous check',
+    JSON.stringify(auto.afterUser));
   check(typeof stamps.boot === 'number',
     'bootStamp stays a frozen number — startup migrations must not fabricate a fresh one',
     String(stamps.boot));
@@ -307,18 +327,21 @@ const YEAR = 2026;
     state.plan.segments = [{ id: 'z', name: 'After', start: 0, items: [] }];
     state.yf.txns = [{ id: 'q', type: 'expense', date: `${y}-07-01`, amt: 5, cat: 'Food', who: 'ABI', tab: 'yf' }];
     planPersist(); yfPersist(); persist(); notesPersist(); mePersist();
-    return { keys: Object.keys(localStorage).filter(k => /^sparta\./.test(k)).sort(),
+    return { device: STORE_DEVICE.slice(),
+             keys: Object.keys(localStorage).filter(k => /^sparta\./.test(k)).sort(),
              plan: (store.get('sparta.plan', null) || {}).segments,
              yf: (store.get('sparta.yf.data', null) || {}).txns };
   }, YEAR);
   check(JSON.stringify(off.keys) === JSON.stringify(['sparta.localOff', 'sparta.pinCode', 'sparta.pinOn']),
     'the disk holds the switch and the PIN, and nothing else', JSON.stringify(off.keys));
+  check(off.keys.every(k => off.device.indexOf(k) > -1),
+    'and every one of them is a device key, not a database one', JSON.stringify(off.keys));
   check(off.plan && off.plan.length === 1 && off.yf && off.yf.length === 1,
     'while reads and writes still work, out of memory', JSON.stringify([!!off.plan, !!off.yf]));
   const back = await page.evaluate(() => {
     localSetOff(false);
     planPersist();
-    return { onDisk: !!localStorage.getItem('sparta.plan'),
+    return { onDisk: !!localStorage.getItem(nsKey('sparta.plan')),
              note: document.getElementById('localOffNote').textContent };
   });
   check(back.onDisk, 'switching it back on writes to the disk again', String(back.onDisk));
@@ -328,6 +351,66 @@ const YEAR = 2026;
     STORE_EXEMPT.slice().sort().join(','));
   check(exempt === 'sparta.localOff,sparta.pinCode,sparta.pinOn',
     'the exempt list is exactly the switch and the PIN', exempt);
+
+  /* ── 8. one drawer per database ──────────────────────────────────────────
+     The incident this exists for: testing against a dummy database left dummy
+     rows in localStorage stamped "just now", so pointing the file at production
+     made them look NEWER than the real data and the app pushed them over it.
+     The timestamp was never the problem -- the dummy data was not stale, it was
+     foreign, and recency cannot answer "does this belong here". */
+  section('8. storage is filed under the database it belongs to');
+  const fp = await page.evaluate(() => ({
+    test: dbFingerprint('sparta-app', 'https://sparta.firebaseio.com', 'sparta-test'),
+    dev:  dbFingerprint('sparta-app', 'https://sparta.firebaseio.com', 'sparta-dev'),
+    prod: dbFingerprint('sparta-app', 'https://sparta.firebaseio.com', 'sparta-prod'),
+    // same three values, different project entirely
+    other: dbFingerprint('other-app', 'https://other.firebaseio.com', 'sparta-prod'),
+    // normalisation: a trailing slash or a capital must NOT orphan the drawer
+    slash: dbFingerprint('sparta-app', 'https://sparta.firebaseio.com/', 'sparta-prod'),
+    caps:  dbFingerprint('Sparta-App', 'HTTPS://Sparta.firebaseio.com', 'Sparta-Prod'),
+    pad:   dbFingerprint('  sparta-app ', 'https://sparta.firebaseio.com', ' sparta-prod  '),
+    empty: dbFingerprint('', '', ''),
+    nulls: dbFingerprint(null, undefined, null),
+  }));
+  const three = [fp.test, fp.dev, fp.prod];
+  check(new Set(three).size === 3,
+    'three nodes in ONE project get three different ids — SYNC_KEY is in the hash',
+    JSON.stringify(three));
+  check(fp.other !== fp.prod, 'and a different project differs too', JSON.stringify([fp.other, fp.prod]));
+  check(three.every(v => /^[a-z0-9]{7}$/.test(v)), 'each is a short stable token', JSON.stringify(three));
+  check(fp.slash === fp.prod && fp.caps === fp.prod && fp.pad === fp.prod,
+    'a trailing slash, different casing or stray spaces resolve to the SAME drawer',
+    JSON.stringify([fp.slash, fp.caps, fp.pad, fp.prod]));
+  check(fp.empty === 'local' && fp.nulls === 'local',
+    'an unconfigured app falls back to a fixed name rather than hashing nothing',
+    JSON.stringify([fp.empty, fp.nulls]));
+
+  const drawers = await page.evaluate(() => {
+    const before = nsKey('sparta.yf.data');
+    return { data: before, device: nsKey('sparta.pinCode'),
+             namespaced: before !== 'sparta.yf.data',
+             deviceBare: nsKey('sparta.pinCode') === 'sparta.pinCode',
+             unknown: nsKey('something.else') };
+  });
+  check(drawers.namespaced && /^sparta\.[a-z0-9]+\.yf\.data$/.test(drawers.data),
+    'a data key is filed under the drawer', drawers.data);
+  check(drawers.deviceBare,
+    'the PIN is not — it belongs to the device, and would vanish on every switch',
+    drawers.device);
+  check(drawers.unknown === 'something.else', 'anything not ours is left alone', drawers.unknown);
+
+  /* The whole point: another database's rows are not compared or merged, they
+     are simply never read. */
+  const foreign = await page.evaluate(() => {
+    localStorage.setItem('sparta.a1b2c3d.yf.data', JSON.stringify({ txns: [{ id: 'DUMMY' }] }));
+    const mine = store.get('sparta.yf.data', { txns: [] });
+    return { ids: (mine.txns || []).map(t => t.id),
+             stillThere: !!localStorage.getItem('sparta.a1b2c3d.yf.data') };
+  });
+  check(!foreign.ids.includes('DUMMY'),
+    "another database's rows are never read into this one", JSON.stringify(foreign.ids));
+  check(foreign.stillThere,
+    'and they are left intact, so switching back finds them where they were');
 
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();

@@ -2752,7 +2752,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-17A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-17B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -2883,6 +2883,90 @@ window.addEventListener('error',e=>{
      sparta.pinOn      read by the inline script at the top of <body>, BEFORE this
      sparta.pinCode    script exists, which is the only reason there is no flash
                        of unlocked content. A credential, not a row of yours.  */
+/* ===== WHICH DATABASE DOES THIS BROWSER'S COPY BELONG TO =====================
+
+   Every per-database key is filed under a short fingerprint of the Firebase
+   config, so Test, Dev and Production each keep their own drawer:
+
+     sparta.9c72kx1.yf.data      production
+     sparta.a3f1m0p.yf.data      dev
+
+   Switching the config in the file therefore switches drawers. It does not
+   compare, merge or overwrite anything -- the other drawer is simply not opened,
+   and is still intact if you switch back.
+
+   This closes a real incident. Testing against a dummy database left dummy rows
+   in localStorage with a timestamp of *just now*; pointing the file at production
+   and reloading in the same browser made those rows look NEWER than the real
+   data, so the app pushed them over the top. The timestamp was never the problem.
+   Recency answers "which is more recent", and the question that mattered was
+   "does this copy even belong to this database" -- the dummy data was not stale,
+   it was foreign.
+
+   SYNC_KEY is part of the fingerprint and must stay part of it: three nodes
+   inside ONE project share a projectId and a databaseURL, and the key is the only
+   thing telling them apart.
+
+   Not a cryptographic hash, deliberately. This is a NAME, not a secret -- there
+   is nothing to forge -- and it has to be computed synchronously, before the
+   first store.get() builds `state`. crypto.subtle is async and is undefined
+   outside a secure context, which includes opening this file by double-clicking
+   it. FNV-1a is six lines and collision-free across a handful of strings. */
+function dbFingerprint(projectId, databaseURL, syncKey){
+  // normalised: a trailing slash or a capital appearing months later would
+  // otherwise change the fingerprint and orphan the drawer, and the data would
+  // look like it had vanished when it is only filed under a name nothing reads
+  const parts = [projectId, databaseURL, syncKey]
+    .map(v => String(v==null?'':v).trim().toLowerCase().replace(/\/+$/,''))
+    .join('\n');
+  if(!parts.replace(/\n/g,'')) return 'local';       // configured with nothing in it
+  let h = 0x811c9dc5;                                 // FNV-1a, 32-bit
+  for(let i=0;i<parts.length;i++){ h ^= parts.charCodeAt(i); h = Math.imul(h,0x01000193)>>>0 }
+  return h.toString(36).padStart(7,'0');
+}
+const DB_ID = (function(){
+  if(typeof FIREBASE_ENABLED==='undefined' || !FIREBASE_ENABLED) return 'local';
+  const cfg = (typeof FIREBASE_CONFIG!=='undefined' && FIREBASE_CONFIG) || {};
+  return dbFingerprint(cfg.projectId, cfg.databaseURL,
+    typeof SYNC_KEY!=='undefined' ? SYNC_KEY : '');
+})();
+/* Keys belonging to the DEVICE rather than to a database. Namespacing these
+   would mean your PIN vanishing every time you switched environment. */
+const STORE_DEVICE = ['sparta.localOff','sparta.pinOn','sparta.pinCode','sparta.pinHash',
+  'sparta.tabOrder','sparta.ccy','sparta.fx','sparta.key','sparta.fbOn',
+  'sparta.fbConfig','sparta.fbSyncKey'];
+const nsKey = k => (typeof k!=='string' || k.indexOf('sparta.')!==0 || STORE_DEVICE.indexOf(k)>-1)
+  ? k : 'sparta.'+DB_ID+'.'+k.slice(7);
+/* The data keys, listed rather than pattern-matched: adoption has to be exact,
+   and a regex broad enough to catch them all would also catch the namespaced
+   copies it just wrote. Legacy spellings included so a ledger written before the
+   dash./contrib. rename is carried over too. */
+const STORE_DATA = ['sparta.dash.holdings','sparta.dash.cash','sparta.dash.history',
+  'sparta.contrib.entries','sparta.contrib.limitsY','sparta.contrib.yearly','sparta.contrib.cadFixed',
+  'sparta.yf.data','sparta.me','sparta.plan','sparta.notes','sparta.updatedAt','sparta.limits',
+  'sparta.holdings','sparta.cash','sparta.history','sparta.contribs','sparta.limitsY'];
+/* ADOPTION, once per database. Keys written before any of this existed carry no
+   fingerprint, so the app cannot know which database they came from. They are
+   copied into the current drawer on the assumption that whatever was configured
+   when they were written is what is configured now -- true for everyone except
+   the person mid-experiment -- and fbConnect refuses to PUSH on that one connect,
+   so a wrong guess costs a pull rather than the cloud. */
+var DB_ADOPTED = false;
+(function adoptPreNamespaceKeys(){
+  try{
+    const flag = 'sparta.'+DB_ID+'.adopted';
+    if(localStorage.getItem(flag)) return;
+    let moved = 0;
+    STORE_DATA.forEach(k=>{
+      const from = localStorage.getItem(k);
+      if(from===null) return;
+      const to = 'sparta.'+DB_ID+'.'+k.slice(7);
+      if(localStorage.getItem(to)===null){ localStorage.setItem(to, from); moved++ }
+    });
+    localStorage.setItem(flag,'1');
+    DB_ADOPTED = moved>0;
+  }catch(e){}
+})();
 const STORE_EXEMPT = ['sparta.localOff','sparta.pinOn','sparta.pinCode'];
 const LOCAL_OFF_KEY = 'sparta.localOff';
 const memStore = new Map();
@@ -2896,18 +2980,23 @@ const storeDisk = {
   del(k){ try{ localStorage.removeItem(k) }catch(e){} }
 };
 const onDisk = k => !localOff || STORE_EXEMPT.indexOf(k)>-1;
+/* Callers everywhere still say store.get('sparta.yf.data'); nsKey is what turns
+   that into this database's drawer. One choke point, so nothing else in the app
+   has to know a fingerprint exists. */
 const store = {
   get(k,f){
-    if(onDisk(k)) return storeDisk.get(k,f);
-    return memStore.has(k) ? memStore.get(k) : f;
+    const kk=nsKey(k);
+    if(onDisk(k)) return storeDisk.get(kk,f);
+    return memStore.has(kk) ? memStore.get(kk) : f;
   },
   set(k,v){
-    if(onDisk(k)) return storeDisk.set(k,v);
+    const kk=nsKey(k);
+    if(onDisk(k)) return storeDisk.set(kk,v);
     // structuredClone-free deep copy: callers hand us live state objects and
     // would otherwise keep a reference to the same array they go on mutating
-    try{ memStore.set(k, JSON.parse(JSON.stringify(v))) }catch(e){ memStore.set(k,v) }
+    try{ memStore.set(kk, JSON.parse(JSON.stringify(v))) }catch(e){ memStore.set(kk,v) }
   },
-  del(k){ if(onDisk(k)) return storeDisk.del(k); memStore.delete(k) }
+  del(k){ const kk=nsKey(k); if(onDisk(k)) return storeDisk.del(kk); memStore.delete(kk) }
 };
 
 // Dashboard and Contributions keep their own stores. loadNS reads the new
@@ -2953,6 +3042,21 @@ state.yearly.forEach(r=>{
    that evening and overwrote it. Every store that can hold user data calls this.
    state.bootStamp is deliberately NOT touched: it is frozen at load so startup
    migrations cannot fabricate a fresh timestamp. */
+/* Set while something the APP decided to do is saving -- a 60-second price
+   refresh, the hourly history compaction. Those are not user edits: nothing you
+   did changed, and a quote from Finnhub must not give this browser a stronger
+   claim to the truth than another device's real work.
+
+   It used to. A tab left open all day re-stamped itself every minute, so on its
+   next connect it outranked a phone that had genuinely been used at lunchtime,
+   and pushed its stale ledger over the top. Same reason fbBooting exists: an
+   automatic action must never be able to masquerade as a deliberate one.
+   var, not let: persist() may run before this line executes. */
+var fbAutomated=false;
+function automated(fn){
+  fbAutomated=true;
+  try{ return fn() } finally{ fbAutomated=false }
+}
 function touchUpdatedAt(){
   state.updatedAt=Date.now();
   store.set('sparta.updatedAt',state.updatedAt);
@@ -2969,9 +3073,12 @@ function persist(){
   store.set('sparta.contrib.limitsY',state.limitsY);
   store.set('sparta.contrib.yearly',state.yearly);
   store.set('sparta.fbOn',state.fbOn);
-  touchUpdatedAt();
-  // any persist once the app is up and running is, by definition, a user change
-  if(typeof fbBooting!=='undefined' && !fbBooting && !fbApplying) markUserEdit();
+  // An automated save still writes to disk -- prices and history are real -- but
+  // it leaves the timestamp and the user-edited flag alone, so it cannot win a
+  // merge against a device someone actually used.
+  if(!fbAutomated) touchUpdatedAt();
+  // any other persist once the app is up and running is, by definition, a user change
+  if(typeof fbBooting!=='undefined' && !fbBooting && !fbApplying && !fbAutomated) markUserEdit();
   cloudSaveDebounced();
 }
 
@@ -3404,7 +3511,9 @@ async function fetchPrices(showToast){
   }
   if(ok){ $('lastUpd').textContent='updated '+new Date().toLocaleTimeString(); }
   setLive(ok>0);
-  snapshot(); persist(); render();
+  // the quotes and the snapshot are saved; the timestamp is not touched
+  automated(()=>{ snapshot(); persist() });
+  render();
   if(showToast) toast(ok?`Refreshed ${ok} symbol${ok>1?'s':''}`:'Could not fetch prices — check key/symbols');
 }
 function setLive(ok){
@@ -3962,7 +4071,9 @@ $('fbPull').onclick=async()=>{ if(!fbDB){toast('Sync is off or not configured');
    fresh timestamp. A browser with nothing in it must never overwrite the cloud. */
 const BOOT_HAD_LOCAL_DATA = (function(){
   try{
-    const any = k => { const v=localStorage.getItem(k); return v && v!=='[]' && v!=='{}' && v!=='null' };
+    // nsKey, not the bare name: with storage namespaced by database this must ask
+    // about THIS database's drawer, not whatever another environment left behind
+    const any = k => { const v=localStorage.getItem(nsKey(k)); return v && v!=='[]' && v!=='{}' && v!=='null' };
     if(any('sparta.dash.holdings') || any('sparta.contrib.entries') || any('sparta.dash.history')) return true;
     const cash=store.get('sparta.dash.cash',null);
     if(cash && (cash.TFSA||cash.FHSA||cash.Other)) return true;
@@ -4083,7 +4194,12 @@ async function fbConnect(silent){
     const legacy=!!(remote && !remote.core);
     // Decide using the timestamp this browser had ON LOAD, not one that startup
     // migrations just created. And never let an empty browser overwrite the cloud.
-    const localStamp = BOOT_HAD_LOCAL_DATA ? (state.bootStamp||0) : 0;
+    /* DB_ADOPTED means this run inherited keys written before namespacing existed,
+       so nothing records which database they came from. Treat them as having no
+       claim at all for this one connect: the cloud wins if it holds anything, and
+       they are only pushed when the cloud is empty. A wrong guess then costs a
+       pull, not the ledger. */
+    const localStamp = (BOOT_HAD_LOCAL_DATA && !DB_ADOPTED) ? (state.bootStamp||0) : 0;
     const remoteHasData = !!remote;
     if(remoteHasData && (!BOOT_HAD_LOCAL_DATA || remoteStamp(remote) >= localStamp)){
       applyCloud(remote);
@@ -4198,7 +4314,7 @@ function compactHistory(){
   if(!removed) return 0;
   kept.sort((a,b)=>(a.t||0)-(b.t||0));
   state.history=kept;
-  persist();
+  automated(()=>persist());      // housekeeping on a timer, not a user edit
   // mirror the compaction into the cloud: replace each past day with its single point
   if(fbDB && !fbApplying){
     droppedDays.forEach(({day,keep})=>{

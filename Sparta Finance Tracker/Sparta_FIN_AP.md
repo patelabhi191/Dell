@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-17A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-17B` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -192,8 +192,53 @@ sparta.dash.holdings  sparta.dash.cash  sparta.dash.history
 sparta.contrib.entries  sparta.contrib.limitsY  sparta.contrib.yearly  sparta.contrib.cadFixed
 sparta.yf.data  sparta.me  sparta.plan  sparta.notes
 sparta.localOff
+
+Everything above except the DEVICE keys is filed under a database fingerprint:
+  sparta.<DB_ID>.yf.data      e.g. sparta.9c72kx1.yf.data
+Device keys (bare, never namespaced): localOff, pinOn, pinCode, pinHash,
+  tabOrder, ccy, fx, key, fbOn, fbConfig, fbSyncKey
 sparta.pinOn  sparta.pinCode  (sparta.pinHash — legacy, cleared on read, do not reuse)
 ```
+
+### One drawer per database — `DB_ID` / `nsKey()`
+
+Every **per-database** key is filed under a short fingerprint of the Firebase config:
+
+```
+sparta.9c72kx1.yf.data      production
+sparta.a3f1m0p.yf.data      dev
+sparta.local.yf.data        no cloud configured
+```
+
+Switching the config in the file switches drawers. Nothing is compared, merged or
+overwritten — the other drawer is simply not opened, and is intact if you switch back.
+
+**Why this exists.** Testing against a dummy database left dummy rows in localStorage
+stamped *just now*. Pointing the file at production and reloading in the same browser made
+them look **newer** than the real data, so `fbConnect` pushed them over it. The timestamp
+was never the problem: recency answers *"which is more recent"*, and the question that
+mattered was *"does this copy belong to this database at all"*. The dummy data was not
+stale — it was **foreign**.
+
+- `dbFingerprint(projectId, databaseURL, syncKey)` — FNV-1a over the three values,
+  normalised (trimmed, lowercased, trailing slash stripped) so a capital or a slash added
+  months later cannot orphan a drawer.
+- **`SYNC_KEY` must stay in the hash.** Three nodes inside one project share a `projectId`
+  and a `databaseURL`; the key is the only thing telling Test from Dev from Prod.
+- **Not cryptographic, deliberately.** It is a *name*, not a secret, and it must be
+  computed synchronously before the first `store.get()` builds `state`. `crypto.subtle` is
+  async and undefined outside a secure context — which includes double-clicking the file.
+- `STORE_DEVICE` lists what stays unnamespaced: the PIN, tab order, currency, the Finnhub
+  key, the sync switch and the Firebase config. Namespacing those would mean your PIN
+  vanishing every time you changed environment.
+- `nsKey()` is applied inside `store` only, so nothing else in the app knows a fingerprint
+  exists.
+
+**Adoption runs once per database.** Keys written before namespacing carry no fingerprint,
+so their origin is unknowable; they are copied into the current drawer, and `DB_ADOPTED`
+then makes `fbConnect` treat them as having **no claim** for that one connect — the cloud
+wins if it holds anything, and they are pushed only when the cloud is empty. A wrong guess
+costs a pull rather than the ledger.
 
 ### `store` has two backings
 
@@ -363,7 +408,16 @@ var fbBooting = true;   // var, not let — read across the whole app before its
 migrations cannot fabricate a fresh one. The cloud wins ties.
 
 Every store that can hold user data calls `touchUpdatedAt()`: `persist()`, `yfPersist`,
-`mePersist`, `planPersist`, `notesPersist`. **All five, not one.** It used to be bumped by
+`mePersist`, `planPersist`, `notesPersist`. **All five, not one.**
+
+**An automated save is not a user edit.** `automated(fn)` raises `fbAutomated` for the
+duration, and `persist()` then writes to disk without touching `updatedAt` or calling
+`markUserEdit()`. Used by the 60-second price refresh and the hourly history compaction.
+Without it a tab left open all day re-stamped itself every minute, so on its next connect
+it outranked a phone that had genuinely been used at lunchtime and pushed its stale ledger
+over the top — nothing the user did had changed, yet the browser claimed otherwise. Same
+principle as `fbBooting`: an automatic action must never masquerade as a deliberate one.
+History still reaches the cloud, by its own per-day `cloudSavePoint()` path. It used to be bumped by
 `persist()` alone — Dashboard and Contributions — which meant an evening of Yearly work
 never moved the stamp, and a trivial Dashboard change on another device outranked that
 evening and overwrote it. If you add a sixth store, it calls `touchUpdatedAt()` too.
