@@ -580,7 +580,9 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   transition:opacity .15s ease;background:rgba(9,20,32,.95);border:1px solid var(--stroke-top);
   border-radius:10px;padding:7px 11px;font-size:12px;line-height:1.45;white-space:nowrap;
   box-shadow:0 10px 30px rgba(0,0,0,.5);backdrop-filter:blur(12px);z-index:5;font-variant-numeric:tabular-nums}
-.basegrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px;align-items:center}
+/* amount, its button, amount, its button — one line, each pair reading together */
+.basegrid{display:grid;grid-template-columns:1fr auto 1fr auto;gap:10px;margin-top:14px;align-items:center}
+@media(max-width:700px){.basegrid{grid-template-columns:1fr auto}}
 .basegrid input{margin:0}
 @media (max-width:560px){.basegrid{grid-template-columns:1fr 1fr}.basegrid input{grid-column:1/-1}}
 
@@ -1151,22 +1153,39 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .sec-i[aria-expanded="true"]{background:var(--teal);border-color:var(--teal);color:#06121a}
 .sec-help{margin:0 0 12px}
 .drawer hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:12px 0}
+/* a switch that sits in a button row rather than on its own line. The global
+   label rule uppercases and letter-spaces; this is a sentence, so it opts out. */
+.keepdata{display:flex;align-items:center;gap:10px;flex:none;margin:0;white-space:nowrap;
+  padding:8px 14px;border:1px solid var(--stroke);border-radius:999px;background:rgba(0,0,0,.2);
+  font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:none;color:var(--text);
+  cursor:pointer}
+.keepdata:hover{background:rgba(255,255,255,.05)}
+.sec-help code{font-size:10.5px;background:rgba(0,0,0,.28);padding:1px 5px;border-radius:5px;
+  color:var(--teal);word-break:break-word}
+.sec-help .note:first-child{margin-top:0}
 /* actions sitting on the right of a .fbrow, beside or instead of a switch */
 .row-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .row-actions .btn{flex:none;padding:8px 13px;font-size:12px}
-/* ---- clear-data checklist: six tabs across one row ---- */
-.reset-rows{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.reset-row{display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;
-  cursor:pointer;transition:background .15s;margin-bottom:0;
-  border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.18)}
-.reset-row:hover{background:rgba(255,255,255,.06)}
+/* ---- clear-data checklist ----
+   Same pill as the Tab order rows below it, so the two lists read as one family;
+   a checkbox stands where Tab order puts its position number. display:contents on
+   the container lets the six tabs, the cloud tick and the button share a single
+   flex line rather than living in nested boxes. */
+.reset-line{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
+.reset-rows{display:contents}
+.reset-row{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;
+  background:var(--glass);border:1px solid var(--stroke);cursor:pointer;font-size:12.5px;
+  transition:background .15s;margin:0}
+.reset-row:hover{background:rgba(255,255,255,.07)}
 .reset-row input{width:auto;flex:none;margin:0;accent-color:var(--sk-red,#E55959)}
-.reset-row b{font-size:11.5px;font-weight:600;white-space:nowrap;letter-spacing:.02em}
-/* the cloud tick is the dangerous one, so it sits apart and warm-toned */
-.reset-cloud{border-radius:999px;border-color:rgba(232,176,75,.35);background:rgba(232,176,75,.07)}
-.reset-cloud b{color:var(--amber,#E8B04B)}
-.reset-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-#resetGo{flex:1;min-width:150px;margin:0}
+/* the global label rule uppercases and letter-spaces; these are names, like the
+   Tab order pills, so they are set as names */
+.reset-row b{font-size:12.5px;font-weight:500;white-space:nowrap;letter-spacing:0;
+  text-transform:none;color:var(--text)}
+/* the cloud tick is the dangerous one, so it is warm-toned and set apart */
+.reset-cloud{border-color:rgba(232,176,75,.4);background:rgba(232,176,75,.08)}
+.reset-cloud b{color:var(--amber,#E8B04B);font-weight:600}
+#resetGo{flex:none;margin:0;white-space:nowrap}
 .taborder{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
 .taborder-row{display:flex;align-items:center;gap:7px;padding:7px 8px 7px 12px;border-radius:999px;
   background:var(--glass);border:1px solid var(--stroke);cursor:grab;font-size:12.5px;
@@ -2004,11 +2023,11 @@ select{color-scheme:dark}
       <button class="sec-i" data-help="helpClear" aria-expanded="false" aria-label="About clearing data">i</button>
     </div>
     <p class="note sec-help" id="helpClear" hidden>Tick what to empty — one per tab — and everything unticked is left exactly as it is. Your PIN, your Firebase settings and your tab order are never touched. Clearing is <b>this browser only</b> unless you tick the cloud as well, so a reconnect pulls the cloud copy back.</p>
-    <div id="resetRows" class="reset-rows"></div>
     <div class="reset-line">
+      <div id="resetRows" class="reset-rows"></div>
       <label class="reset-row reset-cloud" title="Without this the cloud copy survives and a reconnect pulls it back">
-        <input type="checkbox" id="resetCloud"><b>Also clear the cloud</b></label>
-      <button class="btn ghost is-off" id="resetGo" disabled>Clear selected</button>
+        <input type="checkbox" id="resetCloud"><b>Cloud too</b></label>
+      <button class="btn is-off" id="resetGo" disabled>Clear</button>
     </div>
     <hr>
     <div class="sec-head">
@@ -2044,19 +2063,24 @@ select{color-scheme:dark}
     <div class="basegrid">
       <input id="baseT" type="number" step="0.01" min="0" placeholder="TFSA amount">
       <button class="btn primary" id="setBaseT">Base TFSA</button>
-      <button class="btn" id="clearHoldings">Clear holdings</button>
       <input id="baseF" type="number" step="0.01" min="0" placeholder="FHSA amount">
       <button class="btn primary" id="setBaseF">Base FHSA</button>
-      <button class="btn" id="clearHistory">Clear old history</button>
     </div>
-    <p class="note sec-help" id="helpBase" hidden><b>Base TFSA / Base FHSA</b> set that account's available balance straight to the amount you type (in the currency shown at the top), replacing whatever is there — handy for lining the Dashboard up with your broker instead of adding deposits one by one. <b>Clear holdings</b> deletes every position on the Dashboard and pushes the empty list to Firebase. <b>Clear old history</b> removes the oldest 20 portfolio snapshots (keeping the most recent ones) to stop the cloud record growing — your holdings, cash, and contributions are untouched. Both ask for confirmation first and cannot be undone.</p>
+    <p class="note sec-help" id="helpBase" hidden><b>Base TFSA / Base FHSA</b> set that account's available balance straight to the amount you type (in the currency shown at the top), replacing whatever is there — handy for lining the Dashboard up with your broker instead of adding deposits one by one.</p>
     <hr>
     <div class="sec-head">
       <h3>Cloud sync</h3>
       <span id="fbStatus" style="font-size:11px;font-weight:500;color:var(--text-faint)">not configured</span>
       <button class="sec-i" data-help="helpSync" aria-expanded="false" aria-label="About cloud sync">i</button>
     </div>
-    <p class="note sec-help" id="helpSync" hidden>Sync is configured in the file itself, not here — open this HTML in a text editor and fill in the <b>FIREBASE SETUP</b> block at the very top. The switch only turns syncing on or off on this device; <b>Test connection</b> checks the settings work, and Push / Pull move data manually if the two copies ever disagree.<br><br><b>Keep data in this browser</b>, turned off, means this browser stores nothing of its own: the app loads from the cloud each time and forgets everything when the tab closes. Useful for trying things out without leaving rows behind that later look like real work. It needs a working cloud connection — without one, a reload would start blank and the work would be gone — so the switch stays locked until sync is on. Your PIN is kept either way.</p>
+    <div class="sec-help" id="helpSync" hidden>
+      <p class="note" style="margin-top:0"><b>Setting it up.</b> Sync is configured inside this HTML file, so your keys never sit in the browser. Open it in a text editor and search for <b>FIREBASE SETUP</b>, near the top of the first <code>&lt;script&gt;</code>. Set <code>FIREBASE_ENABLED = true</code>, paste the config from the Firebase console (Project settings → Your apps → SDK setup), and set <code>SYNC_KEY</code> to any private string. A <code>databaseURL</code> is required, so create a Realtime Database first. Save, reload, then switch sync on.</p>
+      <p class="note">Suggested database rules:<br>
+        <code>{ "rules": { ".read": false, ".write": false, "sparta": { ".read": true, ".write": true } } }</code></p>
+      <p class="note"><b>What is stored.</b> Under <code>sparta/&lt;SYNC_KEY&gt;</code>: <b>core</b> — holdings, cash, contributions, yearly finance, monthly, plan and notes; and <b>history/&lt;date&gt;</b> — one closing point per past day, intraday for today. Live prices are never synced; they are re-fetched on load.</p>
+      <p class="note"><b>The switch</b> only turns syncing on or off on this device. <b>Test connection</b> checks the settings work, and Push / Pull move data by hand if the two copies ever disagree.</p>
+      <p class="note"><b>Keep data here</b>, turned off, means this browser stores nothing of its own: the app loads from the cloud each time and forgets everything when the tab closes. Useful for trying things out without leaving rows behind that later look like real work. It needs a working cloud connection — without one a reload would start blank and the work would be gone — so it stays locked until sync is on. Your PIN is kept either way.</p>
+    </div>
     <div class="fbrow">
       <div>
         <div style="font-size:13px;font-weight:600" id="fbProject">Not configured</div>
@@ -2070,18 +2094,12 @@ select{color-scheme:dark}
       <button class="btn" id="fbTest">Test connection</button>
       <button class="btn" id="fbPush">Push to cloud</button>
       <button class="btn" id="fbPull">Pull from cloud</button>
-      <button class="btn ghost" id="fbSetup">How do I set this up?</button>
-      <button class="btn ghost" id="fbInfo">What is stored?</button>
-    </div>
-    <div class="fbrow" style="margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.1)">
-      <div>
-        <div style="font-size:13px;font-weight:600">Keep data in this browser</div>
-        <div style="font-size:11.5px;color:var(--text-faint)" id="localOffNote">On — this browser keeps its own copy</div>
-      </div>
-      <label class="switch" title="Off means nothing is stored here — the cloud is the only copy">
-        <input type="checkbox" id="localToggle"><span class="track"><span class="knob"></span></span>
+      <label class="keepdata" title="Off means nothing is stored here — the cloud becomes the only copy">
+        <span>Keep data here</span>
+        <span class="switch"><input type="checkbox" id="localToggle"><span class="track"><span class="knob"></span></span></span>
       </label>
     </div>
+    <p class="note" id="localOffNote" style="margin-top:8px">On — this browser keeps its own copy</p>
     <hr>
     <div class="sec-head">
       <h3>Live prices</h3>
@@ -2752,7 +2770,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-17B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-17C</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -3760,7 +3778,7 @@ function resetSync(){
   const n=resetPicked().length;
   btn.disabled=!n;
   btn.classList.toggle('is-off',!n);
-  btn.textContent=n?`Clear ${n} selected`:'Clear selected';
+  btn.textContent=n?`Clear (${n})`:'Clear';
 }
 if($('resetRows')){
   $('resetRows').innerHTML=RESET_ROWS.map(r=>
@@ -4010,32 +4028,9 @@ $('fbTest').onclick=async()=>{
     fbSetStatus('test failed');
   }
 };
-$('fbSetup').onclick=()=>{
-  alert(
-    'SPARTA AP \u2014 Firebase setup\n\n'+
-    'Sync is configured inside this HTML file, so your keys are never stored in the browser.\n\n'+
-    '1. Open this file in a text editor (Notepad, VS Code).\n'+
-    '2. Search for:  FIREBASE SETUP\n'+
-    '   It is near the top, inside the first <script> tag.\n'+
-    '3. Set:  const FIREBASE_ENABLED = true;\n'+
-    '4. Paste your config from the Firebase console\n'+
-    '   (Project settings \u2192 Your apps \u2192 SDK setup and configuration).\n'+
-    '   databaseURL is required \u2014 create a Realtime Database first.\n'+
-    '5. Set SYNC_KEY to any private string, e.g. "abi-sparta-x92kd83".\n'+
-    '6. Save the file and reload this page, then switch Cloud sync on.\n\n'+
-    'Recommended database rules:\n'+
-    '{ "rules": { ".read": false, ".write": false,\n'+
-    '             "sparta": { ".read": true, ".write": true } } }'
-  );
-};
-$('fbInfo').onclick=()=>{
-  const n=state.history.length;
-  alert('Stored under sparta/'+(SYNC_KEY||'<SYNC_KEY>')+':\n\n'+
-    '\u2022 core \u2014 holdings, cash, contributions, yearly finance\n'+
-    '\u2022 history/<date> \u2014 one closing point per past day, intraday for today\n\n'+
-    'Currently '+state.holdings.length+' holdings and '+n+' history points.\n'+
-    'Live prices are not synced; they are re-fetched on load.');
-};
+/* fbSetup / fbInfo were two alert() popups holding the setup steps and the
+   stored-shape rundown. Both now read as prose inside the Cloud sync help panel,
+   where they can be scanned rather than dismissed. */
 // Config previously lived in browser storage. If an old copy is still there and the
 // in-file block is blank, hand it back so it can be pasted into the file.
 (function offerLegacyConfig(){
@@ -4171,7 +4166,7 @@ state.yearly.forEach(r=>{
 // Returns why sync can't run, or null if the file is configured correctly.
 function fbConfigProblem(){
   if(typeof FIREBASE_ENABLED==='undefined'||!FIREBASE_ENABLED)
-    return 'Not set up yet \u2014 press "How do I set this up?" below';
+    return 'Not set up yet \u2014 press the i beside "Cloud sync" for the steps';
   if(!FIREBASE_CONFIG||!FIREBASE_CONFIG.databaseURL)
     return 'FIREBASE_CONFIG needs a databaseURL \u2014 create a Realtime Database first';
   if(!FIREBASE_CONFIG.apiKey) return 'FIREBASE_CONFIG is missing apiKey';
@@ -4692,26 +4687,6 @@ $('setBaseT').onclick=()=>setBase('TFSA');
 $('setBaseF').onclick=()=>setBase('FHSA');
 $('baseT').addEventListener('keydown',e=>{if(e.key==='Enter')setBase('TFSA')});
 $('baseF').addEventListener('keydown',e=>{if(e.key==='Enter')setBase('FHSA')});
-$('clearHoldings').onclick=()=>{
-  markUserEdit();
-  const n=state.holdings.length;
-  if(!n){ toast('No holdings to clear'); return }
-  if(!confirm(`Delete all ${n} holding${n>1?'s':''} from the Dashboard?\n\nThis also clears them from your Firebase record and cannot be undone. Cash balances and contributions are not affected.`)) return;
-  state.holdings=[];
-  snapshot(true); persist(); render();
-  if(fbDB) cloudPushAll().catch(()=>toast('Cleared locally — cloud sync will retry'));
-  toast(`Cleared ${n} holding${n>1?'s':''}`);
-};
-$('clearHistory').onclick=()=>{
-  markUserEdit();
-  const n=state.history.length;
-  if(n<=20){ toast(`Only ${n} snapshot${n===1?'':'s'} stored — nothing old enough to trim`); return }
-  if(!confirm(`Delete the 20 OLDEST portfolio snapshots?\n\nYou have ${n}; the most recent ${n-20} will be kept and your graph will start from there. This frees Firebase storage and cannot be undone.\n\nIf you still need that history, press Cancel.`)) return;
-  state.history=state.history.slice(20);
-  persist(); render();
-  if(fbDB) cloudPushAll().catch(()=>toast('Trimmed locally — cloud sync will retry'));
-  toast(`Removed 20 old snapshots — ${state.history.length} kept`);
-};
 // deposit log starts collapsed
 $('logToggle').onclick=()=>{
   const body=$('logBody'), open=body.classList.toggle('open');

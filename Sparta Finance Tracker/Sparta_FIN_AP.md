@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-17B` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-17C` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -452,6 +452,23 @@ Two patterns do the trimming, and new sections should follow both:
 - **Compacted controls** — `.drawer .btn`, `.drawer input/select`, `.drawer .fbrow` and
   `.drawer hr` are all tighter in here than in the app proper. That is deliberate: this is
   a settings panel, not a workspace.
+- **One line per section where it fits.** Clear data puts its six tab pills, the cloud tick
+  and the button on a single flex line (`.reset-rows` is `display:contents` so the pills
+  join their parent's line rather than forming a nested box). The pills deliberately match
+  `.taborder-row`, with a checkbox where Tab order puts its position number, so the two
+  lists read as one family. Dashboard shortcuts pairs each amount with its own button in
+  `1fr auto 1fr auto`. Cloud sync carries `.keepdata` — a switch styled to sit in a button
+  row — in the space two instruction buttons used to take.
+
+**Instructions live in the help panel, not in `alert()`.** `fbSetup` and `fbInfo` were two
+popups holding the Firebase setup steps and the stored-shape rundown; both now read as
+prose under the Cloud sync `i`, where they can be scanned rather than dismissed. Anything
+similar should go the same way rather than adding a button.
+
+**Removed as redundant:** *Clear holdings* (Clear data → Dashboard does it) and *Clear old
+history*. The latter trimmed the oldest 20 snapshots off a list `compactHistory()` already
+prunes hourly — every past day collapses to one closing point, and `snapshot()` caps the
+list at 4,000, which is about eleven years at one point per day.
 
 `.sec-i` is in the 560px tap-target rule, so it keeps a 28px hit area on a phone.
 
