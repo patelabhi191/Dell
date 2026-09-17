@@ -220,9 +220,19 @@ if it were ever switched back.
 
 ### Clearing data — `RESET_ROWS` / `spartaReset()`
 
-Settings → **Clear data** is a checklist, one tick per store, and only what is ticked is
-emptied. `RESET_ROWS` is the single table the checkbox list, the handler and the tests all
-read.
+Settings → **Clear data** is a checklist — **one tick per tab, in tab-bar order**, all six
+on a single row — and only what is ticked is emptied. `RESET_ROWS` is the single table the
+checkbox list, the handler and the tests all read.
+
+Two consequences of keying it to tabs rather than stores:
+
+- **The notepad has no tick.** It is a panel on Dashboard and Contributions, not a tab, so
+  folding it into either would be arbitrary. `sparta.notes` therefore survives every
+  combination and has to be cleared from the panel itself. `RESET_CLEAR` has no `notes`
+  entry; add one alongside a tick if that changes.
+- **Archives has a tick but no store.** `RESET_CLEAR.archive()` is a deliberate no-op so
+  the list mirrors the tab bar and the id is reserved — when Archives gets data, that
+  function is the only place that needs to learn about it.
 
 Yearly Finance and Monthly Expense are **row filters, not keys** — they share one ledger
 (`state.yf.txns`) and are told apart by `t.tab` (§0). Clearing Yearly alone leaves
@@ -372,6 +382,32 @@ the cloud wins unconditionally — exactly right for cloud-only mode.
 
 ## 5. Visual Themes (per tab, deliberately distinct)
 
+### The Settings drawer is capped, not just trimmed
+
+`.drawer.open` is `max-height:75vh; overflow-y:auto`. Trimming content alone cannot hold
+that line — the same markup is 70% of a tall desktop screen and 130% of a laptop one — so
+the ceiling is stated rather than aimed at, and the trimming is what keeps most screens
+from needing the scrollbar at all.
+
+Two patterns do the trimming, and new sections should follow both:
+
+- **`.sec-head`** — heading, optional `.sec-badge`, and a small `.sec-i` button. Every
+  instructional paragraph is a `<p class="note sec-help" id="helpX" hidden>` revealed by
+  its button (`data-help="helpX"`). One delegated listener on `#drawer` handles all of
+  them, so a new section needs no wiring. The button carries `aria-expanded`.
+- **Compacted controls** — `.drawer .btn`, `.drawer input/select`, `.drawer .fbrow` and
+  `.drawer hr` are all tighter in here than in the app proper. That is deliberate: this is
+  a settings panel, not a workspace.
+
+`.sec-i` is in the 560px tap-target rule, so it keeps a 28px hit area on a phone.
+
+**Chips that fill:** Income and Expense on Yearly fill with `--yf-inc` / `--yf-exp` and go
+near-black, the same idiom as `.seg button.active.poo`. Both segs carry it — `#yfModeSeg`
+in the year bar and `#yfFilterSeg` by the transactions table — since one filled and one not
+reads as a bug. **`.seg button` has `transition:all .2s`**, so a test reading
+`getComputedStyle().color` straight after a click gets a mid-interpolation value; wait it
+out (this cost a real debugging detour — see bug class 11).
+
 | Tab | Theme | Notes |
 |---|---|---|
 | Dashboard | Glassmorphism, aurora backdrop | Original design |
@@ -520,6 +556,16 @@ These have each caused real, shipped bugs in this project. When making changes, 
    Contributions and nothing else, for as long as it took Yearly, Monthly, Plan and Notes
    to be built around it. When a store is added, grep the *reset* and *export* paths as
    well as the render paths — those are the ones with no visible symptom when missed.
+11. **Measuring a value that is still animating.** `getComputedStyle().color` read straight
+   after a click returns a value part-way through `transition:all .2s`, which cost a real
+   debugging detour on the Income/Expense chips: the background looked applied and the text
+   colour looked ignored, from one declaration block. Same shape as `scroll-behavior:smooth`
+   making `window.scrollTo` measurements read mid-scroll. Wait out the transition, or read
+   the rule rather than the computed value.
+12. **A measurement taken while the element is `display:none`.** Everything in the Settings
+   drawer reads 0×0 until it is opened, so a layout assertion there passes without meaning
+   anything — the sibling of bug class 7. `test-storage.js` §2b opens the drawer and asserts
+   the boxes are real before trusting a single position.
 
 ---
 
@@ -550,6 +596,20 @@ change, so it is kept green rather than skipped.
 - Plausible Archives scope, based on prior conversation: read-only view of closed positions, prior-year Yearly Finance summaries (the year selector was removed from Yearly Finance's main view when it became a static current-year badge — Archives could be where historical years live), or compacted history snapshots.
 - No live Firebase listener (§4) — acceptable per user, don't add without asking.
 - No xlsx import support (CSV only, by design — avoids bundling SheetJS in a single-file app).
-- `SpAPP.png` is not committed next to the HTML, so the header/PIN logo 404s until
-  you drop it in this folder. The old `file:///C:/Users/...` fallback was removed
-  (browsers block `file://` subresources on any http-served page).
+- `spapp.png` is not committed next to the HTML, so the header logo, the PIN screen orb
+  and the favicon 404 until you drop it in this folder. The old `file:///C:/Users/...`
+  fallback was removed (browsers block `file://` subresources on any http-served page).
+
+  **Keep the filename lowercase.** It is referenced from four places — the `icon` and
+  `apple-touch-icon` links in `<head>`, `.brand .orb` and `.pin-orb` — and it broke on
+  Netlify precisely because of case: their servers are case-sensitive, Windows and macOS
+  are not, so the local filesystem matched `SpAPP.png` against a file actually named
+  `Spapp.png` and the deployed site did not. Lowercase is the one spelling that cannot be
+  got wrong on any of the three. On Windows the rename needs a temporary name in between
+  (`SpAPP.png → temp1.png → spapp.png`) or the filesystem treats it as a no-op.
+
+  A second favicon used to sit in `<head>`: an SVG data URI wrapping this PNG in a
+  brightness filter. **Do not put it back.** An SVG loaded *as an image* is sandboxed and
+  cannot fetch an external file, so its `<image href>` never resolved — and being declared
+  after the PNG, it beat the working link and rendered nothing at all. Brightening the
+  icon means editing the PNG, not wrapping it.

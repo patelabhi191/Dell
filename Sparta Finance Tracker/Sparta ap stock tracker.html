@@ -3,12 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SPARTA AP — Portfolio</title>
-<link rel="icon" type="image/png" href="SpAPP.png">
-<!-- Brightened favicon: same SpAPP.png with a linear brightness boost applied
-     via an SVG filter, for browsers that support SVG favicons. Falls back to
-     the plain PNG above wherever this isn't supported or doesn't resolve. -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='64'%20height='64'%3E%3Cfilter%20id='b'%3E%3CfeComponentTransfer%3E%3CfeFuncR%20type='linear'%20slope='1.35'%20intercept='0.04'/%3E%3CfeFuncG%20type='linear'%20slope='1.35'%20intercept='0.04'/%3E%3CfeFuncB%20type='linear'%20slope='1.35'%20intercept='0.04'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Cimage%20href='SpAPP.png'%20width='64'%20height='64'%20filter='url%28%23b%29'/%3E%3C/svg%3E">
+<title>SPARTA AP</title>
+<!-- The image file is lowercase on purpose. Netlify's servers are case-sensitive
+     where Windows and macOS are not, which is exactly how this broke: the local
+     filesystem happily matched SpAPP.png against a file named Spapp.png, and the
+     deployed site did not. Lowercase is the one spelling that cannot be got wrong
+     on any of the three. "./" rather than "/" so the same HTML works both
+     double-clicked and served -- a leading slash means the drive root locally.
+
+     There was also an SVG favicon here that wrapped this PNG in a brightness
+     filter. It is gone: an SVG loaded AS an image is sandboxed and cannot fetch
+     an external file, so its <image href> never resolved -- and being declared
+     second, it beat the working PNG above it and rendered nothing. -->
+<link rel="icon" type="image/png" href="./spapp.png">
+<link rel="apple-touch-icon" href="spapp.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
@@ -252,9 +260,9 @@ header{display:flex;align-items:center;justify-content:space-between;gap:0px;mar
 .brand{display:flex;align-items:center;gap:10px}
 .brand .orb { width: 70px; height: 100px;
   flex: none;
-  /* SpAPP.png sits beside this HTML file. A URL that fails to load simply
-     isn't painted, so the header degrades to text-only without it. */
-  background-image: url('SpAPP.png');
+  /* spapp.png sits beside this HTML file, lowercase (see the <head>). A URL that
+     fails to load simply isn't painted, so the header degrades to text-only. */
+  background-image: url('spapp.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -429,9 +437,21 @@ label{font-size:11px;color:var(--text-faint);font-weight:600;letter-spacing:.08e
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-/* ---------- Settings drawer ---------- */
-.drawer{padding:22px;display:none}
-.drawer.open{display:block}
+/* ---------- Settings drawer ----------
+   Capped at 75% of the viewport and scrolled internally. Trimming the content
+   alone cannot hold that line: the same markup is 70% of a tall desktop screen
+   and 130% of a laptop one, so the ceiling has to be stated rather than aimed
+   at. Everything below is the trimming that keeps most screens from needing the
+   scrollbar at all -- controls and rules are noticeably tighter in here than in
+   the app proper, which is deliberate: this is a settings panel, not a
+   workspace. */
+.drawer{padding:16px 18px;display:none}
+.drawer.open{display:block;max-height:75vh;overflow-y:auto;overscroll-behavior:contain}
+.drawer .btn{padding:9px 14px}
+.drawer input,.drawer select{padding:9px 12px}
+.drawer .hform label{font-size:9.5px;margin-bottom:3px}
+.drawer .fbrow{padding:10px 13px}
+.drawer .basegrid{gap:8px;margin-top:10px}
 footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5px;letter-spacing:.04em}
 
 /* ---------- Contribution bars ---------- */
@@ -694,8 +714,21 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .sell-sum span{color:var(--text-dim)}
 .sell-sum b{font-variant-numeric:tabular-nums}
 .yf-modeseg button{padding:7px 13px;font-size:12px;letter-spacing:.04em}
-.yf-modeseg button[data-mode="income"].active{color:var(--yf-inc)}
-.yf-modeseg button[data-mode="expense"].active{color:var(--yf-exp)}
+/* Income and Expense read the way ABI / POO do: the chip FILLS with its own colour
+   and the label goes near-black, rather than a white chip with coloured writing.
+   Same idiom as `.seg button.active.poo`, with the money tokens. Both segs carry
+   it -- the mode picker up in the year bar and the table filter down by the
+   transactions -- since one filled and one not would read as a bug.
+   Keyed by id so they clearly outrank `.seg button.active.all`, which sets the
+   white fill "Both" and "All" keep. Note when testing these: `.seg button` has
+   `transition:all .2s`, so reading getComputedStyle().color straight after a
+   click returns a value mid-interpolation, not the final one. Wait it out. */
+#yfModeSeg button.active[data-mode="income"],
+#yfFilterSeg button.active[data-f="income"]{
+  background:linear-gradient(135deg,var(--yf-inc),#7DD3FC);color:#04141f}
+#yfModeSeg button.active[data-mode="expense"],
+#yfFilterSeg button.active[data-f="expense"]{
+  background:linear-gradient(135deg,var(--yf-exp),#FDBA74);color:#1f0d02}
 .yf-mtable{width:100%;table-layout:fixed}
 @media(max-width:900px){
   .yf-mtable{table-layout:auto;min-width:800px;width:auto}
@@ -1102,22 +1135,38 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 
 .taborder-line{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;align-items:center}
 .taborder-line #tabOrderReset{flex:none;white-space:nowrap}
-/* ---- clear-data checklist ---- */
-.reset-rows{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
-/* the global label rule uppercases and letter-spaces; the tab NAME wants that,
-   the sentence under it does not -- set in caps it is a wall to read */
-.reset-row{display:flex;align-items:flex-start;gap:10px;padding:7px 9px;border-radius:9px;
-  cursor:pointer;transition:background .15s;margin-bottom:0}
-.reset-row:hover{background:rgba(255,255,255,.04)}
-.reset-row input{width:auto;flex:none;margin:2px 0 0;accent-color:var(--sk-red,#E55959)}
-.reset-row span{display:flex;flex-direction:column;gap:1px;min-width:0}
-.reset-row b{font-size:12.5px;font-weight:600}
-.reset-row i{font-style:normal;font-size:10.5px;color:var(--text-faint);line-height:1.35;
-  text-transform:none;letter-spacing:.01em;font-weight:500}
-/* the cloud tick is the dangerous one, so it is ruled off and warm-toned */
-.reset-cloud{margin-top:6px;border-top:1px solid rgba(255,255,255,.08);border-radius:0;padding-top:11px}
+/* ---- Settings: section heads with a foldaway help note ----
+   Every instruction in this drawer used to sit on screen permanently, and the
+   drawer ran several screens long as a result. Each is now behind the small "i"
+   beside its heading: read once, folded away after. */
+.sec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px}
+.sec-head h3{margin:0;font-family:var(--font-display);font-size:15px}
+.sec-badge{font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:700;
+  color:var(--text-faint);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:3px 9px}
+.sec-i{flex:none;width:19px;height:19px;padding:0;border-radius:50%;cursor:pointer;
+  border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--text-faint);
+  font:italic 700 11px/1 var(--font-display,serif);
+  display:inline-flex;align-items:center;justify-content:center;transition:all .15s}
+.sec-i:hover{color:var(--text);border-color:rgba(255,255,255,.4)}
+.sec-i[aria-expanded="true"]{background:var(--teal);border-color:var(--teal);color:#06121a}
+.sec-help{margin:0 0 12px}
+.drawer hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:12px 0}
+/* actions sitting on the right of a .fbrow, beside or instead of a switch */
+.row-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.row-actions .btn{flex:none;padding:8px 13px;font-size:12px}
+/* ---- clear-data checklist: six tabs across one row ---- */
+.reset-rows{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.reset-row{display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;
+  cursor:pointer;transition:background .15s;margin-bottom:0;
+  border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.18)}
+.reset-row:hover{background:rgba(255,255,255,.06)}
+.reset-row input{width:auto;flex:none;margin:0;accent-color:var(--sk-red,#E55959)}
+.reset-row b{font-size:11.5px;font-weight:600;white-space:nowrap;letter-spacing:.02em}
+/* the cloud tick is the dangerous one, so it sits apart and warm-toned */
+.reset-cloud{border-radius:999px;border-color:rgba(232,176,75,.35);background:rgba(232,176,75,.07)}
 .reset-cloud b{color:var(--amber,#E8B04B)}
-#resetGo{width:100%;margin-top:10px}
+.reset-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#resetGo{flex:1;min-width:150px;margin:0}
 .taborder{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
 .taborder-row{display:flex;align-items:center;gap:7px;padding:7px 8px 7px 12px;border-radius:999px;
   background:var(--glass);border:1px solid var(--stroke);cursor:grab;font-size:12.5px;
@@ -1145,7 +1194,7 @@ select{color-scheme:dark}
 
 /* ── Mobile: tap targets need ~28px minimum to be reliably hittable ── */
 @media (max-width:560px){
-  .rm,.yf-edit,.yf-catbtn,.mv,.me-why{min-height:28px;min-width:28px;
+  .rm,.yf-edit,.yf-catbtn,.mv,.me-why,.sec-i{min-height:28px;min-width:28px;
     display:inline-flex;align-items:center;justify-content:center}
   .yf-plan-in{min-height:30px;width:76px}
   #yfExpTable td,#yfIncTable td{padding:6px 5px}
@@ -1200,7 +1249,7 @@ select{color-scheme:dark}
 /* ── logo: floating, breathing halo, slow rotating ring ── */
 .pin-orb{
   position:relative; width:74px; height:104px; margin-bottom:12px;
-  background-image:url('SpAPP.png');
+  background-image:url('spapp.png');
   background-size:contain; background-repeat:no-repeat; background-position:center;
   filter:drop-shadow(0 0 14px rgba(94,234,212,.55)) drop-shadow(0 0 34px rgba(167,139,250,.35));
   animation:pinOrbFloat 5.5s ease-in-out infinite;
@@ -1930,39 +1979,43 @@ select{color-scheme:dark}
   </nav>
 
   <div class="panel drawer" id="drawer" style="margin-bottom:20px">
-    <h3 style="font-family:var(--font-display);font-size:15px;margin-bottom:6px">App lock</h3>
-    <p class="note" style="margin:0 0 10px">A 6-digit PIN screen shown when this page loads. It's a privacy screen for a shared device — not encryption; anyone with access to this file or its browser storage can still read the underlying data.</p>
+    <div class="sec-head">
+      <h3>App lock</h3>
+      <span class="sec-badge">6 Digit PIN</span>
+      <button class="sec-i" data-help="helpPin" aria-expanded="false" aria-label="About the app lock">i</button>
+    </div>
+    <p class="note sec-help" id="helpPin" hidden>A 6-digit PIN screen shown when this page loads. It's a privacy screen for a shared device — not encryption; anyone with access to this file or its browser storage can still read the underlying data.</p>
     <div class="fbrow">
       <div>
         <div style="font-size:13px;font-weight:600">Require PIN on load</div>
         <div style="font-size:11.5px;color:var(--text-faint)" id="pinStatusLine">Off</div>
       </div>
-      <label class="switch" title="Turn the PIN lock on or off">
-        <input type="checkbox" id="pinToggle"><span class="track"><span class="knob"></span></span>
-      </label>
-    </div>
-    <div class="duo" style="margin-top:12px">
-      <button class="btn" id="pinChangeBtn">Set / change PIN</button>
-      <button class="btn ghost" id="pinRemoveBtn" style="display:none">Remove PIN</button>
-    </div>
-    <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:18px 0">
-    <h3 style="font-family:var(--font-display);font-size:15px;margin-bottom:14px">Live price settings</h3>
-    <div class="hform">
-      <div class="duo full">
-        <button class="btn" id="refreshNow">Refresh prices now</button>
+      <div class="row-actions">
+        <button class="btn" id="pinChangeBtn">Set / change PIN</button>
+        <button class="btn ghost" id="pinRemoveBtn" style="display:none">Remove PIN</button>
+        <label class="switch" title="Turn the PIN lock on or off">
+          <input type="checkbox" id="pinToggle"><span class="track"><span class="knob"></span></span>
+        </label>
       </div>
     </div>
-    <p class="note" id="apiKeyNote">Live prices status shown below, under Cloud sync — the key itself lives in the file, next to the Firebase setup.</p>
-    <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:18px 0">
-    <h3 style="font-family:var(--font-display);font-size:15px;margin-bottom:6px">Clear data</h3>
-    <p class="note" style="margin:0 0 10px">Tick what to empty. Everything unticked is left exactly as it is. Your PIN, your Firebase settings and your tab order are never touched.</p>
+    <hr>
+    <div class="sec-head">
+      <h3>Clear data</h3>
+      <button class="sec-i" data-help="helpClear" aria-expanded="false" aria-label="About clearing data">i</button>
+    </div>
+    <p class="note sec-help" id="helpClear" hidden>Tick what to empty — one per tab — and everything unticked is left exactly as it is. Your PIN, your Firebase settings and your tab order are never touched. Clearing is <b>this browser only</b> unless you tick the cloud as well, so a reconnect pulls the cloud copy back.</p>
     <div id="resetRows" class="reset-rows"></div>
-    <label class="reset-row reset-cloud"><input type="checkbox" id="resetCloud">
-      <span><b>Also clear the cloud</b><i>off by default — without this the cloud copy survives and a reconnect pulls it back</i></span></label>
-    <button class="btn ghost is-off" id="resetGo" disabled>Clear selected</button>
-    <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:18px 0">
-    <h3 style="font-family:var(--font-display);font-size:15px;margin-bottom:6px">Yearly starting balance</h3>
-    <p class="note" style="margin:0 0 10px">What was in the bank on 1 January. Yearly Finance uses it as the opening figure for that year.</p>
+    <div class="reset-line">
+      <label class="reset-row reset-cloud" title="Without this the cloud copy survives and a reconnect pulls it back">
+        <input type="checkbox" id="resetCloud"><b>Also clear the cloud</b></label>
+      <button class="btn ghost is-off" id="resetGo" disabled>Clear selected</button>
+    </div>
+    <hr>
+    <div class="sec-head">
+      <h3>Yearly starting balance</h3>
+      <button class="sec-i" data-help="helpStart" aria-expanded="false" aria-label="About the starting balance">i</button>
+    </div>
+    <p class="note sec-help" id="helpStart" hidden>What was in the bank on 1 January. Yearly Finance uses it as the opening figure for that year.</p>
     <div class="hform">
       <div>
         <label for="yfStartYear">Year</label>
@@ -1973,14 +2026,21 @@ select{color-scheme:dark}
         <input id="yfStart" type="number" step="0.01" placeholder="5,000">
       </div>
     </div>
-    <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:18px 0">
-    <h3 style="font-family:var(--font-display);font-size:15px;margin-bottom:6px">Tab order</h3>
-    <p class="note" style="margin:0 0 10px">Drag to reorder, or use the arrows. The first tab is what opens when you load the app.</p>
+    <hr>
+    <div class="sec-head">
+      <h3>Tab order</h3>
+      <button class="sec-i" data-help="helpTabs" aria-expanded="false" aria-label="About the tab order">i</button>
+    </div>
+    <p class="note sec-help" id="helpTabs" hidden>Drag to reorder, or use the arrows. The first tab is what opens when you load the app.</p>
     <div class="taborder-line">
       <div id="tabOrder" class="taborder"></div>
       <button class="btn" id="tabOrderReset">Reset to default</button>
     </div>
-    <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:18px 0">
+    <hr>
+    <div class="sec-head">
+      <h3>Dashboard shortcuts</h3>
+      <button class="sec-i" data-help="helpBase" aria-expanded="false" aria-label="About the dashboard shortcuts">i</button>
+    </div>
     <div class="basegrid">
       <input id="baseT" type="number" step="0.01" min="0" placeholder="TFSA amount">
       <button class="btn primary" id="setBaseT">Base TFSA</button>
@@ -1989,9 +2049,14 @@ select{color-scheme:dark}
       <button class="btn primary" id="setBaseF">Base FHSA</button>
       <button class="btn" id="clearHistory">Clear old history</button>
     </div>
-    <p class="note"><b>Base TFSA / Base FHSA</b> set that account's available balance straight to the amount you type (in the currency shown at the top), replacing whatever is there — handy for lining the Dashboard up with your broker instead of adding deposits one by one. <b>Clear holdings</b> deletes every position on the Dashboard and pushes the empty list to Firebase. <b>Clear old history</b> removes the oldest 20 portfolio snapshots (keeping the most recent ones) to stop the cloud record growing — your holdings, cash, and contributions are untouched. Both ask for confirmation first and cannot be undone.</p>
-    <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:18px 0">
-    <h3 style="font-family:var(--font-display);font-size:15px;margin-bottom:14px">Cloud sync <span id="fbStatus" style="font-size:11px;font-weight:500;color:var(--text-faint)">not configured</span></h3>
+    <p class="note sec-help" id="helpBase" hidden><b>Base TFSA / Base FHSA</b> set that account's available balance straight to the amount you type (in the currency shown at the top), replacing whatever is there — handy for lining the Dashboard up with your broker instead of adding deposits one by one. <b>Clear holdings</b> deletes every position on the Dashboard and pushes the empty list to Firebase. <b>Clear old history</b> removes the oldest 20 portfolio snapshots (keeping the most recent ones) to stop the cloud record growing — your holdings, cash, and contributions are untouched. Both ask for confirmation first and cannot be undone.</p>
+    <hr>
+    <div class="sec-head">
+      <h3>Cloud sync</h3>
+      <span id="fbStatus" style="font-size:11px;font-weight:500;color:var(--text-faint)">not configured</span>
+      <button class="sec-i" data-help="helpSync" aria-expanded="false" aria-label="About cloud sync">i</button>
+    </div>
+    <p class="note sec-help" id="helpSync" hidden>Sync is configured in the file itself, not here — open this HTML in a text editor and fill in the <b>FIREBASE SETUP</b> block at the very top. The switch only turns syncing on or off on this device; <b>Test connection</b> checks the settings work, and Push / Pull move data manually if the two copies ever disagree.<br><br><b>Keep data in this browser</b>, turned off, means this browser stores nothing of its own: the app loads from the cloud each time and forgets everything when the tab closes. Useful for trying things out without leaving rows behind that later look like real work. It needs a working cloud connection — without one, a reload would start blank and the work would be gone — so the switch stays locked until sync is on. Your PIN is kept either way.</p>
     <div class="fbrow">
       <div>
         <div style="font-size:13px;font-weight:600" id="fbProject">Not configured</div>
@@ -2017,14 +2082,21 @@ select{color-scheme:dark}
         <input type="checkbox" id="localToggle"><span class="track"><span class="knob"></span></span>
       </label>
     </div>
-    <p class="note">Turn this <b>off</b> and this browser stores nothing of its own: the app loads from the cloud each time and forgets everything when the tab closes. Useful for trying things out without leaving rows behind that later look like real work. It needs a working cloud connection — without one, a reload would start blank and the work would be gone — so the switch stays locked until sync is on. Your PIN is kept either way.</p>
-    <p class="note">Sync is configured in the file itself, not here — open this HTML in a text editor and fill in the <b>FIREBASE SETUP</b> block at the very top. This switch only turns syncing on or off on this device; <b>Test connection</b> checks the settings work, and Push / Pull move data manually if the two copies ever disagree.</p>
-    <div class="fbrow" style="margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.1)">
+    <hr>
+    <div class="sec-head">
+      <h3>Live prices</h3>
+      <button class="sec-i" data-help="helpPrices" aria-expanded="false" aria-label="About live prices">i</button>
+    </div>
+    <p class="note sec-help" id="helpPrices" hidden>Prices come from Finnhub. The API key lives in the file itself, next to the Firebase setup — not here. A free key is enough for this app's request volume.</p>
+    <div class="fbrow">
       <div>
         <div style="font-size:13px;font-weight:600">Live prices (Finnhub)</div>
         <div style="font-size:11.5px;color:var(--text-faint)" id="finKeyStatus">checking…</div>
       </div>
-      <a class="btn ghost" href="https://finnhub.io" target="_blank" rel="noopener" style="text-decoration:none;font-size:12px">Get a free key</a>
+      <div class="row-actions">
+        <button class="btn" id="refreshNow">Refresh prices now</button>
+        <a class="btn ghost" href="https://finnhub.io" target="_blank" rel="noopener" style="text-decoration:none">Get a free key</a>
+      </div>
     </div>
   </div>
 
@@ -2680,7 +2752,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-15A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-17A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -3508,13 +3580,17 @@ $('refreshNow').onclick=()=>fetchPrices(true);
    NOTHING here touches the PIN, the Firebase config, the tab order or the
    currency settings. Those are credentials and preferences, not your rows, and
    wiping them would lock you out or disconnect your sync. */
+/* One tick per TAB, in tab-bar order, so the list reads as the app does. The
+   notepad has no tick of its own: it is a panel on Dashboard and Contributions
+   rather than a tab, and folding it into either would be arbitrary. Clear it
+   from the panel itself, or by hand. */
 const RESET_ROWS=[
-  {id:'dash',    label:'Dashboard',       note:'holdings, cash, value history'},
-  {id:'contrib', label:'Contributions',   note:'deposits, limits, yearly room'},
-  {id:'yearly',  label:'Yearly Finance',  note:'its rows, categories, planned amounts, starting balances'},
-  {id:'monthly', label:'Monthly Expense', note:'its rows, merchant rules, import log'},
-  {id:'plan',    label:'Plan',            note:'segments and dated items'},
-  {id:'notes',   label:'Notes',           note:'Strategy and Eye on Stocks \u2014 a panel, not a tab'}
+  {id:'dash',    label:'Dashboard'},
+  {id:'contrib', label:'Contributions'},
+  {id:'yearly',  label:'Yearly'},
+  {id:'monthly', label:'Monthly'},
+  {id:'archive', label:'Archives'},
+  {id:'plan',    label:'Plan'}
 ];
 const RESET_CLEAR={
   dash(){
@@ -3545,7 +3621,10 @@ const RESET_CLEAR={
     yfPersist(); mePersist();
   },
   plan(){ state.plan=null; normalizePlan(); planPersist() },
-  notes(){ state.notes=null; normalizeNotes(); notesPersist() }
+  /* Archives holds no data yet. The tick is here so the list mirrors the tab bar
+     and so the id is reserved -- when Archives gets a store, this is the only
+     place that has to learn about it. Deliberately a no-op, not an omission. */
+  archive(){}
 };
 function spartaReset(ids, alsoCloud){
   const picked=RESET_ROWS.filter(r=>ids.indexOf(r.id)>-1);
@@ -3576,11 +3655,18 @@ function resetSync(){
 }
 if($('resetRows')){
   $('resetRows').innerHTML=RESET_ROWS.map(r=>
-    `<label class="reset-row"><input type="checkbox" value="${r.id}">`+
-    `<span><b>${r.label}</b><i>${r.note}</i></span></label>`).join('');
+    `<label class="reset-row"><input type="checkbox" value="${r.id}"><b>${r.label}</b></label>`).join('');
   $('resetRows').addEventListener('change',resetSync);
   resetSync();
 }
+/* Every instruction in the drawer folds away behind the "i" beside its heading.
+   One delegated listener, so sections can be added without wiring anything. */
+if($('drawer')) $('drawer').addEventListener('click',e=>{
+  const b=e.target.closest('.sec-i'); if(!b) return;
+  const p=$(b.dataset.help); if(!p) return;
+  p.hidden=!p.hidden;
+  b.setAttribute('aria-expanded', p.hidden?'false':'true');
+});
 if($('resetGo')) $('resetGo').onclick=()=>{
   const ids=resetPicked(); if(!ids.length) return;
   const alsoCloud=!!($('resetCloud')&&$('resetCloud').checked);

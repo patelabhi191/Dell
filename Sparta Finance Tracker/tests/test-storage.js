@@ -108,11 +108,23 @@ const YEAR = 2026;
   check(a.plan === 0 && a.notes === 1, 'Plan empties without taking the notepad with it',
     JSON.stringify([a.plan, a.notes]));
 
-  await seed(); await clear(['notes']);
+  /* The list is one tick per TAB, in tab-bar order, so the notepad has none of
+     its own -- it is a panel on Dashboard and Contributions, and folding it into
+     either would be arbitrary. It must therefore survive every tick. */
+  await seed(); await clear(['dash', 'contrib']);
   a = await snap();
-  check(a.notes === 0 && a.prose === '' && a.plan === 1,
-    'Notes empties both the points and the prose, and Plan survives',
-    JSON.stringify([a.notes, a.prose, a.plan]));
+  check(a.notes === 1 && a.prose === 'prose',
+    'the notepad has no tick of its own and survives the two tabs it sits on',
+    JSON.stringify([a.notes, a.prose]));
+
+  /* Archives has no store yet. The tick exists so the list mirrors the tab bar
+     and the id is reserved; it must be a harmless no-op, not a crash. */
+  await seed();
+  const arch = await page.evaluate(() => spartaReset(['archive'], false));
+  a = await snap();
+  check(arch === 1 && a.yf.length === 3 && a.holdings === 1 && a.plan === 1 && a.notes === 1,
+    'the Archives tick is a no-op today and disturbs nothing',
+    JSON.stringify([arch, a.yf.length, a.holdings, a.plan, a.notes]));
 
   /* ── 2. the one that cannot be done by deleting a key ─────────────────────
      Yearly and Monthly share state.yf.txns and are told apart by t.tab, so each
@@ -146,12 +158,60 @@ const YEAR = 2026;
   check(a.yf.length === 0, 'ticking both empties the ledger entirely', JSON.stringify(a.yf));
 
   // ── 3. what a clear must never touch ─────────────────────────────────────
+  section('2b. the checklist mirrors the tab bar, on one row');
+  /* The drawer is display:none until opened, so every rect would read 0 and a
+     "they share one row" check would pass while proving nothing. Open it first
+     and assert the boxes are real before trusting their positions. */
+  await page.click('#settingsBtn');
+  await page.waitForTimeout(250);
+  const ticks = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#resetRows .reset-row')];
+    const boxes = rows.map(r => r.getBoundingClientRect());
+    const tops = new Set(boxes.map(b => Math.round(b.top)));
+    return { ids: rows.map(r => r.querySelector('input').value),
+             labels: rows.map(r => r.querySelector('b').textContent),
+             rowsUsed: tops.size,
+             laidOut: boxes.length > 0 && boxes.every(b => b.width > 20 && b.height > 10) };
+  });
+  check(ticks.laidOut, 'the ticks are actually laid out — the rest of this section means nothing otherwise');
+  check(JSON.stringify(ticks.ids) === JSON.stringify(['dash','contrib','yearly','monthly','archive','plan']),
+    'six ticks, one per tab, in tab-bar order', JSON.stringify(ticks.ids));
+  check(!ticks.labels.some(l => /note/i.test(l)), 'and no Notes tick among them',
+    JSON.stringify(ticks.labels));
+  check(ticks.rowsUsed === 1, 'all six share a single row', String(ticks.rowsUsed));
+
+  section('2c. the drawer never exceeds 75% of the screen');
+  const fit = await page.evaluate(() => {
+    const d = document.getElementById('drawer');
+    return { pct: Math.round(d.clientHeight / innerHeight * 100),
+             scrolls: d.scrollHeight > d.clientHeight + 1,
+             helpsHidden: [...document.querySelectorAll('.sec-help')].every(p => p.hidden),
+             iButtons: document.querySelectorAll('.sec-i').length };
+  });
+  check(fit.pct <= 75, 'capped at 75vh however tall the content grows', String(fit.pct) + '%');
+  check(fit.iButtons >= 6 && fit.helpsHidden,
+    'every instruction starts folded away behind its own i button',
+    JSON.stringify([fit.iButtons, fit.helpsHidden]));
+  const help = await page.evaluate(async () => {
+    const b = document.querySelector('[data-help="helpClear"]');
+    b.click();
+    const open = { hidden: document.getElementById('helpClear').hidden, aria: b.getAttribute('aria-expanded') };
+    b.click();
+    return { open, shut: { hidden: document.getElementById('helpClear').hidden, aria: b.getAttribute('aria-expanded') } };
+  });
+  check(help.open.hidden === false && help.open.aria === 'true'
+     && help.shut.hidden === true && help.shut.aria === 'false',
+    'the i button toggles its note open and shut, and says so to a screen reader',
+    JSON.stringify(help));
+  await page.click('#settingsBtn');            // put the drawer back
+  await page.waitForTimeout(200);
+
   section('3. credentials and preferences survive every combination');
   await seed();
-  await clear(['dash', 'contrib', 'yearly', 'monthly', 'plan', 'notes']);
+  await clear(['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan']);
   a = await snap();
-  check(a.yf.length === 0 && a.holdings === 0 && a.contribs === 0 && a.plan === 0 && a.notes === 0,
-    'everything ticked empties everything', JSON.stringify([a.yf.length, a.holdings, a.plan]));
+  check(a.yf.length === 0 && a.holdings === 0 && a.contribs === 0 && a.plan === 0,
+    'everything ticked empties every tab', JSON.stringify([a.yf.length, a.holdings, a.plan]));
   check(a.pin === '123456' && a.pinOn === 'true',
     'the PIN survives — wiping it would lock you out of your own app', String(a.pin));
   check(a.syncKey === 'my-key', 'the Firebase settings survive, so sync is not disconnected', a.syncKey);
