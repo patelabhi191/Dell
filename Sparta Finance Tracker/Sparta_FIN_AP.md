@@ -1,10 +1,10 @@
 # Sparta FIN AP — Project Reference
 
-**File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~260KB, ~4800 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
+**File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-10F` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-17A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
-> An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why, and `tests/` for the 87-check suite that verifies it.
+> An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
 This doc exists to onboard a new coding session (e.g. Claude Code) quickly. Read this before touching the file.
 
@@ -562,7 +562,12 @@ These have each caused real, shipped bugs in this project. When making changes, 
    colour looked ignored, from one declaration block. Same shape as `scroll-behavior:smooth`
    making `window.scrollTo` measurements read mid-scroll. Wait out the transition, or read
    the rule rather than the computed value.
-12. **A measurement taken while the element is `display:none`.** Everything in the Settings
+12. **A fixture pinned to the calendar rather than to "today".** `test-plan.js` used four
+   literal 2026 dates with exactly one of them in the past — true right up until the clock
+   reached the second one, at which point the suite failed one morning with nothing about
+   the app having changed. Anchor date fixtures to offsets from today, and compute them in
+   the page so they match `isoLocal()`'s timezone rather than the runner's.
+13. **A measurement taken while the element is `display:none`.** Everything in the Settings
    drawer reads 0×0 until it is opened, so a layout assertion there passes without meaning
    anything — the sibling of bug class 7. `test-storage.js` §2b opens the drawer and asserts
    the boxes are real before trusting a single position.

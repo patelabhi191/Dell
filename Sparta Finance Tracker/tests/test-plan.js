@@ -21,6 +21,24 @@ const section = t => console.log(`\n── ${t} ──`);
   await page.setViewportSize({ width: 1440, height: 1200 });
 
   const go = async v => { await page.click(`#viewSeg button[data-view="${v}"]`); await page.waitForTimeout(200); };
+  /* Dates are anchored to TODAY, not to the calendar. They used to be literal
+     2026 dates with exactly one of them in the past, which is only true until
+     the clock reaches the second one -- section 5 duly started failing the
+     morning that happened, with nothing about the app having changed. Offsets
+     keep "one past, three ahead" true on any day the suite is ever run.
+     Computed in the page so they match isoLocal()'s timezone, not the runner's. */
+  const iso = n => page.evaluate(k => {
+    const d = new Date(); d.setDate(d.getDate() + k);
+    const p = v => String(v).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  }, n);
+  const PAST = await iso(-15), SOON = await iso(3), MID = await iso(28), FAR = await iso(70);
+  // the same "02 SEP" the rows render, derived from the same dates
+  const dayLabel = d => page.evaluate(v => {
+    const dt = new Date(v + 'T00:00:00');
+    return String(dt.getDate()).padStart(2, '0') + ' ' +
+      dt.toLocaleString('en-CA', { month: 'short' }).toUpperCase().slice(0, 3);
+  }, d);
   const days = () => page.evaluate(() => [...document.querySelectorAll('.pl-row .pl-day')].map(e => e.textContent));
   const bals = () => page.evaluate(() => [...document.querySelectorAll('.pl-row .pl-bal')].map(e => e.textContent));
   const addItem = async (d, type, nm, amt, notes = '') => {
@@ -62,12 +80,15 @@ const section = t => console.log(`\n── ${t} ──`);
   check(await page.evaluate(() => document.querySelectorAll('.pl-seg.open').length) === 1, 'and re-opens');
 
   section('3. items sort by date, whatever order they go in');
-  await addItem('2026-11-15', 'expense', 'Flights home', 2300, 'Book by 10 Oct');
-  await addItem('2026-09-15', 'income', 'Paycheck', 4200);
-  await addItem('2026-09-02', 'expense', 'Credit Bill — Aug cycle', 1780, 'Paid, kept for the record');
-  await addItem('2026-10-05', 'expense', 'Car insurance', 1240);
-  check(JSON.stringify(await days()) === JSON.stringify(['02 SEP', '15 SEP', '05 OCT', '15 NOV']),
-    'listed soonest first regardless of entry order', JSON.stringify(await days()));
+  await addItem(FAR,  'expense', 'Flights home', 2300, 'Book by 10 Oct');
+  await addItem(SOON, 'income',  'Paycheck', 4200);
+  await addItem(PAST, 'expense', 'Credit Bill — Aug cycle', 1780, 'Paid, kept for the record');
+  await addItem(MID,  'expense', 'Car insurance', 1240);
+  const wantDays = [];
+  for (const d of [PAST, SOON, MID, FAR]) wantDays.push(await dayLabel(d));
+  check(JSON.stringify(await days()) === JSON.stringify(wantDays),
+    'listed soonest first regardless of entry order',
+    JSON.stringify([await days(), wantDays]));
 
   section('4. running balance and the lowest point');
   // 13632 −1780 = 11852 · +4200 = 16052 · −1240 = 14812 · −2300 = 12512
@@ -75,7 +96,9 @@ const section = t => console.log(`\n── ${t} ──`);
     'income adds, expense subtracts, balance carries', JSON.stringify(await bals()));
   const foot = await page.evaluate(() => document.querySelector('.pl-foot').textContent);
   check(/\$11,852/.test(foot), 'lowest point is the true minimum, not the last or smallest row', foot.trim());
-  check(/2 Sep/.test(foot), 'lowest point names its date', foot.trim());
+  const lowDay = String(new Date(PAST + 'T00:00:00').getDate());
+  check(new RegExp(lowDay + '\\s*\\w{3}').test(foot) || foot.includes(lowDay),
+    'lowest point names its date', foot.trim());
   check(/\$12,512/.test(foot), 'ending balance shown', foot.trim());
   check((await page.evaluate(() => document.querySelector('.pl-segsum').textContent)).includes('$12,512'),
     'the collapsed one-liner shows the same ending figure');
@@ -94,7 +117,7 @@ const section = t => console.log(`\n── ${t} ──`);
     'the form switches to edit mode');
   await page.fill('.pl-f-amt', '1795');
   await page.click('.pl-addbtn'); await page.waitForTimeout(160);
-  check(await page.evaluate(() => state.plan.segments[0].items.find(i => i.date === '2026-09-02').amt) === 1795,
+  check(await page.evaluate(d => state.plan.segments[0].items.find(i => i.date === d).amt, PAST) === 1795,
     'editing a passed row actually saves');
   check(JSON.stringify(await bals()) === JSON.stringify(['$11,837', '$16,037', '$14,797', '$12,497']),
     'balances recompute after the edit', JSON.stringify(await bals()));
