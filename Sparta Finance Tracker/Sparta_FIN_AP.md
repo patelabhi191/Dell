@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-17C` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-17D` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -452,13 +452,19 @@ Two patterns do the trimming, and new sections should follow both:
 - **Compacted controls** — `.drawer .btn`, `.drawer input/select`, `.drawer .fbrow` and
   `.drawer hr` are all tighter in here than in the app proper. That is deliberate: this is
   a settings panel, not a workspace.
-- **One line per section where it fits.** Clear data puts its six tab pills, the cloud tick
-  and the button on a single flex line (`.reset-rows` is `display:contents` so the pills
-  join their parent's line rather than forming a nested box). The pills deliberately match
-  `.taborder-row`, with a checkbox where Tab order puts its position number, so the two
-  lists read as one family. Dashboard shortcuts pairs each amount with its own button in
-  `1fr auto 1fr auto`. Cloud sync carries `.keepdata` — a switch styled to sit in a button
-  row — in the space two instruction buttons used to take.
+- **One line per section where it fits, and the line is filled.** Clear data puts its six
+  tab pills, the cloud tick and the button on a single flex line (`.reset-rows` is
+  `display:contents` so the pills join their parent's line rather than forming a nested
+  box). The pills deliberately match `.taborder-row`, with a checkbox where Tab order puts
+  its position number, so the two lists read as one family. They carry `flex:1 1 auto`, so
+  they **grow to fill** — about 92% of the line, the button taking the rest — and the slack
+  is shared in proportion to each name, keeping "Contributions" wider than "Plan" without
+  truncating either. Dashboard shortcuts pairs each amount with its own button in
+  `1fr auto 1fr auto`. Cloud sync splits into quarters via `.sync-actions`: three buttons
+  at `flex:2 1 0` and `.keepdata` at `flex:4 1 0`, i.e. 20/20/20/40. **`flex-basis:0` is
+  load-bearing there** — with the default `auto` the ratio would divide only the slack left
+  after each button's own text, and three differently-worded buttons would come out
+  different widths.
 
 **Instructions live in the help panel, not in `alert()`.** `fbSetup` and `fbInfo` were two
 popups holding the Firebase setup steps and the stored-shape rundown; both now read as

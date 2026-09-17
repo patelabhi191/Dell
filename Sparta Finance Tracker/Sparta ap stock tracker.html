@@ -1160,6 +1160,11 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:none;color:var(--text);
   cursor:pointer}
 .keepdata:hover{background:rgba(255,255,255,.05)}
+/* the sync row in quarters: three buttons at a fifth each, the switch taking the
+   remaining two fifths. flex-basis 0 so the ratio is the WHOLE share rather than
+   the slack left over after each child's own content width. */
+.sync-actions .btn{flex:2 1 0}
+.sync-actions .keepdata{flex:4 1 0;min-width:0;justify-content:space-between}
 .sec-help code{font-size:10.5px;background:rgba(0,0,0,.28);padding:1px 5px;border-radius:5px;
   color:var(--teal);word-break:break-word}
 .sec-help .note:first-child{margin-top:0}
@@ -1173,7 +1178,14 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    flex line rather than living in nested boxes. */
 .reset-line{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
 .reset-rows{display:contents}
-.reset-row{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;
+/* The pills GROW to fill the line rather than hugging their text, so the row
+   reads as a deliberate control strip instead of trailing off into empty space.
+   `1 1 auto` shares the slack in proportion to each name's own width, so
+   "Contributions" keeps more room than "Plan" and nothing truncates; the button
+   stays at its natural size, which leaves the pills about 90% of the line. */
+.reset-row{display:flex;align-items:center;justify-content:center;gap:7px;
+  flex:1 1 auto;min-width:0;
+  padding:7px 12px;border-radius:999px;
   background:var(--glass);border:1px solid var(--stroke);cursor:pointer;font-size:12.5px;
   transition:background .15s;margin:0}
 .reset-row:hover{background:rgba(255,255,255,.07)}
@@ -2090,11 +2102,11 @@ select{color-scheme:dark}
         <input type="checkbox" id="fbToggle"><span class="track"><span class="knob"></span></span>
       </label>
     </div>
-    <div class="duo bscroll" style="margin-top:12px">
+    <div class="duo bscroll sync-actions" style="margin-top:12px">
       <button class="btn" id="fbTest">Test connection</button>
       <button class="btn" id="fbPush">Push to cloud</button>
       <button class="btn" id="fbPull">Pull from cloud</button>
-      <label class="keepdata" title="Off means nothing is stored here — the cloud becomes the only copy">
+      <label class="keepdata" title="Off means nothing is stored here — the cloud becomes the only copy" data-wide>
         <span>Keep data here</span>
         <span class="switch"><input type="checkbox" id="localToggle"><span class="track"><span class="knob"></span></span></span>
       </label>
@@ -2770,7 +2782,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-17C</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-17D</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
