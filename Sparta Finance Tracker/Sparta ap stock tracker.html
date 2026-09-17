@@ -1155,11 +1155,17 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .drawer hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:12px 0}
 /* a switch that sits in a button row rather than on its own line. The global
    label rule uppercases and letter-spaces; this is a sentence, so it opts out. */
-.keepdata{display:flex;align-items:center;gap:10px;flex:none;margin:0;white-space:nowrap;
-  padding:8px 14px;border:1px solid var(--stroke);border-radius:999px;background:rgba(0,0,0,.2);
-  font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:none;color:var(--text);
-  cursor:pointer}
+.keepdata{display:flex;align-items:center;gap:12px;flex:none;margin:0;
+  padding:7px 8px 7px 16px;border:1px solid var(--stroke);border-radius:999px;
+  background:rgba(0,0,0,.2);color:var(--text);cursor:pointer}
 .keepdata:hover{background:rgba(255,255,255,.05)}
+/* name over status, the way the row read before it moved into the button strip.
+   The global label rule uppercases and letter-spaces; both of these are prose. */
+.kd-text{display:flex;flex-direction:column;gap:1px;min-width:0;text-align:left}
+.kd-text b{font-size:12.5px;font-weight:600;letter-spacing:.01em;text-transform:none;
+  white-space:nowrap}
+.kd-text i{font-style:normal;font-size:10.5px;font-weight:500;line-height:1.3;
+  letter-spacing:.01em;text-transform:none;color:var(--text-faint)}
 /* the sync row in quarters: three buttons at a fifth each, the switch taking the
    remaining two fifths. flex-basis 0 so the ratio is the WHOLE share rather than
    the slack left over after each child's own content width. */
@@ -2106,12 +2112,14 @@ select{color-scheme:dark}
       <button class="btn" id="fbTest">Test connection</button>
       <button class="btn" id="fbPush">Push to cloud</button>
       <button class="btn" id="fbPull">Pull from cloud</button>
-      <label class="keepdata" title="Off means nothing is stored here — the cloud becomes the only copy" data-wide>
-        <span>Keep data here</span>
+      <label class="keepdata" title="Off means nothing is stored here — the cloud becomes the only copy">
+        <span class="kd-text">
+          <b>Keep data in this browser</b>
+          <i id="localOffNote">On — this browser keeps its own copy</i>
+        </span>
         <span class="switch"><input type="checkbox" id="localToggle"><span class="track"><span class="knob"></span></span></span>
       </label>
     </div>
-    <p class="note" id="localOffNote" style="margin-top:8px">On — this browser keeps its own copy</p>
     <hr>
     <div class="sec-head">
       <h3>Live prices</h3>
@@ -2782,7 +2790,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-17D</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-17E</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">

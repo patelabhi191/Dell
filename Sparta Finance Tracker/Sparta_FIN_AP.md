@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-17D` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-17E` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
