@@ -639,12 +639,18 @@ These have each caused real, shipped bugs in this project. When making changes, 
    colour looked ignored, from one declaration block. Same shape as `scroll-behavior:smooth`
    making `window.scrollTo` measurements read mid-scroll. Wait out the transition, or read
    the rule rather than the computed value.
-12. **A fixture pinned to the calendar rather than to "today".** `test-plan.js` used four
+12. **A measurement pinned to remembered pixels rather than to the property.** The Yearly
+   wave test asserted `left === 657 && right === 1346`, which quietly also asserted "the
+   viewport is exactly this wide" — so thinning the scrollbar by three pixels failed it,
+   with nothing about the wave having changed. It now measures the same ribbon with the
+   stretch removed and asserts the horizontal delta is zero, which is the claim being made.
+   Sibling of bug class 11: assert the relationship, not a snapshot of the numbers.
+13. **A fixture pinned to the calendar rather than to "today".** `test-plan.js` used four
    literal 2026 dates with exactly one of them in the past — true right up until the clock
    reached the second one, at which point the suite failed one morning with nothing about
    the app having changed. Anchor date fixtures to offsets from today, and compute them in
    the page so they match `isoLocal()`'s timezone rather than the runner's.
-13. **A measurement taken while the element is `display:none`.** Everything in the Settings
+14. **A measurement taken while the element is `display:none`.** Everything in the Settings
    drawer reads 0×0 until it is opened, so a layout assertion there passes without meaning
    anything — the sibling of bug class 7. `test-storage.js` §2b opens the drawer and asserts
    the boxes are real before trusting a single position.

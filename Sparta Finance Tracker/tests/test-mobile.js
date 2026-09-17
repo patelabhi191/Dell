@@ -150,15 +150,30 @@ const VIEWS = ['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan'];
   await go('yearly');
   await page.addStyleTag({ content: '.wv{animation:none!important}' });
   await page.waitForTimeout(250);
+  /* Measured against the SAME ribbon with the stretch removed, rather than against
+     two remembered pixel values. The old form hardcoded left===657 && right===1346,
+     which quietly also asserted "the viewport is exactly this wide" -- so thinning
+     the scrollbar by a few pixels failed it, with nothing about the wave having
+     changed. What is actually being claimed is that the change is vertical ONLY. */
   const yw = await page.evaluate(() => {
     const g = document.querySelector('.wv-yf g');
-    const r = g.getBoundingClientRect();
-    return { tf: g.getAttribute('transform'), left: +r.left.toFixed(0), right: +r.right.toFixed(0),
-             pct: +((r.bottom / innerHeight) * 100).toFixed(1) };
+    const tf = g.getAttribute('transform');
+    const on = g.getBoundingClientRect();
+    g.setAttribute('transform', tf.replace(/scale\([^)]*\)\s*/, ''));   // same ribbon, unstretched
+    const off = g.getBoundingClientRect();
+    g.setAttribute('transform', tf);
+    return { tf, pct: +((on.bottom / innerHeight) * 100).toFixed(1),
+             dLeft: +(on.left - off.left).toFixed(1),
+             dRight: +(on.right - off.right).toFixed(1),
+             grew: +(on.height - off.height).toFixed(1) };
   });
   check(yw.pct >= 68 && yw.pct <= 74, 'the design covers about 70% from the top', `${yw.pct}%`);
-  check(yw.left === 657 && yw.right === 1346,
-    'and sits exactly where it did horizontally', `${yw.left} → ${yw.right}`);
+  check(Math.abs(yw.dLeft) <= 0.5 && Math.abs(yw.dRight) <= 0.5,
+    'and sits exactly where it did horizontally',
+    `left ${yw.dLeft >= 0 ? '+' : ''}${yw.dLeft}px, right ${yw.dRight >= 0 ? '+' : ''}${yw.dRight}px`);
+  check(yw.grew > 1,
+    'while genuinely reaching further down than the unstretched ribbon — not a no-op',
+    `+${yw.grew}px tall`);
   check(/^scale\(1,1\.27\) rotate\(48 980 60\)$/.test(yw.tf),
     'the stretch is applied after the rotate, so the angle is unchanged', yw.tf);
   const others = await page.evaluate(() => ['wv-me', 'wv-arc'].map(c =>
