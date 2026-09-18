@@ -436,35 +436,73 @@ the cloud wins unconditionally — exactly right for cloud-only mode.
 
 ## 5. Visual Themes (per tab, deliberately distinct)
 
-### The Settings drawer is capped, not just trimmed
+### The Settings drawer is a two-column card grid
 
-`.drawer.open` is `max-height:75vh; overflow-y:auto`. Trimming content alone cannot hold
-that line — the same markup is 70% of a tall desktop screen and 130% of a laptop one — so
-the ceiling is stated rather than aimed at, and the trimming is what keeps most screens
-from needing the scrollbar at all.
+`.drawer.open` is a CSS grid — `repeat(2,minmax(0,1fr))`, `gap:14px`, `align-content:start`
+— still capped at `max-height:75vh; overflow-y:auto`. The cap is stated rather than aimed
+at, because the same markup is 70% of a tall desktop screen and 130% of a laptop one; the
+grid is what keeps most screens from needing the scrollbar at all, by halving the height of
+the small sections instead of squeezing them.
 
-Two patterns do the trimming, and new sections should follow both:
+**Why a grid rather than more trimming.** Seven sections were using five different layout
+systems (`.fbrow`, `.reset-line`, `.hform`, `.taborder-line`, `.basegrid`) separated by
+`<hr>` rules, so there was no repeating rhythm for the eye to lock onto and every section
+carried identical weight. An earlier pass made the panel *shorter*, which is not the same
+as *composed* — it removed breathing room without adding structure, which is why it then
+read as congested. Two-up rows buy back the room that padding and a real type scale need.
+
+Every section is a `<section class="set-card">`; the `<hr>` rules are gone, because the
+cards do that job. `.set-card.wide` spans both columns, and the running order is fixed so
+the flow is deterministic:
+
+| Card | Span | Why |
+|---|---|---|
+| App lock | 1 | status + control |
+| Yearly starting balance | 1 | two fields |
+| Clear data | **2** | eight items on one line |
+| Dashboard shortcuts | **2** | keeps the four controls on one line |
+| Tab order | 1 | pills already wrap happily |
+| Live prices | 1 | status + control |
+| Cloud sync | **2** | status row + three buttons + the keep-data switch |
+
+Under 760px it collapses to one column and `.set-card.wide` drops back to `grid-column:auto`.
+
+Three rules make the cards work and are each load-bearing:
+
+- **`.drawer .set-card .fbrow` is flattened** (no border, background or padding). A box
+  drawn inside a box reads as clutter, and flattening gives back the padding, which is most
+  of what the cards cost in height.
+- **`.drawer .set-card .fbrow>div:first-child` is `flex:1 1 auto;min-width:0`** and
+  `.row-actions` is `flex:0 0 auto`. The buttons are fixed-size; the label is the part that
+  can give. Without this the label held its width, the actions wrapped underneath, and a
+  half-width card ended up with its two buttons stacked over a column of dead space.
+- **One control height, 36px**, across `.drawer .btn`, inputs, selects, `.reset-row`,
+  `.taborder-row` and `.keepdata`. Pills sat at ~34px, buttons ~38 and inputs ~40, and that
+  ragged edge was a real part of the untidiness.
+
+Two patterns do the rest of the work, and new sections should follow both:
 
 - **`.sec-head`** — heading, optional `.sec-badge`, and a small `.sec-i` button. Every
   instructional paragraph is a `<p class="note sec-help" id="helpX" hidden>` revealed by
   its button (`data-help="helpX"`). One delegated listener on `#drawer` handles all of
   them, so a new section needs no wiring. The button carries `aria-expanded`.
-- **Compacted controls** — `.drawer .btn`, `.drawer input/select`, `.drawer .fbrow` and
-  `.drawer hr` are all tighter in here than in the app proper. That is deliberate: this is
-  a settings panel, not a workspace.
-- **One line per section where it fits, and the line is filled.** Clear data puts its six
-  tab pills, the cloud tick and the button on a single flex line (`.reset-rows` is
-  `display:contents` so the pills join their parent's line rather than forming a nested
-  box). The pills deliberately match `.taborder-row`, with a checkbox where Tab order puts
-  its position number, so the two lists read as one family. They carry `flex:1 1 auto`, so
-  they **grow to fill** — about 92% of the line, the button taking the rest — and the slack
-  is shared in proportion to each name, keeping "Contributions" wider than "Plan" without
-  truncating either. Dashboard shortcuts pairs each amount with its own button in
-  `1fr auto 1fr auto`. Cloud sync splits into quarters via `.sync-actions`: three buttons
-  at `flex:2 1 0` and `.keepdata` at `flex:4 1 0`, i.e. 20/20/20/40. **`flex-basis:0` is
-  load-bearing there** — with the default `auto` the ratio would divide only the slack left
-  after each button's own text, and three differently-worded buttons would come out
-  different widths.
+- **A quiet heading.** `.sec-head h3` is an 11.5px uppercase eyebrow at `--text-dim`, not
+  the 15px display type it used to be. This makes *more* hierarchy, not less: the heading
+  names the card and then gets out of the way, leaving the row titles as the loudest thing
+  inside it.
+- **One line per section where it fits.** Clear data puts its six tab pills, the cloud tick
+  and the button on a single flex line (`.reset-rows` is `display:contents` so the pills
+  join their parent's line rather than forming a nested box). The pills deliberately match
+  `.taborder-row`, with a checkbox where Tab order puts its position number, so the two
+  lists read as one family. They sit at **natural width** (`flex:0 1 auto`) — an earlier
+  pass stretched them to fill ~92% of the line, and six pulled lozenges was a large part of
+  what read as thin and congested; at their own size, with `#resetGo` (`flex:none;
+  min-width:104px`) beside them, they read as chips. Dashboard shortcuts pairs each amount
+  with its own button in `3fr 2fr 3fr 2fr`, i.e. 30/20/30/20. Cloud sync splits into
+  quarters via `.sync-actions`: three buttons at `flex:2 1 0` and `.keepdata` at
+  `flex:4 1 0`, i.e. 20/20/20/40. **`flex-basis:0` is load-bearing there** — with the
+  default `auto` the ratio would divide only the slack left after each button's own text,
+  and three differently-worded buttons would come out different widths.
 
 **Instructions live in the help panel, not in `alert()`.** `fbSetup` and `fbInfo` were two
 popups holding the Firebase setup steps and the stored-shape rundown; both now read as
@@ -477,6 +515,14 @@ prunes hourly — every past day collapses to one closing point, and `snapshot()
 list at 4,000, which is about eleven years at one point per day.
 
 `.sec-i` is in the 560px tap-target rule, so it keeps a 28px hit area on a phone.
+
+**Scrollbars are glass everywhere**, not the browser's white: `*{scrollbar-width:thin;
+scrollbar-color:rgba(255,255,255,.20) transparent}` plus a `::-webkit-scrollbar-thumb` at
+`rgba(255,255,255,.15)` with `border:3px solid transparent;background-clip:content-box` for
+the inset. It is global rather than drawer-scoped, so every scroller in the app matches.
+The thinner bar gives content ~3px more width — enough to move layout pixels, which is why
+`test-mobile` §8 compares ribbons against each other rather than remembering numbers
+(bug class 12).
 
 **Chips that fill:** Income and Expense on Yearly fill with `--yf-inc` / `--yf-exp` and go
 near-black, the same idiom as `.seg button.active.poo`. Both segs carry it — `#yfModeSeg`

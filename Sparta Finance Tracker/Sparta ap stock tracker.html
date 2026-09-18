@@ -453,20 +453,60 @@ label{font-size:11px;color:var(--text-faint);font-weight:600;letter-spacing:.08e
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ---------- Settings drawer ----------
-   Capped at 75% of the viewport and scrolled internally. Trimming the content
-   alone cannot hold that line: the same markup is 70% of a tall desktop screen
-   and 130% of a laptop one, so the ceiling has to be stated rather than aimed
-   at. Everything below is the trimming that keeps most screens from needing the
-   scrollbar at all -- controls and rules are noticeably tighter in here than in
-   the app proper, which is deliberate: this is a settings panel, not a
-   workspace. */
+   A TWO-COLUMN GRID OF CARDS, capped at 75% of the viewport and scrolled
+   internally.
+
+   It used to be one tall column of seven sections divided by <hr> rules, and it
+   read as congested. The cause was structural rather than spacing: seven sections
+   ran five different layout systems -- label-left/control-right, two kinds of pill
+   row, stacked-label fields, a four-column grid -- so there was no repeating
+   rhythm to settle into, and every section carried identical weight, so nothing
+   led and nothing receded.
+
+   Density and composure normally trade against each other. Two columns resolve
+   it instead: pairing the small cards halves their height, which buys back the
+   room that padding and a real type scale need. The rules are gone -- a card
+   separates better than a line does.
+
+   Source order sets the layout deliberately rather than leaving it to `dense`
+   packing, which is hard to predict when spans are mixed in:
+
+       App lock              | Yearly starting balance
+       Clear data ..........................(wide)
+       Dashboard shortcuts .................(wide)
+       Tab order             | Live prices
+       Cloud sync ..........................(wide)          */
 .drawer{padding:16px 18px;display:none}
-.drawer.open{display:block;max-height:75vh;overflow-y:auto;overscroll-behavior:contain}
-.drawer .btn{padding:9px 14px}
-.drawer input,.drawer select{padding:9px 12px}
+.drawer.open{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;
+  align-content:start;max-height:75vh;overflow-y:auto;overscroll-behavior:contain}
+.set-card{background:rgba(255,255,255,.025);border:1px solid var(--stroke);
+  border-radius:16px;padding:14px 16px 16px;min-width:0}
+.set-card.wide{grid-column:1/-1}
+/* the only destructive card, so it does not get to look like the others */
+.set-card.danger{border-color:rgba(232,176,75,.28);background:rgba(232,176,75,.035)}
+@media(max-width:760px){
+  .drawer.open{grid-template-columns:1fr}
+  .set-card.wide{grid-column:auto}
+}
+/* One height for every control in here. Pills sat at ~34px, buttons ~38 and
+   inputs ~40, and that ragged edge was a real part of the untidiness. */
+.drawer .btn{padding:9px 14px;min-height:36px}
+.drawer input,.drawer select{padding:9px 12px;min-height:36px}
+.drawer .reset-row,.drawer .taborder-row,.drawer .keepdata{min-height:36px}
 .drawer .hform label{font-size:9.5px;margin-bottom:3px}
-.drawer .fbrow{padding:10px 13px}
-.drawer .basegrid{gap:8px;margin-top:10px}
+/* Inside a card the row does not need a frame of its own -- the card is the
+   frame, and a box drawn inside a box reads as clutter rather than structure.
+   Flattening it also gives back the padding, which is most of what the cards
+   cost in height. */
+.drawer .set-card .fbrow{border:none;background:transparent;padding:0}
+/* The buttons are fixed-size; the label is the part that can give. Without this
+   the label held its width, the actions wrapped underneath, and a half-width
+   card ended up with its two buttons stacked over a column of dead space. */
+.drawer .set-card .fbrow>div:first-child{flex:1 1 auto;min-width:0}
+.drawer .set-card .row-actions{flex:0 0 auto}
+.drawer .basegrid{gap:8px;margin-top:0}
+.drawer .sec-help{margin-bottom:11px}
+.drawer .taborder-line,.drawer .reset-line{margin-top:0}
 footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5px;letter-spacing:.04em}
 
 /* ---------- Contribution bars ---------- */
@@ -1159,8 +1199,12 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    Every instruction in this drawer used to sit on screen permanently, and the
    drawer ran several screens long as a result. Each is now behind the small "i"
    beside its heading: read once, folded away after. */
-.sec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px}
-.sec-head h3{margin:0;font-family:var(--font-display);font-size:15px}
+.sec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:11px}
+/* 15px display type competed with the controls beneath it. A quiet eyebrow makes
+   MORE hierarchy, not less: the heading names the card and then gets out of the
+   way, leaving the row titles as the loudest thing inside it. */
+.sec-head h3{margin:0;font-family:var(--font-display);font-size:11.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.13em;color:var(--text-dim)}
 .sec-badge{font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:700;
   color:var(--text-faint);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:3px 9px}
 .sec-i{flex:none;width:19px;height:19px;padding:0;border-radius:50%;cursor:pointer;
@@ -1202,13 +1246,11 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    flex line rather than living in nested boxes. */
 .reset-line{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
 .reset-rows{display:contents}
-/* The pills GROW to fill the line rather than hugging their text, so the row
-   reads as a deliberate control strip instead of trailing off into empty space.
-   `1 1 auto` shares the slack in proportion to each name's own width, so
-   "Contributions" keeps more room than "Plan" and nothing truncates; the button
-   stays at its natural size, which leaves the pills about 90% of the line. */
+/* Natural width, not stretched. Six lozenges pulled to 92% of the line was a
+   large part of what read as thin and congested -- at their own size, with the
+   button beside them, they read as chips. */
 .reset-row{display:flex;align-items:center;justify-content:center;gap:7px;
-  flex:1 1 auto;min-width:0;
+  flex:0 1 auto;min-width:0;
   padding:7px 12px;border-radius:999px;
   background:var(--glass);border:1px solid var(--stroke);cursor:pointer;font-size:12.5px;
   transition:background .15s;margin:0}
@@ -1221,9 +1263,9 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 /* the cloud tick is the dangerous one, so it is warm-toned and set apart */
 .reset-cloud{border-color:rgba(232,176,75,.4);background:rgba(232,176,75,.08)}
 .reset-cloud b{color:var(--amber,#E8B04B);font-weight:600}
-/* grows with the pills rather than hugging "Clear (2)", and never reads smaller
-   than the narrowest of them */
-#resetGo{flex:1 1 auto;min-width:104px;margin:0;white-space:nowrap}
+/* never reads smaller than the pills beside it, including when nothing is
+   ticked and the label shrinks back to "Clear" */
+#resetGo{flex:none;min-width:104px;margin:0;white-space:nowrap}
 .taborder{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
 .taborder-row{display:flex;align-items:center;gap:7px;padding:7px 8px 7px 12px;border-radius:999px;
   background:var(--glass);border:1px solid var(--stroke);cursor:grab;font-size:12.5px;
@@ -2036,126 +2078,135 @@ select{color-scheme:dark}
   </nav>
 
   <div class="panel drawer" id="drawer" style="margin-bottom:20px">
-    <div class="sec-head">
-      <h3>App lock</h3>
-      <span class="sec-badge">6 Digit PIN</span>
-      <button class="sec-i" data-help="helpPin" aria-expanded="false" aria-label="About the app lock">i</button>
-    </div>
-    <p class="note sec-help" id="helpPin" hidden>A 6-digit PIN screen shown when this page loads. It's a privacy screen for a shared device — not encryption; anyone with access to this file or its browser storage can still read the underlying data.</p>
-    <div class="fbrow">
-      <div>
-        <div style="font-size:13px;font-weight:600">Require PIN on load</div>
-        <div style="font-size:11.5px;color:var(--text-faint)" id="pinStatusLine">Off</div>
+    <section class="set-card">
+  <div class="sec-head">
+        <h3>App lock</h3>
+        <span class="sec-badge">6 Digit PIN</span>
+        <button class="sec-i" data-help="helpPin" aria-expanded="false" aria-label="About the app lock">i</button>
       </div>
-      <div class="row-actions">
-        <button class="btn" id="pinChangeBtn">Set / change PIN</button>
-        <button class="btn ghost" id="pinRemoveBtn" style="display:none">Remove PIN</button>
-        <label class="switch" title="Turn the PIN lock on or off">
-          <input type="checkbox" id="pinToggle"><span class="track"><span class="knob"></span></span>
+      <p class="note sec-help" id="helpPin" hidden>A 6-digit PIN screen shown when this page loads. It's a privacy screen for a shared device — not encryption; anyone with access to this file or its browser storage can still read the underlying data.</p>
+      <div class="fbrow">
+        <div>
+          <div style="font-size:13px;font-weight:600">Require PIN on load</div>
+          <div style="font-size:11.5px;color:var(--text-faint)" id="pinStatusLine">Off</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn" id="pinChangeBtn">Set / change PIN</button>
+          <button class="btn ghost" id="pinRemoveBtn" style="display:none">Remove PIN</button>
+          <label class="switch" title="Turn the PIN lock on or off">
+            <input type="checkbox" id="pinToggle"><span class="track"><span class="knob"></span></span>
+          </label>
+        </div>
+      </div>
+    </section>
+    <section class="set-card">
+  <div class="sec-head">
+        <h3>Yearly starting balance</h3>
+        <button class="sec-i" data-help="helpStart" aria-expanded="false" aria-label="About the starting balance">i</button>
+      </div>
+      <p class="note sec-help" id="helpStart" hidden>What was in the bank on 1 January. Yearly Finance uses it as the opening figure for that year.</p>
+      <div class="hform">
+        <div>
+          <label for="yfStartYear">Year</label>
+          <select id="yfStartYear"></select>
+        </div>
+        <div>
+          <label for="yfStart">Starting balance (C$)</label>
+          <input id="yfStart" type="number" step="0.01" placeholder="5,000">
+        </div>
+      </div>
+    </section>
+    <section class="set-card wide danger">
+  <div class="sec-head">
+        <h3>Clear data</h3>
+        <button class="sec-i" data-help="helpClear" aria-expanded="false" aria-label="About clearing data">i</button>
+      </div>
+      <p class="note sec-help" id="helpClear" hidden>Tick what to empty — one per tab — and everything unticked is left exactly as it is. Your PIN, your Firebase settings and your tab order are never touched. Clearing is <b>this browser only</b> unless you tick the cloud as well, so a reconnect pulls the cloud copy back.</p>
+      <div class="reset-line">
+        <div id="resetRows" class="reset-rows"></div>
+        <label class="reset-row reset-cloud" title="Without this the cloud copy survives and a reconnect pulls it back">
+          <input type="checkbox" id="resetCloud"><b>Cloud too</b></label>
+        <button class="btn is-off" id="resetGo" disabled>Clear</button>
+      </div>
+    </section>
+    <section class="set-card wide">
+  <div class="sec-head">
+        <h3>Dashboard shortcuts</h3>
+        <button class="sec-i" data-help="helpBase" aria-expanded="false" aria-label="About the dashboard shortcuts">i</button>
+      </div>
+      <div class="basegrid">
+        <input id="baseT" type="number" step="0.01" min="0" placeholder="TFSA amount">
+        <button class="btn primary" id="setBaseT">Base TFSA</button>
+        <input id="baseF" type="number" step="0.01" min="0" placeholder="FHSA amount">
+        <button class="btn primary" id="setBaseF">Base FHSA</button>
+      </div>
+      <p class="note sec-help" id="helpBase" hidden><b>Base TFSA / Base FHSA</b> set that account's available balance straight to the amount you type (in the currency shown at the top), replacing whatever is there — handy for lining the Dashboard up with your broker instead of adding deposits one by one.</p>
+    </section>
+    <section class="set-card">
+  <div class="sec-head">
+        <h3>Tab order</h3>
+        <button class="sec-i" data-help="helpTabs" aria-expanded="false" aria-label="About the tab order">i</button>
+      </div>
+      <p class="note sec-help" id="helpTabs" hidden>Drag to reorder, or use the arrows. The first tab is what opens when you load the app.</p>
+      <div class="taborder-line">
+        <div id="tabOrder" class="taborder"></div>
+        <button class="btn" id="tabOrderReset">Reset to default</button>
+      </div>
+    </section>
+    <section class="set-card">
+  <div class="sec-head">
+        <h3>Live prices</h3>
+        <button class="sec-i" data-help="helpPrices" aria-expanded="false" aria-label="About live prices">i</button>
+      </div>
+      <p class="note sec-help" id="helpPrices" hidden>Prices come from Finnhub. The API key lives in the file itself, next to the Firebase setup — not here. A free key is enough for this app's request volume.</p>
+      <div class="fbrow">
+        <div>
+          <div style="font-size:13px;font-weight:600">Live prices (Finnhub)</div>
+          <div style="font-size:11.5px;color:var(--text-faint)" id="finKeyStatus">checking…</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn" id="refreshNow">Refresh prices now</button>
+          <a class="btn ghost" href="https://finnhub.io" target="_blank" rel="noopener" style="text-decoration:none">Get a free key</a>
+        </div>
+      </div>
+    </section>
+    <section class="set-card wide">
+  <div class="sec-head">
+        <h3>Cloud sync</h3>
+        <span id="fbStatus" style="font-size:11px;font-weight:500;color:var(--text-faint)">not configured</span>
+        <button class="sec-i" data-help="helpSync" aria-expanded="false" aria-label="About cloud sync">i</button>
+      </div>
+      <div class="sec-help" id="helpSync" hidden>
+        <p class="note" style="margin-top:0"><b>Setting it up.</b> Sync is configured inside this HTML file, so your keys never sit in the browser. Open it in a text editor and search for <b>FIREBASE SETUP</b>, near the top of the first <code>&lt;script&gt;</code>. Set <code>FIREBASE_ENABLED = true</code>, paste the config from the Firebase console (Project settings → Your apps → SDK setup), and set <code>SYNC_KEY</code> to any private string. A <code>databaseURL</code> is required, so create a Realtime Database first. Save, reload, then switch sync on.</p>
+        <p class="note">Suggested database rules:<br>
+          <code>{ "rules": { ".read": false, ".write": false, "sparta": { ".read": true, ".write": true } } }</code></p>
+        <p class="note"><b>What is stored.</b> Under <code>sparta/&lt;SYNC_KEY&gt;</code>: <b>core</b> — holdings, cash, contributions, yearly finance, monthly, plan and notes; and <b>history/&lt;date&gt;</b> — one closing point per past day, intraday for today. Live prices are never synced; they are re-fetched on load.</p>
+        <p class="note"><b>The switch</b> only turns syncing on or off on this device. <b>Test connection</b> checks the settings work, and Push / Pull move data by hand if the two copies ever disagree.</p>
+        <p class="note"><b>Keep data here</b>, turned off, means this browser stores nothing of its own: the app loads from the cloud each time and forgets everything when the tab closes. Useful for trying things out without leaving rows behind that later look like real work. It needs a working cloud connection — without one a reload would start blank and the work would be gone — so it stays locked until sync is on. Your PIN is kept either way.</p>
+      </div>
+      <div class="fbrow">
+        <div>
+          <div style="font-size:13px;font-weight:600" id="fbProject">Not configured</div>
+          <div style="font-size:11.5px;color:var(--text-faint)" id="fbTarget">Edit the FIREBASE block at the top of this HTML file</div>
+        </div>
+        <label class="switch" title="Turn syncing on or off">
+          <input type="checkbox" id="fbToggle"><span class="track"><span class="knob"></span></span>
         </label>
       </div>
-    </div>
-    <hr>
-    <div class="sec-head">
-      <h3>Clear data</h3>
-      <button class="sec-i" data-help="helpClear" aria-expanded="false" aria-label="About clearing data">i</button>
-    </div>
-    <p class="note sec-help" id="helpClear" hidden>Tick what to empty — one per tab — and everything unticked is left exactly as it is. Your PIN, your Firebase settings and your tab order are never touched. Clearing is <b>this browser only</b> unless you tick the cloud as well, so a reconnect pulls the cloud copy back.</p>
-    <div class="reset-line">
-      <div id="resetRows" class="reset-rows"></div>
-      <label class="reset-row reset-cloud" title="Without this the cloud copy survives and a reconnect pulls it back">
-        <input type="checkbox" id="resetCloud"><b>Cloud too</b></label>
-      <button class="btn is-off" id="resetGo" disabled>Clear</button>
-    </div>
-    <hr>
-    <div class="sec-head">
-      <h3>Yearly starting balance</h3>
-      <button class="sec-i" data-help="helpStart" aria-expanded="false" aria-label="About the starting balance">i</button>
-    </div>
-    <p class="note sec-help" id="helpStart" hidden>What was in the bank on 1 January. Yearly Finance uses it as the opening figure for that year.</p>
-    <div class="hform">
-      <div>
-        <label for="yfStartYear">Year</label>
-        <select id="yfStartYear"></select>
+      <div class="duo bscroll sync-actions" style="margin-top:12px">
+        <button class="btn" id="fbTest">Test connection</button>
+        <button class="btn" id="fbPush">Push to cloud</button>
+        <button class="btn" id="fbPull">Pull from cloud</button>
+        <label class="keepdata" title="Off means nothing is stored here — the cloud becomes the only copy">
+          <span class="kd-text">
+            <b>Keep data in this browser</b>
+            <i id="localOffNote">On — this browser keeps its own copy</i>
+          </span>
+          <span class="switch"><input type="checkbox" id="localToggle"><span class="track"><span class="knob"></span></span></span>
+        </label>
       </div>
-      <div>
-        <label for="yfStart">Starting balance (C$)</label>
-        <input id="yfStart" type="number" step="0.01" placeholder="5,000">
-      </div>
-    </div>
-    <hr>
-    <div class="sec-head">
-      <h3>Tab order</h3>
-      <button class="sec-i" data-help="helpTabs" aria-expanded="false" aria-label="About the tab order">i</button>
-    </div>
-    <p class="note sec-help" id="helpTabs" hidden>Drag to reorder, or use the arrows. The first tab is what opens when you load the app.</p>
-    <div class="taborder-line">
-      <div id="tabOrder" class="taborder"></div>
-      <button class="btn" id="tabOrderReset">Reset to default</button>
-    </div>
-    <hr>
-    <div class="sec-head">
-      <h3>Dashboard shortcuts</h3>
-      <button class="sec-i" data-help="helpBase" aria-expanded="false" aria-label="About the dashboard shortcuts">i</button>
-    </div>
-    <div class="basegrid">
-      <input id="baseT" type="number" step="0.01" min="0" placeholder="TFSA amount">
-      <button class="btn primary" id="setBaseT">Base TFSA</button>
-      <input id="baseF" type="number" step="0.01" min="0" placeholder="FHSA amount">
-      <button class="btn primary" id="setBaseF">Base FHSA</button>
-    </div>
-    <p class="note sec-help" id="helpBase" hidden><b>Base TFSA / Base FHSA</b> set that account's available balance straight to the amount you type (in the currency shown at the top), replacing whatever is there — handy for lining the Dashboard up with your broker instead of adding deposits one by one.</p>
-    <hr>
-    <div class="sec-head">
-      <h3>Cloud sync</h3>
-      <span id="fbStatus" style="font-size:11px;font-weight:500;color:var(--text-faint)">not configured</span>
-      <button class="sec-i" data-help="helpSync" aria-expanded="false" aria-label="About cloud sync">i</button>
-    </div>
-    <div class="sec-help" id="helpSync" hidden>
-      <p class="note" style="margin-top:0"><b>Setting it up.</b> Sync is configured inside this HTML file, so your keys never sit in the browser. Open it in a text editor and search for <b>FIREBASE SETUP</b>, near the top of the first <code>&lt;script&gt;</code>. Set <code>FIREBASE_ENABLED = true</code>, paste the config from the Firebase console (Project settings → Your apps → SDK setup), and set <code>SYNC_KEY</code> to any private string. A <code>databaseURL</code> is required, so create a Realtime Database first. Save, reload, then switch sync on.</p>
-      <p class="note">Suggested database rules:<br>
-        <code>{ "rules": { ".read": false, ".write": false, "sparta": { ".read": true, ".write": true } } }</code></p>
-      <p class="note"><b>What is stored.</b> Under <code>sparta/&lt;SYNC_KEY&gt;</code>: <b>core</b> — holdings, cash, contributions, yearly finance, monthly, plan and notes; and <b>history/&lt;date&gt;</b> — one closing point per past day, intraday for today. Live prices are never synced; they are re-fetched on load.</p>
-      <p class="note"><b>The switch</b> only turns syncing on or off on this device. <b>Test connection</b> checks the settings work, and Push / Pull move data by hand if the two copies ever disagree.</p>
-      <p class="note"><b>Keep data here</b>, turned off, means this browser stores nothing of its own: the app loads from the cloud each time and forgets everything when the tab closes. Useful for trying things out without leaving rows behind that later look like real work. It needs a working cloud connection — without one a reload would start blank and the work would be gone — so it stays locked until sync is on. Your PIN is kept either way.</p>
-    </div>
-    <div class="fbrow">
-      <div>
-        <div style="font-size:13px;font-weight:600" id="fbProject">Not configured</div>
-        <div style="font-size:11.5px;color:var(--text-faint)" id="fbTarget">Edit the FIREBASE block at the top of this HTML file</div>
-      </div>
-      <label class="switch" title="Turn syncing on or off">
-        <input type="checkbox" id="fbToggle"><span class="track"><span class="knob"></span></span>
-      </label>
-    </div>
-    <div class="duo bscroll sync-actions" style="margin-top:12px">
-      <button class="btn" id="fbTest">Test connection</button>
-      <button class="btn" id="fbPush">Push to cloud</button>
-      <button class="btn" id="fbPull">Pull from cloud</button>
-      <label class="keepdata" title="Off means nothing is stored here — the cloud becomes the only copy">
-        <span class="kd-text">
-          <b>Keep data in this browser</b>
-          <i id="localOffNote">On — this browser keeps its own copy</i>
-        </span>
-        <span class="switch"><input type="checkbox" id="localToggle"><span class="track"><span class="knob"></span></span></span>
-      </label>
-    </div>
-    <hr>
-    <div class="sec-head">
-      <h3>Live prices</h3>
-      <button class="sec-i" data-help="helpPrices" aria-expanded="false" aria-label="About live prices">i</button>
-    </div>
-    <p class="note sec-help" id="helpPrices" hidden>Prices come from Finnhub. The API key lives in the file itself, next to the Firebase setup — not here. A free key is enough for this app's request volume.</p>
-    <div class="fbrow">
-      <div>
-        <div style="font-size:13px;font-weight:600">Live prices (Finnhub)</div>
-        <div style="font-size:11.5px;color:var(--text-faint)" id="finKeyStatus">checking…</div>
-      </div>
-      <div class="row-actions">
-        <button class="btn" id="refreshNow">Refresh prices now</button>
-        <a class="btn ghost" href="https://finnhub.io" target="_blank" rel="noopener" style="text-decoration:none">Get a free key</a>
-      </div>
-    </div>
+    </section>
+
   </div>
 
   <div class="grid" id="dashView">
@@ -2810,7 +2861,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-17F</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-18A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
