@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-21A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-21B` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -438,7 +438,7 @@ the cloud wins unconditionally — exactly right for cloud-only mode.
 
 ### The Settings drawer is a two-column card grid
 
-`.drawer.open` is a CSS grid — `repeat(2,minmax(0,1fr))`, `gap:14px`, `align-content:start`
+`.drawer.open` is a CSS grid — `repeat(2,minmax(0,1fr))`, `gap:7px`, `align-content:start`
 — still capped at `max-height:75vh; overflow-y:auto`. The cap is stated rather than aimed
 at, because the same markup is 70% of a tall desktop screen and 130% of a laptop one; the
 grid is what keeps most screens from needing the scrollbar at all, by halving the height of
@@ -465,6 +465,15 @@ the flow is deterministic:
 | Clear data | **2** | eight items on one line |
 
 Under 760px it collapses to one column and `.set-card.wide` drops back to `grid-column:auto`.
+
+**Every gap in here is half what it was**, which is what got the panel under the scrollbar:
+grid `gap` 14→7, `.drawer` padding 16→9, `.set-card` padding 14/16→11/12, `.sec-head`
+margin-bottom 11→6, and the `.hrows` / `.syncgrid` / `.sg-left` gaps 10→6. Content went
+**696px → 580px**, so the whole panel now shows from a 800px-tall window up rather than
+needing 930px. `test-storage` §2c pins `scrollHeight <= 600`, because an eighth card or the
+gaps drifting back up is exactly how this regresses. **Below ~775px of window the 75% cap
+is itself the binding constraint** and a scrollbar is unavoidable — that is the cap doing
+its job, not a layout fault, so do not chase it by trimming further.
 
 **Clear data goes last**, where a destructive control belongs, and it no longer carries a
 warm border tint — being last says it better than colour did, and `.set-card.danger` is
@@ -750,7 +759,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **884 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **885 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.

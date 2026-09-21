@@ -184,11 +184,19 @@ const YEAR = 2026;
   const fit = await page.evaluate(() => {
     const d = document.getElementById('drawer');
     return { pct: Math.round(d.clientHeight / innerHeight * 100),
+             content: d.scrollHeight,
              scrolls: d.scrollHeight > d.clientHeight + 1,
              helpsHidden: [...document.querySelectorAll('.sec-help')].every(p => p.hidden),
              iButtons: document.querySelectorAll('.sec-i').length };
   });
   check(fit.pct <= 75, 'capped at 75vh however tall the content grows', String(fit.pct) + '%');
+  /* The cap alone does not stop the panel scrolling — it only decides where it
+     gets cut off. Below ~775px of window the 75% rule itself is the binding
+     constraint and a scrollbar is unavoidable; above it, this is. 600px keeps
+     the whole panel on screen from a 800px-tall window up, which covers a
+     laptop. An eighth card, or the gaps drifting back up, breaks this. */
+  check(fit.content <= 600, 'and its content stays short enough to need no scrollbar on a laptop',
+    fit.content + 'px');
   check(fit.iButtons >= 6 && fit.helpsHidden,
     'every instruction starts folded away behind its own i button',
     JSON.stringify([fit.iButtons, fit.helpsHidden]));
