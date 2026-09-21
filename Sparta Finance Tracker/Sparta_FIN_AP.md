@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-17F` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-21A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -457,15 +457,44 @@ the flow is deterministic:
 
 | Card | Span | Why |
 |---|---|---|
-| App lock | 1 | status + control |
-| Yearly starting balance | 1 | two fields |
-| Clear data | **2** | eight items on one line |
+| App lock | 1 | one row, with its buttons on the card floor |
+| Yearly starting balance | 1 | two rows |
+| Tab order | **2** | six pills and the reset on one line |
 | Dashboard shortcuts | **2** | keeps the four controls on one line |
-| Tab order | 1 | pills already wrap happily |
-| Live prices | 1 | status + control |
-| Cloud sync | **2** | status row + three buttons + the keep-data switch |
+| Cloud sync | **2** | a 60/20/20 grid, two rows deep |
+| Clear data | **2** | eight items on one line |
 
 Under 760px it collapses to one column and `.set-card.wide` drops back to `grid-column:auto`.
+
+**Clear data goes last**, where a destructive control belongs, and it no longer carries a
+warm border tint — being last says it better than colour did, and `.set-card.danger` is
+gone with it. The amber stays on the **Cloud too** tick alone, which is the only control
+here that reaches past this browser into the Firebase copy.
+
+**The two paired cards fill to the same floor.** They are grid items, so they *already*
+stretch to equal height — which is exactly why asserting `heightA === heightB` proves
+nothing and why `test-storage` §2d measures the gap under each card's last child instead
+(see bug class 14). The filling is what needed building: `.set-card` is a flex column,
+App lock's `.pin-actions` takes `margin-top:auto` to sit on the floor, and Yearly's
+`.hrows` takes `flex:1` with `justify-content:space-between` so its two rows spread over
+whatever height the row hands it. Without those, App lock trails off into ~9px of dead air
+at 820px wide.
+
+**Live prices is no longer a card.** It was a whole section carrying one fact, so it now
+reads as `Live prices (Finnhub)  Yes — live` / `No — …` in a `.sec-aside` on the right half
+of the Cloud sync heading, with its setup prose folded into that card's help. Both its
+buttons went: *Get a free key* was an external link the help text already covers, and
+*Refresh prices now* went with it — prices still refresh every 60s and on load. **Deleting
+a control means deleting its handler**; `$('refreshNow').onclick` was left behind on the
+first pass and threw `Cannot set properties of null` at boot, which stops the whole init
+script and leaves the drawer half-built (bug class 15).
+
+**Cloud sync is a 60/20/20 grid** (`.syncgrid`), two rows deep. `.sg-left` spans
+`grid-row:1/3` down the 60% column and holds *both* status rows — the connection and
+keep-data-here — inside one dark container with a hairline between them, because they are
+two halves of one fact rather than two unrelated strips. Test connection takes the
+remaining 40% on row 1 (`grid-column:2/-1`); Push and Pull take 20% each on row 2. The old
+`.sync-actions` flex-quarters rule is gone.
 
 Three rules make the cards work and are each load-bearing:
 
@@ -494,15 +523,15 @@ Two patterns do the rest of the work, and new sections should follow both:
   and the button on a single flex line (`.reset-rows` is `display:contents` so the pills
   join their parent's line rather than forming a nested box). The pills deliberately match
   `.taborder-row`, with a checkbox where Tab order puts its position number, so the two
-  lists read as one family. They sit at **natural width** (`flex:0 1 auto`) — an earlier
-  pass stretched them to fill ~92% of the line, and six pulled lozenges was a large part of
-  what read as thin and congested; at their own size, with `#resetGo` (`flex:none;
-  min-width:104px`) beside them, they read as chips. Dashboard shortcuts pairs each amount
-  with its own button in `3fr 2fr 3fr 2fr`, i.e. 30/20/30/20. Cloud sync splits into
-  quarters via `.sync-actions`: three buttons at `flex:2 1 0` and `.keepdata` at
-  `flex:4 1 0`, i.e. 20/20/20/40. **`flex-basis:0` is load-bearing there** — with the
-  default `auto` the ratio would divide only the slack left after each button's own text,
-  and three differently-worded buttons would come out different widths.
+  lists read as one family. They carry `flex:1 1 auto`, so they **stretch to fill** the
+  line with `#resetGo` (`flex:none; min-width:104px`) on the end, the slack shared in
+  proportion to each name so "Contributions" stays wider than "Plan" without either
+  truncating. **Size the checkbox explicitly** (`width:15px;height:15px;min-height:0`) —
+  `.drawer input{min-height:36px}` is a blanket rule and it was sizing the *checkbox*
+  inside each pill, which is the real reason these stood 42px tall against Tab order's 35px
+  when they were supposed to be the same pill. Dashboard shortcuts pairs each amount
+  with its own button in `3fr 2fr 3fr 2fr`, i.e. 30/20/30/20. Cloud sync uses an explicit
+  grid rather than flex ratios — see `.syncgrid` above.
 
 **Instructions live in the help panel, not in `alert()`.** `fbSetup` and `fbInfo` were two
 popups holding the Firebase setup steps and the stored-shape rundown; both now read as
@@ -696,10 +725,22 @@ These have each caused real, shipped bugs in this project. When making changes, 
    reached the second one, at which point the suite failed one morning with nothing about
    the app having changed. Anchor date fixtures to offsets from today, and compute them in
    the page so they match `isoLocal()`'s timezone rather than the runner's.
-14. **A measurement taken while the element is `display:none`.** Everything in the Settings
-   drawer reads 0×0 until it is opened, so a layout assertion there passes without meaning
-   anything — the sibling of bug class 7. `test-storage.js` §2b opens the drawer and asserts
-   the boxes are real before trusting a single position.
+14. **A measurement taken while the element is `display:none`, or of a value the layout
+   pins anyway.** Two shapes of the same mistake — an assertion that cannot fail. Everything
+   in the Settings drawer reads 0×0 until it is opened, so a layout assertion there passes
+   without meaning anything (the sibling of bug class 7); `test-storage.js` §2b opens the
+   drawer and asserts the boxes are real before trusting a single position. The subtler
+   shape: two cards in one grid row **always** stretch to equal height, so a
+   `heightA === heightB` check for "these cards end level" holds however the content
+   behaves. §2d measures the gap under each card's last child instead, which is the claim
+   actually being made. Before trusting a layout assertion, break the rule it covers and
+   confirm it fails.
+15. **Deleting a control without deleting its handler.** Removing the Live prices card left
+   `$('refreshNow').onclick=…` pointing at nothing, which threw `Cannot set properties of
+   null` during init — and because that runs at the top level, everything after it never ran
+   and the drawer came up half-built. A dead `$(id)` is not a dangling no-op, it is a
+   boot-stopper. Grep the id before removing its markup; the suite's `no page errors` check
+   is what caught it.
 
 ---
 
@@ -709,7 +750,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **875 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **884 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.

@@ -203,6 +203,84 @@ const YEAR = 2026;
      && help.shut.hidden === true && help.shut.aria === 'false',
     'the i button toggles its note open and shut, and says so to a screen reader',
     JSON.stringify(help));
+
+  section('2d. the card grid: running order, spans and the rows inside them');
+  /* Everything here is measured from live rects, so it is pinned against a card
+     that silently collapses or a span that stops spanning -- neither of which
+     shows up in the markup. */
+  const grid = await page.evaluate(() => {
+    const R = e => e.getBoundingClientRect();
+    const d = document.getElementById('drawer');
+    const cards = [...d.querySelectorAll('.set-card')];
+    const rows = new Map();
+    cards.forEach(c => {
+      const t = Math.round(R(c).top);
+      if (!rows.has(t)) rows.set(t, []);
+      rows.get(t).push(c.querySelector('h3').textContent);
+    });
+    const by = n => cards.find(c => c.querySelector('h3').textContent.startsWith(n));
+    /* NOT the card heights: two cards in one grid row always stretch to match,
+       so comparing them passes whatever the content does. The question is
+       whether the content FILLS the card, which is the gap left under its last
+       child. Without the fill rules App lock leaves ~9px of dead air here. */
+    const slack = c => {
+      const k = R(c), last = R(c.lastElementChild);
+      return Math.round(k.bottom - parseFloat(getComputedStyle(c).paddingBottom) - last.bottom);
+    };
+    const pill = s => { const e = document.querySelector(s); return e ? Math.round(R(e).height) : null };
+    const oneLine = s => new Set([...document.querySelectorAll(s)].map(e => Math.round(R(e).top))).size;
+    const sg = R(document.querySelector('.syncgrid'));
+    const pct = e => Math.round(R(e).width / sg.width * 100);
+    const left = document.querySelector('.sg-left');
+    return {
+      order: [...rows.keys()].sort((a, b) => a - b).map(k => rows.get(k)),
+      slackA: slack(by('App lock')), slackY: slack(by('Yearly')),
+      tabPill: pill('.taborder-row'), resetPill: pill('#resetRows .reset-row'),
+      tabsOnOneLine: oneLine('.taborder-row'),
+      resetSitsWithPills: Math.round(R(document.getElementById('tabOrderReset')).top)
+                       === Math.round(R(document.querySelector('.taborder-row')).top),
+      danger: d.querySelectorAll('.set-card.danger').length,
+      leftPct: pct(left), testPct: pct(document.getElementById('fbTest')),
+      pushPct: pct(document.getElementById('fbPush')),
+      pullPct: pct(document.getElementById('fbPull')),
+      // both status rows must live inside the one dark container
+      bothInside: left.contains(document.getElementById('fbToggle'))
+               && left.contains(document.getElementById('localToggle')),
+      finInHead: !!document.getElementById('finKeyStatus')
+                  .closest('.set-card').querySelector('h3').textContent.match(/Cloud sync/),
+      finText: document.getElementById('finKeyStatus').textContent,
+      livePricesCard: [...cards].some(c => c.querySelector('h3').textContent === 'Live prices'),
+      refreshBtn: !!document.getElementById('refreshNow')
+    };
+  });
+  check(JSON.stringify(grid.order) === JSON.stringify(
+      [['App lock', 'Yearly starting balance'], ['Tab order'], ['Dashboard shortcuts'],
+       ['Cloud sync'], ['Clear data']]),
+    'two cards pair on the first row, the other four run full width below',
+    JSON.stringify(grid.order));
+  check(grid.slackA <= 3 && grid.slackY <= 3,
+    'neither of the paired cards trails off into dead space at its bottom',
+    JSON.stringify([grid.slackA, grid.slackY]));
+  check(grid.tabsOnOneLine === 1 && grid.resetSitsWithPills,
+    'all six tab pills and Reset to default share one line', JSON.stringify(grid));
+  /* .drawer input{min-height:36px} used to size the CHECKBOX inside each Clear
+     data pill, standing them 42px tall beside Tab order's 35px. */
+  check(grid.tabPill === grid.resetPill,
+    'a Clear data pill is exactly as tall as a Tab order pill',
+    JSON.stringify([grid.resetPill, grid.tabPill]));
+  check(grid.danger === 0, 'no card carries the warm destructive tint any more',
+    String(grid.danger));
+  check(Math.abs(grid.leftPct - 60) <= 2 && Math.abs(grid.testPct - 40) <= 2
+     && Math.abs(grid.pushPct - 20) <= 2 && Math.abs(grid.pullPct - 20) <= 2,
+    'cloud sync splits 60 / 40 over 60 / 20 / 20',
+    JSON.stringify([grid.leftPct, grid.testPct, grid.pushPct, grid.pullPct]));
+  check(grid.bothInside,
+    'the connection and keep-data rows sit inside one container, not two strips');
+  check(!grid.livePricesCard && !grid.refreshBtn && grid.finInHead,
+    'Live prices is no longer a card — it is one fact in the Cloud sync heading',
+    JSON.stringify([grid.livePricesCard, grid.refreshBtn, grid.finInHead]));
+  check(/^(Yes|No) /.test(grid.finText), 'and it answers Yes or No', grid.finText);
+
   await page.click('#settingsBtn');            // put the drawer back
   await page.waitForTimeout(200);
 
