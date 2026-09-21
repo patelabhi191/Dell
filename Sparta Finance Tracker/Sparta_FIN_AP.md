@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-21B` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-21C` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -438,8 +438,15 @@ the cloud wins unconditionally — exactly right for cloud-only mode.
 
 ### The Settings drawer is a two-column card grid
 
-`.drawer.open` is a CSS grid — `repeat(2,minmax(0,1fr))`, `gap:7px`, `align-content:start`
-— still capped at `max-height:75vh; overflow-y:auto`. The cap is stated rather than aimed
+**The frame and the scroller are two elements, deliberately.** `#drawer` (`.panel.drawer`)
+is the frame: `padding:18px` on all four sides, `position:relative`, and it never scrolls.
+Inside it `.drawer-grid` is the CSS grid — `repeat(2,minmax(0,1fr))`, `gap:9px`,
+`align-content:start` — and it carries `max-height:calc(75vh - 36px); overflow-y:auto`.
+The subtraction is the frame's own padding, so the whole block still lands inside 75% of
+the screen.
+
+Splitting them is not tidiness, it is what makes the rim light possible: an absolutely
+positioned ring inside a scroll container **scrolls away with the content** (bug class 16). The cap is stated rather than aimed
 at, because the same markup is 70% of a tall desktop screen and 130% of a laptop one; the
 grid is what keeps most screens from needing the scrollbar at all, by halving the height of
 the small sections instead of squeezing them.
@@ -466,14 +473,30 @@ the flow is deterministic:
 
 Under 760px it collapses to one column and `.set-card.wide` drops back to `grid-column:auto`.
 
-**Every gap in here is half what it was**, which is what got the panel under the scrollbar:
-grid `gap` 14→7, `.drawer` padding 16→9, `.set-card` padding 14/16→11/12, `.sec-head`
-margin-bottom 11→6, and the `.hrows` / `.syncgrid` / `.sg-left` gaps 10→6. Content went
-**696px → 580px**, so the whole panel now shows from a 800px-tall window up rather than
-needing 930px. `test-storage` §2c pins `scrollHeight <= 600`, because an eighth card or the
-gaps drifting back up is exactly how this regresses. **Below ~775px of window the 75% cap
-is itself the binding constraint** and a scrollbar is unavoidable — that is the cap doing
-its job, not a layout fault, so do not chase it by trimming further.
+**The gaps were halved, then taken back up by a quarter.** Halving them
+(grid 14→7, frame 16→9, card 14/16→11/12, heading 11→6, inner gaps 10→6) took the content
+**696px → 580px** and got the panel under the scrollbar. The ×1.25 pass after it
+(grid 7→9, card 11/12→14/15, heading 6→8, inner gaps 6→8) put it at **650px** with the
+frame's even 18px — which fits from about an **870px-tall window** up rather than 800px.
+That trade was made knowingly: the panel reads as one block with room to breathe, and the
+windows it costs are ones where the 75% cap was close to binding anyway. `test-storage`
+§2c pins `content <= 660`. **Below ~870px of window the cap is itself the binding
+constraint** and a scrollbar is unavoidable — that is the cap doing its job, not a layout
+fault, so do not chase it by trimming further.
+
+**The rim light.** `.drawer.open::after` is a conic gradient clipped to a 1.5px band by two
+masks composited apart (`mask-composite:exclude`) — that paints the *border* rather than the
+box, which a gradient background cannot do. It sweeps because the angle lives in a
+**registered** custom property (`@property --orbit{syntax:'<angle>'}`); an unregistered
+`--var` is a string to the animation engine and would jump from 0 to 360 rather than sweep.
+There is a `@supports not` fallback that parks it, and it honours
+`prefers-reduced-motion`. It is on `.drawer.open` rather than `.drawer` so nothing animates
+behind a closed panel (bug class 8).
+
+**The three Cloud sync buttons sit at 36px**, matching Set PIN, via `.syncgrid>.btn
+{align-self:center}` with `.sg-left{align-self:stretch}`. They are grid items in a two-row
+grid whose row heights are set by `.sg-left` spanning both, so the default `stretch` made
+them ~50px tall — taller than every other button in the drawer for no reason anyone chose.
 
 **Clear data goes last**, where a destructive control belongs, and it no longer carries a
 warm border tint — being last says it better than colour did, and `.set-card.danger` is
@@ -744,7 +767,14 @@ These have each caused real, shipped bugs in this project. When making changes, 
    behaves. §2d measures the gap under each card's last child instead, which is the claim
    actually being made. Before trusting a layout assertion, break the rule it covers and
    confirm it fails.
-15. **Deleting a control without deleting its handler.** Removing the Live prices card left
+15. **An animated overlay inside a scroll container.** The drawer's rim light was an
+   absolutely positioned `::after` on the element that also carried `overflow-y:auto`. Its
+   containing block is the padding box, but it paints in the scrolled layer, so the moment
+   the panel scrolled the light slid out of view and the visible top edge had no border at
+   all. A decoration that frames a box has to hang off a box that does not move: the fix
+   was to split the frame (`#drawer`) from the scroller (`.drawer-grid`). Check any
+   `position:absolute` overlay against a scrolled parent, not just a still one.
+16. **Deleting a control without deleting its handler.** Removing the Live prices card left
    `$('refreshNow').onclick=…` pointing at nothing, which threw `Cannot set properties of
    null` during init — and because that runs at the top level, everything after it never ran
    and the drawer came up half-built. A dead `$(id)` is not a dangling no-op, it is a
@@ -759,7 +789,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **885 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **887 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.

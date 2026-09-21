@@ -182,21 +182,34 @@ const YEAR = 2026;
 
   section('2c. the drawer never exceeds 75% of the screen');
   const fit = await page.evaluate(() => {
-    const d = document.getElementById('drawer');
-    return { pct: Math.round(d.clientHeight / innerHeight * 100),
-             content: d.scrollHeight,
-             scrolls: d.scrollHeight > d.clientHeight + 1,
+    const d = document.getElementById('drawer');          // the frame
+    const g = document.querySelector('.drawer-grid');     // the scroller
+    const cs = getComputedStyle(d);
+    const chrome = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    return { pct: Math.round(d.getBoundingClientRect().height / innerHeight * 100),
+             content: g.scrollHeight + chrome,
+             pad: [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft],
+             // the rim light hangs off the frame, so the frame must not scroll
+             frameScrolls: d.scrollHeight > d.clientHeight + 1,
+             gridScrolls: g.scrollHeight > g.clientHeight + 1,
              helpsHidden: [...document.querySelectorAll('.sec-help')].every(p => p.hidden),
              iButtons: document.querySelectorAll('.sec-i').length };
   });
   check(fit.pct <= 75, 'capped at 75vh however tall the content grows', String(fit.pct) + '%');
   /* The cap alone does not stop the panel scrolling — it only decides where it
-     gets cut off. Below ~775px of window the 75% rule itself is the binding
-     constraint and a scrollbar is unavoidable; above it, this is. 600px keeps
-     the whole panel on screen from a 800px-tall window up, which covers a
-     laptop. An eighth card, or the gaps drifting back up, breaks this. */
-  check(fit.content <= 600, 'and its content stays short enough to need no scrollbar on a laptop',
+     gets cut off. Below ~870px of window the 75% rule itself is the binding
+     constraint and a scrollbar is unavoidable; above it, this is. An eighth
+     card, or the gaps drifting back up, breaks it. */
+  check(fit.content <= 660, 'and its content stays short enough to need no scrollbar on a laptop',
     fit.content + 'px');
+  check(new Set(fit.pad).size === 1,
+    'the frame is one even margin all the way round, so it reads as a single block',
+    JSON.stringify(fit.pad));
+  /* The bug this split fixed: with the grid and the frame being one element, the
+     rim light was inside the scroll container and slid out of view with the
+     content. The frame must stay put whatever the grid does. */
+  check(!fit.frameScrolls, 'the frame itself never scrolls — the grid inside it does',
+    JSON.stringify([fit.frameScrolls, fit.gridScrolls]));
   check(fit.iButtons >= 6 && fit.helpsHidden,
     'every instruction starts folded away behind its own i button',
     JSON.stringify([fit.iButtons, fit.helpsHidden]));
