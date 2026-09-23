@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-21C` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-23A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -603,6 +603,16 @@ out (this cost a real debugging detour — see bug class 11).
 
 Each tab has an animated SVG background field (`.tickerfield`, `.cashfield`, `.financefield`, `.monthlyfield`, `.archivefield`, `.planfield`) toggled via body class, opacity-faded in/out over 0.7s. Yearly, Monthly and Archives also carry a fluid wave layer (`.wv-yf`, `.wv-me`, `.wv-arc`); Yearly's is stretched `scale(1,1.27)` ahead of its rotate so it reaches ~70% down the viewport without moving sideways. **Fading a field out is not enough — each also needs `animation-play-state:paused` when hidden** (bug class 8). Icons drift slowly (`tkdrift` keyframe, 30–38s cycles). If Archives gets real content, consider adding a matching `.archivefield` icon set (vault, ledger, filing cabinet motifs already partially exist — check `#archiveField` in markup).
 
+**The Yearly monthly chart's axis rounds up to the next 1,000** — `Math.ceil(maxM/1000)*1000`,
+with `maxM` floored at 1,000 so an empty year does not collapse. It used to start at 5k and
+**double** until it cleared the tallest bar, which meant the only tops on offer were
+5k / 10k / 20k / 40k: a $7,237 month was drawn against a 10k ceiling and used **72%** of the
+height it had, making the graph look flatter than the numbers were. It now uses 90%. The
+midpoint gridline is `top/2` and follows along, so an odd thousand gives a half-thousand
+label (`$4.5k`) — that is fine and deliberate, not a rounding bug. `test-yf-highlights` §8b
+pins the boundaries (7,237 / exactly 8,000 / 8,001 / a tiny year) and measures the bar's
+fill, and every one of those checks fails against the old doubling.
+
 Color tokens used across Yearly/Monthly for financial meaning (reuse these, don't invent new ones):
 - Income / Start: `--yf-inc` teal-ish, blue
 - Expense / End: `--yf-exp` orange
@@ -789,7 +799,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **887 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **893 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.

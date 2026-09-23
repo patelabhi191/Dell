@@ -314,6 +314,50 @@ const cards = page => page.evaluate(() =>
   });
   check(new Set(heights).size === 1, 'panel height identical on every card', JSON.stringify(heights));
 
+  console.log('\n── 8b. the monthly chart axis rounds up to the next 1,000 ──');
+  /* The axis used to start at 5k and double, so the only tops on offer were
+     5k / 10k / 20k / 40k. A $7,237 month was drawn against a 10k ceiling and
+     used 72% of the height it had. These numbers are chosen to sit inside the
+     old scheme's dead zone, so a revert fails them rather than passing quietly. */
+  const axis = async peak => {
+    await seed(page, [
+      { type: 'expense', date: `${YEAR}-06-05`, amt: peak, desc: 'Peak', cat: 'Food', who: 'ABI' },
+    ], {});
+    await page.waitForTimeout(150);
+    return page.evaluate(() => {
+      const svg = document.getElementById('yfChart');
+      const labels = [...svg.querySelectorAll('text')]
+        .map(t => t.textContent).filter(t => t.startsWith('$'));
+      const bar = svg.querySelector('rect.yfb');
+      // the plot area, from the code that draws it: H=260, T=16, B=32
+      const plot = 260 - 16 - 32;
+      return { labels, fill: bar ? +(bar.getAttribute('height') / plot).toFixed(3) : null };
+    });
+  };
+
+  let ax = await axis(7237);
+  check(JSON.stringify(ax.labels) === JSON.stringify(['$0', '$4k', '$8k']),
+    '7,237 tops the axis at $8k, and the midpoint follows', JSON.stringify(ax.labels));
+  /* The complaint itself, measured: the tallest bar has to actually use the
+     height. Under the old doubling this was 0.724, so the threshold bites. */
+  check(ax.fill >= 0.9, 'and the tallest bar fills ~90% of the plot rather than 72%',
+    String(ax.fill));
+
+  ax = await axis(8000);
+  check(JSON.stringify(ax.labels) === JSON.stringify(['$0', '$4k', '$8k']),
+    'an exact 8,000 does not round up to 9k', JSON.stringify(ax.labels));
+  check(ax.fill >= 0.99, 'and it reaches the top line', String(ax.fill));
+
+  ax = await axis(8001);
+  check(JSON.stringify(ax.labels) === JSON.stringify(['$0', '$4.5k', '$9k']),
+    'one dollar over rounds to 9k, half-thousand midpoint and all',
+    JSON.stringify(ax.labels));
+
+  ax = await axis(120);
+  check(JSON.stringify(ax.labels) === JSON.stringify(['$0', '$500', '$1k']),
+    'a tiny year still floors the axis at $1k rather than collapsing',
+    JSON.stringify(ax.labels));
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close();
 
