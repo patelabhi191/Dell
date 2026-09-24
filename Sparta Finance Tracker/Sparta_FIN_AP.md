@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-23A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-24A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -603,6 +603,30 @@ out (this cost a real debugging detour — see bug class 11).
 
 Each tab has an animated SVG background field (`.tickerfield`, `.cashfield`, `.financefield`, `.monthlyfield`, `.archivefield`, `.planfield`) toggled via body class, opacity-faded in/out over 0.7s. Yearly, Monthly and Archives also carry a fluid wave layer (`.wv-yf`, `.wv-me`, `.wv-arc`); Yearly's is stretched `scale(1,1.27)` ahead of its rotate so it reaches ~70% down the viewport without moving sideways. **Fading a field out is not enough — each also needs `animation-play-state:paused` when hidden** (bug class 8). Icons drift slowly (`tkdrift` keyframe, 30–38s cycles). If Archives gets real content, consider adding a matching `.archivefield` icon set (vault, ledger, filing cabinet motifs already partially exist — check `#archiveField` in markup).
 
+**`input[type=date]` is not a text box and must be told so.** iOS Safari renders it as a
+native control: it ignores most of the shared padding, sizes itself to its own idea of the
+content, centres the value, and lets its min-content push past its grid column. On Yearly's
+add-transaction form that meant a date field shorter than the Type select beside it and
+spilling over the card's right edge. Three things fix it, all needed:
+
+- `-webkit-appearance:none;appearance:none` plus `text-align:left`, to put it back under the
+  same box rules as every other field;
+- **`min-width:0` on the input itself**, not only on its `.hform` grid cell — the cell rule
+  stops the *column* being pushed wide, but the control's own min-content still overflowed it;
+- **an explicit `height:calc(1.25em + 24px)`** (and `+ 22px` in the `<=560px` block, where the
+  padding drops to 10). Even with the native appearance off it keeps ~2px of intrinsic content
+  height that no pseudo-element rule reaches — `::-webkit-date-and-time-value` and
+  `::-webkit-calendar-picker-indicator` were both measured and neither moved it. The `em`
+  tracks whichever font-size regime applies (14px, 13.5px, or the 16px used to stop iOS
+  zooming on focus), so only the padding constant needs restating.
+
+`line-height:1.25` is now stated on `input,select,textarea` for the same reason: left at
+`normal` it resolves from each control's own font metrics, which is how three fields in one
+grid ended up three different heights. **`test-mobile` §9 carries a written limit** — the
+height and appearance checks fail against the unfixed file, but the overflow one passes
+either way, because Chromium's date control has a far smaller min-content width than iOS
+Safari's and cannot reproduce it. That case is only confirmable on a device.
+
 **The Yearly monthly chart's axis rounds up to the next 1,000** — `Math.ceil(maxM/1000)*1000`,
 with `maxM` floored at 1,000 so an empty year does not collapse. It used to start at 5k and
 **double** until it cleared the tallest bar, which meant the only tops on offer were
@@ -799,7 +823,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **893 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **913 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.

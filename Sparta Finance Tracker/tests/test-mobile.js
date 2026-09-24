@@ -241,6 +241,47 @@ const VIEWS = ['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan'];
       check(r.footerSeen, `${W} ${v}: the page scrolls down to the footer`);
     }
   }
+  section('9. the date field matches the controls beside it and stays in its card');
+  /* A native input[type=date] is not a text box: iOS sizes it to its own idea of
+     the content and lets its min-content push past the grid column. On Yearly it
+     came out shorter than the Type select next to it and spilled over the card's
+     right edge. Both sides of the 560px breakpoint are checked, because the form
+     swaps font-size AND padding there and the fix has to hold in both.
+
+     KNOWN LIMIT, do not over-trust this section: the height and appearance checks
+     were verified to FAIL against the unfixed file, but the "stays inside the
+     card" one passes either way here — Chromium's date control has a far smaller
+     min-content width than iOS Safari's, so the overflow that prompted this
+     cannot be reproduced in this runner. `min-width:0` on the input is the fix
+     for it and the assertion guards against a Chromium-visible regression, but
+     the iOS case itself is only confirmable on a real device. */
+  for (const W of [320, 390, 430, 561, 900]) {
+    await page.setViewportSize({ width: W, height: 880 });
+    await page.click('#viewSeg button[data-view="yearly"]');
+    await page.waitForTimeout(280);
+    const r = await page.evaluate(() => {
+      const R = i => document.getElementById(i).getBoundingClientRect();
+      const d = R('yfDate'), t = R('yfType'), a = R('yfAmt'), c = R('yfCat');
+      const card = document.getElementById('yfForm').closest('section').getBoundingClientRect();
+      const cs = getComputedStyle(document.getElementById('yfDate'));
+      return {
+        h: [d, t, a, c].map(x => +x.height.toFixed(1)),
+        laidOut: d.width > 40 && d.height > 20,
+        spill: +(d.right - card.right).toFixed(1),
+        appearance: cs.webkitAppearance || cs.appearance,
+        align: cs.textAlign
+      };
+    });
+    // everything measures 0 if the tab never rendered, which would pass the rest
+    check(r.laidOut, `${W}px: the date field is actually laid out`, JSON.stringify(r.h));
+    check(new Set(r.h).size === 1,
+      `${W}px: date, type, amount and category are all the same height`, JSON.stringify(r.h));
+    check(r.spill < 0, `${W}px: the date field stays inside the card`,
+      `${r.spill}px past the right edge`);
+    check(r.appearance === 'none' && r.align === 'left',
+      `${W}px: it is styled as one of ours, not left native`,
+      JSON.stringify([r.appearance, r.align]));
+  }
   await page.setViewportSize({ width: 390, height: 850 });
 
   check(errs.length === 0, 'no page errors', errs.join(' | '));

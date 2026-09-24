@@ -389,7 +389,36 @@ input,select,textarea{
   width:100%;background:rgba(0,0,0,.28);border:1px solid var(--stroke);
   border-radius:12px;padding:11px 13px;color:var(--text);font-size:14px;font-family:var(--font-body);
   font-variant-numeric:tabular-nums;
+  /* Stated rather than left at `normal`: the default resolves from the font's
+     own metrics and differs between a text input, a select and iOS's native
+     date control, which is why those three came out three different heights
+     sitting side by side in the same grid. */
+  line-height:1.25;
 }
+/* iOS Safari renders input[type=date] as a NATIVE control, not a text box. It
+   ignores most of the padding above, sizes itself to its own idea of the
+   content, and centres the value -- so next to the Type select on Yearly it came
+   out shorter, wider than its grid column (spilling past the card's right edge)
+   and differently aligned. Opting out of the native appearance puts it back
+   under the same box rules as every other field. `min-width:0` has to be on the
+   INPUT as well as its grid cell: the cell rule below stops the column being
+   pushed wide, but the control's own min-content still overflowed it. */
+input[type="date"]{
+  -webkit-appearance:none;appearance:none;
+  min-width:0;text-align:left;
+  /* Even with the native appearance off, the control keeps ~2px of intrinsic
+     content height that no pseudo-element rule reaches (all four candidates
+     were measured; none moved it). So state the height instead of fighting it:
+     one line box plus the shared vertical padding and border. The `em` tracks
+     whichever font-size regime applies, so this holds at 14px, 13.5px and the
+     16px the <=560px block uses to stop iOS zooming on focus -- only the
+     constant needs restating there. Change it with the padding above. */
+  height:calc(1.25em + 24px);
+}
+input[type="date"]::-webkit-date-and-time-value{
+  text-align:left;margin:0;line-height:inherit;
+}
+input[type="date"]::-webkit-calendar-picker-indicator{opacity:.55;margin-left:0}
 input::placeholder,textarea::placeholder{color:var(--text-faint)}
 textarea{resize:vertical;min-height:120px;line-height:1.6;font-variant-numeric:normal}
 select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='rgba(234,240,250,0.5)'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
@@ -439,7 +468,7 @@ label{font-size:11px;color:var(--text-faint);font-weight:600;letter-spacing:.08e
    that: at 320px the two columns computed to 248px inside a 243px box and the
    right-hand fields spilled off-screen with nothing to scroll. */
 .hform>*,.cashform>*{min-width:0}
-.hform input,.hform select,.cashform input,.cashform select{max-width:100%}
+.hform input,.hform select,.cashform input,.cashform select{max-width:100%;min-width:0}
 .note{font-size:11.5px;color:var(--text-faint);line-height:1.5;margin-top:12px}
 .note a{color:var(--teal);text-decoration:none}
 
@@ -614,6 +643,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   /* forms: 2-up inputs stay usable, buttons full width */
   .hform,.cashform{gap:8px}
   input,select{padding:10px 11px;font-size:13.5px}
+  input[type="date"]{height:calc(1.25em + 22px)}   /* 10px padding here, not 11 */
   /* prevent iOS zoom-on-focus: inputs must be >=16px OR use touch-action; we bump to 16 on focus-critical fields */
   .cashform input,.hform input,.hform select{font-size:16px}
 
@@ -2936,7 +2966,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-23A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-24A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
