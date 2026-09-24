@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-24A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-24B` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -603,6 +603,31 @@ out (this cost a real debugging detour — see bug class 11).
 
 Each tab has an animated SVG background field (`.tickerfield`, `.cashfield`, `.financefield`, `.monthlyfield`, `.archivefield`, `.planfield`) toggled via body class, opacity-faded in/out over 0.7s. Yearly, Monthly and Archives also carry a fluid wave layer (`.wv-yf`, `.wv-me`, `.wv-arc`); Yearly's is stretched `scale(1,1.27)` ahead of its rotate so it reaches ~70% down the viewport without moving sideways. **Fading a field out is not enough — each also needs `animation-play-state:paused` when hidden** (bug class 8). Icons drift slowly (`tkdrift` keyframe, 30–38s cycles). If Archives gets real content, consider adding a matching `.archivefield` icon set (vault, ledger, filing cabinet motifs already partially exist — check `#archiveField` in markup).
 
+**The Dashboard chart carries a dot per point and reports its value on hover.**
+`compactHistory()` already keeps exactly one closing point per past day, so on 1W / 1M /
+All every point *is* a day end — the data needed nothing. Three things make it work:
+
+- **Dots are zero-length paths, not `<circle>`s.** The SVG is `viewBox="0 0 640 190"` with
+  `preserveAspectRatio="none"`, so x and y scale **independently** and a circle renders as
+  an ellipse — about 10% wide, which nobody notices on one end-of-line dot and everybody
+  notices on thirty. A zero-length path with `stroke-linecap:round` draws a dot of diameter
+  = stroke-width, and `vector-effect:non-scaling-stroke` measures that width in **screen**
+  units, so it stays round at every panel width with nothing to recompute on resize.
+- **Hover is a nearest-point lookup over one transparent `<rect>`**, not a listener per dot.
+  1D is today's raw intraday snapshots — one a minute with a tab left open — so per-dot hit
+  targets would be unusable and dots themselves are suppressed above 40 points.
+- **The handlers bind once, to the wrapper.** `drawChart()` replaces `svg.innerHTML` on
+  every render *and* every 60s price refresh, so anything bound inside it dies each time and
+  re-binding stacks up: measured at **36 listeners after a dozen redraws** with the guard
+  removed. `dashPts` / `dashXof` / `dashYof` are module-level and refreshed by each draw,
+  which is what lets the handler outlive the markup it reads.
+
+The tooltip formats through `fmt()`, so it cannot disagree with the hero figure above it,
+and a point taken **today** is labelled with its time rather than called a close. Every
+redraw hides it first — a tooltip surviving a range switch would be a plainly wrong number
+sitting on screen. **A day the app was never opened has no snapshot and so no point**; the
+line spans the gap rather than inventing a value for it.
+
 **`input[type=date]` is not a text box and must be told so.** iOS Safari renders it as a
 native control: it ignores most of the shared padding, sizes itself to its own idea of the
 content, centres the value, and lets its min-content push past its grid column. On Yearly's
@@ -823,7 +848,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **913 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **924 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.

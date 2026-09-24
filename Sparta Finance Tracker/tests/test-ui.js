@@ -282,6 +282,113 @@ const section = t => console.log(`\n── ${t} ──`);
   check(!(await s4.page.isVisible('#pinGate')), 'no gate when pinOn is false');
   await s4.ctx.close();
 
+  section('dashboard chart: a dot per point, and its value on hover');
+  {
+    const DAY = 86400e3;
+    // one closing point a day for a week, values chosen so each is distinct
+    const hist = [];
+    for (let i = 6; i >= 0; i--)
+      hist.push({ t: Date.now() - i * DAY, v: { ALL: 20000 + (6 - i) * 1100, TFSA: 1, FHSA: 1, Other: 1 }, k: 'k' + i });
+    const s5 = await open(browser, url,
+      Object.assign({}, SEED, { 'sparta.dash.history': JSON.stringify(hist) }));
+    const p5 = s5.page;
+    await p5.click('#rangeSeg button[data-r="1W"]');
+    await p5.waitForTimeout(300);
+
+    const geo = await p5.evaluate(() => {
+      const r = document.getElementById('chart').getBoundingClientRect();
+      return { top: r.top, h: r.height, w: r.width, pts: dashPts.length };
+    });
+    // everything below measures 0 and passes meaninglessly if the chart never drew
+    check(geo.w > 100 && geo.h > 50 && geo.pts === 7,
+      'the chart is laid out with all seven points', JSON.stringify(geo));
+
+    const dotCount = () => p5.evaluate(() =>
+      document.querySelectorAll('#chart path[vector-effect]').length);
+    // 7 day dots + the end-of-line dot + the (hidden) hover marker
+    check(await dotCount() === 9, 'a dot is drawn on every point', String(await dotCount()));
+
+    const hoverPt = async i => {
+      const cx = await p5.evaluate(i => {
+        const r = document.getElementById('chart').getBoundingClientRect();
+        return r.left + (dashXof(dashPts[i].t) / 640) * r.width;
+      }, i);
+      await p5.mouse.move(cx, geo.top + geo.h / 2);
+      /* .ctip carries `transition:opacity .15s`. Reading the computed opacity on
+         a timer returns a mid-interpolation value -- this section really did fail
+         intermittently on 0.969446 before this was a wait rather than a sleep
+         (bug class 11). Waiting on the settled value is deterministic; a sleep
+         long enough to "usually" work is just a slower race. */
+      await p5.waitForFunction(
+        () => getComputedStyle(document.getElementById('dashTip')).opacity === '1',
+        null, { timeout: 2000 });
+      return p5.evaluate(() => {
+        const t = document.getElementById('dashTip');
+        return { txt: t.textContent, op: getComputedStyle(t).opacity,
+                 guide: document.getElementById('dashHover').getAttribute('opacity') };
+      });
+    };
+
+    const seen = [];
+    for (let i = 0; i < 7; i++) seen.push(await hoverPt(i));
+    check(seen.every(s => s.op === '1' && s.guide === '1'),
+      'hovering shows the tooltip and its guide', JSON.stringify(seen.map(s => s.op)));
+    /* Reporting DISTINCT values in order is the non-vacuity guard: a lookup that
+       always returned the last point would satisfy "a tooltip appeared". */
+    check(new Set(seen.map(s => s.txt)).size === 7,
+      'each point reports its own figure, not the same one seven times',
+      JSON.stringify(seen.map(s => s.txt)));
+    check(/Sep|Oct|Nov|Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug/.test(seen[0].txt),
+      'a past point is labelled with its date', seen[0].txt);
+    check(/^Today \d\d:\d\d/.test(seen[6].txt),
+      'a point taken today is labelled with its time, not called a close', seen[6].txt);
+
+    /* The tooltip must read through fmt(), so it can never disagree with the hero
+       figure above it. Flipping the currency is what proves that. */
+    const cadTxt = seen[3].txt;
+    await p5.click('#ccySeg button[data-ccy="USD"]').catch(() => {});
+    await p5.waitForTimeout(250);
+    const usd = await hoverPt(3);
+    check(usd.txt !== cadTxt && /\$/.test(usd.txt),
+      'the figure follows the currency toggle rather than hardcoding C$',
+      JSON.stringify([cadTxt, usd.txt]));
+    await p5.click('#ccySeg button[data-ccy="CAD"]').catch(() => {});
+    await p5.waitForTimeout(200);
+
+    // a stale tooltip after a range switch would be a plainly wrong number
+    await hoverPt(3);
+    await p5.click('#rangeSeg button[data-r="1D"]');
+    const hidden = await p5.waitForFunction(
+      () => getComputedStyle(document.getElementById('dashTip')).opacity === '0',
+      null, { timeout: 2000 }).then(() => true).catch(() => false);
+    check(hidden, 'switching range hides a tooltip that was open');
+
+    await p5.click('#rangeSeg button[data-r="1W"]');
+    await p5.waitForTimeout(250);
+    /* drawChart() replaces svg.innerHTML on every render and on every 60s price
+       refresh. Handlers bound inside it would stack up invisibly -- nothing else
+       in the suite would notice, and the page would just get slower. Count the
+       real addEventListener calls rather than trusting the guard flag, which
+       would report "bound" whether or not it was doing its job. */
+    const leak = await p5.evaluate(() => {
+      const wrap = document.getElementById('chart').parentElement;
+      let added = 0;
+      const real = wrap.addEventListener.bind(wrap);
+      wrap.addEventListener = (...a) => { added++; return real(...a) };
+      for (let i = 0; i < 12; i++) drawChart();          // a dozen price refreshes
+      return { added, pts: dashPts.length };
+    });
+    check(leak.added === 0 && leak.pts === 7,
+      'a dozen redraws add no further listeners, and still draw every point',
+      JSON.stringify(leak));
+    const still = await hoverPt(2);
+    check(still.op === '1' && still.txt.length > 4,
+      'and hovering still works after all those redraws', still.txt);
+
+    check(s5.errs.length === 0, 'no page errors from the chart', s5.errs.join(' | '));
+    await s5.ctx.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nUI: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

@@ -2327,6 +2327,7 @@ select{color-scheme:dark}
         <div class="chartwrap">
           <svg id="chart" viewBox="0 0 640 190" preserveAspectRatio="none" aria-label="Portfolio value over time"></svg>
           <div class="chart-empty" id="chartEmpty">Your portfolio history will draw here as prices refresh — snapshots are taken each update.</div>
+          <div id="dashTip" class="ctip"></div>
         </div>
         <div class="range" id="rangeSeg">
           <button data-r="1D" class="active">1D</button>
@@ -2966,7 +2967,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-24A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-24B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -3654,6 +3655,70 @@ function removeContrib(id){
 }
 
 /* ============ chart ============ */
+/* The chart SVG is viewBox 0 0 640 190 with preserveAspectRatio="none", so x and
+   y scale INDEPENDENTLY with the panel width. A <circle> in that space renders as
+   an ellipse -- about 10% wide at a typical width, which nobody notices on the one
+   end-of-line dot and everybody notices on thirty of them.
+
+   A zero-length path with a round linecap draws a dot of diameter = stroke-width,
+   and `vector-effect:non-scaling-stroke` measures that width in SCREEN units. So
+   these stay perfectly round at every panel width, with no measuring and nothing
+   to redo on resize. */
+const dashDot=(px,py,r,fill,extra)=>
+  `<path d="M${px} ${py}L${px} ${py}" stroke="${fill}" stroke-width="${r*2}" `+
+  `stroke-linecap="round" vector-effect="non-scaling-stroke" fill="none" ${extra||''}/>`;
+
+/* The hover handler is bound ONCE to the wrapper, which survives. drawChart()
+   replaces svg.innerHTML on every render and every 60s price refresh, so anything
+   bound inside it would die each time and re-binding would stack handlers up. The
+   handler reads these instead, which each draw refreshes. */
+let dashPts=[], dashXof=null, dashYof=null, dashBound=false;
+
+function dashTipHide(){
+  const t=$('dashTip'); if(t) t.style.opacity='0';
+  const g=$('dashHover'); if(g) g.setAttribute('opacity','0');
+}
+/* A point taken mid-session is not a close, so it is not labelled like one. */
+function dashWhen(t){
+  const d=new Date(t), n=new Date();
+  const sameDay=d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();
+  return sameDay
+    ? 'Today '+d.toLocaleTimeString('en-CA',{hour:'2-digit',minute:'2-digit',hour12:false})
+    : d.toLocaleDateString('en-CA',{day:'numeric',month:'short'});
+}
+function dashTipAt(clientX){
+  const svg=$('chart'), tip=$('dashTip'), hov=$('dashHover');
+  if(!svg||!tip||!hov||!dashPts.length||!dashXof) return;
+  const W=640,H=190, r=svg.getBoundingClientRect();
+  if(!r.width) return;
+  const vx=((clientX-r.left)/r.width)*W;          // page px -> viewBox units
+  let best=0,bd=Infinity;
+  for(let i=0;i<dashPts.length;i++){
+    const d=Math.abs(dashXof(dashPts[i].t)-vx);
+    if(d<bd){bd=d;best=i}
+  }
+  const p=dashPts[best], sx=dashXof(p.t), sy=dashYof(p.v);
+  hov.setAttribute('opacity','1');
+  hov.querySelector('line').setAttribute('x1',sx);
+  hov.querySelector('line').setAttribute('x2',sx);
+  hov.querySelector('path').setAttribute('d',`M${sx} ${sy}L${sx} ${sy}`);
+  tip.innerHTML=`<b>${dashWhen(p.t)}</b><br>${fmt(p.v)}`;
+  const wrap=tip.parentElement.getBoundingClientRect();
+  tip.style.left=(r.left+(sx/W)*r.width-wrap.left)+'px';
+  tip.style.top=(r.top+(sy/H)*r.height-wrap.top-10)+'px';
+  tip.style.opacity='1';
+}
+function dashBind(){
+  if(dashBound) return;
+  const wrap=$('chart')&&$('chart').parentElement;
+  if(!wrap) return;
+  // pointer, not mouse: a phone never hovers, and this covers both in one handler
+  wrap.addEventListener('pointermove',e=>dashTipAt(e.clientX));
+  wrap.addEventListener('pointerdown',e=>dashTipAt(e.clientX));
+  wrap.addEventListener('pointerleave',dashTipHide);
+  dashBound=true;
+}
+
 function drawChart(){
   const svg=$('chart'); const W=640,H=190,P=8;
   const now=Date.now();
@@ -3663,6 +3728,9 @@ function drawChart(){
   const key=state.filter;
   pts=pts.map(p=>({t:p.t,v:p.v[key]})).filter(p=>typeof p.v==='number');
   svg.innerHTML='';
+  /* A tooltip left over from the previous range would be a plainly wrong number
+     sitting on screen, so every redraw clears it before anything else. */
+  dashTipHide(); dashPts=[]; dashXof=null; dashYof=null;
   if(pts.length<2){ $('chartEmpty').style.display='flex'; return }
   $('chartEmpty').style.display='none';
   const vs=pts.map(p=>p.v);
@@ -3674,6 +3742,12 @@ function drawChart(){
   pts.forEach((p,i)=>{if(i)d+=' L'+x(p.t)+' '+y(p.v)});
   const rising=pts[pts.length-1].v>=pts[0].v;
   const c1=rising?'#5EEAD4':'#FB7185', c2=rising?'#A78BFA':'#FCA5A5';
+  /* 1D is today's raw intraday snapshots -- one a minute with a tab left open --
+     and a dot on each is a solid band. Past that count the line reads better on
+     its own; hovering still reports every point either way. */
+  const dots=pts.length<=40
+    ? pts.map(p=>dashDot(x(p.t),y(p.v),2.6,c1)).join('')
+    : '';
   svg.innerHTML=`
     <defs>
       <linearGradient id="lg" x1="0" y1="0" x2="1" y2="0">
@@ -3687,7 +3761,16 @@ function drawChart(){
     </defs>
     <path d="${d} L${x(pts[pts.length-1].t)} ${H} L${x(pts[0].t)} ${H} Z" fill="url(#fg)"/>
     <path d="${d}" fill="none" stroke="url(#lg)" stroke-width="2.5" stroke-linecap="round" filter="url(#glow)"/>
-    <circle cx="${x(pts[pts.length-1].t)}" cy="${y(pts[pts.length-1].v)}" r="4" fill="${c1}" filter="url(#glow)"/>`;
+    ${dots}
+    ${dashDot(x(pts[pts.length-1].t),y(pts[pts.length-1].v),4,c1,'filter="url(#glow)"')}
+    <g id="dashHover" opacity="0">
+      <line y1="${P}" y2="${H-P}" stroke="rgba(255,255,255,.28)" stroke-width="1"
+            vector-effect="non-scaling-stroke"/>
+      ${dashDot(0,0,5,'#EAF0FA')}
+    </g>
+    <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" style="cursor:crosshair"/>`;
+  dashPts=pts; dashXof=x; dashYof=y;
+  dashBind();
 }
 
 function snapshot(force){
