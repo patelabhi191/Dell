@@ -451,6 +451,15 @@ label{font-size:11px;color:var(--text-faint);font-weight:600;letter-spacing:.08e
 .htable tbody tr:hover{background:rgba(255,255,255,.03)}
 .sym{font-family:var(--font-display);font-weight:600;font-size:14px}
 .sym small{display:block;font-family:var(--font-body);font-weight:500;color:var(--text-faint);font-size:10.5px;letter-spacing:.06em;margin-top:2px}
+/* the open-in-a-new-tab arrow beside a ticker */
+.qlink{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;
+  color:var(--text-faint);opacity:.7;vertical-align:baseline;
+  transition:color .15s,opacity .15s}
+.qlink:hover,.qlink:focus-visible{color:var(--teal);opacity:1}
+/* input + its button on one line, the button at its own width rather than half */
+.urlrow{display:flex;gap:8px;align-items:center}
+.urlrow input{flex:1 1 auto;min-width:0}
+.urlrow .btn{flex:0 0 auto;white-space:nowrap}
 .pl{font-weight:600}
 .rm{border:none;background:transparent;color:var(--text-faint);font-size:15px;padding:4px 8px;border-radius:8px}
 .rm:hover{color:var(--rose);background:rgba(251,113,133,.1)}
@@ -1401,7 +1410,7 @@ select{color-scheme:dark}
 
 /* ── Mobile: tap targets need ~28px minimum to be reliably hittable ── */
 @media (max-width:560px){
-  .rm,.yf-edit,.yf-catbtn,.mv,.me-why,.sec-i{min-height:28px;min-width:28px;
+  .rm,.yf-edit,.yf-catbtn,.mv,.me-why,.sec-i,.qlink{min-height:28px;min-width:28px;
     display:inline-flex;align-items:center;justify-content:center}
   .yf-plan-in{min-height:30px;width:76px}
   #yfExpTable td,#yfIncTable td{padding:6px 5px}
@@ -2435,6 +2444,13 @@ select{color-scheme:dark}
             <label for="impAcct">Select account</label>
             <select id="impAcct"><option>TFSA</option><option>FHSA</option><option>Other</option></select>
           </div>
+          <div class="full">
+            <label for="quoteUrl">Quote link — where the ↗ beside a ticker goes</label>
+            <div class="urlrow">
+              <input id="quoteUrl" type="url" spellcheck="false" placeholder="https://ca.finance.yahoo.com/quote/">
+              <button class="btn" id="quoteUrlSave">Save</button>
+            </div>
+          </div>
         </div>
         <div id="impPreview" style="display:none;margin-top:14px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -2967,7 +2983,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-24B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-24C</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -3149,7 +3165,7 @@ const DB_ID = (function(){
    would mean your PIN vanishing every time you switched environment. */
 const STORE_DEVICE = ['sparta.localOff','sparta.pinOn','sparta.pinCode','sparta.pinHash',
   'sparta.tabOrder','sparta.ccy','sparta.fx','sparta.key','sparta.fbOn',
-  'sparta.fbConfig','sparta.fbSyncKey'];
+  'sparta.fbConfig','sparta.fbSyncKey','sparta.quoteUrl'];
 const nsKey = k => (typeof k!=='string' || k.indexOf('sparta.')!==0 || STORE_DEVICE.indexOf(k)>-1)
   ? k : 'sparta.'+DB_ID+'.'+k.slice(7);
 /* The data keys, listed rather than pattern-matched: adoption has to be exact,
@@ -3381,7 +3397,12 @@ function render(){
     const arrow=price>h.avg?'▲':price<h.avg?'▼':'▬';
     const tr=document.createElement('tr');
     tr.innerHTML=`
-      <td><span class="sym">${h.sym}<small>${h.acct}${h.ccy?' · '+h.ccy:''}${h.manual?' · manual':''}</small></span></td>
+      <td><span class="sym">${h.sym}<a class="qlink" href="${quoteHref(h.sym)}" target="_blank"
+        rel="noopener noreferrer" title="Open ${h.sym} in a new tab" aria-label="Open ${h.sym} on the quote site"
+        ><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+          ><path d="M14 4h6v6"/><path d="M20 4l-8.6 8.6"/><path d="M18 13.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5.5"/></svg
+        ></a><small>${h.acct}${h.ccy?' · '+h.ccy:''}${h.manual?' · manual':''}</small></span></td>
       <td>${h.qty}</td>
       <td>${fmtNat(h.avg,c)}</td>
       <td class="${pxCls}" style="font-weight:600">${fmtNat(price,c)}<br><span style="font-size:10.5px;opacity:.8">${arrow} ${(pxDiff>=0?'+':'')+pxDiff.toFixed(2)}%</span></td>
@@ -3653,6 +3674,19 @@ function removeContrib(id){
   toast('Removed '+fmtCADterm(c.amt)+' '+c.acct+' entry');
   snapshot(); persist(); render();
 }
+
+/* ============ quote links ============ */
+/* Where the ↗ beside each holding points. Yahoo by default; overridable from the
+   Dashboard because the right site is a matter of taste and of which exchange you
+   follow. A device preference, like the currency and the tab order -- it is not
+   part of the portfolio, so it is not namespaced per database and Clear data
+   never touches it. */
+const QUOTE_URL_DEFAULT='https://ca.finance.yahoo.com/quote/';
+const quoteBase=()=>String(store.get('sparta.quoteUrl','')||'').trim()||QUOTE_URL_DEFAULT;
+/* Trailing slashes are stripped and re-added so both spellings a person might
+   paste -- .../quote and .../quote/ -- resolve to the same place. */
+const quoteHref=sym=>quoteBase().replace(/\/+$/,'')+'/'+
+  encodeURIComponent(String(sym||'').trim().toUpperCase());
 
 /* ============ chart ============ */
 /* The chart SVG is viewBox 0 0 640 190 with preserveAspectRatio="none", so x and
@@ -4935,6 +4969,30 @@ function readFile(file){
   fr.onerror=()=>toast('Could not read that file');
   fr.readAsText(file);
 }
+/* ---- quote link ---- */
+$('quoteUrl').value=store.get('sparta.quoteUrl','')||'';
+$('quoteUrl').placeholder=QUOTE_URL_DEFAULT;
+$('quoteUrlSave').onclick=()=>{
+  const raw=$('quoteUrl').value.trim();
+  if(!raw){                                   // empty means "back to the default"
+    store.del('sparta.quoteUrl');
+    render();
+    toast('Quote link reset \u2014 AAPL opens '+quoteHref('AAPL'));
+    return;
+  }
+  /* Checked rather than trusted: a bad value here breaks every row's link at
+     once, and the failure is silent until something is clicked. new URL() also
+     accepts mailto: and javascript:, so the scheme is tested separately -- a
+     javascript: link sitting behind a target=_blank anchor is not a tidy thing
+     to leave in a page. */
+  if(!/^https?:\/\//i.test(raw)){ toast('Enter a full link starting with https://'); return }
+  try{ new URL(raw) }catch(e){ toast('That does not look like a link'); return }
+  store.set('sparta.quoteUrl',raw);
+  render();
+  toast('Saved \u2014 AAPL now opens '+quoteHref('AAPL'));
+};
+$('quoteUrl').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('quoteUrlSave').click() } });
+
 $('csvFile').addEventListener('change',e=>readFile(e.target.files&&e.target.files[0]));
 ['dragenter','dragover'].forEach(ev=>$('dropzone').addEventListener(ev,e=>{
   e.preventDefault(); $('dropzone').classList.add('over');

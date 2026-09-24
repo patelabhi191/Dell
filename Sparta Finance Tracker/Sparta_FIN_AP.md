@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-24B` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-24C` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -603,6 +603,24 @@ out (this cost a real debugging detour — see bug class 11).
 
 Each tab has an animated SVG background field (`.tickerfield`, `.cashfield`, `.financefield`, `.monthlyfield`, `.archivefield`, `.planfield`) toggled via body class, opacity-faded in/out over 0.7s. Yearly, Monthly and Archives also carry a fluid wave layer (`.wv-yf`, `.wv-me`, `.wv-arc`); Yearly's is stretched `scale(1,1.27)` ahead of its rotate so it reaches ~70% down the viewport without moving sideways. **Fading a field out is not enough — each also needs `animation-play-state:paused` when hidden** (bug class 8). Icons drift slowly (`tkdrift` keyframe, 30–38s cycles). If Archives gets real content, consider adding a matching `.archivefield` icon set (vault, ledger, filing cabinet motifs already partially exist — check `#archiveField` in markup).
 
+**Each holding carries an open-in-a-new-tab arrow** to that ticker's quote page.
+`quoteHref(sym)` builds it from `quoteBase()`, which is `sparta.quoteUrl` or
+`https://ca.finance.yahoo.com/quote/` when unset, and strips then re-adds the trailing
+slash so `.../quote` and `.../quote/` resolve alike. The base is editable on the Dashboard
+beside Import holdings.
+
+Three things it has to keep doing:
+
+- **`rel="noopener noreferrer"` on every one.** `target="_blank"` without it hands the
+  opened page a `window.opener` back into this one.
+- **The scheme is checked separately from `new URL()`.** That constructor happily accepts
+  `javascript:` and `mailto:`, and a `javascript:` href behind a `target="_blank"` anchor is
+  not a thing to leave in the page. A rejected value must also leave the previous base
+  standing rather than blanking it.
+- **It is a device preference, not portfolio data** — in `STORE_DEVICE` beside `sparta.ccy`
+  and `sparta.tabOrder`, so it is not namespaced per database and Clear data never takes it.
+  The trade is that it does not follow you to another browser, same as the currency.
+
 **The Dashboard chart carries a dot per point and reports its value on hover.**
 `compactHistory()` already keeps exactly one closing point per past day, so on 1W / 1M /
 All every point *is* a day end — the data needed nothing. Three things make it work:
@@ -848,7 +866,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **924 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **935 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.

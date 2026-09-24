@@ -282,6 +282,61 @@ const section = t => console.log(`\n── ${t} ──`);
   check(!(await s4.page.isVisible('#pinGate')), 'no gate when pinOn is false');
   await s4.ctx.close();
 
+  section('quote links: the arrow beside each ticker, and its configurable base');
+  {
+    const s6 = await open(browser, url);
+    const p6 = s6.page;
+    const hrefs = () => p6.evaluate(() =>
+      [...document.querySelectorAll('#hbody .qlink')].map(a => a.getAttribute('href')));
+    const stored = () => p6.evaluate(() => localStorage.getItem('sparta.quoteUrl'));
+
+    const def = await hrefs();
+    check(def.length === 4, 'every holding carries a link', String(def.length));
+    check(def[0] === 'https://ca.finance.yahoo.com/quote/AAPL',
+      'which defaults to the Yahoo quote page for that ticker', def[0]);
+    /* target=_blank without rel=noopener hands the opened page a window.opener
+       back into this one. Not optional. */
+    check(await p6.evaluate(() => {
+      const a = document.querySelector('#hbody .qlink');
+      return a.getAttribute('target') === '_blank' && /noopener/.test(a.getAttribute('rel'));
+    }), 'and opens in a new tab without handing it a window.opener');
+
+    await p6.fill('#quoteUrl', 'https://example.com/q/');
+    await p6.click('#quoteUrlSave'); await p6.waitForTimeout(250);
+    check((await hrefs())[0] === 'https://example.com/q/AAPL',
+      'saving a new base repoints every row', (await hrefs())[0]);
+    await p6.fill('#quoteUrl', 'https://example.com/q');
+    await p6.click('#quoteUrlSave'); await p6.waitForTimeout(250);
+    check((await hrefs())[0] === 'https://example.com/q/AAPL',
+      'and it lands in the same place with or without a trailing slash',
+      (await hrefs())[0]);
+
+    /* new URL() happily accepts javascript: and mailto:. A javascript: href sitting
+       behind a target=_blank anchor is not something to leave in the page, so the
+       scheme is checked separately -- and a refusal must not wipe what was there. */
+    for (const junk of ['javascript:alert(1)', 'mailto:a@b.c', 'not a url']) {
+      await p6.fill('#quoteUrl', junk);
+      await p6.click('#quoteUrlSave'); await p6.waitForTimeout(200);
+      check(await stored() === '"https://example.com/q"' &&
+            (await hrefs())[0] === 'https://example.com/q/AAPL',
+        `${junk.slice(0, 18)} is refused and the previous base survives`, await stored());
+    }
+
+    await p6.fill('#quoteUrl', '');
+    await p6.click('#quoteUrlSave'); await p6.waitForTimeout(250);
+    check(await stored() === null && (await hrefs())[0].startsWith('https://ca.finance.yahoo.com'),
+      'clearing the field drops the key and falls back to the default');
+
+    /* It is a preference, like the currency and the tab order -- not part of the
+       portfolio. So it must not be namespaced per database, and Clear data must
+       not take it. */
+    check(await p6.evaluate(() => STORE_DEVICE.includes('sparta.quoteUrl')),
+      'the base is a device preference, so Clear data leaves it alone');
+
+    check(s6.errs.length === 0, 'no page errors from the quote links', s6.errs.join(' | '));
+    await s6.ctx.close();
+  }
+
   section('dashboard chart: a dot per point, and its value on hover');
   {
     const DAY = 86400e3;
