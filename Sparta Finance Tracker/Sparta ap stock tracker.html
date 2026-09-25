@@ -2983,7 +2983,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-25A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-25B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -3310,7 +3310,16 @@ function persist(){
   if(!fbAutomated) touchUpdatedAt();
   // any other persist once the app is up and running is, by definition, a user change
   if(typeof fbBooting!=='undefined' && !fbBooting && !fbApplying && !fbAutomated) markUserEdit();
-  cloudSaveDebounced();
+  /* ...and it must not PUSH either. Leaving the timestamp alone stops an automated
+     save WINNING a merge; it does not stop it WRITING, and writing is the whole
+     problem: `core` is set() wholesale, so a 60-second price refresh in a tab left
+     open overnight uploaded that tab's stale ledger over a phone's real work. The
+     tab needed no interaction at all -- fbUserEdited is sticky for the life of the
+     tab, so yesterday's edit was still letting today's timer through.
+     Nothing is lost by holding back: coreHoldings() strips live prices, so an
+     automated save has nothing new in `core` anyway, and history points go up by
+     their own path (cloudSavePoint, from snapshot). */
+  if(!fbAutomated) cloudSaveDebounced();
 }
 
 /* ============ helpers ============ */
@@ -4651,6 +4660,10 @@ async function cloudSaveDebounced(){
   }
   clearTimeout(fbSaveTimer);
   fbSaveTimer=setTimeout(()=>{
+    /* A wake check is deciding whether this tab is still current. Writing now
+       would race it, and the write is the destructive direction -- so re-arm and
+       let the check land first. */
+    if(fbWakeCheck){ cloudSaveDebounced(); return }
     const payload=corePayload();
     // compare WITHOUT updatedAt - it ticks on every persist and would defeat the check
     const cmp=Object.assign({},payload); delete cmp.updatedAt;
@@ -4695,6 +4708,31 @@ function applyCloud(remote){
   }
 }
 const remoteStamp=r=>r ? ((r.core&&r.core.updatedAt)||r.updatedAt||0) : 0;
+
+/* A TAB THAT HAS BEEN ASLEEP IS NOT A SOURCE OF TRUTH.
+   There is no live listener, so a tab open since yesterday still holds yesterday's
+   ledger and has no idea another device has moved on. Before it is trusted again,
+   ask the cloud. If the cloud is newer, take it -- the alternative is showing a
+   stale screen that the next edit uploads over someone's real work. */
+var fbWakeCheck=false;
+async function fbRecheckOnWake(){
+  if(fbWakeCheck || !fbDB || !state.fbOn || fbApplying || fbLocalOnly) return;
+  fbWakeCheck=true;
+  try{
+    const snap=await fbDB.get();
+    const remote=snap.exists()?snap.val():null;
+    if(remote && remoteStamp(remote) > (state.updatedAt||0)){
+      applyCloud(remote);
+      render(); if(typeof renderYF==='function') renderYF();
+      toast('Another device had newer data \u2014 refreshed from the cloud');
+    }
+  }catch(e){
+    /* offline, or the get failed: leave the tab exactly as it is rather than
+       guessing. The push is still held off until the check clears. */
+  }finally{ fbWakeCheck=false }
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) fbRecheckOnWake() });
+window.addEventListener('pageshow',e=>{ if(e.persisted) fbRecheckOnWake() });   // bfcache restore
 
 
 

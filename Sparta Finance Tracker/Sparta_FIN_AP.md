@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-25A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-25B` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -431,6 +431,43 @@ the cloud wins unconditionally — exactly right for cloud-only mode.
 
 ### SDK loading — do not reintroduce a race
 `loadFirebaseSDK()` loads `firebase-app-compat.js` then `firebase-database-compat.js` **strictly sequentially** (second script's creation is chained off the first's real `onload`, not a fixed timer). An earlier version used a hardcoded 150ms delay between the two script loads, which silently failed on slower connections since the second script could execute before `firebase` existed as a global. Fixed with a proper `Promise` chain + a 12s timeout.
+
+---
+
+### A tab left open overnight — a real data-loss incident, and what now stops it
+
+**What happened.** A laptop tab was left open and the machine slept. That evening a phone
+added five rows, which went to Firebase correctly. Next morning the laptop woke and those
+five rows were gone from the cloud — **with nobody touching the laptop.**
+
+**Why.** Three things lined up:
+
+1. There is **no live listener**, so a tab open since yesterday still holds yesterday's
+   ledger and cannot know another device moved on.
+2. `fbUserEdited` is **sticky for the life of the tab**. An edit made yesterday morning was
+   still authorising writes a day later.
+3. `persist()` called `cloudSaveDebounced()` **outside** the `fbAutomated` guard. The
+   earlier `automated()` work stopped a background save from *winning* a merge by leaving
+   `updatedAt` alone — but it never stopped it *writing*, and `core` is `set()` wholesale.
+
+So the 60-second price timer resumed on wake, `persist()` ran, the sticky flag let it
+through, and that tab's stale ledger replaced the phone's work. No interaction required.
+
+**The fix, both halves:**
+
+- **`if(!fbAutomated) cloudSaveDebounced();`** Nothing is lost by holding back:
+  `coreHoldings()` strips live prices, so an automated save has nothing new in `core`
+  anyway, and history points go up by their own path (`cloudSavePoint`, from `snapshot`).
+- **`fbRecheckOnWake()`** on `visibilitychange` and on a bfcache `pageshow`. A tab that has
+  been asleep asks the cloud before it is trusted again, and pulls if the cloud is newer.
+  It only ever pulls — an older remote is left alone. `cloudSaveDebounced` re-arms while a
+  check is in flight, because the write is the destructive direction and must not race it.
+
+**The lesson worth carrying:** *not winning a merge* and *not writing* are different
+guarantees. A guard that only touches the timestamp leaves the wholesale write intact.
+`test-storage` §4b pins both directions — an automated save writes nothing even with the
+edit flag stuck on, **and** the identical change made by a person still syncs, so the check
+cannot pass by breaking sync altogether.
 
 ---
 
@@ -894,7 +931,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **938 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **943 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.

@@ -361,6 +361,73 @@ const YEAR = 2026;
     'and the very same call does write once it is down — so the check is not vacuous',
     JSON.stringify(guarded));
 
+  section('4b. a tab left open overnight cannot upload its stale ledger');
+  /* The incident this closes: a laptop tab open since yesterday, its 60-second
+     price refresh waking with the machine. persist() left the timestamp alone --
+     correct -- but still called cloudSaveDebounced(), and fbUserEdited is sticky
+     for the life of a tab, so yesterday's edit let today's timer through. `core`
+     is written wholesale, so that stale ledger replaced a phone's real work with
+     NO interaction from anyone. */
+  const autoPush = await page.evaluate(async () => {
+    const wrote = [];
+    const real = fbDB, realEdited = fbUserEdited;
+    fbDB = { child: () => ({ set: () => { wrote.push('core'); return Promise.resolve() } }) };
+    fbUserEdited = true;                       // as it would be, a day later
+    // exactly how fetchPrices and compactHistory save
+    automated(() => { state.cash.TFSA = (state.cash.TFSA || 0) + 1; persist() });
+    await new Promise(r => setTimeout(r, 1500));
+    const afterAutomated = wrote.length;
+    // the identical write, made by a person
+    state.cash.TFSA = (state.cash.TFSA || 0) + 1; persist();
+    await new Promise(r => setTimeout(r, 1500));
+    const afterUser = wrote.length;
+    fbDB = real; fbUserEdited = realEdited;
+    return { afterAutomated, afterUser };
+  });
+  check(autoPush.afterAutomated === 0,
+    'an automated save writes nothing to the cloud, even with the edit flag stuck on',
+    JSON.stringify(autoPush));
+  /* Without this the check above passes by breaking sync altogether. */
+  check(autoPush.afterUser > 0,
+    'while the same change made by a person still syncs — so nothing was just switched off',
+    JSON.stringify(autoPush));
+
+  section('4c. waking a tab re-checks the cloud before trusting itself');
+  const wake = await page.evaluate(async () => {
+    const real = fbDB, realEdited = fbUserEdited, realStamp = state.updatedAt;
+    const wrote = [];
+    state.updatedAt = 1000;                                   // this tab is old
+    const remote = { core: { updatedAt: 9000, cash: { TFSA: 4242, FHSA: 0, Other: 0 },
+                             holdings: [], contribs: [], yf: { txns: [] } } };
+    fbDB = { get: () => Promise.resolve({ exists: () => true, val: () => remote }),
+             child: () => ({ set: () => { wrote.push('core'); return Promise.resolve() } }) };
+    fbUserEdited = true;
+    await fbRecheckOnWake();
+    await new Promise(r => setTimeout(r, 200));
+    const pulled = state.cash.TFSA;
+    fbDB = real; fbUserEdited = realEdited; state.updatedAt = realStamp;
+    return { pulled, wrote: wrote.length };
+  });
+  check(wake.pulled === 4242,
+    'a newer cloud copy is pulled in on wake rather than left stale', JSON.stringify(wake));
+  check(wake.wrote === 0, 'and the wake check itself pushes nothing', JSON.stringify(wake));
+
+  const noClobber = await page.evaluate(async () => {
+    const real = fbDB, realStamp = state.updatedAt;
+    state.updatedAt = 9999;                                   // this tab is the newer one
+    const remote = { core: { updatedAt: 1, cash: { TFSA: -1, FHSA: 0, Other: 0 } } };
+    fbDB = { get: () => Promise.resolve({ exists: () => true, val: () => remote }),
+             child: () => ({ set: () => Promise.resolve() }) };
+    const before = state.cash.TFSA;
+    await fbRecheckOnWake();
+    const after = state.cash.TFSA;
+    fbDB = real; state.updatedAt = realStamp;
+    return { before, after };
+  });
+  check(noClobber.before === noClobber.after,
+    'an OLDER cloud copy is left alone — the check pulls, it does not blindly overwrite',
+    JSON.stringify(noClobber));
+
   // ── 5. the timestamp every merge decision rests on ───────────────────────
   section('5. every store advances sparta.updatedAt');
   const stamps = await page.evaluate(async () => {
