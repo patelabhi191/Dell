@@ -142,7 +142,7 @@ const VIEWS = ['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan'];
   }
   await page.setViewportSize({ width: 390, height: 850 });
 
-  section('7. Yearly\'s wave reaches ~70% down, without moving sideways');
+  section('7. Yearly\'s wave reaches ~81% down, and dissolves rather than stopping');
   // Stretched vertically (scale(1,1.27) ahead of the rotate) so the ribbon runs
   // further down the page. The horizontal extent is what proves it is a pure
   // vertical change -- a translate or a uniform scale would move it too.
@@ -167,15 +167,40 @@ const VIEWS = ['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan'];
              dRight: +(on.right - off.right).toFixed(1),
              grew: +(on.height - off.height).toFixed(1) };
   });
-  check(yw.pct >= 68 && yw.pct <= 74, 'the design covers about 70% from the top', `${yw.pct}%`);
+  check(yw.pct >= 79 && yw.pct <= 83, 'the design covers about 81% from the top', `${yw.pct}%`);
   check(Math.abs(yw.dLeft) <= 0.5 && Math.abs(yw.dRight) <= 0.5,
     'and sits exactly where it did horizontally',
     `left ${yw.dLeft >= 0 ? '+' : ''}${yw.dLeft}px, right ${yw.dRight >= 0 ? '+' : ''}${yw.dRight}px`);
   check(yw.grew > 1,
     'while genuinely reaching further down than the unstretched ribbon — not a no-op',
     `+${yw.grew}px tall`);
-  check(/^scale\(1,1\.27\) rotate\(48 980 60\)$/.test(yw.tf),
+  check(/^scale\(1,1\.27\) rotate\(48 980 60\) translate\(760,0\) scale\([\d.]+,1\) translate\(-760,0\)$/.test(yw.tf),
     'the stretch is applied after the rotate, so the angle is unchanged', yw.tf);
+  /* The ribbon is lengthened along its OWN axis by the inner scale, pivoted at the
+     paths' start (local x=760) so only the far end travels. An earlier attempt
+     extended each of the 64 paths along its own exit tangent instead; because every
+     path leaves at a different heading they stopped being parallel offsets of each
+     other and splayed into a fan. These two pin what stops that coming back. */
+  check(Math.abs(yw.dLeft) <= 0.5,
+    'the ribbon still starts where it did — the stretch is pivoted, not a slide',
+    `left ${yw.dLeft >= 0 ? '+' : ''}${yw.dLeft}px`);
+  const tail = await page.evaluate(() => {
+    const g = document.querySelector('.wv-yf g');
+    const inner = g.firstElementChild;
+    const paths = [...g.querySelectorAll('path')];
+    /* Nesting is the effect. Every path must carry the SAME transform chain, which
+       is what a group-level stretch guarantees and per-path extension cannot. */
+    return { masked: inner && inner.tagName === 'g' && /yfTail/.test(inner.getAttribute('mask') || ''),
+             n: paths.length,
+             ownTransforms: paths.filter(p => p.getAttribute('transform')).length,
+             fades: !!document.getElementById('yfTailG') };
+  });
+  check(tail.masked && tail.fades,
+    'the tail fade is a mask inside the rotate, so it runs along the ribbon not the screen',
+    JSON.stringify(tail));
+  check(tail.n === 64 && tail.ownTransforms === 0,
+    'all 64 lines are still moved as one object, none individually',
+    JSON.stringify([tail.n, tail.ownTransforms]));
   const others = await page.evaluate(() => ['wv-me', 'wv-arc'].map(c =>
     document.querySelector('.' + c + ' g').getAttribute('transform')));
   check(others.every(t => /^rotate\(/.test(t)), 'Monthly and Archives are left alone',

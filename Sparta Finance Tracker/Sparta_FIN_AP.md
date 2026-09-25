@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-24C` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-25A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -601,6 +601,34 @@ out (this cost a real debugging detour — see bug class 11).
 | Archives | **Minimal, flat, indigo `#8B93F8` accent** | No blur, no shadow, 1px hairlines. **This is the theme to extend when building Archives out** — do not add glassmorphism here, it was deliberately made distinct |
 | Plan | Teal glass over `#071520` | `.plan-skin`, with a `.planfield` backdrop of drifting wave bands and planning motifs |
 
+**Yearly's ribbon is lengthened as ONE object and dissolves at its tail.** All 64 paths end
+at `x=1400` in local coordinates, so before this they all stopped at the same place and it
+read as a cut. Two additions, and the paths themselves are untouched:
+
+```
+transform="scale(1,1.27) rotate(48 980 60) translate(760,0) scale(1.145,1) translate(-760,0)"
+                                           ^ pivot the stretch at the paths' own start ^
+```
+
+- The inner `scale(1.145,1)` runs **after** the rotate, so it stretches along the ribbon's
+  own axis rather than the screen's. `scale(1,1.27)` is unchanged: it is in the parent
+  space, post-rotation, and is what gives the vertical reach. The ribbon now reaches **81%**
+  down from 71%.
+- **The pivot is load-bearing.** A bare `scale(K,1)` works about the origin and slid the
+  whole ribbon right (left edge 660 → 711px at K=1.10). Pivoting at local `x=760`, the
+  paths' own start, means only the far end travels and the start does not move at all.
+- The tail fade is a `<mask>` with a `userSpaceOnUse` gradient on an **inner** `<g>`, so it
+  resolves after the rotate and fades along the ribbon. On the outer group it would fade
+  along the screen axes instead — which dims the layer near the bottom of the window and
+  leaves the hard end exactly where it was.
+
+**A failed attempt worth not repeating:** extending each of the 64 paths along its own exit
+tangent. Every path leaves at a different heading (endpoints alone span `y = -57 … 238`), so
+extrapolating them independently makes them **stop being parallel offsets of each other** —
+they splay into a fan with widening, uneven gaps. The nesting *is* the effect. Anything that
+touches the paths individually pulls them apart; `test-mobile` §7 now asserts all 64 carry no
+transform of their own, which is what keeps that from coming back.
+
 Each tab has an animated SVG background field (`.tickerfield`, `.cashfield`, `.financefield`, `.monthlyfield`, `.archivefield`, `.planfield`) toggled via body class, opacity-faded in/out over 0.7s. Yearly, Monthly and Archives also carry a fluid wave layer (`.wv-yf`, `.wv-me`, `.wv-arc`); Yearly's is stretched `scale(1,1.27)` ahead of its rotate so it reaches ~70% down the viewport without moving sideways. **Fading a field out is not enough — each also needs `animation-play-state:paused` when hidden** (bug class 8). Icons drift slowly (`tkdrift` keyframe, 30–38s cycles). If Archives gets real content, consider adding a matching `.archivefield` icon set (vault, ledger, filing cabinet motifs already partially exist — check `#archiveField` in markup).
 
 **Each holding carries an open-in-a-new-tab arrow** to that ticker's quote page.
@@ -866,7 +894,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **935 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **938 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.
