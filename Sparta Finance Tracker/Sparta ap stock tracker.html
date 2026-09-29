@@ -1164,6 +1164,14 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .pl-rows{display:flex;flex-direction:column;gap:6px}
 .pl-row{display:grid;grid-template-columns:78px 1fr auto auto;gap:12px;align-items:center;
   background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:13px 15px}
+/* A grid item defaults to min-width:auto, so its min-content can push a 1fr
+   column past its share. A pasted URL offers no break opportunity, so its
+   min-content IS the whole string: the column grew to fit it, the row grew with
+   the column, and the overflow:hidden + ellipsis on .pl-nt below never got the
+   chance to engage -- the text just ran out of the card. Same failure as .hform.
+   The 560px block already carried this line; it belongs at every width. */
+.pl-row>*{min-width:0}
+.pl-nmrow{min-width:0}
 /* Passed items are greyed but never hidden, and stay fully editable. */
 .pl-row.past{background:rgba(255,255,255,.028);border-color:rgba(255,255,255,.06)}
 .pl-row.past .pl-day,.pl-row.past .pl-nm{color:rgba(255,255,255,.5)}
@@ -2983,7 +2991,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-25B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-29A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">

@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-25B` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-29A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -735,6 +735,17 @@ height and appearance checks fail against the unfixed file, but the overflow one
 either way, because Chromium's date control has a far smaller min-content width than iOS
 Safari's and cannot reproduce it. That case is only confirmable on a device.
 
+**`min-width:0` is the fix for text escaping a grid, and it is needed at EVERY width.**
+A grid item defaults to `min-width:auto`, so its min-content can push a `1fr` column past its
+share. A pasted URL offers no break opportunity, so its min-content *is* the whole string:
+the column grows to fit it and any `overflow:hidden` + `text-overflow:ellipsis` on the child
+never gets the chance to engage. Plan's `.pl-row` had exactly this — `.pl-nt` and `.pl-nm`
+already carried the ellipsis, and a note ran **462px past the row's right edge at 1360 wide**.
+The `@media(max-width:560px)` block had carried `min-width:0` since the phone pass, which is
+why it only ever showed on a desktop. It is now on `.pl-row>*` and `.pl-nmrow` unconditionally.
+**When a truncation rule appears not to work, suspect the container before the rule** — this
+is the third component to hit it, after `.hform` and `input[type=date]`.
+
 **The Yearly monthly chart's axis rounds up to the next 1,000** — `Math.ceil(maxM/1000)*1000`,
 with `maxM` floored at 1,000 so an empty year does not collapse. It used to start at 5k and
 **double** until it cleared the tallest bar, which meant the only tops on offer were
@@ -931,7 +942,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **943 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **959 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.

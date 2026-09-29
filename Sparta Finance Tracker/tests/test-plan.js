@@ -313,6 +313,54 @@ const section = t => console.log(`\n── ${t} ──`);
   check(await page.evaluate(() => getComputedStyle(document.querySelector('.pw-1')).animationPlayState)
     === 'running', 'they resume on return');
 
+  section('long text stays inside its row');
+  /* A pasted product URL has no break opportunity, so its min-content is the whole
+     string. .pl-row is a grid, and a grid item defaults to min-width:auto -- so the
+     1fr column grew to fit the string, the row grew with it, and the ellipsis that
+     was already on .pl-nt never got the chance to engage. Measured at 462px past
+     the row's right edge at 1360 wide before the fix. The 560px block already
+     carried min-width:0, which is why this only showed on a desktop.
+     Swept across widths because the failure changes with the column's share. */
+  const LONG = 'Yaheetech 4-Piece Outdoor Table & Chairs Set Patio Conversation Set ' +
+    'https://yaheetech.shop/products/yaheetech-4-piece-outdoor-table-chairs-set-patio-conversation-set';
+  for (const W of [1360, 1024, 760, 390]) {
+    await page.setViewportSize({ width: W, height: 900 });
+    await page.evaluate(long => {
+      state.plan = { segments: [{ id: 'sg', name: 'Overflow', start: 5000, open: true, items: [
+        { id: 'o1', date: '2026-09-26', type: 'expense', amt: 182, name: 'Patio Set', notes: long },
+        { id: 'o2', date: '2026-09-27', type: 'expense', amt: 112, name: long, notes: 'short' }] }] };
+      renderPlan();
+    }, LONG);
+    await page.waitForTimeout(220);
+    const o = await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('.pl-row')];
+      const card = rows[0].closest('.pl-card') || rows[0].parentElement;
+      const cr = card.getBoundingClientRect();
+      const worst = el => {
+        const r = el.getBoundingClientRect();
+        return { past: +(r.right - el.closest('.pl-row').getBoundingClientRect().right).toFixed(1),
+                 clipped: el.scrollWidth > el.clientWidth };
+      };
+      return { laidOut: rows.length === 2 && rows[0].getBoundingClientRect().width > 120,
+               note: worst(document.querySelector('.pl-nt')),
+               name: worst(rows[1].querySelector('.pl-nm')),
+               cardPast: +(rows[0].getBoundingClientRect().right - cr.right).toFixed(1),
+               pan: Math.round(document.documentElement.scrollWidth - innerWidth) };
+    });
+    // everything below reads 0 and passes meaninglessly if the tab never drew
+    check(o.laidOut, `${W}px: the rows are actually laid out`, JSON.stringify(o));
+    check(o.note.past < 0 && o.name.past < 0,
+      `${W}px: neither the note nor the name escapes its row`,
+      `note ${o.note.past}px, name ${o.name.past}px`);
+    check(o.note.clipped && o.name.clipped,
+      `${W}px: both are clipped, so the ellipsis is doing the work`,
+      JSON.stringify([o.note.clipped, o.name.clipped]));
+    check(o.cardPast <= 0 && o.pan <= 0,
+      `${W}px: and nothing spills out of the card or pans the page`,
+      JSON.stringify([o.cardPast, o.pan]));
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nPLAN: ${pass} passed, ${fail} failed`);
