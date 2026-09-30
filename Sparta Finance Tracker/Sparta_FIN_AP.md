@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-30A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-30B` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -154,14 +154,20 @@ silently adopting the other's formula would look perfectly reasonable on screen.
 number, or 12 for a year already past.
 
 **Planned is entered as a MONTHLY figure** from 2026-09-30 onward. That is what makes
-`Planned − Monthly` compare like with like. Two consequences that are **not yet handled**:
+`Planned − Monthly` compare like with like.
 
-- **Income's Diff still subtracts the year-to-date total**, so a monthly plan against an
-  annual figure reads hugely negative. Income needs the same monthly basis to be meaningful.
-- **The planned-vs-actual overview bars** (`yfExpPlan` / `yfExpPlanBar`, ~line 5521) compare
-  `expPlanT` against `totExp` — a monthly sum against an annual one, so the plan bar
-  collapses to a sliver. Either annualise the plan there (`× 12`) or put both on a monthly
-  basis.
+**The overview bars above the tables annualise it** (`expPlanT*12`), because they sit
+against the *year's* Spend and Earned. `paMax` is computed from the annualised figures too —
+scaling the bars off the monthly sum while printing the annual one would leave them in the
+wrong proportion, which is subtler than the bug it replaced. Those bars are labelled
+**Spend** and **Earned** to match the tables. Before this, a monthly plan drew the plan bar
+at ~8% of the track whatever the budget said, reading as a catastrophic overspend on every
+category. Expect small rounding: 1,167 × 12 is 14,004, not 14,000.
+
+**Still not handled:** **Income's Diff subtracts the year-to-date total**, so a monthly plan
+against an annual figure reads hugely negative (a 3,300 plan against 41,800 earned shows
+about −$38,500). Income needs the same monthly basis, which means giving it a Monthly
+column. The bars are right; the table under them is not.
 
 **Totals rows share the category rows' renderer.** They used to build their own Diff cell,
 which is how the income total printed `$-7,200` the first time that number could go
@@ -981,7 +987,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **965 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **968 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.

@@ -411,6 +411,39 @@ const cards = page => page.evaluate(() =>
   check(!/\$-/.test(totals.exp) && !/\$-/.test(totals.inc),
     'and a negative total renders as \u2212$n, never "$-n"', JSON.stringify(totals));
 
+  /* The overview bars sit against the YEAR's Spend and Earned, but Planned is
+     entered monthly, so it is annualised here. Before this the plan bar drew at
+     8.4% of the track whatever the budget said -- a sliver that looked like a
+     catastrophic overspend on every category. */
+  const bars = await page.evaluate(() => {
+    const t = id => document.getElementById(id).textContent.trim();
+    const w = id => parseFloat(document.getElementById(id).style.width);
+    const lab = id => [...document.getElementById(id).closest('.panel.stat')
+      .querySelectorAll('.yf-pa span')].map(e => e.textContent.trim());
+    return { expLab: lab('yfExpPlan'), incLab: lab('yfIncPlan'),
+             expPlan: t('yfExpPlan'), incPlan: t('yfIncPlan'),
+             expPlanW: w('yfExpPlanBar'), expActW: w('yfExpActBar') };
+  });
+  check(JSON.stringify(bars.expLab) === JSON.stringify(['Planned', 'Spend']) &&
+        JSON.stringify(bars.incLab) === JSON.stringify(['Planned', 'Earned']),
+    'the overview bars are labelled Spend and Earned',
+    JSON.stringify([bars.expLab, bars.incLab]));
+  check(bars.expPlan.replace(/[^0-9]/g, '') === String(14000 * 12) &&
+        bars.incPlan.replace(/[^0-9]/g, '') === String(39600 * 12),
+    'and show the monthly plan annualised', JSON.stringify([bars.expPlan, bars.incPlan]));
+  /* Non-vacuity, stated as a RELATIONSHIP rather than a remembered width: both
+     panels share one paMax, so any absolute threshold here is really an
+     assertion about the other panel's numbers (bug class 12). What is actually
+     claimed is that the track the plan is drawn on used the annualised figure
+     too -- so the two bars' widths must be in the same ratio as their values. */
+  {
+    const wantRatio = (14000 * 12) / 13847;
+    const gotRatio = bars.expPlanW / bars.expActW;
+    check(Math.abs(gotRatio - wantRatio) / wantRatio < 0.02,
+      'and the plan bar is drawn from the annualised figure, not left a sliver',
+      `widths ${bars.expPlanW.toFixed(1)}% / ${bars.expActW.toFixed(1)}% = ${gotRatio.toFixed(2)}x, values ${wantRatio.toFixed(2)}x`);
+  }
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close();
 

@@ -2695,12 +2695,12 @@ select{color-scheme:dark}
       <section class="panel stat">
         <div class="label yf-h-exp">EXPENSES</div>
         <div class="yf-pa"><span>Planned</span><div class="yf-patrack"><div id="yfExpPlanBar" class="yf-pafill" style="background:rgba(234,240,250,.35)"></div></div><b id="yfExpPlan">$0</b></div>
-        <div class="yf-pa"><span>Actual</span><div class="yf-patrack"><div id="yfExpActBar" class="yf-pafill" style="background:var(--yf-exp)"></div></div><b id="yfExpAct">$0</b></div>
+        <div class="yf-pa"><span>Spend</span><div class="yf-patrack"><div id="yfExpActBar" class="yf-pafill" style="background:var(--yf-exp)"></div></div><b id="yfExpAct">$0</b></div>
       </section>
       <section class="panel stat">
         <div class="label yf-h-inc">INCOME</div>
         <div class="yf-pa"><span>Planned</span><div class="yf-patrack"><div id="yfIncPlanBar" class="yf-pafill" style="background:rgba(234,240,250,.35)"></div></div><b id="yfIncPlan">$0</b></div>
-        <div class="yf-pa"><span>Actual</span><div class="yf-patrack"><div id="yfIncActBar" class="yf-pafill" style="background:var(--yf-inc)"></div></div><b id="yfIncAct">$0</b></div>
+        <div class="yf-pa"><span>Earned</span><div class="yf-patrack"><div id="yfIncActBar" class="yf-pafill" style="background:var(--yf-inc)"></div></div><b id="yfIncAct">$0</b></div>
       </section>
     </div>
 
@@ -2991,7 +2991,7 @@ select{color-scheme:dark}
     </section>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-30A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-30B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -5520,12 +5520,16 @@ function renderYF(){
   // ----- planned vs actual overview -----
   const expPlanT=yfCats('expense').reduce((s,c)=>s+yfPlanned(c),0);
   const incPlanT=yfCats('income').reduce((s,c)=>s+yfPlanned(c),0);
-  const paMax=Math.max(expPlanT,totExp,incPlanT,totInc,1);
-  $('yfExpPlan').textContent=yf$(expPlanT); $('yfExpAct').textContent=yf$(totExp);
-  $('yfIncPlan').textContent=yf$(incPlanT); $('yfIncAct').textContent=yf$(totInc);
-  $('yfExpPlanBar').style.width=(expPlanT/paMax*100)+'%';
+  /* Planned is entered as a MONTHLY figure, so it is annualised here -- these
+     two bars sit against the year's Spend and Earned, and a monthly plan beside
+     an annual actual drew the plan bar as a sliver whatever the budget said. */
+  const expPlanY=expPlanT*12, incPlanY=incPlanT*12;
+  const paMax=Math.max(expPlanY,totExp,incPlanY,totInc,1);
+  $('yfExpPlan').textContent=yf$(expPlanY); $('yfExpAct').textContent=yf$(totExp);
+  $('yfIncPlan').textContent=yf$(incPlanY); $('yfIncAct').textContent=yf$(totInc);
+  $('yfExpPlanBar').style.width=(expPlanY/paMax*100)+'%';
   $('yfExpActBar').style.width=(totExp/paMax*100)+'%';
-  $('yfIncPlanBar').style.width=(incPlanT/paMax*100)+'%';
+  $('yfIncPlanBar').style.width=(incPlanY/paMax*100)+'%';
   $('yfIncActBar').style.width=(totInc/paMax*100)+'%';
 
   // ----- category tables -----
