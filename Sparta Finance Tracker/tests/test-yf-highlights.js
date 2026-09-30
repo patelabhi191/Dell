@@ -358,6 +358,59 @@ const cards = page => page.evaluate(() =>
     'a tiny year still floors the axis at $1k rather than collapsing',
     JSON.stringify(ax.labels));
 
+  console.log('\n── 8c. the planned-vs-actual tables ──');
+  /* Column ORDER is asserted by heading rather than assumed, because these two
+     tables swapped Planned and Spend and the only other test that read them was
+     pinned to children[2] -- it reported a totals bug when nothing about the
+     totals had changed. */
+  await seed(page, [
+    { type: 'expense', date: `${YEAR}-02-04`, amt: 13847, desc: 'Amex', cat: 'Food', who: 'ABI' },
+    { type: 'income',  date: `${YEAR}-02-01`, amt: 41800, desc: 'Pay',  cat: 'Paycheck', who: 'ABI' },
+  ], { Food: 14000, Paycheck: 39600 });
+  await page.waitForTimeout(200);
+  const pa = await page.evaluate(() => {
+    const heads = t => [...document.querySelectorAll('#' + t + ' thead th')]
+      .map(th => th.textContent.trim()).filter(Boolean);
+    const cell = (body, name, i) => {
+      const tr = [...document.querySelectorAll('#' + body + ' tr')]
+        .find(r => r.children[0].textContent.trim() === name);
+      return tr ? tr.children[i].textContent.trim() : null;
+    };
+    const nowM = new Date().getMonth() + 1;
+    return { expHead: heads('yfExpTable'), incHead: heads('yfIncTable'),
+             expDiff: cell('yfExpBody', 'Food', 3),
+             expMonthly: cell('yfExpBody', 'Food', 4),
+             incDiff: cell('yfIncBody', 'Paycheck', 3),
+             nowM };
+  });
+  check(JSON.stringify(pa.expHead) === JSON.stringify(['Category','Spend','Planned','Diff.','Monthly']),
+    'Expenses reads Category, Spend, Planned, Diff, Monthly', JSON.stringify(pa.expHead));
+  check(JSON.stringify(pa.incHead) === JSON.stringify(['Category','Earned','Planned','Diff.']),
+    'Income reads Category, Earned, Planned, Diff', JSON.stringify(pa.incHead));
+  /* Expenses compares the monthly RATE against the plan; Income is still the
+     year-to-date question. The two tables deliberately differ, so both are
+     pinned -- otherwise one silently adopting the other's formula looks fine. */
+  {
+    const mo = 13847 / pa.nowM;
+    const want = 14000 - mo;
+    const got = parseFloat(pa.expDiff.replace(/[^0-9.]/g, ''));
+    check(Math.abs(got - Math.abs(want)) < 1.5 && pa.expDiff.startsWith(want > 0 ? '+' : '\u2212'),
+      'an expense Diff is Planned minus Monthly, not minus the year total',
+      `${pa.expDiff} (expected ~${want.toFixed(0)})`);
+    check(Math.abs(parseFloat(pa.expMonthly.replace(/[^0-9.]/g, '')) - mo) < 1.5,
+      'and Monthly is the year-to-date spend over the months elapsed', pa.expMonthly);
+  }
+  check(pa.incDiff.replace(/[^0-9]/g, '') === '2200' && pa.incDiff.startsWith('\u2212'),
+    'an income Diff is still Planned minus Earned', pa.incDiff);
+  /* The totals row used to build its own Diff cell and printed "$-7,200" the
+     moment that number could go negative. One renderer for both now. */
+  const totals = await page.evaluate(() => {
+    const t = b => document.querySelector('#' + b + ' tr').children[3].textContent.trim();
+    return { exp: t('yfExpBody'), inc: t('yfIncBody') };
+  });
+  check(!/\$-/.test(totals.exp) && !/\$-/.test(totals.inc),
+    'and a negative total renders as \u2212$n, never "$-n"', JSON.stringify(totals));
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close();
 

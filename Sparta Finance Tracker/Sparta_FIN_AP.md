@@ -2,7 +2,7 @@
 
 **File:** `Sparta ap stock tracker.html` — single self-contained HTML file (~405KB, ~7050 lines). No build step, no dependencies, no server. Opens directly in a browser or via any static host (Netlify, GitHub Pages, `file://`).
 
-Current build stamp: `build 2026-09-29A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
+Current build stamp: `build 2026-09-30A` (footer, bottom of page). **Bump the letter suffix on every change** (`...14c` → `...14d`). If the day changes, bump the date and reset to `a`.
 
 > An optimisation + dead-code pass was applied on 2026-08-14 (load time −57%, running animations −58%). See `OPTIMIZATION-NOTES.md` for what changed and why. The suite in `tests/` has grown well past that pass — see §9 for the current count.
 
@@ -131,6 +131,45 @@ ordinary Monthly expenses; orphaning them would leave their money in no total at
 Consequence, and it is deliberate: Yearly's total counts Yearly's rows only. Spending
 typed straight onto Monthly is not in it. Yearly is the coarse view — big things — and
 the credit-card bill is how card spending reaches it.
+
+---
+
+### The planned-vs-actual tables read differently on each side, on purpose
+
+Column order is **Category, Spend/Earned, Planned, Diff** (plus **Monthly** on Expenses).
+The money you actually moved comes first; the plan you are judging it against sits beside
+it. "Actual" is called **Spend** on Expenses and **Earned** on Income.
+
+**Diff is NOT the same formula on the two tables.**
+
+| | Diff | The question it answers |
+|---|---|---|
+| Expenses | `Planned − Monthly` | am I off my monthly rate? |
+| Income | `Planned − Earned` | am I off the year to date? |
+
+That is deliberate and both are pinned in `test-yf-highlights` §8c, because one table
+silently adopting the other's formula would look perfectly reasonable on screen.
+
+**`Monthly` is `actual / nowM`**, where `nowM` is the months elapsed — the current month
+number, or 12 for a year already past.
+
+**Planned is entered as a MONTHLY figure** from 2026-09-30 onward. That is what makes
+`Planned − Monthly` compare like with like. Two consequences that are **not yet handled**:
+
+- **Income's Diff still subtracts the year-to-date total**, so a monthly plan against an
+  annual figure reads hugely negative. Income needs the same monthly basis to be meaningful.
+- **The planned-vs-actual overview bars** (`yfExpPlan` / `yfExpPlanBar`, ~line 5521) compare
+  `expPlanT` against `totExp` — a monthly sum against an annual one, so the plan bar
+  collapses to a sliver. Either annualise the plan there (`× 12`) or put both on a monthly
+  basis.
+
+**Totals rows share the category rows' renderer.** They used to build their own Diff cell,
+which is how the income total printed `$-7,200` the first time that number could go
+negative — the `−$n` handling lived only in the row path. `diffCell()` now serves both.
+
+**Do not read these columns by position in a test.** `test-bills.js` did (`children[2]`) and
+reported a totals bug when the columns were reordered and it started parsing an `<input>`.
+Find the column by its heading.
 
 ---
 
@@ -942,7 +981,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **959 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **965 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.

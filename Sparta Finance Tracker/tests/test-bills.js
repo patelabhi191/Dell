@@ -996,9 +996,15 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
     document.getElementById('meAllot').value = '';
     meSaveTx();
     meMonth = `${y}-07`; renderME(); renderYF();
+    /* Found by heading, not by position. This read children[2] until Planned and
+       Spend swapped places, at which point it was parsing an <input> cell and
+       getting NaN -- a column reorder should not look like a totals bug. */
+    const heads = [...document.querySelectorAll('#yfExpTable thead th')]
+      .map(th => th.textContent.trim().toLowerCase());
+    const col = heads.indexOf('spend');
     const rows = [...document.querySelectorAll('#yfExpBody tr')].map(tr => ({
       name: tr.children[0].textContent.trim().split('$')[0].trim(),
-      act: parseFloat(tr.children[2].textContent.replace(/[^0-9.-]/g, '')) }));
+      act: parseFloat(tr.children[col].textContent.replace(/[^0-9.-]/g, '')) }));
     return { offered, yfList: state.yf.cats.exp.slice(), rows,
              totals: rows[0].act,
              sumRows: +rows.slice(1).reduce((t, r) => t + r.act, 0).toFixed(2) };
