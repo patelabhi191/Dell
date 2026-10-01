@@ -9,7 +9,7 @@
    Both are written so they can fail: the "snapshot" checks first prove the live
    tab really did change, so a card that merely never updates anything would not
    sail through. */
-const { serve, open, launch, SEED } = require('./lib');
+const { serve, open, launch, stub, SEED } = require('./lib');
 const { APP } = require('./paths');
 
 let pass = 0, fail = 0;
@@ -46,8 +46,6 @@ function ledger() {
   for (let m = 1; m <= 6; m++)
     t.push({ id: 'g' + m, date: `${Y}-${pad(m)}-05`, type: 'expense', cat: 'Grocery', desc: 'shop', amt: 400, who: 'ABI', tab: 'me' });
   t.push({ id: 'd1', date: `${Y}-03-18`, type: 'expense', cat: 'Dining', desc: 'out', amt: 160, who: 'POO', tab: 'me' });
-  // last year — must not reach this year's card at all
-  t.push({ id: 'old', date: `${Y - 1}-05-05`, type: 'income', cat: 'Paycheck', desc: 'old', amt: 99999, who: 'ABI', tab: 'yf' });
   return t;
 }
 const ledgerLen = ledger().length;
@@ -71,8 +69,8 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
   const url = 'http://127.0.0.1:' + srv.address().port + '/';
   const browser = await launch();
   const { page, errs, ctx } = await open(browser, url, seed);
-  // Add year asks WHICH year, so a prompt has to be answered with one — Playwright's
-  // bare accept() sends an empty string, not the default the page offered.
+  // Add year seals THIS year with one press and asks nothing. Any prompt that
+  // does appear is counted, so a stray one would show up as a failure below.
   let dialogs = 0, prompts = 0;
   const answerYear = d => { dialogs++; d.type() === 'prompt' ? (prompts++, d.accept(String(Y))) : d.accept() };
   page.on('dialog', answerYear);
@@ -93,7 +91,7 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
 
   await page.click('#arcAddYear');
   await page.waitForSelector('.ay');
-  check(prompts === 1, 'Add year asks which year rather than assuming this one');
+  check(prompts === 0, 'Add year seals this year with one press and asks nothing');
   check(await page.$$eval('.ay', n => n.length) === 1, 'Add year seals one card');
 
   const money = n => '$' + Math.round(n).toLocaleString('en-CA');
@@ -123,15 +121,6 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
   // the allotted Monthly row is the one that could be double-counted
   check(!figs.end.includes(String(120)) && figs.end === money(START + INC - EXP),
     'a Monthly row allotted to a bill is not counted on top of the bill');
-
-  page.removeAllListeners('dialog');
-  page.on('dialog', d => { dialogs++; d.type() === 'prompt' ? d.accept('banana') : d.accept() });
-  await page.click('#arcAddYear');
-  await page.waitForTimeout(250);
-  check(await page.$$eval('.ay', n => n.length) === 1,
-    'a year it cannot parse is refused rather than archived as NaN');
-  page.removeAllListeners('dialog');
-  page.on('dialog', answerYear);
 
   // ─────────────────────────────────────────────────────────────────────────
   section('2 · the card agrees with the Yearly tab it came from');
@@ -187,18 +176,23 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
   await page.waitForSelector('.ay-body');
   const body = await page.evaluate(() => ({
     secs: [...document.querySelectorAll('.ay-bh')].map(e => e.textContent),
-    expRows: [...document.querySelectorAll('.ay-3 > div:nth-child(1) .ay-t tr td:first-child')].map(e => e.textContent),
-    incRows: [...document.querySelectorAll('.ay-3 > div:nth-child(2) .ay-t tr td:first-child')].map(e => e.textContent),
+    // Highlights lead the row now, so the tables are columns 2 and 3
+    expRows: [...document.querySelectorAll('.ay-3 > div:nth-child(2) .ay-t tr td:first-child')].map(e => e.textContent),
+    incRows: [...document.querySelectorAll('.ay-3 > div:nth-child(3) .ay-t tr td:first-child')].map(e => e.textContent),
     first: (document.querySelector('.ay-hl .first .l') || {}).textContent || '',
     hl: document.querySelectorAll('.ay-hl li').length,
     cmCats: [...document.querySelectorAll('.ay-cm tbody tr td:first-child')].map(e => e.textContent),
     cmCols: document.querySelectorAll('.ay-cm thead th').length,
-    trend: (document.querySelector('.ay-sec:nth-last-child(2) polyline') || {}).getAttribute
-      ? document.querySelector('.ay-sec:nth-last-child(2) polyline').getAttribute('points').trim().split(/\s+/).length : 0,
+    // the trend is Monthly's chart now: one PATH per chosen category, dots on each
+    trendLines: document.querySelectorAll('.arc-tw path').length,
+    trendDots: document.querySelectorAll('.arc-tw .archit').length,
+    legend: [...document.querySelectorAll('.arc-legend span')].map(e => e.textContent),
+    gear: !!document.querySelector('.arc-gear'),
+    yAxis: [...document.querySelectorAll('.arc-tw text')].filter(t => /^\$/.test(t.textContent)).map(t => t.textContent),
     bars: document.querySelectorAll('.ay-sec:nth-child(1) rect').length,
     chev: getComputedStyle(document.querySelector('.ay-chev')).transform,
   }));
-  check(body.secs.join('|') === 'Month by month|Expenses|Income|Highlights|12-month trend|Category by month · Monthly',
+  check(body.secs.join('|') === 'Month by month|Highlights|Expenses|Income|12-month trend|Category by month · Monthly',
     'the body is laid out in the agreed order', body.secs.join(' / '));
   check(body.expRows.includes('Rent') && body.expRows.includes('Investment')
      && body.expRows.includes('Credit Card'),
@@ -213,7 +207,13 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
   check(!body.cmCats.includes('Rent'),
     'and not Yearly\'s — a bill in a month says nothing about habits');
   check(body.cmCols === 14, 'the grid is category + 12 months + total', String(body.cmCols));
-  check(body.trend === 12, 'the trend draws a point per month', String(body.trend));
+  check(body.trendLines >= 1 && body.trendDots === body.trendLines * 12,
+    'the trend draws one line per chosen category with a point on every month',
+    `${body.trendLines} lines, ${body.trendDots} dots`);
+  check(body.gear && body.legend.length === body.trendLines,
+    'with Monthly\'s gear and a legend entry per line', body.legend.join(','));
+  check(body.yAxis.length === 3 && body.yAxis[0] === '$0',
+    'and Monthly\'s three-stop value axis, anchored at $0', body.yAxis.join(' '));
   // one bar per SERIES per month, not one per row: nine months earn and nine spend
   check(body.bars === 18, 'the bars draw one per series per month with money in it', String(body.bars));
   check(body.chev !== 'none', 'the chevron turns when the card is open', body.chev);
@@ -234,43 +234,38 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
       const g = document.querySelector('.ay-3');
       const c = document.querySelector('.ay').getBoundingClientRect();
       const kids = [...g.children].map(e => e.getBoundingClientRect());
-      const hold = document.querySelector('.ay-hold');
-      const hr = hold ? hold.getBoundingClientRect() : null;
-      // anything wider than its card, ignoring the two deliberate side-scrollers
+      // anything wider than its card, ignoring the three deliberate side-scrollers.
+      // className on an SVG element is an SVGAnimatedString, not a string, so the
+      // label has to come off the tag — the first version printed [object …].
       const out = [...document.querySelectorAll('.ay *')].filter(e => {
         const r = e.getBoundingClientRect();
-        return r.width > 0 && (r.right > c.right + 1 || r.left < c.left - 1) && !e.closest('.ay-scroll');
-      }).map(e => (e.className || e.tagName) + ':' + Math.round(r2(e)));
-      function r2(e) { return e.getBoundingClientRect().right - c.right }
+        return r.width > 0 && (r.right > c.right + 1 || r.left < c.left - 1) &&
+          !e.closest('.ay-scroll') && !e.closest('.arc-tw') && !e.closest('.arc-pop');
+      }).map(e => e.tagName.toLowerCase() + '.' + (typeof e.className === 'string' ? e.className : '(svg)'));
       return {
         laidOut: c.height > 200 && kids.every(r => r.height >= 0),
         cols: getComputedStyle(g).gridTemplateColumns.split(' ').length,
-        exp: Math.round(kids[0].width), inc: Math.round(kids[1].width),
-        holdW: hr ? Math.round(hr.width) : 0,
-        holdH: hr ? Math.round(hr.height) : 0,
-        rowH: Math.round(kids[0].height),
-        wideW: Math.round(kids[kids.length - 1].width),
+        hl: Math.round(kids[0].width),
+        exp: Math.round(kids[1].width), inc: Math.round(kids[2].width),
+        divider: kids.length > 1 ? getComputedStyle(g.children[1]).borderLeftWidth : '0px',
         pan: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         out,
       };
     });
     // bug class 14: everything below reads 0 and passes meaninglessly if the
     // card never actually drew
-    check(o.laidOut, `${W}px: the card is actually laid out`, JSON.stringify([o.cols, o.exp]));
+    check(o.laidOut, `${W}px: the card is actually laid out`, JSON.stringify([o.cols, o.hl]));
     check(o.out.length === 0 && o.pan <= 0, `${W}px: nothing escapes the card and the page does not pan`,
       o.out.join(',') + ' pan=' + o.pan);
     if (W > 760) {
       check(o.cols === 3, `${W}px: three columns`, String(o.cols));
       check(near(o.exp, o.inc, 2), `${W}px: Expenses and Income are equal`, `${o.exp} / ${o.inc}`);
-      check(near(o.holdW / o.exp, 0.5, 0.06), `${W}px: the reserved strip is half their width — 40/40/20`,
-        `${o.holdW} vs ${o.exp}`);
-      check(o.holdH > o.rowH + 10, `${W}px: and spans BOTH rows rather than collapsing to one`,
-        `${o.holdH} vs row ${o.rowH}`);
-      check(near(o.wideW, o.exp + o.inc + 16, 3), `${W}px: Highlights take the 80% underneath`,
-        `${o.wideW} vs ${o.exp + o.inc + 16}`);
+      check(near(o.hl / (o.hl + o.exp + o.inc), 0.45, 0.02),
+        `${W}px: Highlights take 45% and the tables split the rest`,
+        `${o.hl} of ${o.hl + o.exp + o.inc}`);
+      check(parseFloat(o.divider) > 0, `${W}px: a hairline divides the columns`, o.divider);
     } else {
       check(o.cols === 1, `${W}px: one column`, String(o.cols));
-      check(o.holdW === 0, `${W}px: the reserved strip is dropped rather than leaving a gap`, String(o.holdW));
     }
   }
   await page.setViewportSize({ width: 1280, height: 950 });
@@ -399,8 +394,155 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
   check((await page.$eval('#arcList', e => e.textContent)).includes('No years archived'),
     'the list redraws itself after the clear rather than showing cards that are gone');
 
+  // ─────────────────────────────────────────────────────────────────────────
+  section('8 · the trend reads the SEALED year, not the live ledger');
+
+  await page.click('#arcAddYear');
+  await page.waitForSelector('.ay');
+  // the Add year toast sits over the card for 2.6s and swallows the click that
+  // would open it — wait it out rather than clicking into it
+  await page.waitForFunction(() => !document.getElementById('toast').classList.contains('show'));
+  await page.click('.ay-head');
+  await page.waitForSelector('.arc-tw');
+  const beforeTrend = await page.$$eval('.arc-tw .archit', n => n.length);
+  const beforeLegend = await page.$eval('.arc-legend', e => e.textContent);
+  // gut every Monthly row, then redraw. The chart must not move.
+  await page.evaluate(() => {
+    state.yf.txns = state.yf.txns.filter(t => t.tab !== 'me');
+    yfPersist(); renderArchives();
+  });
+  // renderArchives() rebuilds the cards but keeps the open ones open, so there is
+  // nothing to click here — clicking would CLOSE it and take the chart away
+  await page.waitForSelector('.arc-tw');
+  check(await page.$$eval('.arc-tw .archit', n => n.length) === beforeTrend && beforeTrend > 0,
+    'deleting every Monthly row leaves the sealed chart untouched',
+    `${beforeTrend} points`);
+  check(await page.$eval('.arc-legend', e => e.textContent) === beforeLegend,
+    'and its legend with it', beforeLegend);
+  // the gear's selection is a device preference, so it must not live in the record
+  check(await page.evaluate(() => !('chartCats' in state.archives[0])),
+    'the category choice is NOT stored inside the archive');
+  const stampBefore = await page.evaluate(() => state.updatedAt);
+  await page.waitForTimeout(60);
+  await page.evaluate(() => arcSetChartCats(['Grocery']));
+  check(await page.evaluate(() => state.updatedAt) === stampBefore,
+    'so choosing categories does not re-stamp the ledger or push a new copy up');
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // The rollover gets its own contexts, because it needs the clock moved.
+  section('9 · the year rollover');
+
+  const P2 = m => String(m).padStart(2, '0');
+  const rollLedger = () => {
+    const t = [];
+    [2025, 2026].forEach(yy => {
+      const months = yy === 2025 ? 6 : 12;
+      for (let m = 1; m <= months; m++) {
+        t.push({ id: `i${yy}${m}`, date: `${yy}-${P2(m)}-12`, type: 'income', cat: 'Paycheck', desc: 'pay', amt: 6000, who: 'ABI', tab: 'yf' });
+        t.push({ id: `r${yy}${m}`, date: `${yy}-${P2(m)}-12`, type: 'expense', cat: 'Rent', desc: 'rent', amt: 2000, who: 'ABI', tab: 'yf' });
+      }
+    });
+    return t;
+  };
+  // freeze the page clock before a line of app code runs
+  const freeze = iso => `(()=>{const F=new Date('${iso}').getTime();const R=Date;
+    class D extends R{constructor(...a){if(!a.length)super(F);else super(...a)}
+      static now(){return F}}
+    window.Date=D;})();`;
+  const bootAt = async (iso, store) => {
+    const c = await browser.newContext();
+    const pg = await c.newPage(); await stub(pg);
+    await pg.addInitScript(freeze(iso));
+    await pg.addInitScript(st => { try { localStorage.clear();
+      for (const [k, v] of Object.entries(st)) localStorage.setItem(k, v); } catch (e) { } }, store);
+    const er = []; pg.on('pageerror', e => er.push(e.message));
+    pg.on('dialog', d => d.accept());
+    await pg.goto(url, { waitUntil: 'load' }); await pg.waitForTimeout(450);
+    return { pg, c, er };
+  };
+  const dump = pg => pg.evaluate(() => { const o = {};
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); o[k] = localStorage.getItem(k) } return o });
+  const look = pg => pg.evaluate(() => ({
+    yfYear: state.yfYear,
+    years: state.archives.map(a => a.year).sort(),
+    sealed: state.archives.filter(a => a.sealed).map(a => a.year).sort(),
+    ends: Object.fromEntries(state.archives.map(a => [a.year, Math.round(a.stats.end)])),
+    start: JSON.parse(JSON.stringify(state.yf.start || {})),
+    rows2026: state.yf.txns.filter(t => t.date.startsWith('2026')).length,
+    rows2027: state.yf.txns.filter(t => t.date.startsWith('2027')).length,
+    startField: (document.getElementById('yfStart') || {}).value,
+  }));
+  const rollSeed = Object.assign({}, SEED, { 'sparta.yf.data':
+    JSON.stringify({ txns: rollLedger(), start: { 2025: 5000, 2026: 13554 }, planned: {} }) });
+
+  // 31 Dec 2026 — 2025 was never archived, so opening the app backfills it
+  let A = await bootAt('2026-12-31T10:00:00Z', rollSeed);
+  let a = await look(A.pg);
+  check(a.years.join() === '2025', 'a past year the ledger holds is sealed on open, unprompted', a.years.join());
+  check(a.ends[2025] === 29000, 'with that year’s own figures', String(a.ends[2025]));
+  check(a.yfYear === 2026 && !a.years.includes(2026), 'the year still running is left alone');
+  const afterDec = await dump(A.pg); await A.c.close();
+
+  // 1 Jan 2027 — same browser, next day
+  let B = await bootAt('2027-01-01T09:00:00Z', afterDec);
+  let b2 = await look(B.pg);
+  check(b2.years.join() === '2025,2026', '1 January seals the year that just ended', b2.years.join());
+  check(b2.ends[2026] === 61554, 'at its closing balance', String(b2.ends[2026]));
+  check(b2.sealed.join() === '2025,2026', 'and both read as sealed, not as previews');
+  check(b2.yfYear === 2027 && b2.rows2027 === 0, 'the new year opens empty');
+  check(b2.rows2026 === 24, 'WITHOUT deleting a single row of the old one — an archive is a copy',
+    String(b2.rows2026));
+  check(b2.start['2027'] === 61554, 'and 2027 opens at 2026’s closing balance', String(b2.start['2027']));
+  check(b2.startField === '61554', 'which is sitting in the editable Start field, not locked away', b2.startField);
+  const afterJan = await dump(B.pg); await B.c.close();
+
+  // idempotence — the thing that would quietly corrupt a year
+  let C = await bootAt('2027-01-02T09:00:00Z', afterJan);
+  let c3 = await look(C.pg);
+  check(c3.years.join() === '2025,2026', 'opening again the next day seals nothing twice', c3.years.join());
+  check(c3.start['2027'] === 61554, 'and does not re-carry the opening balance');
+  const afterTwo = await dump(C.pg); await C.c.close();
+
+  // a hand-typed Start must survive the next load
+  const edited = Object.assign({}, afterTwo);
+  // storage is namespaced per database, and the SEED also leaves a bare
+  // sparta.yf.data behind — the app reads sparta.<db>.yf.data, so editing the
+  // first match silently edited a key nothing reads
+  const nsKeyFor = (o, suffix) => Object.keys(o).find(x => new RegExp('^sparta\\.[a-z0-9]+\\.' + suffix + '$').test(x))
+    || Object.keys(o).find(x => new RegExp(suffix + '$').test(x));
+  const k = nsKeyFor(edited, 'yf\\.data');
+  const yfd = JSON.parse(edited[k]); yfd.start['2027'] = 0; edited[k] = JSON.stringify(yfd);
+  let E = await bootAt('2027-01-03T09:00:00Z', edited);
+  check(await E.pg.evaluate(() => state.yf.start['2027']) === 0,
+    'a Start deliberately typed as 0 is not overwritten by the carry-forward');
+  await E.c.close();
+
+  // a hand-corrected archive must survive too
+  const touched = Object.assign({}, afterDec);
+  const ak = nsKeyFor(touched, 'archives');
+  const arcs = JSON.parse(touched[ak]);
+  arcs[0].sealed = false; arcs[0].edited = true; arcs[0].stats.end = 12345;
+  touched[ak] = JSON.stringify(arcs);
+  let F = await bootAt('2027-01-04T09:00:00Z', touched);
+  check(await F.pg.evaluate(() => state.archives.find(a => a.year === 2025).stats.end) === 12345,
+    'a figure corrected by hand is never overwritten by the automatic seal');
+  await F.c.close();
+
+  // and an unedited PREVIEW of a year that has since ended is upgraded
+  const preview = Object.assign({}, afterDec);
+  const pv = JSON.parse(preview[ak]);
+  pv[0].sealed = false; delete pv[0].edited; pv[0].stats.end = 1;
+  preview[ak] = JSON.stringify(pv);
+  let G = await bootAt('2027-01-05T09:00:00Z', preview);
+  const gg = await G.pg.evaluate(() => state.archives.find(a => a.year === 2025));
+  check(gg.sealed === true && Math.round(gg.stats.end) === 29000,
+    'but a provisional preview of a closed year is re-taken and sealed',
+    `${gg.sealed} / ${Math.round(gg.stats.end)}`);
+  await G.c.close();
+
   console.log(`\nARCHIVES: ${pass} passed, ${fail} failed`);
   await browser.close(); srv.close();
   process.exit(fail ? 1 : 0);

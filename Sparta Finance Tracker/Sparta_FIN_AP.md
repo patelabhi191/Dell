@@ -418,6 +418,36 @@ Three things that have already bitten here:
 - **The contributions line is built and stored, not derived on render.** Contributions keep
   being added after a year is sealed, and an archive that quietly changes is not an archive.
 
+### The year rollover — how a year gets sealed
+
+Sparta is a static file: its code runs only while a tab is open, so "archive it on
+31 December" cannot mean a timer. It means **on every load, seal any past year the ledger
+holds that has never been sealed** (`arcAutoSeal()`, run from the Archives boot block).
+Opening the app on 2 January seals the year that just ended; opening it for the first time
+in March still seals it, and sweeps up 2024 and 2025 besides. **+ Add year** is the manual
+route and seals *this* year with one press, no prompt.
+
+**Nothing is deleted, ever.** Yearly and Monthly are already scoped to `state.yfYear`,
+which is read fresh from the clock at load, so 1 January shows an empty year without
+touching a row — and the Yearly tab's year selector still walks back into last year. An
+archive is a COPY, not a move.
+
+Three guards, each of which has a test that fails without it:
+
+- A record with `sealed:true` is **final** and is never re-taken.
+- A record with `edited:true` — set the moment the pencil corrects a figure — is never
+  re-taken either, sealed or not. Without this, a hand correction is silently wiped on the
+  next load.
+- Only an **unedited preview** of a year that has since ended is re-taken and upgraded to
+  sealed, because a preview never claimed to be the last word.
+
+`arcCarryStart()` then seeds the new year's opening balance from last year's closing one,
+**only when this year has no figure of its own** — `now in state.yf.start`, not a falsy
+test, so a deliberately typed `0` survives. It stays editable on the Yearly tab like any
+other year's.
+
+### Archives housekeeping
+
 `RESET_CLEAR.archive()` empties the records and **does not touch the ledger** they were
 taken from — an archive is a copy, so losing it loses the snapshot and nothing else.
 `archives` rides in `corePayload()` / `applyPayload()`, so a phone sees the same sealed
@@ -1055,12 +1085,15 @@ change, so it is kept green rather than skipped.
 
 ## 10. Known Gaps / Next Steps (as of this handoff)
 
-- **Archives is built** (build 2026-10-01): one card per sealed year, collapsed to a
-  travel-listing row and expanded to the year's full record. See the data shape in §2.
-  Still open on it: sealing is manual (**+ Add year** beside the tab bar) rather than
-  happening on 31 December, the six headline figures are editable by hand because this is
-  a testing phase, and the right 20% of the expanded grid is a reserved empty strip
-  waiting for whatever goes there next.
+- **Archives is built** (build 2026-10-01B): one card per sealed year, on iOS-style glass,
+  collapsed to a travel-listing row and expanded to the year's full record — month bars,
+  Highlights 45% / Expenses 27.5% / Income 27.5%, Monthly's own 12-month category trend,
+  and the category-by-month grid at full width. Sealing is automatic on the first load of
+  a new year, with **+ Add year** as the manual route for the year in progress. See §2 for
+  the data shape and the rollover rules.
+  Still open on it: the trend keeps Monthly's exact behaviour of drawing all twelve months,
+  so a year logged only to September shows its lines fall to $0 for the rest — correct for
+  a genuinely closed year, misleading on the current-year preview.
 - **Plan tab** exists and is built out (segments, dated items, running balance, lowest
   point) — see `tests/test-plan.js` for the behaviour it guarantees.
 - No live Firebase listener (§4) — acceptable per user, don't add without asking.

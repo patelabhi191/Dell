@@ -1241,7 +1241,13 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   .pl-act{width:26px;height:26px}
 }
 /* ═════════ Archives — minimal: flat surfaces, thin rules, indigo accent ═════════ */
-#archiveView{--arc:#8B93F8}
+#archiveView{--arc:#8B93F8;
+  /* Still blue and orange, but not Yearly's tokens: #38BDF8 and #F97316 are
+     mixed for a flat dark panel and read as stickers on a lit glass one. These
+     are the same two hues lifted in lightness and eased off saturation, so they
+     sit IN the surface. The blue is pushed toward cyan as well, to separate it
+     from the violet the panel is tinted with. */
+  --arc-in:#63CCEF; --arc-out:#FFA863}
 #archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
   border-radius:10px;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:22px 24px}
 #archiveView h3{font-family:var(--font-display);font-size:13px;font-weight:600;letter-spacing:.14em;
@@ -1266,10 +1272,44 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    numbers line up in columns on the right, and the one figure you actually scan
    a list of years FOR sits apart at the end, full height. */
 .ay-list{display:flex;flex-direction:column;gap:10px}
-.ay{border:1px solid rgba(255,255,255,.09);border-radius:12px;
-  background:rgba(255,255,255,.022);overflow:hidden;transition:border-color .18s,background .18s}
+.ay{border:1px solid rgba(255,255,255,.09);border-radius:16px;
+  background:rgba(255,255,255,.022);overflow:hidden;
+  transition:border-color .18s,background .18s,box-shadow .18s}
 .ay:hover{border-color:rgba(139,147,248,.34);background:rgba(139,147,248,.045)}
-.ay.open{border-color:rgba(139,147,248,.42);background:rgba(139,147,248,.05)}
+/* ── iOS-style glass, only once the card is open ───────────────────────────
+   Three planes, each one step brighter than the one behind it, so the eye can
+   tell what sits on what:
+     the CARD   is the frosted sheet  — blurred backdrop, a bright rim
+     the HEADER is raised off it      — a lighter wash + a top specular lip
+     each SECTION is raised again     — its own rounded pane
+   The blur is what makes it glass rather than a grey box: it samples the wave
+   backdrop behind the card, which is also what finally stops the motif art
+   showing through the tables. */
+.ay.open{
+  border-color:rgba(255,255,255,.20);
+  background:linear-gradient(150deg,rgba(146,154,255,.13),rgba(120,130,220,.07) 46%,rgba(255,255,255,.05));
+  backdrop-filter:blur(26px) saturate(165%);
+  -webkit-backdrop-filter:blur(26px) saturate(165%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.30), inset 0 0 0 1px rgba(255,255,255,.05),
+             0 22px 54px rgba(5,8,22,.46);
+}
+/* the specular streak the reference images have running across the sheet */
+.ay.open::after{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(104deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 26%,
+    rgba(255,255,255,0) 68%,rgba(255,255,255,.07) 84%,rgba(255,255,255,0) 100%)}
+.ay{position:relative}
+.ay.open .ay-top{position:relative;z-index:1;
+  background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.018));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+.ay.open .ay-body{position:relative;z-index:1;background:rgba(8,12,28,.16)}
+/* every block in the body is its own pane, which is the "different layer" part */
+.ay.open .ay-sec{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.085);
+  border-radius:12px;padding:14px 16px 16px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+@media (prefers-reduced-transparency:reduce){
+  .ay.open{backdrop-filter:none;-webkit-backdrop-filter:none;background:#131a2e}
+  .ay.open::after{display:none}
+}
 /* the expand target and the row actions are siblings -- a button inside a button
    is invalid, and the actions must not toggle the card */
 .ay-top{display:flex;align-items:stretch}
@@ -1351,16 +1391,49 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   margin:0 0 10px}
 .ay-sec+.ay-sec{margin-top:18px}
 .arc-svg{width:100%;height:auto;display:block;overflow:visible}
+/* 75% and centred: at full width the bars sat so far apart the year stopped
+   reading as one shape. The remaining quarter is left empty on purpose. */
+.ay-mid{width:75%;margin:0 auto}
+.arc-tw{position:relative}
+/* heading row: the title on the left, the category gear on the right, the way
+   Monthly's skeu-h carries its own */
+.ay-bhrow{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  position:relative;z-index:5}
+.ay-bhrow .ay-bh{margin:0}
+.arc-gearwrap{position:relative;flex:none}
+#archiveView .arc-gear{width:26px;height:26px;min-width:26px;padding:0;border-radius:8px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#C6D2E4;
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+#archiveView .arc-gear:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
+#archiveView .arc-popbtn{flex:1;padding:6px 0;border-radius:8px;font-size:11px;font-weight:600;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);color:#C6D2E4;cursor:pointer}
+#archiveView .arc-popbtn:hover{background:rgba(255,255,255,.14)}
+#archiveView .arc-pop input{width:auto;margin:0;box-shadow:none;padding:0;min-height:0}
+.arc-legend{color:rgba(255,255,255,.62)}
+/* the rule every third row in the matrix */
+.ay-cm tbody tr.rule td{border-bottom:1px solid rgba(0,0,0,.5);
+  box-shadow:0 1px 0 rgba(255,255,255,.07)}
+@media(max-width:760px){.arc-tw{overflow-x:auto}.arc-tw .arc-svg{min-width:620px}}
+.arc-tip{position:absolute;transform:translate(-50%,-100%);pointer-events:none;opacity:0;
+  transition:opacity .15s;white-space:nowrap;
+  background:rgba(236,240,255,.14);border:1px solid rgba(255,255,255,.26);
+  backdrop-filter:blur(16px) saturate(170%);-webkit-backdrop-filter:blur(16px) saturate(170%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 26px rgba(5,8,22,.45);
+  color:#F4F7FF;border-radius:10px;padding:7px 11px;font-size:11.5px;line-height:1.35}
+.arc-tip b{color:#fff;font-weight:700}
 .arc-none{color:#7F8CA2;font-size:11.5px;margin:0}
 /* 40 / 40 / 20. The right 20% is deliberately empty and spans BOTH rows, so it
    stays one reserved strip rather than two separate gaps -- whatever goes there
    later gets the full height. Highlights take the 80% underneath. */
-.ay-3{display:grid;grid-template-columns:40fr 40fr 20fr;gap:16px;align-items:start}
+.ay-3{display:grid;grid-template-columns:45fr 27.5fr 27.5fr;gap:0;align-items:stretch}
+/* the same hairline that separates Invested from Moved else in the header */
+.ay-3>*{padding:0 18px}
+.ay-3>*:first-child{padding-left:0}
+.ay-3>*:last-child{padding-right:0}
+.ay-3>*+*{border-left:1px solid rgba(255,255,255,.10)}
 /* align-items:start on the grid collapses an empty cell to 0px however many rows
    it spans, so the reserved strip has to opt out of it explicitly or it is not
    reserving anything. */
-.ay-3 .ay-hold{grid-column:3;grid-row:1/3;align-self:stretch;min-height:100%}
-.ay-3 .ay-wide{grid-column:1/3}
 .ay-3>*{min-width:0}
 .ay-t{width:100%;border-collapse:collapse}
 .ay-t td{padding:4px 2px;font-size:11.5px;border-bottom:1px solid rgba(255,255,255,.05);
@@ -1368,21 +1441,32 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .ay-t td:last-child{text-align:right;font-variant-numeric:tabular-nums}
 .ay-t tr:last-child td{border-bottom:0}
 /* highlights: header + one line, kept short so nine of them do not tower */
-.ay-hl{display:flex;flex-direction:column;gap:7px;margin:0;padding:0}
-.ay-hl li{list-style:none}
-.ay-hl .h{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--arc)}
-.ay-hl .l{font-size:11px;line-height:1.4;color:#AEBACB}
-.ay-hl .first .h{color:#4ADE80}
+.ay-hl{display:flex;flex-direction:column;gap:5px;margin:0;padding:0}
+/* each point printed ON a pane, the way the reference image raises its pill */
+.ay-hl li{list-style:none;background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:6px 10px 7px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16)}
+.ay-hl .h{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;
+  color:rgba(255,255,255,.62);margin-bottom:1px}
+/* the near-white the category tables already use, so a highlight reads as
+   loudly as the figure it is describing */
+.ay-hl .l{font-size:11.5px;line-height:1.35;color:#F2F6FF;font-weight:500}
+.ay-hl .l span{display:block}
+.ay-hl .first{background:rgba(99,204,239,.10);border-color:rgba(99,204,239,.28)}
+.ay-hl .first .h{color:var(--arc-in)}
 /* category-by-month is 14 columns wide; it scrolls sideways inside the card */
 .ay-scroll{overflow-x:auto}
-.ay-cm{border-collapse:collapse;min-width:720px}
+.ay-cm{border-collapse:collapse;min-width:720px;width:100%}
 .ay-cm th,.ay-cm td{padding:3px 6px;font-size:10px;white-space:nowrap;
   border-bottom:1px solid rgba(255,255,255,.05)}
 .ay-cm th{color:#7F8CA2;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
 .ay-cm td{color:#C8D2E0;font-variant-numeric:tabular-nums;text-align:right}
 .ay-cm td.z{color:#55627A}
 .ay-cm td:first-child,.ay-cm th:first-child{text-align:left;color:#DCE6F5;position:sticky;left:0;
-  background:#0d1420}
+  /* tinted to the glass rather than near-black: the column only has to stay
+     opaque while the table is scrolled sideways, and a dark band under the
+     category names read as a highlighted column once they took colour */
+  background:rgba(26,34,62,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 #arcBar .btn{padding:9px 18px}
 @media(max-width:860px){
   .ay-top{flex-wrap:wrap}
@@ -1394,8 +1478,10 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   .ay-acts{padding:0 14px 14px;margin-left:auto}
   .ay-yr{font-size:48px}
 }
-@media(max-width:760px){.ay-3{grid-template-columns:1fr}.ay-3 .ay-hold{display:none}
-  .ay-3 .ay-wide{grid-column:1}
+@media(max-width:760px){.ay-3{grid-template-columns:1fr}
+  .ay-3>*{padding:14px 0}
+  .ay-3>*+*{border-left:0;border-top:1px solid rgba(255,255,255,.10)}
+  .ay-mid{width:100%}
   /* the two SVGs keep their aspect ratio, so a 900-wide viewBox squashed into a
      phone makes the month labels unreadable. They scroll instead of shrinking. */
   .ay-scroll .arc-svg{min-width:560px}}
@@ -3128,14 +3214,10 @@ select{color-scheme:dark}
 
   <!-- FINANCE ARCHIVES VIEW -->
   <div id="archiveView" style="display:none">
-    <section class="panel cash" style="margin-bottom:12px">
-      <h3>Archives</h3>
-      <p class="note" style="margin:0">A year is archived when it closes. From <b style="color:#DCE6F5">20 December</b> the current year appears here as a preview, and is sealed on the 31st. Yearly and Monthly are merged, with nothing counted twice.</p>
-    </section>
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-01</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-01B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -3913,15 +3995,12 @@ function arcSnapshot(year){
       byCat: (typeof meMonthlyByCat==='function') ? meMonthlyByCat(String(year)) : {} };
   } finally { state.yfYear=keep }
 }
+/* Seals THIS year, with one press and no question. Older years are not
+   unreachable as a result -- arcAutoSeal() below sweeps up every past year the
+   ledger holds that has never been archived, which covers both the 1 January
+   rollover and a backfill of years entered before Archives existed. */
 function arcAddYear(){
-  /* Asks which year. Hardcoding "this year" would make every closed year before
-     today unreachable, and the ledger usually holds several. The current year is
-     the default because that is the common press. */
-  const now=new Date().getFullYear();
-  const raw=prompt('Archive which year?', String(now));
-  if(raw===null) return;
-  const year=parseInt(String(raw).replace(/[^0-9]/g,''),10);
-  if(!(year>=1970 && year<=now+1)){ toast('That is not a year Sparta holds'); return }
+  const year=new Date().getFullYear();
   const prior=state.archives.find(a=>a.year===year);
   if(prior && !confirm(year+' is already archived.\n\nReplace it with the current figures?')) return;
   const rec=arcSnapshot(year);
@@ -3929,6 +4008,57 @@ function arcAddYear(){
   else state.archives.push(rec);
   normalizeArchives(); arcPersist(); renderArchives();
   toast(prior ? year+' re-archived from the current ledger' : year+' archived — '+rec.entries+' entries');
+}
+/* ---------- the year rollover ----------
+   Sparta is a static file: its code runs only while a tab is open, so "archive
+   it on 31 December" cannot mean a timer. It means THIS -- on every load, look
+   for past years the ledger holds that have never been sealed, and seal them.
+   Opening the app on 2 January seals the year that just ended; opening it for
+   the first time in March still seals it, and sweeps up 2024 and 2025 besides.
+
+   Nothing is deleted. Yearly and Monthly are already scoped to state.yfYear,
+   which is read fresh from the clock at load, so 1 January shows an empty year
+   without touching a single row -- and the Yearly tab's year selector can still
+   walk back into 2026. An archive is a COPY, not a move. */
+function arcYearsWithData(){
+  const seen=new Set();
+  (state.yf.txns||[]).forEach(t=>{ if(t.date) seen.add(parseInt(t.date.slice(0,4),10)) });
+  Object.keys(state.yf.start||{}).forEach(y=>{ const n=parseInt(y,10); if(n) seen.add(n) });
+  return [...seen].filter(y=>y>1970).sort((a,b)=>a-b);
+}
+function arcAutoSeal(){
+  const now=new Date().getFullYear();
+  let changed=0;
+  arcYearsWithData().filter(y=>y<now).forEach(y=>{
+    const prior=state.archives.find(a=>a.year===y);
+    // a SEALED record is final, and so is one its figures were corrected by
+    // hand; only a provisional preview of a year that has since ended is
+    // re-taken, because a preview was never claiming to be the last word
+    if(prior && (prior.sealed || prior.edited)) return;
+    const rec=arcSnapshot(y);
+    if(!rec.entries && !rec.stats.start) return;       // an empty year is not an archive
+    if(prior) state.archives[state.archives.indexOf(prior)]=rec;
+    else state.archives.push(rec);
+    changed++;
+  });
+  if(changed){ normalizeArchives(); store.set('sparta.archives',state.archives) }
+  return changed;
+}
+/* The opening balance of a new year is the closing balance of the one before
+   it. Seeded ONLY when this year has no figure of its own -- `in` rather than a
+   falsy test, so a deliberately typed 0 is left alone -- and editable on the
+   Yearly tab afterwards exactly like any other year's. */
+function arcCarryStart(){
+  const now=new Date().getFullYear();
+  if(!state.yf.start) state.yf.start={};
+  if(now in state.yf.start) return false;
+  const prev=state.archives.find(a=>a.year===now-1);
+  const end = prev ? prev.stats.end : (arcYearsWithData().includes(now-1)
+    ? arcSnapshot(now-1).stats.end : null);
+  if(end==null || !isFinite(end)) return false;
+  state.yf.start[now]=Math.round(end*100)/100;
+  store.set('sparta.yf.data',state.yf);
+  return true;
 }
 /* ---------- render ---------- */
 const arcOpen=new Set();
@@ -3938,10 +4068,12 @@ function arcPct(n){
      a number, throwing away the decimal place it had just added. */
   return ((n||0)>=0?'+':'\u2212')+Math.abs(n||0).toFixed(1)+'%';
 }
+/* One line each. Two contributors on one wrapped paragraph meant finding where
+   ABI stopped and POO started mid-sentence; a line apiece is read at a glance. */
 function arcContribLine(c){
   if(!c) return '';
-  return 'ABI put '+arc$(c.abiT)+' into TFSA and '+arc$(c.abiF)+' into FHSA. '+
-         'POO added '+arc$(c.pooT)+' TFSA, '+arc$(c.pooF)+' FHSA.';
+  return '<span>ABI put '+arc$(c.abiT)+' into TFSA and '+arc$(c.abiF)+' into FHSA.</span>'+
+         '<span>POO added '+arc$(c.pooT)+' TFSA, '+arc$(c.pooF)+' FHSA.</span>';
 }
 function arcBars(a){
   const max=Math.max(...a.mInc,...a.mExp,1), H=112, T=14;
@@ -3954,27 +4086,85 @@ function arcBars(a){
   for(let i=0;i<12;i++){
     const x=60+i*70;
     if(a.mInc[i]>0) out+='<rect x="'+x+'" y="'+y(a.mInc[i]).toFixed(1)+'" width="19" height="'+
-      (H-y(a.mInc[i])).toFixed(1)+'" rx="3" fill="var(--yf-inc)" fill-opacity=".85"/>';
+      (H-y(a.mInc[i])).toFixed(1)+'" rx="3" fill="var(--arc-in)" fill-opacity=".92"/>';
     if(a.mExp[i]>0) out+='<rect x="'+(x+21)+'" y="'+y(a.mExp[i]).toFixed(1)+'" width="19" height="'+
-      (H-y(a.mExp[i])).toFixed(1)+'" rx="3" fill="var(--yf-exp)" fill-opacity=".85"/>';
+      (H-y(a.mExp[i])).toFixed(1)+'" rx="3" fill="var(--arc-out)" fill-opacity=".92"/>';
     out+='<text x="'+(x+20)+'" y="130" text-anchor="middle" font-size="9" fill="#7F8CA2">'+
       ARC_MON[i].toUpperCase()+'</text>';
   }
   return out+'</svg>';
 }
+/* Which categories the trend draws. This is a VIEW PREFERENCE, not part of the
+   archive: ticking a box must not rewrite a sealed year, and must not push a new
+   copy of it to the cloud. So it lives in its own device key beside the currency
+   and the tab order, exactly like the quote-link base.
+   With nothing saved it falls back to this archive's four biggest categories,
+   so a card is never blank the first time it is opened. */
+function arcChartCats(a){
+  const by=a.byCat||{}, all=Object.keys(by);
+  const saved=store.get('sparta.arcChartCats',null);
+  if(Array.isArray(saved)) return saved.filter(c=>all.includes(c));
+  return all.slice().sort((x,y)=>
+    by[y].reduce((s,v)=>s+v,0)-by[x].reduce((s,v)=>s+v,0)).slice(0,4);
+}
+function arcSetChartCats(list){ store.set('sparta.arcChartCats',list) }
+/* Monthly's 12-month trend, drawn off the SEALED byCat rather than the live
+   ledger: same geometry, same axis, same dots, same hit targets, same legend
+   and the same gear. One line per chosen category, in that category's colour. */
 function arcTrend(a){
-  // running month-end balance across the year, which is what "trend" means here
-  let run=a.stats.start; const pts=[];
-  for(let i=0;i<12;i++){ run+=(a.mInc[i]||0)-(a.mExp[i]||0); pts.push(run) }
-  const lo=Math.min(a.stats.start,...pts), hi=Math.max(a.stats.start,...pts);
-  const span=(hi-lo)||1, y=v=>100-((v-lo)/span)*78;
-  const d=pts.map((v,i)=>(50+i*70)+','+y(v).toFixed(1)).join(' ');
-  return '<svg viewBox="0 0 900 120" class="arc-svg" aria-label="Month-end balance across the year">'+
-    '<line x1="40" y1="104" x2="880" y2="104" stroke="rgba(255,255,255,.14)"/>'+
-    '<polyline fill="none" stroke="var(--arc)" stroke-width="2.4" stroke-linecap="round" '+
-    'stroke-linejoin="round" points="'+d+'"/>'+
-    ARC_MON.map((m,i)=>'<text x="'+(50+i*70)+'" y="117" text-anchor="middle" font-size="9" '+
-      'fill="#7F8CA2">'+m+'</text>').join('')+'</svg>';
+  const by=a.byCat||{}, cats=Object.keys(by);
+  const chosen=arcChartCats(a).filter(c=>by[c]);
+  const W=1100,H=260,L=68,R=16,T=18,B=34;
+  let peak=0; chosen.forEach(c=>by[c].forEach(v=>{ if(v>peak) peak=v }));
+  let top=500; while(peak>top) top*=2;
+  const px=i=>L+i*(W-L-R)/11;
+  const py=v=>H-B-(v/top)*(H-T-B);
+  let grid='',ylab='';
+  [0,top/2,top].forEach(v=>{ const y=py(v);
+    grid+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="rgba(255,255,255,.08)"/>';
+    ylab+='<text x="'+(L-10)+'" y="'+(y+4)+'" text-anchor="end" font-size="11.5" '+
+      'fill="rgba(255,255,255,.55)">$'+(v>=1000?(v/1000)+'k':v)+'</text>';
+  });
+  const xlab=ARC_MON.map((m,i)=>'<text x="'+px(i).toFixed(1)+'" y="'+(H-B+22)+
+    '" text-anchor="middle" font-size="11" font-weight="600" '+
+    'fill="rgba(255,255,255,.55)">'+m+'</text>').join('');
+  let paths='',dots='';
+  chosen.forEach(c=>{
+    const col=meColor(c), arr=by[c];
+    paths+='<path d="'+arr.map((v,i)=>(i?'L':'M')+px(i).toFixed(1)+' '+py(v).toFixed(1)).join(' ')+
+      '" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    arr.forEach((v,i)=>{
+      dots+='<circle cx="'+px(i).toFixed(1)+'" cy="'+py(v).toFixed(1)+'" r="3.5" fill="'+col+
+        '" stroke="#141C33" stroke-width="1.5"/>'+
+        '<circle class="archit" cx="'+px(i).toFixed(1)+'" cy="'+py(v).toFixed(1)+'" r="13" '+
+        'fill="transparent" style="pointer-events:all;cursor:pointer" data-c="'+arcEsc(c)+
+        '" data-m="'+i+'" data-v="'+v+'" data-col="'+col+'"/>';
+    });
+  });
+  const gear='<span class="arc-gearwrap">'+
+    '<button class="arc-gear" type="button" data-act="gear" title="Choose categories">⚙</button>'+
+    '<div class="skeu-pop arc-pop">'+
+      '<div class="skeu-label" style="margin-bottom:8px">SHOW CATEGORIES</div>'+
+      '<div class="me-poplist arc-poplist">'+ (cats.length?cats.map(c=>
+        '<label><input type="checkbox" data-arccat="'+arcEsc(c)+'"'+(chosen.includes(c)?' checked':'')+'>'+
+        '<span class="dot" style="background:'+meColor(c)+';color:'+meColor(c)+'"></span>'+arcEsc(c)+'</label>'
+      ).join(''):'<span style="font-size:11.5px;color:#93A2B8">No Monthly categories in this year</span>')+'</div>'+
+      '<div class="duo" style="margin-top:10px">'+
+        '<button class="arc-popbtn" type="button" data-act="popall">All</button>'+
+        '<button class="arc-popbtn" type="button" data-act="popnone">None</button>'+
+      '</div></div></span>';
+  const legend='<div class="me-legend arc-legend">'+(chosen.length
+    ? chosen.map(c=>'<span><i style="background:'+meColor(c)+'"></i>'+arcEsc(c)+'</span>').join('')
+    : '<span style="color:#7F8C9C">No categories selected</span>')+'</div>';
+  return { gear, html:'<div class="arc-tw"><svg viewBox="0 0 '+W+' '+H+'" class="arc-svg" '+
+    'preserveAspectRatio="xMidYMid meet" aria-label="Monthly spending by category">'+
+    grid+ylab+
+    '<line x1="'+L+'" y1="'+T+'" x2="'+L+'" y2="'+(H-B)+'" stroke="rgba(255,255,255,.14)"/>'+
+    '<line x1="'+L+'" y1="'+(H-B)+'" x2="'+(W-R)+'" y2="'+(H-B)+'" stroke="rgba(255,255,255,.14)"/>'+
+    paths+dots+xlab+
+    (chosen.length?'':'<text x="'+(W/2)+'" y="'+(H/2)+'" text-anchor="middle" font-size="13" '+
+      'fill="rgba(255,255,255,.42)">No data — pick categories with the gear</text>')+
+    '</svg><div class="ctip arc-tip"></div></div>'+legend };
 }
 function arcTable(rows){
   if(!rows.length) return '<p class="arc-none">Nothing recorded.</p>';
@@ -3986,9 +4176,14 @@ function arcMatrix(byCat){
     byCat[b].reduce((s,v)=>s+v,0)-byCat[a].reduce((s,v)=>s+v,0));
   if(!cats.length) return '<p class="arc-none">No Monthly expenses recorded for this year.</p>';
   const head='<tr><th>Category</th>'+ARC_MON.map(m=>'<th>'+m.toUpperCase()+'</th>').join('')+'<th>Total</th></tr>';
-  const body=cats.map(c=>{
+  const body=cats.map((c,i)=>{
     const a=byCat[c], tot=a.reduce((s,v)=>s+v,0);
-    return '<tr><td>'+arcEsc(c)+'</td>'+a.map(v=>v>0?'<td>'+arc$(v)+'</td>':'<td class="z">–</td>').join('')+
+    // the same colour the trend draws this category in, so a row and its line
+    // are the same thing on the page; and a rule every third row, because
+    // thirteen columns of figures lose their row without one
+    return '<tr'+((i+1)%3===0?' class="rule"':'')+'><td style="color:'+meColor(c)+'">'+
+      arcEsc(c)+'</td>'+
+      a.map(v=>v>0?'<td>'+arc$(v)+'</td>':'<td class="z">–</td>').join('')+
       '<td>'+arc$(tot)+'</td></tr>';
   }).join('');
   return '<div class="ay-scroll"><table class="ay-cm"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
@@ -3998,21 +4193,21 @@ function arcCardHTML(a){
   const hl=(a.highlights||[]);
   const contrib=arcContribLine(a.contrib);
   const pts=(contrib?['<li class="first"><div class="h">Contributions</div><div class="l">'+
-      arcEsc(contrib)+'</div></li>']:[])
+      contrib+'</div></li>']:[])
     .concat(hl.map(h=>'<li><div class="h">'+arcEsc(h.title)+'</div><div class="l">'+arcEsc(h.line)+'</div></li>'))
     .join('');
+  const trend = open ? arcTrend(a) : null;
   const body = !open ? '' :
     '<div class="ay-body">'+
       '<div class="ay-sec"><p class="ay-bh">Month by month</p>'+
-        '<div class="ay-scroll">'+arcBars(a)+'</div></div>'+
+        '<div class="ay-mid"><div class="ay-scroll">'+arcBars(a)+'</div></div></div>'+
       '<div class="ay-sec"><div class="ay-3">'+
+        '<div><p class="ay-bh">Highlights</p><ul class="ay-hl">'+pts+'</ul></div>'+
         '<div><p class="ay-bh">Expenses</p>'+arcTable(a.exp||[])+'</div>'+
         '<div><p class="ay-bh">Income</p>'+arcTable(a.inc||[])+'</div>'+
-        '<div class="ay-hold"></div>'+
-        '<div class="ay-wide"><p class="ay-bh">Highlights</p><ul class="ay-hl">'+pts+'</ul></div>'+
       '</div></div>'+
-      '<div class="ay-sec"><p class="ay-bh">12-month trend</p>'+
-        '<div class="ay-scroll">'+arcTrend(a)+'</div></div>'+
+      '<div class="ay-sec"><div class="ay-bhrow"><p class="ay-bh">12-month trend</p>'+
+        trend.gear+'</div>'+trend.html+'</div>'+
       '<div class="ay-sec"><p class="ay-bh">Category by month · Monthly</p>'+arcMatrix(a.byCat)+'</div>'+
     '</div>';
   const meta=a.sealed ? 'Sealed · <b>'+(a.entries||0).toLocaleString('en-CA')+' entries</b>'
@@ -4051,6 +4246,17 @@ function arcCardHTML(a){
       '</div>'+
     '</div>'+body+'</div>';
 }
+/* Redraw one card's trend in place. renderArchives() would rebuild every card,
+   which closes the popover mid-click and scrolls the page out from under it. */
+function arcRedrawTrend(card,rec){
+  const sec=[...card.querySelectorAll('.ay-sec')]
+    .find(x=>x.querySelector('.ay-bh') && /12-month trend/i.test(x.querySelector('.ay-bh').textContent));
+  if(!sec) return;
+  const open=!!sec.querySelector('.arc-pop.open');
+  const t=arcTrend(rec);
+  sec.innerHTML='<div class="ay-bhrow"><p class="ay-bh">12-month trend</p>'+t.gear+'</div>'+t.html;
+  if(open) sec.querySelector('.arc-pop').classList.add('open');
+}
 function renderArchives(){
   const box=$('arcList'); if(!box) return;
   normalizeArchives();
@@ -4065,12 +4271,58 @@ function renderArchives(){
 function arcBind(){
   const box=$('arcList'); if(!box||box.dataset.bound) return;
   box.dataset.bound='1';
+  /* Trend hover, delegated like everything else here: the charts are rebuilt on
+     every render, so a listener per dot would die with them and re-binding would
+     stack up. pointermove covers mouse and touch in one. */
+  const hideTips=()=>box.querySelectorAll('.arc-tip').forEach(t=>t.style.opacity='0');
+  box.addEventListener('pointerover',e=>{
+    const hit=e.target.closest('.archit'); if(!hit) return;
+    const svg=hit.ownerSVGElement, wrap=svg.parentElement, tip=wrap.querySelector('.arc-tip');
+    if(!tip) return;
+    const r=svg.getBoundingClientRect(), wr=wrap.getBoundingClientRect();
+    const vb=svg.viewBox.baseVal;
+    tip.innerHTML='<b>'+ARC_MON[+hit.dataset.m]+'</b><br>'+arc$(+hit.dataset.v);
+    tip.style.left=(r.left+(+hit.getAttribute('cx')/vb.width)*r.width-wr.left)+'px';
+    tip.style.top=(r.top+(+hit.getAttribute('cy')/vb.height)*r.height-wr.top-12)+'px';
+    tip.style.opacity='1';
+  });
+  box.addEventListener('pointerout',e=>{ if(e.target.closest('.archit')) hideTips() });
+  // ticking a category redraws ONLY the chart, so the popover stays open and the
+  // card does not jump back to the top under the cursor
+  box.addEventListener('change',e=>{
+    const cb=e.target.closest('[data-arccat]'); if(!cb) return;
+    const card=cb.closest('.ay'); if(!card) return;
+    const rec=state.archives.find(a=>a.id===card.dataset.id); if(!rec) return;
+    const list=[...cb.closest('.arc-poplist').querySelectorAll('[data-arccat]')]
+      .filter(x=>x.checked).map(x=>x.dataset.arccat);
+    arcSetChartCats(list);
+    arcRedrawTrend(card,rec);
+  });
+  // close an open popover on an outside click
+  document.addEventListener('click',e=>{
+    if(e.target.closest('.arc-gearwrap')) return;
+    box.querySelectorAll('.arc-pop.open').forEach(p=>p.classList.remove('open'));
+  });
   box.addEventListener('click',e=>{
     const btn=e.target.closest('[data-act]'); if(!btn) return;
     const card=btn.closest('.ay'); if(!card) return;
     const id=card.dataset.id, rec=state.archives.find(a=>a.id===id);
     if(!rec) return;
     const act=btn.dataset.act;
+    if(act==='gear'){
+      const pop=btn.parentElement.querySelector('.arc-pop');
+      const was=pop.classList.contains('open');
+      box.querySelectorAll('.arc-pop.open').forEach(p=>p.classList.remove('open'));
+      if(!was) pop.classList.add('open');
+      return;
+    }
+    if(act==='popall'||act==='popnone'){
+      const pop=btn.closest('.arc-pop');
+      const all=[...pop.querySelectorAll('[data-arccat]')].map(cb=>cb.dataset.arccat);
+      arcSetChartCats(act==='popall'?all:[]);
+      arcRedrawTrend(card,rec);
+      return;
+    }
     if(act==='toggle'){ arcOpen.has(id)?arcOpen.delete(id):arcOpen.add(id); renderArchives(); return }
     if(act==='del'){
       if(!confirm('Delete the '+rec.year+' archive?\n\nThis removes the sealed record. '+
@@ -4092,7 +4344,11 @@ function arcBind(){
         if(!isNaN(n)) st[k]=n;
       }
       st.growth = st.start>0 ? (st.end/st.start-1)*100 : 0;
-      rec.stats=st; arcPersist(); renderArchives();
+      rec.stats=st;
+      /* Once a figure has been corrected by hand, nothing automatic may
+         overwrite it -- arcAutoSeal() checks this before upgrading a preview. */
+      rec.edited=true;
+      arcPersist(); renderArchives();
       toast(rec.year+' figures updated');
     }
   });
@@ -7707,6 +7963,23 @@ if($('plNewSeg')) $('plNewSeg').onclick=()=>{
 renderPlan();
 
 /* ============ Archives: boot ============ */
+/* Order matters: seal first so arcCarryStart() can read last year's End off the
+   record it just wrote, rather than recomputing it. Both are silent no-ops on
+   every load but the first one of a new year. */
+(function arcRollover(){
+  try{
+    normalizeArchives();
+    const sealed=arcAutoSeal();
+    const carried=arcCarryStart();
+    if(sealed||carried){
+      if(typeof renderYF==='function') renderYF();
+      const bits=[];
+      if(sealed) bits.push(sealed===1?'Last year archived':sealed+' years archived');
+      if(carried) bits.push('opening balance carried forward');
+      setTimeout(()=>toast(bits.join(' \u00b7 ')),600);
+    }
+  }catch(e){ }
+})();
 arcBind();
 renderArchives();
 $('arcAddYear').onclick=()=>arcAddYear();
