@@ -34,6 +34,31 @@
   --bg:#071520;
   --glass:rgba(255,255,255,0.055);
   --glass-strong:rgba(255,255,255,0.09);
+  /* ── the type and shape scale ──────────────────────────────────────────
+     An audit across all six tabs found ONE role -- the small uppercase label --
+     implemented twenty-odd times at six sizes with letter-spacing anywhere from
+     .04em to .26em, five corner radii, and five panel paddings. None of that was
+     a decision; it accumulated. These are the values everything snaps to, and
+     anything new belongs on the scale rather than beside it.
+
+     Three label sizes, because there are genuinely three densities: a micro
+     label inside a packed card, the standard one, and the lede above a hero
+     figure. Two letter-spacings: normal caps, and wide for the lede. */
+  --fs-micro:9.5px;  --fs-label:10.5px; --fs-lede:11.5px;
+  /* two heading roles, and only two: the panel title in sentence case, and the
+     uppercase eyebrow. Monthly, Archives and Settings each had their own size
+     and spacing for the SAME role -- 13/.13em, 13/.14em and 11.5/.13em. */
+  --fs-title:15px;   --fs-eyebrow:12.5px;
+  /* four body steps, each with a job. --fs-dense exists because a thirteen
+     column table cannot carry reading-size type without wrapping; it is a
+     deliberate step, not the drift that --fs-body was competing with. */
+  --fs-fine:11px;    --fs-dense:12px;  --fs-body:12.5px;  --fs-input:13.5px;
+  --ls-label:.14em;  --ls-lede:.17em;
+  --fw-label:700;
+  /* panel, card, control. 22/24/26 and 14/16 were the same two shapes drawn
+     slightly differently on each tab. */
+  --r-panel:var(--radius); --r-card:14px; --r-ctl:10px;
+  --pad-panel:22px;
   --stroke:rgba(255,255,255,0.12);
   --stroke-top:rgba(255,255,255,0.28);
   --text:#EAF0FA;
@@ -270,7 +295,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:0px;mar
 .tabbar .seg button{padding:9px 22px;font-size:13.5px;white-space:nowrap}
 .yearbar{display:none;align-items:center;gap:10px}
 .yearbar.show{display:flex}
-.yearbar label{margin:0;font-size:10.5px;letter-spacing:.12em}
+.yearbar label{margin:0;font-size:var(--fs-label);letter-spacing:var(--ls-label)}
 .yearbar select{width:auto;min-width:132px;padding:9px 34px 9px 14px;font-size:13.5px}
 .brand{display:flex;align-items:center;gap:10px}
 .brand .orb { width: 70px; height: 100px;
@@ -285,7 +310,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:0px;mar
   filter: drop-shadow(0 2px 6px rgba(0, 242, 254, 0.6));
 }
 .brand h1{font-family:var(--font-display);font-size:clamp(28px,3.4vw,36px);font-weight:700;letter-spacing:.01em;line-height:1.05}
-.brand small{display:block;color:var(--text-faint);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;margin-top:3px}
+.brand small{display:block;color:var(--text-faint);font-size:var(--fs-lede);letter-spacing:var(--ls-lede);text-transform:uppercase;font-weight:600;margin-top:3px}
 .topctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .pill{
   background:var(--glass);border:1px solid var(--stroke);border-radius:999px;
@@ -352,7 +377,7 @@ button{font-family:var(--font-body);cursor:pointer}
 
 /* ---------- Hero value panel ---------- */
 .hero{padding:26px 28px 18px;position:relative;overflow:hidden}
-.hero .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);font-weight:600;margin-bottom:8px}
+.hero .eyebrow{font-size:var(--fs-lede);letter-spacing:var(--ls-lede);text-transform:uppercase;color:var(--text-faint);font-weight:600;margin-bottom:8px}
 .hero .value{font-family:var(--font-display);font-size:clamp(38px,5.5vw,54px);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1}
 .hero .delta{margin-top:10px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;display:flex;gap:14px;flex-wrap:wrap}
 .up{color:var(--teal)} .down{color:var(--rose)} .flat{color:var(--text-dim)}
@@ -365,8 +390,8 @@ button{font-family:var(--font-body);cursor:pointer}
 .chart-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:13px;text-align:center;padding:0 30px}
 
 /* ---------- Stat / balance cards ---------- */
-.stat{padding:20px 22px}
-.stat .label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:600}
+.stat{padding:var(--pad-panel)}
+.stat .label{font-size:var(--fs-lede);letter-spacing:var(--ls-lede);text-transform:uppercase;color:var(--text-faint);font-weight:600}
 .stat .num{font-family:var(--font-display);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:6px}
 .stat .foot{font-size:12px;color:var(--text-dim);margin-top:4px;font-variant-numeric:tabular-nums}
 .statrow{display:grid;grid-template-columns:1fr 1fr;gap:20px}
@@ -379,7 +404,7 @@ button{font-family:var(--font-body);cursor:pointer}
 
 /* ---------- Cash panel ---------- */
 .cash{padding:22px}
-.cash h3, .holdings h3, .formcard h3{font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:.02em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.cash h3, .holdings h3, .formcard h3{font-family:var(--font-display);font-size:var(--fs-title);font-weight:600;letter-spacing:.02em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
 .cashrow{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
 .cashrow:last-of-type{border-bottom:none}
 .cashrow .n{font-family:var(--font-display);font-variant-numeric:tabular-nums;font-size:17px;font-weight:600}
@@ -422,7 +447,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:.55;margin-left:0}
 input::placeholder,textarea::placeholder{color:var(--text-faint)}
 textarea{resize:vertical;min-height:120px;line-height:1.6;font-variant-numeric:normal}
 select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='rgba(234,240,250,0.5)'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
-label{font-size:11px;color:var(--text-faint);font-weight:600;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:6px}
+label{font-size:var(--fs-label);color:var(--text-faint);font-weight:var(--fw-label);letter-spacing:var(--ls-label);text-transform:uppercase;display:block;margin-bottom:6px}
 .duo{display:flex;gap:10px}
 .duo .btn{flex:1}
 /* Button rows with more actions than a phone can fit (the 5 cloud-sync buttons):
@@ -442,7 +467,7 @@ label{font-size:11px;color:var(--text-faint);font-weight:600;letter-spacing:.08e
 /* ---------- Holdings ---------- */
 .holdings{padding:22px}
 .htable{width:100%;border-collapse:collapse}
-.htable th{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);font-weight:600;text-align:right;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.htable th{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-faint);font-weight:var(--fw-label);text-align:right;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08)}
 .htable th:first-child{text-align:left}
 .htable td{padding:13px 10px;text-align:right;font-size:13.5px;font-variant-numeric:tabular-nums;border-bottom:1px solid rgba(255,255,255,.05)}
 .htable td:first-child{text-align:left}
@@ -478,7 +503,7 @@ label{font-size:11px;color:var(--text-faint);font-weight:600;letter-spacing:.08e
    right-hand fields spilled off-screen with nothing to scroll. */
 .hform>*,.cashform>*{min-width:0}
 .hform input,.hform select,.cashform input,.cashform select{max-width:100%;min-width:0}
-.note{font-size:11.5px;color:var(--text-faint);line-height:1.5;margin-top:12px}
+.note{font-size:var(--fs-body);color:var(--text-faint);line-height:1.55;margin-top:12px}
 .note a{color:var(--teal);text-decoration:none}
 
 /* ---------- Toast ---------- */
@@ -529,7 +554,7 @@ label{font-size:11px;color:var(--text-faint);font-weight:600;letter-spacing:.08e
   align-content:start;max-height:calc(75vh - 36px);overflow-y:auto;
   overscroll-behavior:contain}
 .set-card{background:rgba(255,255,255,.025);border:1px solid var(--stroke);
-  border-radius:16px;padding:14px 16px 15px;min-width:0;
+  border-radius:var(--r-card);padding:14px 16px 15px;min-width:0;
   display:flex;flex-direction:column}
 /* App lock carries one row where its neighbour carries two, so it used to end
    in dead space. Pinning the PIN buttons to the floor fills the card and lines
@@ -678,7 +703,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 
 /* ---------- Collapsible sections ---------- */
 .collapse-btn{display:flex;align-items:center;gap:9px;background:none;border:none;padding:0;
-  color:var(--text);font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:.02em;cursor:pointer}
+  color:var(--text);font-family:var(--font-display);font-size:var(--fs-title);font-weight:600;letter-spacing:.02em;cursor:pointer}
 .collapse-btn .chev{display:inline-block;font-size:18px;line-height:1;color:var(--text-faint);
   transition:transform .25s ease;transform:rotate(0deg)}
 .collapse-btn[aria-expanded="true"] .chev{transform:rotate(90deg);color:var(--teal)}
@@ -717,7 +742,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .yf-two>div{display:flex;flex-direction:column;align-items:center;text-align:center}
 .yf-statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;align-content:center;height:100%}
 .yf-statgrid .cell{display:flex;flex-direction:column;justify-content:center;text-align:center;border-bottom:1px solid rgba(255,255,255,.09);padding:6px 0}
-.yf-statgrid .cell span{color:var(--text-dim);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase}
+.yf-statgrid .cell span{color:var(--text-dim);font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase}
 .yf-statgrid .cell.c-inv{border-bottom-color:rgba(74,222,128,.5)}
 .yf-statgrid .cell.c-inv b{color:var(--yf-c-inv)}
 .yf-statgrid .cell.c-mov{border-bottom-color:rgba(229,89,89,.5)}
@@ -727,11 +752,21 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .yf-statgrid .cell.c-off{border-bottom-color:rgba(217,141,76,.5)}
 .yf-statgrid .cell.c-off b{color:var(--yf-c-off)}
 /* card headings: caps + nature-coded colour */
-#yearlyView h3,#yearlyView .label{text-transform:uppercase;letter-spacing:.1em}
+/* Yearly was the outlier on headings: 15px uppercase where Monthly, Archives
+   and Settings all use the 12.5px eyebrow for the same role. Its .label was a
+   third size again. Both snap to the scale; the colour classes beside them
+   (.yf-h-exp / .yf-h-inc) are untouched, since the colour IS the information. */
+#yearlyView h3{font-size:var(--fs-eyebrow);font-weight:var(--fw-label);
+  text-transform:uppercase;letter-spacing:var(--ls-label)}
+#yearlyView .label{font-size:var(--fs-label);font-weight:var(--fw-label);
+  text-transform:uppercase;letter-spacing:var(--ls-label)}
+/* a drop target is a sentence, not a label, so it opts out of the caps rule the
+   way .kd-text already does -- stated rather than left as a silent override */
+label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .yf-h-exp{color:var(--yf-exp)!important}
 .yf-h-inc{color:var(--yf-inc)!important}
 .yf-h-neutral{color:var(--text)}
-#yearlyView .foot{text-transform:uppercase;letter-spacing:.1em;font-size:10.5px}
+#yearlyView .foot{text-transform:uppercase;letter-spacing:var(--ls-label);font-size:var(--fs-label)}
 /* monthly table emphasis */
 .yf-mtable td.tot{font-weight:800}
 .yf-mtable tr.bold td{font-weight:700}
@@ -870,7 +905,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .yf-hi-stage{display:grid}
 .yf-hi-slide{grid-area:1/1;opacity:0;visibility:hidden;transition:opacity .45s ease}
 .yf-hi-slide.on{opacity:1;visibility:visible}
-.yf-hi-t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:9px}
+.yf-hi-t{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;font-weight:var(--fw-label);margin-bottom:9px}
 .yf-hi-l{font-size:15px;line-height:1.5;font-family:var(--font-display);font-weight:600}
 .yf-hi-dots{display:flex;gap:7px;margin-top:16px}
 .yf-hi-dot{width:7px;height:7px;padding:0;border-radius:50%;border:none;cursor:pointer;
@@ -895,7 +930,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 @media(max-width:560px){.me-cards{grid-template-columns:1fr}}
 
 /* frosted card: translucent fill, heavy blur, bright hairline, soft lift */
-.skeu-panel{position:relative;padding:20px 22px;border-radius:24px;color:var(--sk-ink);
+.skeu-panel{position:relative;padding:var(--pad-panel);border-radius:var(--r-panel);color:var(--sk-ink);
   background:
     radial-gradient(120% 90% at 0% 0%,rgba(255,255,255,.10),transparent 55%),
     radial-gradient(110% 80% at 100% 100%,rgba(120,200,255,.055),transparent 60%),
@@ -939,9 +974,9 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    the popover, which closed it. .skeu-pop's z-index:30 could not help: it is
    scoped inside this header's own stacking context. */
 .skeu-panel>.skeu-h{z-index:5}
-.skeu-h{font-family:var(--font-display);font-size:13px;letter-spacing:.13em;font-weight:700;
+.skeu-h{font-family:var(--font-display);font-size:var(--fs-eyebrow);letter-spacing:var(--ls-label);font-weight:var(--fw-label);
   color:#C6D2E4;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.skeu-label{font-size:10px;letter-spacing:.16em;color:#93A2B8;font-weight:700}
+.skeu-label{font-size:var(--fs-label);letter-spacing:var(--ls-label);color:#93A2B8;font-weight:var(--fw-label)}
 .skeu-sub{font-size:11px;color:#8695AB}
 .skeu-chip{font-size:10px;letter-spacing:.1em;padding:3px 9px;border-radius:999px;
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#B9C6D8;
@@ -958,7 +993,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 /* the reminder that holds the import shut until a bill is chosen */
 .me-impgate{margin:10px 0 0;color:var(--amber);font-weight:600}
 .skeu-btn.is-off{opacity:.45;cursor:not-allowed}
-.me-yfonly{font-size:9px;letter-spacing:.12em;font-weight:700;color:#7C8BA3;
+.me-yfonly{font-size:var(--fs-micro);letter-spacing:var(--ls-label);font-weight:var(--fw-label);color:#7C8BA3;
   border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:3px 8px;white-space:nowrap}
 /* the merged payment line belongs to the bill above it, so it is tinted rather
    than ruled off; the rows behind it are indented one step when expanded */
@@ -972,7 +1007,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   font-variant-numeric:tabular-nums;color:var(--sk-amber);
   text-shadow:0 0 22px rgba(94,234,212,.30)}
 .skeu-readout.sm{font-size:21px;color:var(--sk-ink);text-shadow:none}
-.skeu-inset{margin-top:12px;padding:12px 14px;border-radius:16px;
+.skeu-inset{margin-top:12px;padding:12px 14px;border-radius:var(--r-card);
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.10);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
 /* pill buttons, frosted */
@@ -993,7 +1028,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 #meMonthWrap{gap:10px}
 /* drop target */
 .skeu-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-  padding:24px 14px;border-radius:16px;cursor:pointer;text-align:center;margin:0;
+  padding:24px 14px;border-radius:var(--r-card);cursor:pointer;text-align:center;margin:0;
   text-transform:none;letter-spacing:0;
   background:rgba(255,255,255,.03);
   border:1.5px dashed rgba(255,255,255,.20);transition:border-color .2s,background .2s}
@@ -1037,7 +1072,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 
 
 /* gear popover */
-.skeu-pop{position:absolute;right:0;top:calc(100% + 8px);width:224px;padding:14px;border-radius:16px;
+.skeu-pop{position:absolute;right:0;top:calc(100% + 8px);width:224px;padding:14px;border-radius:var(--r-card);
   display:none;z-index:30;text-align:left;
   background:rgba(16,28,40,.86);
   backdrop-filter:blur(26px) saturate(180%);-webkit-backdrop-filter:blur(26px) saturate(180%);
@@ -1071,7 +1106,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    reads as its own place, and landing on #071520 so the panel meets the page
    rather than sitting on top of it. */
 #planView .plan-skin{
-  position:relative;overflow:hidden;padding:30px 28px;border-radius:26px;
+  position:relative;overflow:hidden;padding:var(--pad-panel);border-radius:var(--r-panel);
   border:1px solid rgba(255,255,255,.12);
   font-family:'Plus Jakarta Sans','Inter',sans-serif;
   /* Translucent, not solid: the waves drifting behind the page show through and
@@ -1089,7 +1124,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .pl-sub{color:rgba(255,255,255,.62);font-size:13.5px;font-weight:500;margin:0 0 18px}
 
 /* ---- Segment: one full-width row closed, expands in place ---- */
-.pl-seg{border:1px solid rgba(94,234,212,.20);border-radius:22px;background:rgba(255,255,255,.075);
+.pl-seg{border:1px solid rgba(94,234,212,.20);border-radius:var(--r-panel);background:rgba(255,255,255,.075);
   backdrop-filter:blur(26px) saturate(150%);-webkit-backdrop-filter:blur(26px) saturate(150%);
   margin-bottom:14px;overflow:hidden;box-shadow:0 10px 34px rgba(0,0,0,.30)}
 .pl-seg.open{background:rgba(255,255,255,.10);border-color:rgba(94,234,212,.34)}
@@ -1100,7 +1135,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px 14px;color:#fff;
   font-size:14.5px;font-weight:700;font-family:'Plus Jakarta Sans','Inter',sans-serif}
 .pl-startwrap{flex:none;display:flex;align-items:center;gap:8px}
-.pl-startwrap>span{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+.pl-startwrap>span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
   color:rgba(255,255,255,.5);font-weight:700}
 .pl-start{width:124px;background:rgba(94,234,212,.13);border:1px solid rgba(94,234,212,.30);
   border-radius:14px;padding:10px 14px;color:#7DE8C0;font-size:13.5px;font-weight:700;text-align:right;
@@ -1132,19 +1167,19 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 @media(max-width:900px){.pl-split{grid-template-columns:1fr}}
 .pl-split>.pl-card:last-child{position:sticky;top:14px}   /* list is the long side */
 .pl-card{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.1);
-  border-radius:20px;padding:18px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-.pl-card h4{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:11px;letter-spacing:.1em;
+  border-radius:var(--r-card);padding:18px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.pl-card h4{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:var(--fs-label);letter-spacing:var(--ls-label);
   text-transform:uppercase;color:rgba(255,255,255,.68);font-weight:700;margin:0 0 12px}
 /* one field per row: at 40% two-up cramps every label */
 .pl-fgrid{display:grid;grid-template-columns:1fr;gap:10px 12px}
-.pl-fgrid label{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+.pl-fgrid label{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
   color:rgba(255,255,255,.55);font-weight:700;display:block;margin-bottom:5px}
 .pl-fgrid input,.pl-fgrid textarea{width:100%;background:rgba(255,255,255,.08);
   border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:12px 14px;color:#fff;font-size:13.5px;
   font-family:'Plus Jakarta Sans','Inter',sans-serif;font-variant-numeric:tabular-nums}
 .pl-fgrid textarea{min-height:56px;resize:vertical;line-height:1.5;font-variant-numeric:normal}
 .pl-addbtn{margin-top:2px;background:linear-gradient(180deg,#5EEAD4,#2FC7AE);border:none;
-  border-radius:16px;padding:14px;color:#052620;font-size:13px;font-weight:800;cursor:pointer;
+  border-radius:var(--r-card);padding:14px;color:#052620;font-size:13px;font-weight:800;cursor:pointer;
   font-family:'Plus Jakarta Sans','Inter',sans-serif;width:100%;
   box-shadow:0 8px 24px rgba(94,234,212,.28)}
 .pl-cancel{margin-top:8px;background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:14px;
@@ -1163,7 +1198,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .pl-listhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
 .pl-rows{display:flex;flex-direction:column;gap:6px}
 .pl-row{display:grid;grid-template-columns:78px 1fr auto auto;gap:12px;align-items:center;
-  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:13px 15px}
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);border-radius:var(--r-card);padding:13px 15px}
 /* A grid item defaults to min-width:auto, so its min-content can push a 1fr
    column past its share. A pasted URL offers no break opportunity, so its
    min-content IS the whole string: the column grew to fit it, the row grew with
@@ -1199,7 +1234,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .pl-act:hover{color:#5EEAD4;border-color:rgba(94,234,212,.45)}
 .pl-act.del:hover{color:#F9A87C;border-color:rgba(249,168,124,.45)}
 .pl-today{display:flex;align-items:center;gap:9px;margin:2px 0}
-.pl-today span{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#5EEAD4;font-weight:700}
+.pl-today span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:#5EEAD4;font-weight:var(--fw-label)}
 .pl-today i{flex:1;height:1px;background:linear-gradient(90deg,rgba(94,234,212,.5),transparent)}
 .pl-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:11px;padding-top:11px;
   border-top:1px solid rgba(255,255,255,.14);font-size:11.5px;color:rgba(255,255,255,.62)}
@@ -1255,7 +1290,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   --hl-info:#7DA8FF; --hl-contrib:#2DD4BF}
 #archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
   border-radius:10px;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:22px 24px}
-#archiveView h3{font-family:var(--font-display);font-size:13px;font-weight:600;letter-spacing:.14em;
+#archiveView h3{font-family:var(--font-display);font-size:var(--fs-eyebrow);font-weight:var(--fw-label);letter-spacing:var(--ls-label);
   text-transform:uppercase;color:var(--arc);margin-bottom:14px}
 #archiveView .note,#archiveView p{color:#8B98AC;font-size:12.5px;line-height:1.65}
 #archiveView .btn,#archiveView button{border-radius:8px;font-size:12.5px;font-weight:600;
@@ -1264,7 +1299,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 #archiveView .btn:hover,#archiveView button:hover{background:rgba(139,147,248,.26)}
 #archiveView .btn.primary{background:linear-gradient(180deg,var(--arc),#6E76E8);color:#0B1020;
   border-color:transparent}
-#archiveView .htable th{color:#7F8CA2;font-size:10.5px;letter-spacing:.13em;
+#archiveView .htable th{color:#7F8CA2;font-size:var(--fs-label);letter-spacing:var(--ls-label);
   border-bottom:1px solid rgba(255,255,255,.10)}
 #archiveView .htable td{border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px}
 #archiveView input,#archiveView select{background:rgba(255,255,255,.04);
@@ -1277,7 +1312,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    numbers line up in columns on the right, and the one figure you actually scan
    a list of years FOR sits apart at the end, full height. */
 .ay-list{display:flex;flex-direction:column;gap:10px}
-.ay{border:1px solid rgba(255,255,255,.09);border-radius:16px;
+.ay{border:1px solid rgba(255,255,255,.09);border-radius:var(--r-card);
   background:rgba(255,255,255,.022);overflow:hidden;
   transition:border-color .18s,background .18s,box-shadow .18s}
 .ay:hover{border-color:rgba(139,147,248,.34);background:rgba(139,147,248,.045)}
@@ -1355,14 +1390,14 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   .ay-yr{mix-blend-mode:normal;background-image:none;color:#EAF0FA;
     -webkit-text-stroke:0;text-shadow:none}
 }
-.ay-meta{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:#7F8CA2;font-weight:600}
+.ay-meta{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;color:#7F8CA2;font-weight:var(--fw-label)}
 .ay-meta b{color:var(--arc);font-weight:700}
 .ay-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 1.2fr;align-items:stretch;
   padding:16px 0}
 .ay-col{display:flex;flex-direction:column;justify-content:center;gap:12px;padding:0 16px;min-width:0}
 .ay-col+.ay-col{border-left:1px solid rgba(255,255,255,.07)}
 .ay-s{display:flex;flex-direction:column;gap:2px;min-width:0}
-.ay-s span{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#7F8CA2;font-weight:700;
+.ay-s span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:#7F8CA2;font-weight:var(--fw-label);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ay-s b{font-size:14.5px;font-weight:700;font-variant-numeric:tabular-nums;color:#DCE6F5;
   white-space:nowrap}
@@ -1377,7 +1412,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .ay-gro em{font-style:normal;font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em;
   font-variant-numeric:tabular-nums;color:#4ADE80}
 .ay-gro em.dn{color:#E55959}
-.ay-gro span{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#7F8CA2;font-weight:700}
+.ay-gro span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:#7F8CA2;font-weight:var(--fw-label)}
 /* chevron + the testing-phase actions, far right, small and quiet.
    #archiveView-scoped because the view's blanket `#archiveView button` rule is
    an ID selector and beats a plain class -- unscoped, these squeeze to 0px. */
@@ -1395,7 +1430,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .ay-body{border-top:1px solid rgba(255,255,255,.10);padding:24px 26px 26px}
 /* one heading style everywhere in the body, one gap under it, one gap between
    sections -- the three measurements the whole layout is built from */
-.ay-bh{font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+.ay-bh{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;
   color:rgba(255,255,255,.58);font-weight:700;margin:0 0 12px}
 .ay-sec+.ay-sec{margin-top:24px;padding-top:24px;
   border-top:1px solid rgba(255,255,255,.075)}
@@ -1455,7 +1490,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .ay-3>*{min-width:0}
 .ay-t{width:100%;border-collapse:collapse}
 .ay-t td{padding:7px 2px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.06);
-  color:#EAF1FC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ay-t td:last-child{text-align:right;font-variant-numeric:tabular-nums;
   font-weight:600;color:#FFFFFF;padding-left:12px}
 .ay-t tr:last-child td{border-bottom:0}
@@ -1470,7 +1505,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .ay-hl{display:flex;flex-direction:column;margin:0;padding:0}
 .ay-hl li{list-style:none;padding:9px 0}
 .ay-hl li+li{border-top:1px solid rgba(255,255,255,.08)}
-.ay-hl .h{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;
+.ay-hl .h{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;font-weight:var(--fw-label);
   margin-bottom:3px;color:var(--hl-info)}
 /* what the card is SAYING drives the colour: an alarm is red, a spending fact
    is amber, good news is green, an observation is blue, contributions teal */
@@ -1479,7 +1514,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .ay-hl .t-good  .h{color:var(--hl-good)}
 .ay-hl .t-info  .h{color:var(--hl-info)}
 .ay-hl .t-contrib .h{color:var(--hl-contrib)}
-.ay-hl .l{font-size:12px;line-height:1.45;color:#EAF1FC;font-weight:500}
+.ay-hl .l{font-size:12px;line-height:1.45;color:var(--text);font-weight:500}
 .ay-hl .l span{display:block}
 .ay-hl .l span+span{margin-top:2px}
 /* category-by-month is 14 columns wide; it scrolls sideways inside the card */
@@ -1487,7 +1522,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .ay-cm{border-collapse:collapse;min-width:720px;width:100%}
 .ay-cm th,.ay-cm td{padding:5px 7px;font-size:10.5px;white-space:nowrap;
   border-bottom:1px solid rgba(255,255,255,.055)}
-.ay-cm th{color:rgba(255,255,255,.52);font-size:8.5px;letter-spacing:.1em;
+.ay-cm th{color:rgba(255,255,255,.52);font-size:var(--fs-micro);letter-spacing:var(--ls-label);
   text-transform:uppercase;font-weight:700;padding-bottom:7px}
 .ay-cm td{color:#E3EAF6;font-variant-numeric:tabular-nums;text-align:right}
 .ay-cm td.z{color:#55627A}
@@ -1525,9 +1560,9 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 /* 15px display type competed with the controls beneath it. A quiet eyebrow makes
    MORE hierarchy, not less: the heading names the card and then gets out of the
    way, leaving the row titles as the loudest thing inside it. */
-.sec-head h3{margin:0;font-family:var(--font-display);font-size:11.5px;font-weight:700;
+.sec-head h3{margin:0;font-family:var(--font-display);font-size:var(--fs-eyebrow);font-weight:var(--fw-label);
   text-transform:uppercase;letter-spacing:.13em;color:var(--text-dim)}
-.sec-badge{font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:700;
+.sec-badge{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;font-weight:var(--fw-label);
   color:var(--text-faint);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:3px 9px}
 .sec-i{flex:none;width:19px;height:19px;padding:0;border-radius:50%;cursor:pointer;
   border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--text-faint);

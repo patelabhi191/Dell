@@ -627,6 +627,44 @@ cannot pass by breaking sync altogether.
 
 ---
 
+## 5a. The design scale — snap to it, do not style beside it
+
+An audit across all six tabs (2026-10-01) found that one role — the small uppercase
+label — had been implemented twenty-odd times at six sizes with letter-spacing from
+.04em to .26em, alongside five corner radii, five panel paddings and five heading specs.
+None of it was a decision; it accumulated. The tokens at the top of `:root` are now the
+only values, and **new work belongs on the scale rather than beside it**.
+
+| role | token | value |
+|---|---|---|
+| micro label (dense cards) | `--fs-micro` | 9.5px / 700 / `--ls-label` |
+| label (standard) | `--fs-label` | 10.5px / 700 / `--ls-label` |
+| lede (above a hero figure) | `--fs-lede` | 11.5px / 600 / `--ls-lede` |
+| panel title (sentence case) | `--fs-title` | 15px / 600 / .02em |
+| panel eyebrow (uppercase) | `--fs-eyebrow` | 12.5px / 700 / `--ls-label` |
+| fine / dense / body / input | `--fs-fine` `--fs-dense` `--fs-body` `--fs-input` | 11 / 12 / 12.5 / 13.5 |
+| panel / card radius | `--r-panel` `--r-card` | `var(--radius)` 22px / 14px |
+| panel padding | `--pad-panel` | 22px |
+
+Three things to know before changing any of it:
+
+- **`--fs-dense` is a deliberate step, not drift.** A thirteen-column table cannot carry
+  reading-size type without wrapping. It is the one place 12px is correct; everything
+  prose-shaped belongs on `--fs-body`.
+- **`--r-panel` aliases the pre-existing `--radius`.** Two tokens for one shape is exactly
+  the duplication the pass removed — do not reintroduce one.
+- **`label.dropzone` / `label.skeu-drop` opt out of the caps rule on purpose**, because a
+  drop target is a sentence. Stated in the stylesheet rather than left as a silent override.
+
+**Yearly was the biggest outlier**: 15px uppercase section headings where Monthly,
+Archives and Settings all used ~12.5 for the identical role, and a third label size again.
+The colour classes beside them (`.yf-h-exp` / `.yf-h-inc`) are untouched — there the colour
+*is* the information.
+
+`tests/audit-design.js` re-runs the audit and prints how many distinct specs are in use per
+role. It is a diagnostic, not a test, so it is not in `run-all.sh`. When a count there
+climbs, something was styled beside the scale.
+
 ## 5. Visual Themes (per tab, deliberately distinct)
 
 ### The Settings drawer is a two-column card grid
