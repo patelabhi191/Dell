@@ -1260,6 +1260,146 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#DCE6F5;box-shadow:none}
 #archiveView .empty{color:#7F8CA2}
 
+/* ---------- Archives: one card per closed year ----------
+   Flat, indigo, hairlines -- the Archives theme, not the glass used elsewhere.
+   Shaped like a travel listing: the destination (the year) owns the left, the
+   numbers line up in columns on the right, and the one figure you actually scan
+   a list of years FOR sits apart at the end, full height. */
+.ay-list{display:flex;flex-direction:column;gap:10px}
+.ay{border:1px solid rgba(255,255,255,.09);border-radius:12px;
+  background:rgba(255,255,255,.022);overflow:hidden;transition:border-color .18s,background .18s}
+.ay:hover{border-color:rgba(139,147,248,.34);background:rgba(139,147,248,.045)}
+.ay.open{border-color:rgba(139,147,248,.42);background:rgba(139,147,248,.05)}
+/* the expand target and the row actions are siblings -- a button inside a button
+   is invalid, and the actions must not toggle the card */
+.ay-top{display:flex;align-items:stretch}
+#archiveView .ay-head{display:grid;grid-template-columns:40% minmax(0,1fr);align-items:stretch;
+  flex:1 1 auto;min-width:0;background:none;border:0;padding:0;cursor:pointer;
+  text-align:left;color:inherit;border-radius:0}
+#archiveView .ay-head:hover{background:none}
+.ay-id{display:flex;flex-direction:column;justify-content:center;gap:4px;
+  padding:22px 22px;min-width:0;position:relative}
+/* the accent rail: travel cards use one to mark the row you are on */
+.ay-id::before{content:'';position:absolute;left:0;top:16px;bottom:16px;width:2px;border-radius:2px;
+  background:var(--arc);opacity:0;transition:opacity .18s}
+.ay:hover .ay-id::before,.ay.open .ay-id::before{opacity:.85}
+/* Glass numerals. A gradient clipped to the glyphs carries the body and the
+   specular roll-off; mix-blend-mode is what makes it "dynamic" -- the fill is
+   recomputed by the compositor per frame against whatever is actually behind
+   the card, with no sampling and no JS. The bevel is a pair of text-shadows:
+   a bright lip above, a dark shoulder below, then a soft drop so the numerals
+   sit ON the card rather than in it.
+   background-image, NOT the `background` shorthand: the shorthand resets every
+   background-* longhand including background-clip, which silently throws away
+   clip:text and paints the gradient across the whole BOX. */
+.ay-yr{font-family:var(--font-display);font-size:62px;font-weight:800;line-height:.9;
+  letter-spacing:-.035em;font-variant-numeric:tabular-nums;
+  color:transparent;
+  -webkit-background-clip:text;background-clip:text;
+  mix-blend-mode:plus-lighter;
+  background-image:linear-gradient(168deg,
+      rgba(226,232,241,.92) 0%, rgba(203,212,225,.70) 26%,
+      rgba(176,187,204,.46) 47%, rgba(218,226,238,.80) 63%,
+      rgba(186,196,212,.52) 82%, rgba(214,222,236,.90) 100%);
+  -webkit-text-stroke:.6px rgba(226,232,241,.20);
+  text-shadow:0 1px 0 rgba(255,255,255,.26), 0 -1px 0 rgba(0,0,0,.30),
+              0 9px 24px rgba(0,0,0,.38);
+}
+@media (prefers-reduced-transparency:reduce){
+  .ay-yr{mix-blend-mode:normal;background-image:none;color:#EAF0FA;
+    -webkit-text-stroke:0;text-shadow:none}
+}
+.ay-meta{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:#7F8CA2;font-weight:600}
+.ay-meta b{color:var(--arc);font-weight:700}
+.ay-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 1.2fr;align-items:stretch;
+  padding:16px 0}
+.ay-col{display:flex;flex-direction:column;justify-content:center;gap:12px;padding:0 16px;min-width:0}
+.ay-col+.ay-col{border-left:1px solid rgba(255,255,255,.07)}
+.ay-s{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ay-s span{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#7F8CA2;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ay-s b{font-size:14.5px;font-weight:700;font-variant-numeric:tabular-nums;color:#DCE6F5;
+  white-space:nowrap}
+/* the same money colours the rest of the app uses, so a figure means the same
+   thing wherever it is read. Start/End are Yearly Finance's amethyst and olive. */
+.ay-s b.sta{color:var(--yf-start)}.ay-s b.end{color:var(--yf-end)}
+.ay-s b.inv{color:#4ADE80}.ay-s b.mov{color:#E55959}
+.ay-s b.sav{color:#06B6D4}.ay-s b.off{color:#D98D4C}
+/* full height, both rows -- it is one figure, not a pair */
+.ay-gro{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;
+  padding:0 18px;border-left:1px solid rgba(255,255,255,.07);min-width:0}
+.ay-gro em{font-style:normal;font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;color:#4ADE80}
+.ay-gro em.dn{color:#E55959}
+.ay-gro span{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#7F8CA2;font-weight:700}
+/* chevron + the testing-phase actions, far right, small and quiet.
+   #archiveView-scoped because the view's blanket `#archiveView button` rule is
+   an ID selector and beats a plain class -- unscoped, these squeeze to 0px. */
+.ay-acts{display:flex;align-items:center;gap:4px;padding:0 14px 0 10px;flex:none}
+#archiveView .ay-act{width:26px;height:26px;min-width:26px;flex:none;border-radius:7px;
+  background:transparent;border:1px solid rgba(255,255,255,.12);color:#7F8CA2;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;padding:0;
+  transition:color .18s,border-color .18s}
+#archiveView .ay-act svg{flex:none}
+#archiveView .ay-act:hover{color:var(--arc);border-color:rgba(139,147,248,.5);background:transparent}
+#archiveView .ay-act.del:hover{color:#E55959;border-color:rgba(229,89,89,.5)}
+.ay-chev{color:#7F8CA2;transition:transform .2s,color .18s;flex:none;margin-right:2px}
+.ay.open .ay-chev{transform:rotate(90deg);color:var(--arc)}
+/* ---------- the expanded body ---------- */
+.ay-body{border-top:1px solid rgba(255,255,255,.08);padding:20px 22px 22px}
+.ay-bh{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#7F8CA2;font-weight:700;
+  margin:0 0 10px}
+.ay-sec+.ay-sec{margin-top:18px}
+.arc-svg{width:100%;height:auto;display:block;overflow:visible}
+.arc-none{color:#7F8CA2;font-size:11.5px;margin:0}
+/* 40 / 40 / 20. The right 20% is deliberately empty and spans BOTH rows, so it
+   stays one reserved strip rather than two separate gaps -- whatever goes there
+   later gets the full height. Highlights take the 80% underneath. */
+.ay-3{display:grid;grid-template-columns:40fr 40fr 20fr;gap:16px;align-items:start}
+/* align-items:start on the grid collapses an empty cell to 0px however many rows
+   it spans, so the reserved strip has to opt out of it explicitly or it is not
+   reserving anything. */
+.ay-3 .ay-hold{grid-column:3;grid-row:1/3;align-self:stretch;min-height:100%}
+.ay-3 .ay-wide{grid-column:1/3}
+.ay-3>*{min-width:0}
+.ay-t{width:100%;border-collapse:collapse}
+.ay-t td{padding:4px 2px;font-size:11.5px;border-bottom:1px solid rgba(255,255,255,.05);
+  color:#DCE6F5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ay-t td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.ay-t tr:last-child td{border-bottom:0}
+/* highlights: header + one line, kept short so nine of them do not tower */
+.ay-hl{display:flex;flex-direction:column;gap:7px;margin:0;padding:0}
+.ay-hl li{list-style:none}
+.ay-hl .h{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--arc)}
+.ay-hl .l{font-size:11px;line-height:1.4;color:#AEBACB}
+.ay-hl .first .h{color:#4ADE80}
+/* category-by-month is 14 columns wide; it scrolls sideways inside the card */
+.ay-scroll{overflow-x:auto}
+.ay-cm{border-collapse:collapse;min-width:720px}
+.ay-cm th,.ay-cm td{padding:3px 6px;font-size:10px;white-space:nowrap;
+  border-bottom:1px solid rgba(255,255,255,.05)}
+.ay-cm th{color:#7F8CA2;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.ay-cm td{color:#C8D2E0;font-variant-numeric:tabular-nums;text-align:right}
+.ay-cm td.z{color:#55627A}
+.ay-cm td:first-child,.ay-cm th:first-child{text-align:left;color:#DCE6F5;position:sticky;left:0;
+  background:#0d1420}
+#arcBar .btn{padding:9px 18px}
+@media(max-width:860px){
+  .ay-top{flex-wrap:wrap}
+  #archiveView .ay-head{grid-template-columns:1fr;flex:1 1 100%}
+  .ay-nums{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 0;padding:0 18px 16px}
+  .ay-col+.ay-col{border-left:0}
+  .ay-gro{align-items:flex-start;border-left:0;padding:14px 16px 0;grid-column:1/-1;
+    border-top:1px solid rgba(255,255,255,.07)}
+  .ay-acts{padding:0 14px 14px;margin-left:auto}
+  .ay-yr{font-size:48px}
+}
+@media(max-width:760px){.ay-3{grid-template-columns:1fr}.ay-3 .ay-hold{display:none}
+  .ay-3 .ay-wide{grid-column:1}
+  /* the two SVGs keep their aspect ratio, so a 900-wide viewBox squashed into a
+     phone makes the month labels unreadable. They scroll instead of shrinking. */
+  .ay-scroll .arc-svg{min-width:560px}}
+
 .taborder-line{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;align-items:center}
 .taborder-line #tabOrderReset{flex:none;white-space:nowrap}
 /* ---- Settings: section heads with a foldaway help note ----
@@ -2191,6 +2331,9 @@ select{color-scheme:dark}
       <label for="meMonthSel">Month</label>
       <select id="meMonthSel"></select>
     </div>
+    <div class="yearbar" id="arcBar">
+      <button class="btn" id="arcAddYear">+ Add year</button>
+    </div>
     <div class="yearbar" id="yfYearWrap">
       <label>Year</label>
       <select id="yfYearSel" style="min-width:96px"></select>
@@ -2985,13 +3128,14 @@ select{color-scheme:dark}
 
   <!-- FINANCE ARCHIVES VIEW -->
   <div id="archiveView" style="display:none">
-    <section class="panel cash">
+    <section class="panel cash" style="margin-bottom:12px">
       <h3>Archives</h3>
-      <p class="note" style="margin-top:0">A read-only archive of past statements, closed positions, and historical snapshots will live here. Placeholder for now; tell me what you'd like archived and I'll build it out.</p>
+      <p class="note" style="margin:0">A year is archived when it closes. From <b style="color:#DCE6F5">20 December</b> the current year appears here as a preview, and is sealed on the 31st. Yearly and Monthly are merged, with nothing counted twice.</p>
     </section>
+    <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-09-30B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-01</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -3180,7 +3324,7 @@ const nsKey = k => (typeof k!=='string' || k.indexOf('sparta.')!==0 || STORE_DEV
    and a regex broad enough to catch them all would also catch the namespaced
    copies it just wrote. Legacy spellings included so a ledger written before the
    dash./contrib. rename is carried over too. */
-const STORE_DATA = ['sparta.dash.holdings','sparta.dash.cash','sparta.dash.history',
+const STORE_DATA = ['sparta.archives','sparta.dash.holdings','sparta.dash.cash','sparta.dash.history',
   'sparta.contrib.entries','sparta.contrib.limitsY','sparta.contrib.yearly','sparta.contrib.cadFixed',
   'sparta.yf.data','sparta.me','sparta.plan','sparta.notes','sparta.updatedAt','sparta.limits',
   'sparta.holdings','sparta.cash','sparta.history','sparta.contribs','sparta.limitsY'];
@@ -3265,6 +3409,7 @@ let state = {
   updatedAt: store.get('sparta.updatedAt', 0),
   bootStamp: store.get('sparta.updatedAt', 0),   // frozen at load; startup persists must not move it
   notes: store.get('sparta.notes', {points:[],text:''}),  // shared Dashboard/Contributions notepad
+  archives: store.get('sparta.archives', []),             // one sealed record per closed year
   plan: store.get('sparta.plan', {segments:[]}),          // Plan tab: forward-looking cash segments
   filter: 'ALL',
   range: '1D'
@@ -3692,6 +3837,267 @@ function removeContrib(id){
   snapshot(); persist(); render();
 }
 
+
+/* ============ Archives ============
+   A sealed copy of one closed year: the figures Yearly showed, the two category
+   tables, the highlight cards, Monthly's category-by-month grid and the trend.
+   SNAPSHOT, not a live view -- the point of an archive is that it still says
+   what it said, however the ledger is edited afterwards. Everything is computed
+   by the SAME functions the live tabs use (yfTxns, yfActual, yfHighlights,
+   meMonthlyByCat), so a sealed year cannot disagree with the year it was taken
+   from. */
+/* Every escaping helper in this file is local to the function that needs one,
+   so Archives carries its own rather than reaching for one that is out of scope.
+   Category names and descriptions are typed by hand, so they are escaped. */
+const arcEsc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const ARC_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function arcPersist(){
+  store.set('sparta.archives',state.archives);
+  touchUpdatedAt();
+  if(typeof fbBooting!=='undefined' && !fbBooting && !fbApplying && !fbAutomated) markUserEdit();
+  cloudSaveDebounced();
+}
+function normalizeArchives(){
+  if(!Array.isArray(state.archives)) state.archives=[];
+  state.archives=state.archives.filter(a=>a&&typeof a==='object'&&a.year);
+  state.archives.forEach(a=>{ if(!a.id) a.id=uid() });
+  // newest first, the way a list of years is read
+  state.archives.sort((a,b)=>b.year-a.year);
+}
+/* Build the record. yfTxns/yfActual/yfPlanned all read state.yfYear, so the year
+   being archived is swapped in and restored rather than duplicating their
+   filters here -- two copies of "which rows belong to this year" is exactly how
+   an archive ends up disagreeing with the tab it came from. */
+function arcSnapshot(year){
+  const keep=state.yfYear;
+  state.yfYear=year;
+  try{
+    const txns=yfTxns();
+    const mInc=Array(12).fill(0), mExp=Array(12).fill(0);
+    txns.forEach(t=>{
+      const m=parseInt((t.date||'').slice(5,7),10)-1;
+      if(m>=0&&m<12){ if(t.type==='income') mInc[m]+=t.amt; else if(!t.allot) mExp[m]+=t.amt; }
+    });
+    const totInc=mInc.reduce((a,b)=>a+b,0), totExp=mExp.reduce((a,b)=>a+b,0);
+    const start=state.yf.start[year]||0, end=start+totInc-totExp, saved=end-start;
+    const invested=yfActual('expense','Investment'), moved=yfActual('expense','Other Bank');
+    const cat=(type)=>{
+      /* The configured list is not the whole story: a row can carry a category
+         that was renamed or removed from the list afterwards, and leaving it
+         out would make the table disagree with the End figure above it. */
+      const used=txns.filter(t=>t.type===type).map(t=>t.cat).filter(Boolean);
+      return [...new Set(yfCats(type).concat(used))]
+        .map(c=>({c,v:yfActual(type,c)}))
+        .filter(r=>r.v!==0).sort((a,b)=>b.v-a.v);
+    };
+    const hl=yfHighlights({mInc,mExp,totInc,totExp,txns,
+      planned:(state.yf.planned||{})[year]||{}, expCats:yfCats('expense')})
+      .map(c=>({title:c.title,line:c.line,tone:c.tone}));
+    /* The contributions line is built here and stored, not derived on render:
+       contributions keep being added after a year is sealed, and an archive
+       that quietly changes is not an archive. */
+    const cb=(acct,who)=>contributedBy(acct,year,who);
+    return { id:uid(), year, sealedAt:Date.now(),
+      sealed: year < new Date().getFullYear(),
+      stats:{start,end,invested,moved,saved,offPaper:saved+invested+moved,
+             growth: start>0 ? (end/start-1)*100 : 0},
+      entries: txns.length,
+      exp:cat('expense'), inc:cat('income'),
+      mInc, mExp,
+      contrib:{ abiT:cb('TFSA','ABI'), abiF:cb('FHSA','ABI'),
+                pooT:cb('TFSA','POO'), pooF:cb('FHSA','POO') },
+      highlights: hl,
+      /* meMonthlyByCat compares key.slice(0,4) against this, so it must be a
+         STRING -- a numeric year matches nothing and the grid comes back empty. */
+      byCat: (typeof meMonthlyByCat==='function') ? meMonthlyByCat(String(year)) : {} };
+  } finally { state.yfYear=keep }
+}
+function arcAddYear(){
+  /* Asks which year. Hardcoding "this year" would make every closed year before
+     today unreachable, and the ledger usually holds several. The current year is
+     the default because that is the common press. */
+  const now=new Date().getFullYear();
+  const raw=prompt('Archive which year?', String(now));
+  if(raw===null) return;
+  const year=parseInt(String(raw).replace(/[^0-9]/g,''),10);
+  if(!(year>=1970 && year<=now+1)){ toast('That is not a year Sparta holds'); return }
+  const prior=state.archives.find(a=>a.year===year);
+  if(prior && !confirm(year+' is already archived.\n\nReplace it with the current figures?')) return;
+  const rec=arcSnapshot(year);
+  if(prior) state.archives[state.archives.indexOf(prior)]=rec;
+  else state.archives.push(rec);
+  normalizeArchives(); arcPersist(); renderArchives();
+  toast(prior ? year+' re-archived from the current ledger' : year+' archived — '+rec.entries+' entries');
+}
+/* ---------- render ---------- */
+const arcOpen=new Set();
+const arc$=n=>(n<0?'−':'')+'$'+Math.abs(Math.round(n)).toLocaleString('en-CA');
+function arcPct(n){
+  /* abs FIRST: toFixed returns a string, and Math.abs on that parses it back to
+     a number, throwing away the decimal place it had just added. */
+  return ((n||0)>=0?'+':'\u2212')+Math.abs(n||0).toFixed(1)+'%';
+}
+function arcContribLine(c){
+  if(!c) return '';
+  return 'ABI put '+arc$(c.abiT)+' into TFSA and '+arc$(c.abiF)+' into FHSA. '+
+         'POO added '+arc$(c.pooT)+' TFSA, '+arc$(c.pooF)+' FHSA.';
+}
+function arcBars(a){
+  const max=Math.max(...a.mInc,...a.mExp,1), H=112, T=14;
+  const y=v=>H-(v/max)*(H-T);
+  let out='<svg viewBox="0 0 900 140" class="arc-svg" aria-label="Income and expenses by month">'+
+    '<line x1="46" y1="'+H+'" x2="890" y2="'+H+'" stroke="rgba(255,255,255,.14)"/>'+
+    '<line x1="46" y1="'+T+'" x2="890" y2="'+T+'" stroke="rgba(255,255,255,.06)"/>'+
+    '<text x="38" y="'+(H+4)+'" text-anchor="end" font-size="9.5" fill="#7F8CA2">$0</text>'+
+    '<text x="38" y="'+(T+8)+'" text-anchor="end" font-size="9.5" fill="#7F8CA2">'+arc$(max)+'</text>';
+  for(let i=0;i<12;i++){
+    const x=60+i*70;
+    if(a.mInc[i]>0) out+='<rect x="'+x+'" y="'+y(a.mInc[i]).toFixed(1)+'" width="19" height="'+
+      (H-y(a.mInc[i])).toFixed(1)+'" rx="3" fill="var(--yf-inc)" fill-opacity=".85"/>';
+    if(a.mExp[i]>0) out+='<rect x="'+(x+21)+'" y="'+y(a.mExp[i]).toFixed(1)+'" width="19" height="'+
+      (H-y(a.mExp[i])).toFixed(1)+'" rx="3" fill="var(--yf-exp)" fill-opacity=".85"/>';
+    out+='<text x="'+(x+20)+'" y="130" text-anchor="middle" font-size="9" fill="#7F8CA2">'+
+      ARC_MON[i].toUpperCase()+'</text>';
+  }
+  return out+'</svg>';
+}
+function arcTrend(a){
+  // running month-end balance across the year, which is what "trend" means here
+  let run=a.stats.start; const pts=[];
+  for(let i=0;i<12;i++){ run+=(a.mInc[i]||0)-(a.mExp[i]||0); pts.push(run) }
+  const lo=Math.min(a.stats.start,...pts), hi=Math.max(a.stats.start,...pts);
+  const span=(hi-lo)||1, y=v=>100-((v-lo)/span)*78;
+  const d=pts.map((v,i)=>(50+i*70)+','+y(v).toFixed(1)).join(' ');
+  return '<svg viewBox="0 0 900 120" class="arc-svg" aria-label="Month-end balance across the year">'+
+    '<line x1="40" y1="104" x2="880" y2="104" stroke="rgba(255,255,255,.14)"/>'+
+    '<polyline fill="none" stroke="var(--arc)" stroke-width="2.4" stroke-linecap="round" '+
+    'stroke-linejoin="round" points="'+d+'"/>'+
+    ARC_MON.map((m,i)=>'<text x="'+(50+i*70)+'" y="117" text-anchor="middle" font-size="9" '+
+      'fill="#7F8CA2">'+m+'</text>').join('')+'</svg>';
+}
+function arcTable(rows){
+  if(!rows.length) return '<p class="arc-none">Nothing recorded.</p>';
+  return '<table class="ay-t"><tbody>'+rows.map(r=>
+    '<tr><td>'+arcEsc(r.c)+'</td><td>'+arc$(r.v)+'</td></tr>').join('')+'</tbody></table>';
+}
+function arcMatrix(byCat){
+  const cats=Object.keys(byCat||{}).sort((a,b)=>
+    byCat[b].reduce((s,v)=>s+v,0)-byCat[a].reduce((s,v)=>s+v,0));
+  if(!cats.length) return '<p class="arc-none">No Monthly expenses recorded for this year.</p>';
+  const head='<tr><th>Category</th>'+ARC_MON.map(m=>'<th>'+m.toUpperCase()+'</th>').join('')+'<th>Total</th></tr>';
+  const body=cats.map(c=>{
+    const a=byCat[c], tot=a.reduce((s,v)=>s+v,0);
+    return '<tr><td>'+arcEsc(c)+'</td>'+a.map(v=>v>0?'<td>'+arc$(v)+'</td>':'<td class="z">–</td>').join('')+
+      '<td>'+arc$(tot)+'</td></tr>';
+  }).join('');
+  return '<div class="ay-scroll"><table class="ay-cm"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
+}
+function arcCardHTML(a){
+  const open=arcOpen.has(a.id), st=a.stats||{};
+  const hl=(a.highlights||[]);
+  const contrib=arcContribLine(a.contrib);
+  const pts=(contrib?['<li class="first"><div class="h">Contributions</div><div class="l">'+
+      arcEsc(contrib)+'</div></li>']:[])
+    .concat(hl.map(h=>'<li><div class="h">'+arcEsc(h.title)+'</div><div class="l">'+arcEsc(h.line)+'</div></li>'))
+    .join('');
+  const body = !open ? '' :
+    '<div class="ay-body">'+
+      '<div class="ay-sec"><p class="ay-bh">Month by month</p>'+
+        '<div class="ay-scroll">'+arcBars(a)+'</div></div>'+
+      '<div class="ay-sec"><div class="ay-3">'+
+        '<div><p class="ay-bh">Expenses</p>'+arcTable(a.exp||[])+'</div>'+
+        '<div><p class="ay-bh">Income</p>'+arcTable(a.inc||[])+'</div>'+
+        '<div class="ay-hold"></div>'+
+        '<div class="ay-wide"><p class="ay-bh">Highlights</p><ul class="ay-hl">'+pts+'</ul></div>'+
+      '</div></div>'+
+      '<div class="ay-sec"><p class="ay-bh">12-month trend</p>'+
+        '<div class="ay-scroll">'+arcTrend(a)+'</div></div>'+
+      '<div class="ay-sec"><p class="ay-bh">Category by month · Monthly</p>'+arcMatrix(a.byCat)+'</div>'+
+    '</div>';
+  const meta=a.sealed ? 'Sealed · <b>'+(a.entries||0).toLocaleString('en-CA')+' entries</b>'
+                      : 'Preview · <b>sealed 31 Dec</b>';
+  const dn=(st.growth||0)<0;
+  return '<div class="ay'+(open?' open':'')+'" data-id="'+a.id+'">'+
+    '<div class="ay-top">'+
+      '<button class="ay-head" type="button" data-act="toggle">'+
+        '<span class="ay-id"><span class="ay-yr">'+a.year+'</span>'+
+          '<span class="ay-meta">'+meta+'</span></span>'+
+        '<span class="ay-nums">'+
+          '<span class="ay-col">'+
+            '<span class="ay-s"><span>Start</span><b class="sta">'+arc$(st.start)+'</b></span>'+
+            '<span class="ay-s"><span>End</span><b class="end">'+arc$(st.end)+'</b></span></span>'+
+          '<span class="ay-col">'+
+            '<span class="ay-s"><span>Invested</span><b class="inv">'+arc$(st.invested)+'</b></span>'+
+            '<span class="ay-s"><span>Saved total</span><b class="sav">'+arc$(st.saved)+'</b></span></span>'+
+          '<span class="ay-col">'+
+            '<span class="ay-s"><span>Moved else</span><b class="mov">'+arc$(st.moved)+'</b></span>'+
+            '<span class="ay-s"><span>Off paper sav</span><b class="off">'+arc$(st.offPaper)+'</b></span></span>'+
+          '<span class="ay-gro"><em'+(dn?' class="dn"':'')+'>'+arcPct(st.growth)+'</em>'+
+            '<span>Savings growth</span></span>'+
+        '</span>'+
+      '</button>'+
+      '<div class="ay-acts">'+
+        '<svg class="ay-chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
+          'stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'+
+        '<button class="ay-act" type="button" data-act="edit" title="Edit values" aria-label="Edit '+a.year+'">'+
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" '+
+          'stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/>'+
+          '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'+
+        '<button class="ay-act del" type="button" data-act="del" title="Delete year" aria-label="Delete '+a.year+'">'+
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" '+
+          'stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/>'+
+          '<path d="M19 6l-1 14H6L5 6"/></svg></button>'+
+      '</div>'+
+    '</div>'+body+'</div>';
+}
+function renderArchives(){
+  const box=$('arcList'); if(!box) return;
+  normalizeArchives();
+  box.innerHTML = state.archives.length
+    ? state.archives.map(arcCardHTML).join('')
+    : '<p class="arc-none" style="padding:18px 2px">No years archived yet — press <b>+ Add year</b> to seal '+
+      new Date().getFullYear()+'.';
+}
+/* One delegated listener on the list, bound once. The cards are rebuilt on every
+   render, so anything bound to a card would die with it and re-binding would
+   stack up -- the same trap the Dashboard chart hit. */
+function arcBind(){
+  const box=$('arcList'); if(!box||box.dataset.bound) return;
+  box.dataset.bound='1';
+  box.addEventListener('click',e=>{
+    const btn=e.target.closest('[data-act]'); if(!btn) return;
+    const card=btn.closest('.ay'); if(!card) return;
+    const id=card.dataset.id, rec=state.archives.find(a=>a.id===id);
+    if(!rec) return;
+    const act=btn.dataset.act;
+    if(act==='toggle'){ arcOpen.has(id)?arcOpen.delete(id):arcOpen.add(id); renderArchives(); return }
+    if(act==='del'){
+      if(!confirm('Delete the '+rec.year+' archive?\n\nThis removes the sealed record. '+
+                  'Your Yearly and Monthly rows are not touched.')) return;
+      state.archives=state.archives.filter(a=>a.id!==id);
+      arcOpen.delete(id); arcPersist(); renderArchives();
+      toast(rec.year+' archive deleted'); return;
+    }
+    if(act==='edit'){
+      /* Testing-phase editing: the six headline figures, which are the ones worth
+         correcting by hand. The tables and highlights stay as sealed. */
+      const f=[['start','Start'],['end','End'],['invested','Invested'],
+               ['moved','Moved else'],['saved','Saved total'],['offPaper','Off paper sav']];
+      const st=Object.assign({},rec.stats);
+      for(const [k,label] of f){
+        const v=prompt(rec.year+' — '+label, String(Math.round(st[k]||0)));
+        if(v===null) return;                       // cancel leaves everything alone
+        const n=parseFloat(String(v).replace(/[^0-9.-]/g,''));
+        if(!isNaN(n)) st[k]=n;
+      }
+      st.growth = st.start>0 ? (st.end/st.start-1)*100 : 0;
+      rec.stats=st; arcPersist(); renderArchives();
+      toast(rec.year+' figures updated');
+    }
+  });
+}
+
 /* ============ quote links ============ */
 /* Where the ↗ beside each holding points. Yahoo by default; overridable from the
    Dashboard because the right site is a matter of taste and of which exchange you
@@ -4077,10 +4483,10 @@ const RESET_CLEAR={
     yfPersist(); mePersist();
   },
   plan(){ state.plan=null; normalizePlan(); planPersist() },
-  /* Archives holds no data yet. The tick is here so the list mirrors the tab bar
-     and so the id is reserved -- when Archives gets a store, this is the only
-     place that has to learn about it. Deliberately a no-op, not an omission. */
-  archive(){}
+  /* The sealed year records. Clearing them does NOT touch the Yearly or Monthly
+     rows they were taken from -- an archive is a copy, so losing it loses the
+     snapshot and nothing else. */
+  archive(){ state.archives=[]; arcPersist(); if(typeof renderArchives==='function') renderArchives() }
 };
 function spartaReset(ids, alsoCloud){
   const picked=RESET_ROWS.filter(r=>ids.indexOf(r.id)>-1);
@@ -4096,6 +4502,7 @@ function spartaReset(ids, alsoCloud){
   if(typeof renderME==='function') renderME();
   if(typeof renderPlan==='function') renderPlan();
   if(typeof renderNotes==='function') renderNotes();
+  if(typeof renderArchives==='function') renderArchives();
   return picked.length;
 }
 function resetPicked(){
@@ -4145,6 +4552,7 @@ $('cashAmt').addEventListener('keydown',e=>{if(e.key==='Enter')moveCash(1)});
 function applyView(view){
   if(view==='yearly'&&typeof renderYF==='function') renderYF();
   if(view==='monthly'&&typeof renderME==='function') renderME();
+  if(view==='archive'&&typeof renderArchives==='function') renderArchives();
   $('viewSeg').querySelectorAll('button').forEach(x=>{
     x.className=x.dataset.view===view?'active all':'';
   });
@@ -4165,6 +4573,7 @@ function applyView(view){
   $('yearBar').classList.toggle('show',contrib);
   $('yfYearWrap').classList.toggle('show',view==='yearly');
   $('meMonthWrap').classList.toggle('show',view==='monthly');
+  $('arcBar').classList.toggle('show',view==='archive');
   // themed backdrops only for the two primary views
   document.body.classList.toggle('dash-view',dash);
   document.body.classList.toggle('contrib-view',contrib);
@@ -4462,6 +4871,7 @@ state.yearly.forEach(r=>{
   if(p.me) state.me=p.me;
   if(p.notes) state.notes=p.notes;
   if(p.plan) state.plan=p.plan;
+  if(Array.isArray(p.archives)) state.archives=p.archives;
   if(p.pin && typeof p.pin==='object'){
     store.set('sparta.pinOn', !!p.pin.on);
     store.set('sparta.pinCode', p.pin.code||null);
@@ -4474,6 +4884,8 @@ state.yearly.forEach(r=>{
     if(typeof renderNotes==='function') renderNotes() }
   if(typeof normalizePlan==='function'){ normalizePlan(); store.set('sparta.plan',state.plan);
     if(typeof renderPlan==='function') renderPlan() }
+  if(typeof normalizeArchives==='function'){ normalizeArchives(); store.set('sparta.archives',state.archives);
+    if(typeof renderArchives==='function') renderArchives() }
   state.updatedAt=p.updatedAt||Date.now();
   state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t).getFullYear(); if(!c.who) c.who='ABI'; });
 // migrate holdings saved under the old "everything in base USD" model to native values
@@ -4582,7 +4994,7 @@ function corePayload(){
   return { pin:{ on:store.get('sparta.pinOn',false), code:store.get('sparta.pinCode',null) },
     holdings:coreHoldings(), cash:state.cash, contribs:state.contribs,
     limits:state.limits, limitsY:state.limitsY, yearly:state.yearly, yf:state.yf, me:state.me,
-    notes:state.notes, plan:state.plan,
+    notes:state.notes, plan:state.plan, archives:state.archives,
     updatedAt:state.updatedAt||Date.now() };
 }
 function encodeHistory(){
@@ -7293,6 +7705,11 @@ if($('plNewSeg')) $('plNewSeg').onclick=()=>{
   if(last) last.querySelector('.pl-segname').focus();
 };
 renderPlan();
+
+/* ============ Archives: boot ============ */
+arcBind();
+renderArchives();
+$('arcAddYear').onclick=()=>arcAddYear();
 
 /* ============ tab order ============ */
 const TAB_DEFAULT=['dash','contrib','yearly','monthly','archive','plan'];

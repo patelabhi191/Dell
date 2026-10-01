@@ -382,6 +382,49 @@ Monthly Expense shares the **ledger** (`state.yf.txns`) but not the **category l
 It has its own fixed `ME_CATS` constant; Yearly's `state.yf.cats.exp` is a separate,
 user-editable list. Neither is ever written to from the other side. See §0 and §6.
 
+### Archives data shape — `state.archives`, `sparta.archives`
+
+One record per sealed year, newest first. A record is a **snapshot**, not a view: it holds
+the figures it was taken with, and the ledger moving underneath it must not change them.
+That is the whole point of the tab, and it is the thing to protect when editing anything
+here.
+
+```js
+{ id, year, sealedAt, sealed,                 // sealed === year < this year
+  stats:{ start, end, invested, moved, saved, offPaper, growth },
+  entries,                                    // how many Yearly rows the year held
+  exp:[{c,v}], inc:[{c,v}],                   // category tables, biggest first
+  mInc:[12], mExp:[12],                       // the month-by-month bars
+  contrib:{ abiT, abiF, pooT, pooF },         // stored, NOT re-derived on render
+  highlights:[{title,line,tone}],             // Yearly's cards, frozen
+  byCat:{ cat:[12] } }                        // Monthly's category grid
+```
+
+**Everything is computed by the functions the live tabs use** — `yfTxns`, `yfActual`,
+`yfCats`, `yfHighlights`, `meMonthlyByCat`, `contributedBy`. `arcSnapshot()` swaps
+`state.yfYear` in a `try/finally` rather than re-implementing "which rows belong to this
+year", because two copies of that filter is exactly how an archive ends up disagreeing with
+the year it came from.
+
+Three things that have already bitten here:
+
+- **`meMonthlyByCat(year)` wants a STRING.** It compares `key.slice(0,4) !== year`, so a
+  numeric year matches nothing and the category grid comes back silently empty.
+- **`yfCats(type)` is the CONFIGURED list, not the categories in use.** A row can carry a
+  name that was renamed or dropped from the list afterwards; building the tables from
+  `yfCats()` alone leaves that money out and the table stops adding up to the End figure
+  above it. `arcSnapshot` unions the configured names with the ones the year's rows
+  actually carry.
+- **The contributions line is built and stored, not derived on render.** Contributions keep
+  being added after a year is sealed, and an archive that quietly changes is not an archive.
+
+`RESET_CLEAR.archive()` empties the records and **does not touch the ledger** they were
+taken from — an archive is a copy, so losing it loses the snapshot and nothing else.
+`archives` rides in `corePayload()` / `applyPayload()`, so a phone sees the same sealed
+years. Rendering is one delegated listener on `#arcList` guarded by `box.dataset.bound`;
+the cards are rebuilt wholesale on every render, so anything bound per-card would both die
+with it and stack up.
+
 ### `normalizeYF()` / `normalizeME()`
 Both are idempotent shape-repair functions. Call them defensively at the top of any new function that reads `state.yf`/`state.me` before the data is guaranteed initialized (e.g. right after a Firebase pull, or in any new Archives function that touches historical transactions).
 
@@ -978,6 +1021,18 @@ These have each caused real, shipped bugs in this project. When making changes, 
    and the drawer came up half-built. A dead `$(id)` is not a dangling no-op, it is a
    boot-stopper. Grep the id before removing its markup; the suite's `no page errors` check
    is what caught it.
+17. **`Math.abs()` on an already-formatted string.** `arcPct` read
+   `const v = n.toFixed(1); return sign + Math.abs(v) + '%'` — `toFixed` returns a string,
+   `Math.abs` parses it back to a number, and the decimal place it had just added was
+   thrown away. Every percentage on the Archives cards printed as `+100%` rather than
+   `+100.0%`, which looks deliberate and is not. Format last: take the absolute value of
+   the number, then `toFixed`.
+18. **A parity check that cannot fail.** The first version of the stacked-listener guard in
+   `test-archives.js` rebound twelve times and then asserted the card ended up toggled.
+   Twelve stacked listeners toggle twelve times and land back where they started — but the
+   binder had already run once at boot, so thirteen fired, the parity came out *right*, and
+   the check passed against a build with the guard deliberately removed. Count the
+   invocations, never the final state, whenever the failure mode is "it ran N times".
 
 ---
 
@@ -987,7 +1042,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fourteen suites, **968 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fifteen suites, **1,045 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.
@@ -1000,12 +1055,14 @@ change, so it is kept green rather than skipped.
 
 ## 10. Known Gaps / Next Steps (as of this handoff)
 
-- **Archives tab is an empty placeholder.** Still the primary target for new work: one
-  `<section class="panel cash">` and a note. No data model, no functions. It does have a
-  wave backdrop and motif set already.
+- **Archives is built** (build 2026-10-01): one card per sealed year, collapsed to a
+  travel-listing row and expanded to the year's full record. See the data shape in §2.
+  Still open on it: sealing is manual (**+ Add year** beside the tab bar) rather than
+  happening on 31 December, the six headline figures are editable by hand because this is
+  a testing phase, and the right 20% of the expanded grid is a reserved empty strip
+  waiting for whatever goes there next.
 - **Plan tab** exists and is built out (segments, dated items, running balance, lowest
   point) — see `tests/test-plan.js` for the behaviour it guarantees.
-- Plausible Archives scope, based on prior conversation: read-only view of closed positions, prior-year Yearly Finance summaries (the year selector was removed from Yearly Finance's main view when it became a static current-year badge — Archives could be where historical years live), or compacted history snapshots.
 - No live Firebase listener (§4) — acceptable per user, don't add without asking.
 - No xlsx import support (CSV only, by design — avoids bundling SheetJS in a single-file app).
 - `spapp.png` is not committed next to the HTML, so the header logo, the PIN screen orb
