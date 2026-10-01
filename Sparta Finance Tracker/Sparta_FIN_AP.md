@@ -661,6 +661,27 @@ Archives and Settings all used ~12.5 for the identical role, and a third label s
 The colour classes beside them (`.yf-h-exp` / `.yf-h-inc`) are untouched — there the colour
 *is* the information.
 
+**Archives was audited separately on the same day**, because a tab can drift inside itself
+even once the global scale is in. It held **22 off-scale font sizes, 24 text colours, 6
+radii and 8 gap values** — and had re-invented five greys and two whites that were all
+approximations of `--text` / `--text-dim` / `--text-faint`. After: **zero off-scale sizes**,
+neutral text on the three tokens, three radii (control 10 / card 14 / the 2px accent rail),
+and gaps on a 4px rhythm — 0 / 4 / 8 / 12.
+
+Two stated exceptions in that tab, both deliberate:
+
+- **`.ay-s` keeps `gap:2px`.** A micro label and the figure it names are one unit; the
+  rhythm's smallest step reads as two separate things.
+- **Amounts are pure `#FFF`**, one step brighter than `--text`. That is emphasis, not drift.
+
+The three display steps — `--fs-figure` 15px, `--fs-display` 30px, `--fs-year` 62px — exist
+because a figure is not body text but still has to come off a scale. Archives previously had
+14.5 / 30 / 62 sitting beside no system at all.
+
+**`var()` resolves in SVG presentation attributes** in this engine — verified by measuring
+computed `fill` on all 29 `<text>` nodes after the fold, since a silent failure there would
+have turned every axis label invisible. Do not assume it; re-measure if the charts change.
+
 `tests/audit-design.js` re-runs the audit and prints how many distinct specs are in use per
 role. It is a diagnostic, not a test, so it is not in `run-all.sh`. When a count there
 climbs, something was styled beside the scale.

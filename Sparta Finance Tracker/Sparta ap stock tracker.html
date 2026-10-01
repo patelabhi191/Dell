@@ -53,6 +53,9 @@
      column table cannot carry reading-size type without wrapping; it is a
      deliberate step, not the drift that --fs-body was competing with. */
   --fs-fine:11px;    --fs-dense:12px;  --fs-body:12.5px;  --fs-input:13.5px;
+  /* and the three display steps. A figure is not body text, but it still has to
+     come off a scale -- Archives had 14.5 / 30 / 62 sitting beside no system. */
+  --fs-figure:15px;  --fs-display:30px; --fs-year:62px;
   --ls-label:.14em;  --ls-lede:.17em;
   --fw-label:700;
   /* panel, card, control. 22/24/26 and 14/16 were the same two shapes drawn
@@ -948,7 +951,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   transition:box-shadow .3s,border-color .3s}
 .skeu-panel:hover{border-color:rgba(255,255,255,.16);
   box-shadow:0 22px 60px rgba(0,0,0,.36),0 2px 8px rgba(0,0,0,.18),
-             inset 0 1px 0 rgba(255,255,255,.58),
+             inset 0 1px 0 var(--text-dim),
              inset 1px 0 0 rgba(255,255,255,.16),
              inset -1px 0 0 rgba(255,255,255,.12),
              inset 0 -1px 0 rgba(255,255,255,.22)}
@@ -957,7 +960,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   padding:1px;
   background:linear-gradient(135deg,rgba(255,255,255,.78) 0%,rgba(190,230,255,.30) 16%,
              rgba(255,255,255,.05) 34%,rgba(255,255,255,0) 52%,
-             rgba(255,255,255,.07) 70%,rgba(200,225,255,.26) 88%,rgba(255,255,255,.52) 100%);
+             rgba(255,255,255,.07) 70%,rgba(200,225,255,.26) 88%,var(--text-dim) 100%);
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
   -webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
   mask-composite:exclude}
@@ -975,7 +978,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
    scoped inside this header's own stacking context. */
 .skeu-panel>.skeu-h{z-index:5}
 .skeu-h{font-family:var(--font-display);font-size:var(--fs-eyebrow);letter-spacing:var(--ls-label);font-weight:var(--fw-label);
-  color:#C6D2E4;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  color:var(--text);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .skeu-label{font-size:var(--fs-label);letter-spacing:var(--ls-label);color:#93A2B8;font-weight:var(--fw-label)}
 .skeu-sub{font-size:11px;color:#8695AB}
 .skeu-chip{font-size:10px;letter-spacing:.1em;padding:3px 9px;border-radius:999px;
@@ -1012,7 +1015,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
 /* pill buttons, frosted */
 .skeu-btn{font-family:inherit;font-size:12.5px;font-weight:600;letter-spacing:.02em;
-  padding:10px 18px;border-radius:999px;cursor:pointer;color:#DCE6F5;
+  padding:10px 18px;border-radius:999px;cursor:pointer;color:var(--text);
   background:rgba(255,255,255,.07);
   backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
   border:1px solid rgba(255,255,255,.16);
@@ -1034,14 +1037,14 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   border:1.5px dashed rgba(255,255,255,.20);transition:border-color .2s,background .2s}
 .skeu-drop:hover,.skeu-drop.over{border-color:rgba(94,234,212,.65);background:rgba(94,234,212,.09)}
 .skeu-drop-icon{font-size:22px;color:var(--sk-amber)}
-.skeu-drop-main{font-size:13.5px;font-weight:600;color:#DCE6F5}
+.skeu-drop-main{font-size:13.5px;font-weight:600;color:var(--text)}
 .skeu-drop-sub{font-size:11.5px;color:#8695AB}
 /* category bars */
 .me-bars{display:flex;flex-direction:column;gap:7px}
 .me-bar-row{display:grid;grid-template-columns:172px 1fr 92px;gap:10px;align-items:center;font-size:12.5px}
 /* colour and casing are set per row in renderME: each name takes its own
    category colour, the same one the 12-month trend draws its line in */
-.me-bar-name{color:#C6D2E4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+.me-bar-name{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-weight:600;letter-spacing:.04em}
 .me-bar-track{height:14px;border-radius:999px;overflow:hidden;
   background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.10)}
@@ -1052,7 +1055,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .me-bar-amt{text-align:right;font-variant-numeric:tabular-nums;color:var(--sk-ink)}
 #monthlyView .htable th{color:#93A2B8;border-bottom:1px solid rgba(255,255,255,.10)}
 #monthlyView .htable td{border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;padding:6px 8px}
-#monthlyView input,#monthlyView select{color:#DCE6F5;
+#monthlyView input,#monthlyView select{color:var(--text);
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
@@ -1081,7 +1084,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .skeu-pop.open{display:block}
 .me-poplist{display:flex;flex-direction:column;gap:2px;max-height:250px;overflow-y:auto}
 .me-poplist label{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:8px;margin:0;
-  font-size:12px;text-transform:none;letter-spacing:0;color:#C6D2E4;cursor:pointer}
+  font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer}
 .me-poplist label:hover{background:rgba(255,255,255,.05)}
 .me-poplist input{width:auto;margin:0;box-shadow:none;padding:0}
 .me-poplist .dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 6px currentColor}
@@ -1121,7 +1124,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 #planView h3{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:23px;
   letter-spacing:-.03em;text-transform:none;color:#fff;margin-bottom:6px}
 #plCount{color:rgba(255,255,255,.55);font-weight:600}
-.pl-sub{color:rgba(255,255,255,.62);font-size:13.5px;font-weight:500;margin:0 0 18px}
+.pl-sub{color:var(--text-dim);font-size:13.5px;font-weight:500;margin:0 0 18px}
 
 /* ---- Segment: one full-width row closed, expands in place ---- */
 .pl-seg{border:1px solid rgba(94,234,212,.20);border-radius:var(--r-panel);background:rgba(255,255,255,.075);
@@ -1215,7 +1218,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .pl-date{text-align:center;line-height:1}
 .pl-day{font-size:16.5px;font-weight:800;color:#fff;white-space:nowrap;letter-spacing:-.02em;
   font-variant-numeric:tabular-nums}
-.pl-yr{display:block;margin-top:3px;font-size:9.5px;font-weight:600;color:rgba(255,255,255,.42);
+.pl-yr{display:block;margin-top:3px;font-size:9.5px;font-weight:600;color:var(--text-faint);
   letter-spacing:.1em}
 .pl-nmrow{display:flex;align-items:center;gap:7px}
 .pl-nm{font-size:14px;color:#fff;font-weight:700;letter-spacing:-.01em;
@@ -1229,7 +1232,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   font-variant-numeric:tabular-nums;margin-top:2px}
 .pl-acts{display:flex;gap:5px}
 .pl-act{width:30px;height:30px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,.15);
-  color:rgba(255,255,255,.42);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  color:var(--text-faint);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
   transition:color .2s,border-color .2s}
 .pl-act:hover{color:#5EEAD4;border-color:rgba(94,234,212,.45)}
 .pl-act.del:hover{color:#F9A87C;border-color:rgba(249,168,124,.45)}
@@ -1237,7 +1240,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .pl-today span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:#5EEAD4;font-weight:var(--fw-label)}
 .pl-today i{flex:1;height:1px;background:linear-gradient(90deg,rgba(94,234,212,.5),transparent)}
 .pl-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:11px;padding-top:11px;
-  border-top:1px solid rgba(255,255,255,.14);font-size:11.5px;color:rgba(255,255,255,.62)}
+  border-top:1px solid rgba(255,255,255,.14);font-size:11.5px;color:var(--text-dim)}
 .pl-foot b{font-size:15px;color:#7DE8C0;font-weight:800;font-variant-numeric:tabular-nums}
 .pl-foot b.low{font-size:12.5px;color:#F9A87C}
 .pl-new{background:rgba(255,255,255,.04);border:1.5px dashed rgba(255,255,255,.24);border-radius:18px;
@@ -1292,26 +1295,26 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   border-radius:10px;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:22px 24px}
 #archiveView h3{font-family:var(--font-display);font-size:var(--fs-eyebrow);font-weight:var(--fw-label);letter-spacing:var(--ls-label);
   text-transform:uppercase;color:var(--arc);margin-bottom:14px}
-#archiveView .note,#archiveView p{color:#8B98AC;font-size:12.5px;line-height:1.65}
+#archiveView .note,#archiveView p{color:var(--text-dim);font-size:12.5px;line-height:1.65}
 #archiveView .btn,#archiveView button{border-radius:8px;font-size:12.5px;font-weight:600;
-  padding:9px 16px;color:#DCE6F5;background:rgba(139,147,248,.14);
+  padding:9px 16px;color:var(--text);background:rgba(139,147,248,.14);
   border:1px solid rgba(139,147,248,.38);box-shadow:none;transition:background .18s}
 #archiveView .btn:hover,#archiveView button:hover{background:rgba(139,147,248,.26)}
 #archiveView .btn.primary{background:linear-gradient(180deg,var(--arc),#6E76E8);color:#0B1020;
   border-color:transparent}
-#archiveView .htable th{color:#7F8CA2;font-size:var(--fs-label);letter-spacing:var(--ls-label);
+#archiveView .htable th{color:var(--text-dim);font-size:var(--fs-label);letter-spacing:var(--ls-label);
   border-bottom:1px solid rgba(255,255,255,.10)}
 #archiveView .htable td{border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px}
 #archiveView input,#archiveView select{background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#DCE6F5;box-shadow:none}
-#archiveView .empty{color:#7F8CA2}
+  border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--text);box-shadow:none}
+#archiveView .empty{color:var(--text-dim)}
 
 /* ---------- Archives: one card per closed year ----------
    Flat, indigo, hairlines -- the Archives theme, not the glass used elsewhere.
    Shaped like a travel listing: the destination (the year) owns the left, the
    numbers line up in columns on the right, and the one figure you actually scan
    a list of years FOR sits apart at the end, full height. */
-.ay-list{display:flex;flex-direction:column;gap:10px}
+.ay-list{display:flex;flex-direction:column;gap:12px}
 .ay{border:1px solid rgba(255,255,255,.09);border-radius:var(--r-card);
   background:rgba(255,255,255,.022);overflow:hidden;
   transition:border-color .18s,background .18s,box-shadow .18s}
@@ -1359,7 +1362,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   text-align:left;color:inherit;border-radius:0}
 #archiveView .ay-head:hover{background:none}
 .ay-id{display:flex;flex-direction:column;justify-content:center;gap:4px;
-  padding:22px 22px;min-width:0;position:relative}
+  padding:var(--pad-panel);min-width:0;position:relative}
 /* the accent rail: travel cards use one to mark the row you are on */
 .ay-id::before{content:'';position:absolute;left:0;top:16px;bottom:16px;width:2px;border-radius:2px;
   background:var(--arc);opacity:0;transition:opacity .18s}
@@ -1373,7 +1376,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
    background-image, NOT the `background` shorthand: the shorthand resets every
    background-* longhand including background-clip, which silently throws away
    clip:text and paints the gradient across the whole BOX. */
-.ay-yr{font-family:var(--font-display);font-size:62px;font-weight:800;line-height:.9;
+.ay-yr{font-family:var(--font-display);font-size:var(--fs-year);font-weight:800;line-height:.9;
   letter-spacing:-.035em;font-variant-numeric:tabular-nums;
   color:transparent;
   -webkit-background-clip:text;background-clip:text;
@@ -1390,16 +1393,19 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   .ay-yr{mix-blend-mode:normal;background-image:none;color:#EAF0FA;
     -webkit-text-stroke:0;text-shadow:none}
 }
-.ay-meta{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;color:#7F8CA2;font-weight:var(--fw-label)}
+.ay-meta{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-dim);font-weight:var(--fw-label)}
 .ay-meta b{color:var(--arc);font-weight:700}
 .ay-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 1.2fr;align-items:stretch;
   padding:16px 0}
-.ay-col{display:flex;flex-direction:column;justify-content:center;gap:12px;padding:0 16px;min-width:0}
+.ay-col{display:flex;flex-direction:column;justify-content:center;gap:12px;padding:0 20px;min-width:0}
 .ay-col+.ay-col{border-left:1px solid rgba(255,255,255,.07)}
+/* 2px, not 4: a micro label and the figure it names are ONE unit, and the
+   rhythm's smallest step reads as two separate things. The one stated
+   exception to the 4px grid in this tab. */
 .ay-s{display:flex;flex-direction:column;gap:2px;min-width:0}
-.ay-s span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:#7F8CA2;font-weight:var(--fw-label);
+.ay-s span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-dim);font-weight:var(--fw-label);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ay-s b{font-size:14.5px;font-weight:700;font-variant-numeric:tabular-nums;color:#DCE6F5;
+.ay-s b{font-size:var(--fs-figure);font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);
   white-space:nowrap}
 /* the same money colours the rest of the app uses, so a figure means the same
    thing wherever it is read. Start/End are Yearly Finance's amethyst and olive. */
@@ -1407,31 +1413,31 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .ay-s b.inv{color:#4ADE80}.ay-s b.mov{color:#E55959}
 .ay-s b.sav{color:#06B6D4}.ay-s b.off{color:#D98D4C}
 /* full height, both rows -- it is one figure, not a pair */
-.ay-gro{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;
-  padding:0 18px;border-left:1px solid rgba(255,255,255,.07);min-width:0}
-.ay-gro em{font-style:normal;font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em;
+.ay-gro{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:4px;
+  padding:0 20px;border-left:1px solid rgba(255,255,255,.07);min-width:0}
+.ay-gro em{font-style:normal;font-size:var(--fs-display);font-weight:800;line-height:1;letter-spacing:-.02em;
   font-variant-numeric:tabular-nums;color:#4ADE80}
 .ay-gro em.dn{color:#E55959}
-.ay-gro span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:#7F8CA2;font-weight:var(--fw-label)}
+.ay-gro span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-dim);font-weight:var(--fw-label)}
 /* chevron + the testing-phase actions, far right, small and quiet.
    #archiveView-scoped because the view's blanket `#archiveView button` rule is
    an ID selector and beats a plain class -- unscoped, these squeeze to 0px. */
-.ay-acts{display:flex;align-items:center;gap:4px;padding:0 14px 0 10px;flex:none}
-#archiveView .ay-act{width:26px;height:26px;min-width:26px;flex:none;border-radius:7px;
-  background:transparent;border:1px solid rgba(255,255,255,.12);color:#7F8CA2;cursor:pointer;
+.ay-acts{display:flex;align-items:center;gap:4px;padding:0 16px 0 12px;flex:none}
+#archiveView .ay-act{width:26px;height:26px;min-width:26px;flex:none;border-radius:var(--r-ctl);
+  background:transparent;border:1px solid rgba(255,255,255,.12);color:var(--text-dim);cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center;padding:0;
   transition:color .18s,border-color .18s}
 #archiveView .ay-act svg{flex:none}
 #archiveView .ay-act:hover{color:var(--arc);border-color:rgba(139,147,248,.5);background:transparent}
 #archiveView .ay-act.del:hover{color:#E55959;border-color:rgba(229,89,89,.5)}
-.ay-chev{color:#7F8CA2;transition:transform .2s,color .18s;flex:none;margin-right:2px}
+.ay-chev{color:var(--text-dim);transition:transform .2s,color .18s;flex:none;margin-right:2px}
 .ay.open .ay-chev{transform:rotate(90deg);color:var(--arc)}
 /* ---------- the expanded body ---------- */
 .ay-body{border-top:1px solid rgba(255,255,255,.10);padding:24px 26px 26px}
 /* one heading style everywhere in the body, one gap under it, one gap between
    sections -- the three measurements the whole layout is built from */
 .ay-bh{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;
-  color:rgba(255,255,255,.58);font-weight:700;margin:0 0 12px}
+  color:var(--text-dim);font-weight:700;margin:0 0 12px}
 .ay-sec+.ay-sec{margin-top:24px;padding-top:24px;
   border-top:1px solid rgba(255,255,255,.075)}
 .arc-svg{width:100%;height:auto;display:block;overflow:visible}
@@ -1441,13 +1447,13 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .arc-tw{position:relative}
 /* heading row: the title on the left, the category gear on the right, the way
    Monthly's skeu-h carries its own */
-.ay-bhrow{display:flex;align-items:center;justify-content:space-between;gap:10px;
+.ay-bhrow{display:flex;align-items:center;justify-content:space-between;gap:12px;
   position:relative;z-index:5}
 .ay-bhrow .ay-bh{margin:0}
 .arc-gearwrap{position:relative;flex:none}
-#archiveView .arc-gear{width:26px;height:26px;min-width:26px;padding:0;border-radius:8px;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#C6D2E4;
-  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+#archiveView .arc-gear{width:26px;height:26px;min-width:26px;padding:0;border-radius:var(--r-ctl);
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:var(--text);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-eyebrow)}
 #archiveView .arc-gear:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
 #archiveView .arc-pop input{width:auto;margin:0;box-shadow:none;padding:0;min-height:0}
 /* the native radio comes through as a heavy white disc against this panel.
@@ -1461,8 +1467,10 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 #archiveView .arc-pop input[type="radio"]:checked{border-color:var(--arc)}
 #archiveView .arc-pop input[type="radio"]:checked::after{content:'';position:absolute;
   inset:2.5px;border-radius:50%;background:var(--arc)}
-#archiveView .arc-poplist label{color:#E3EAF6}
-.arc-legend{color:rgba(255,255,255,.62)}
+#archiveView .arc-poplist label{color:var(--text)}
+/* the legend is Monthly's component; inside Archives it joins the 4px rhythm */
+.arc-legend{color:var(--text-dim);gap:12px;margin-top:12px}
+.arc-legend span{gap:8px}
 /* the rule every third row in the matrix */
 .ay-cm tbody tr.rule td{border-bottom:1px solid rgba(0,0,0,.5);
   box-shadow:0 1px 0 rgba(255,255,255,.07)}
@@ -1474,7 +1482,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 26px rgba(5,8,22,.45);
   color:#F4F7FF;border-radius:10px;padding:7px 11px;font-size:11.5px;line-height:1.35}
 .arc-tip b{color:#fff;font-weight:700}
-.arc-none{color:#7F8CA2;font-size:11.5px;margin:0}
+.arc-none{color:var(--text-dim);font-size:11.5px;margin:0}
 /* 40 / 40 / 20. The right 20% is deliberately empty and spans BOTH rows, so it
    stays one reserved strip rather than two separate gaps -- whatever goes there
    later gets the full height. Highlights take the 80% underneath. */
@@ -1500,7 +1508,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
    cards straight back. Each point is separated by a hairline and marked by the
    colour of its own heading. */
 .ay-hlbox{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.10);
-  border-radius:12px;padding:0 14px;
+  border-radius:var(--r-card);padding:0 14px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 8px 22px rgba(5,8,22,.18)}
 .ay-hl{display:flex;flex-direction:column;margin:0;padding:0}
 .ay-hl li{list-style:none;padding:9px 0}
@@ -1516,17 +1524,17 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .ay-hl .t-contrib .h{color:var(--hl-contrib)}
 .ay-hl .l{font-size:12px;line-height:1.45;color:var(--text);font-weight:500}
 .ay-hl .l span{display:block}
-.ay-hl .l span+span{margin-top:2px}
+.ay-hl .l span+span{margin-top:4px}
 /* category-by-month is 14 columns wide; it scrolls sideways inside the card */
 .ay-scroll{overflow-x:auto}
 .ay-cm{border-collapse:collapse;min-width:720px;width:100%}
 .ay-cm th,.ay-cm td{padding:5px 7px;font-size:10.5px;white-space:nowrap;
   border-bottom:1px solid rgba(255,255,255,.055)}
-.ay-cm th{color:rgba(255,255,255,.52);font-size:var(--fs-micro);letter-spacing:var(--ls-label);
+.ay-cm th{color:var(--text-dim);font-size:var(--fs-micro);letter-spacing:var(--ls-label);
   text-transform:uppercase;font-weight:700;padding-bottom:7px}
-.ay-cm td{color:#E3EAF6;font-variant-numeric:tabular-nums;text-align:right}
-.ay-cm td.z{color:#55627A}
-.ay-cm td:first-child,.ay-cm th:first-child{text-align:left;color:#DCE6F5;position:sticky;left:0;
+.ay-cm td{color:var(--text);font-variant-numeric:tabular-nums;text-align:right}
+.ay-cm td.z{color:var(--text-faint)}
+.ay-cm td:first-child,.ay-cm th:first-child{text-align:left;color:var(--text);position:sticky;left:0;
   /* tinted to the glass rather than near-black: the column only has to stay
      opaque while the table is scrolled sideways, and a dark band under the
      category names read as a highlighted column once they took colour */
@@ -1702,7 +1710,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
    Force a consistent dark palette everywhere, including inside the themed tabs. */
 select option,select optgroup{background-color:#0E1B26;color:#EAF0FA}
 #monthlyView select option{background-color:#101C28;color:#EAF0FA}
-#archiveView select option{background-color:#0D1420;color:#DCE6F5}
+#archiveView select option{background-color:#0D1420;color:var(--text)}
 select option:checked,select option:hover{background-color:#16303f;color:#fff}
 select{color-scheme:dark}
 
@@ -1933,7 +1941,7 @@ select{color-scheme:dark}
 /* the shimmer sweep itself */
 .pin-keys button::after{
   content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-  background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.42) 50%,transparent 65%);
+  background:linear-gradient(115deg,transparent 35%,var(--text-faint) 50%,transparent 65%);
   background-size:280% 100%; background-position:120% 0;
   animation:pinSheen 10.5s ease-in-out infinite;
   animation-delay:.5s;                      /* sweeps just behind the title */
@@ -4158,15 +4166,15 @@ function arcBars(a){
   let out='<svg viewBox="0 0 900 140" class="arc-svg" aria-label="Income and expenses by month">'+
     '<line x1="46" y1="'+H+'" x2="890" y2="'+H+'" stroke="rgba(255,255,255,.14)"/>'+
     '<line x1="46" y1="'+T+'" x2="890" y2="'+T+'" stroke="rgba(255,255,255,.06)"/>'+
-    '<text x="38" y="'+(H+4)+'" text-anchor="end" font-size="9.5" fill="#7F8CA2">$0</text>'+
-    '<text x="38" y="'+(T+8)+'" text-anchor="end" font-size="9.5" fill="#7F8CA2">'+arc$(max)+'</text>';
+    '<text x="38" y="'+(H+4)+'" text-anchor="end" font-size="9.5" fill="var(--text-dim)">$0</text>'+
+    '<text x="38" y="'+(T+8)+'" text-anchor="end" font-size="9.5" fill="var(--text-dim)">'+arc$(max)+'</text>';
   for(let i=0;i<12;i++){
     const x=60+i*70;
     if(a.mInc[i]>0) out+='<rect x="'+x+'" y="'+y(a.mInc[i]).toFixed(1)+'" width="19" height="'+
       (H-y(a.mInc[i])).toFixed(1)+'" rx="3" fill="var(--arc-in)" fill-opacity=".92"/>';
     if(a.mExp[i]>0) out+='<rect x="'+(x+21)+'" y="'+y(a.mExp[i]).toFixed(1)+'" width="19" height="'+
       (H-y(a.mExp[i])).toFixed(1)+'" rx="3" fill="var(--arc-out)" fill-opacity=".92"/>';
-    out+='<text x="'+(x+20)+'" y="130" text-anchor="middle" font-size="9" fill="#7F8CA2">'+
+    out+='<text x="'+(x+20)+'" y="130" text-anchor="middle" font-size="9.5" fill="var(--text-dim)">'+
       ARC_MON[i].toUpperCase()+'</text>';
   }
   return out+'</svg>';
@@ -4207,11 +4215,11 @@ function arcTrend(a){
   [0,top/2,top].forEach(v=>{ const y=py(v);
     grid+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="rgba(255,255,255,.08)"/>';
     ylab+='<text x="'+(L-12)+'" y="'+(y+4)+'" text-anchor="end" font-size="11.5" '+
-      'fill="rgba(255,255,255,.62)">$'+(v>=1000?(v/1000)+'k':v)+'</text>';
+      'fill="var(--text-dim)">$'+(v>=1000?(v/1000)+'k':v)+'</text>';
   });
   const xlab=ARC_MON.map((m,i)=>'<text x="'+px(i).toFixed(1)+'" y="'+(H-B+23)+
     '" text-anchor="middle" font-size="11" font-weight="600" '+
-    'fill="rgba(255,255,255,.62)">'+m+'</text>').join('');
+    'fill="var(--text-dim)">'+m+'</text>').join('');
   let path='',dots='';
   if(arr){
     const col=meColor(pick);
@@ -4247,7 +4255,7 @@ function arcTrend(a){
     '<line x1="'+L+'" y1="'+(H-B)+'" x2="'+(W-R)+'" y2="'+(H-B)+'" stroke="rgba(255,255,255,.14)"/>'+
     path+dots+xlab+
     (arr?'':'<text x="'+(W/2)+'" y="'+(H/2)+'" text-anchor="middle" font-size="13" '+
-      'fill="rgba(255,255,255,.42)">No Monthly spending recorded for this year</text>')+
+      'fill="var(--text-faint)">No Monthly spending recorded for this year</text>')+
     '</svg><div class="ctip arc-tip"></div></div>'+label };
 }
 function arcTable(rows){
