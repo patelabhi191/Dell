@@ -1242,12 +1242,17 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 }
 /* ═════════ Archives — minimal: flat surfaces, thin rules, indigo accent ═════════ */
 #archiveView{--arc:#8B93F8;
-  /* Still blue and orange, but not Yearly's tokens: #38BDF8 and #F97316 are
-     mixed for a flat dark panel and read as stickers on a lit glass one. These
-     are the same two hues lifted in lightness and eased off saturation, so they
-     sit IN the surface. The blue is pushed toward cyan as well, to separate it
-     from the violet the panel is tinted with. */
-  --arc-in:#63CCEF; --arc-out:#FFA863}
+  /* Blue and orange at full chroma. The first pass desaturated them to "sit in"
+     the glass and they went chalky -- on a deep indigo panel a wash reads as
+     dirty, not subtle. These are luminous instead: an electric cyan-blue far
+     enough off the panel's violet to separate at a glance, and an orange hot
+     enough to hold its own beside it.
+     Five highlight tones, mapped by what the card SAYS rather than by its
+     tone field alone: alarm, spending, good news, neutral, and the teal that
+     Contributions already owns. */
+  --arc-in:#35D6FF; --arc-out:#FF8A33;
+  --hl-alarm:#FF6B6B; --hl-spend:#FFA23D; --hl-good:#4ADE80;
+  --hl-info:#7DA8FF; --hl-contrib:#2DD4BF}
 #archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
   border-radius:10px;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:22px 24px}
 #archiveView h3{font-family:var(--font-display);font-size:13px;font-weight:600;letter-spacing:.14em;
@@ -1302,10 +1307,11 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.018));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
 .ay.open .ay-body{position:relative;z-index:1;background:rgba(8,12,28,.16)}
-/* every block in the body is its own pane, which is the "different layer" part */
-.ay.open .ay-sec{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.085);
-  border-radius:12px;padding:14px 16px 16px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+/* ONE sheet, not four. Boxing every block made the body read as a stack of
+   separate cards; the sections are told apart by a hairline and the rhythm of
+   the headings instead. Highlights is the single exception -- it is the one
+   block that is commentary rather than figures, so it keeps a pane of its own. */
+.ay.open .ay-sec{background:none;border:0;border-radius:0;padding:0}
 @media (prefers-reduced-transparency:reduce){
   .ay.open{backdrop-filter:none;-webkit-backdrop-filter:none;background:#131a2e}
   .ay.open::after{display:none}
@@ -1386,10 +1392,13 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .ay-chev{color:#7F8CA2;transition:transform .2s,color .18s;flex:none;margin-right:2px}
 .ay.open .ay-chev{transform:rotate(90deg);color:var(--arc)}
 /* ---------- the expanded body ---------- */
-.ay-body{border-top:1px solid rgba(255,255,255,.08);padding:20px 22px 22px}
-.ay-bh{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#7F8CA2;font-weight:700;
-  margin:0 0 10px}
-.ay-sec+.ay-sec{margin-top:18px}
+.ay-body{border-top:1px solid rgba(255,255,255,.10);padding:24px 26px 26px}
+/* one heading style everywhere in the body, one gap under it, one gap between
+   sections -- the three measurements the whole layout is built from */
+.ay-bh{font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+  color:rgba(255,255,255,.58);font-weight:700;margin:0 0 12px}
+.ay-sec+.ay-sec{margin-top:24px;padding-top:24px;
+  border-top:1px solid rgba(255,255,255,.075)}
 .arc-svg{width:100%;height:auto;display:block;overflow:visible}
 /* 75% and centred: at full width the bars sat so far apart the year stopped
    reading as one shape. The remaining quarter is left empty on purpose. */
@@ -1405,10 +1414,19 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#C6D2E4;
   cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
 #archiveView .arc-gear:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
-#archiveView .arc-popbtn{flex:1;padding:6px 0;border-radius:8px;font-size:11px;font-weight:600;
-  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);color:#C6D2E4;cursor:pointer}
-#archiveView .arc-popbtn:hover{background:rgba(255,255,255,.14)}
 #archiveView .arc-pop input{width:auto;margin:0;box-shadow:none;padding:0;min-height:0}
+/* the native radio comes through as a heavy white disc against this panel.
+   Same size and weight as the colour dot beside it, so the row reads as one
+   control rather than a button next to a swatch. */
+#archiveView .arc-pop input[type="radio"]{-webkit-appearance:none;appearance:none;
+  width:13px;height:13px;flex:none;border-radius:50%;background:transparent;
+  border:1.5px solid rgba(255,255,255,.34);cursor:pointer;position:relative;
+  transition:border-color .15s}
+#archiveView .arc-pop input[type="radio"]:hover{border-color:rgba(255,255,255,.6)}
+#archiveView .arc-pop input[type="radio"]:checked{border-color:var(--arc)}
+#archiveView .arc-pop input[type="radio"]:checked::after{content:'';position:absolute;
+  inset:2.5px;border-radius:50%;background:var(--arc)}
+#archiveView .arc-poplist label{color:#E3EAF6}
 .arc-legend{color:rgba(255,255,255,.62)}
 /* the rule every third row in the matrix */
 .ay-cm tbody tr.rule td{border-bottom:1px solid rgba(0,0,0,.5);
@@ -1427,7 +1445,7 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    later gets the full height. Highlights take the 80% underneath. */
 .ay-3{display:grid;grid-template-columns:45fr 27.5fr 27.5fr;gap:0;align-items:stretch}
 /* the same hairline that separates Invested from Moved else in the header */
-.ay-3>*{padding:0 18px}
+.ay-3>*{padding:0 22px}
 .ay-3>*:first-child{padding-left:0}
 .ay-3>*:last-child{padding-right:0}
 .ay-3>*+*{border-left:1px solid rgba(255,255,255,.10)}
@@ -1436,37 +1454,48 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    reserving anything. */
 .ay-3>*{min-width:0}
 .ay-t{width:100%;border-collapse:collapse}
-.ay-t td{padding:4px 2px;font-size:11.5px;border-bottom:1px solid rgba(255,255,255,.05);
-  color:#DCE6F5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ay-t td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.ay-t td{padding:7px 2px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.06);
+  color:#EAF1FC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ay-t td:last-child{text-align:right;font-variant-numeric:tabular-nums;
+  font-weight:600;color:#FFFFFF;padding-left:12px}
 .ay-t tr:last-child td{border-bottom:0}
 /* highlights: header + one line, kept short so nine of them do not tower */
-.ay-hl{display:flex;flex-direction:column;gap:5px;margin:0;padding:0}
-/* each point printed ON a pane, the way the reference image raises its pill */
-.ay-hl li{list-style:none;background:rgba(255,255,255,.055);
-  border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:6px 10px 7px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.16)}
+/* ONE pane around the whole list rather than one per point: the body is a
+   single sheet now, and fifteen little boxes inside it would put the stack of
+   cards straight back. Each point is separated by a hairline and marked by the
+   colour of its own heading. */
+.ay-hlbox{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.10);
+  border-radius:12px;padding:0 14px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 8px 22px rgba(5,8,22,.18)}
+.ay-hl{display:flex;flex-direction:column;margin:0;padding:0}
+.ay-hl li{list-style:none;padding:9px 0}
+.ay-hl li+li{border-top:1px solid rgba(255,255,255,.08)}
 .ay-hl .h{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;
-  color:rgba(255,255,255,.62);margin-bottom:1px}
-/* the near-white the category tables already use, so a highlight reads as
-   loudly as the figure it is describing */
-.ay-hl .l{font-size:11.5px;line-height:1.35;color:#F2F6FF;font-weight:500}
+  margin-bottom:3px;color:var(--hl-info)}
+/* what the card is SAYING drives the colour: an alarm is red, a spending fact
+   is amber, good news is green, an observation is blue, contributions teal */
+.ay-hl .t-alarm .h{color:var(--hl-alarm)}
+.ay-hl .t-spend .h{color:var(--hl-spend)}
+.ay-hl .t-good  .h{color:var(--hl-good)}
+.ay-hl .t-info  .h{color:var(--hl-info)}
+.ay-hl .t-contrib .h{color:var(--hl-contrib)}
+.ay-hl .l{font-size:12px;line-height:1.45;color:#EAF1FC;font-weight:500}
 .ay-hl .l span{display:block}
-.ay-hl .first{background:rgba(99,204,239,.10);border-color:rgba(99,204,239,.28)}
-.ay-hl .first .h{color:var(--arc-in)}
+.ay-hl .l span+span{margin-top:2px}
 /* category-by-month is 14 columns wide; it scrolls sideways inside the card */
 .ay-scroll{overflow-x:auto}
 .ay-cm{border-collapse:collapse;min-width:720px;width:100%}
-.ay-cm th,.ay-cm td{padding:3px 6px;font-size:10px;white-space:nowrap;
-  border-bottom:1px solid rgba(255,255,255,.05)}
-.ay-cm th{color:#7F8CA2;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
-.ay-cm td{color:#C8D2E0;font-variant-numeric:tabular-nums;text-align:right}
+.ay-cm th,.ay-cm td{padding:5px 7px;font-size:10.5px;white-space:nowrap;
+  border-bottom:1px solid rgba(255,255,255,.055)}
+.ay-cm th{color:rgba(255,255,255,.52);font-size:8.5px;letter-spacing:.1em;
+  text-transform:uppercase;font-weight:700;padding-bottom:7px}
+.ay-cm td{color:#E3EAF6;font-variant-numeric:tabular-nums;text-align:right}
 .ay-cm td.z{color:#55627A}
 .ay-cm td:first-child,.ay-cm th:first-child{text-align:left;color:#DCE6F5;position:sticky;left:0;
   /* tinted to the glass rather than near-black: the column only has to stay
      opaque while the table is scrolled sideways, and a dark band under the
      category names read as a highlighted column once they took colour */
-  background:rgba(26,34,62,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  background:rgba(20,27,52,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 #arcBar .btn{padding:9px 18px}
 @media(max-width:860px){
   .ay-top{flex-wrap:wrap}
@@ -3975,7 +4004,7 @@ function arcSnapshot(year){
     };
     const hl=yfHighlights({mInc,mExp,totInc,totExp,txns,
       planned:(state.yf.planned||{})[year]||{}, expCats:yfCats('expense')})
-      .map(c=>({title:c.title,line:c.line,tone:c.tone}));
+      .map(c=>({key:c.key,title:c.title,line:c.line,tone:c.tone}));
     /* The contributions line is built here and stored, not derived on render:
        contributions keep being added after a year is sealed, and an archive
        that quietly changes is not an archive. */
@@ -4060,6 +4089,19 @@ function arcCarryStart(){
   store.set('sparta.yf.data',state.yf);
   return true;
 }
+/* Which of the five colours a highlight wears. Keyed on what the card actually
+   says, because the tone field cannot tell "Over budget" from "Biggest expense"
+   -- both are 'exp', and only the first one is a warning. Archives sealed before
+   this existed carry no key, so tone is the fallback. */
+const ARC_HL_TONE={
+  deficit:'alarm', over:'alarm', climb:'alarm',           // something needs looking at
+  peakExp:'spend', oddExp:'spend', topCatExp:'spend', bigTx:'spend',
+  peakInc:'good', lowExp:'good', bestSave:'good', under:'good',
+  topCatInc:'good', oddInc:'good',
+  rate:'info', who:'info'
+};
+const arcHlTone=h=>ARC_HL_TONE[h&&h.key] ||
+  (h&&h.tone==='exp'?'spend':h&&h.tone==='inc'?'good':'info');
 /* ---------- render ---------- */
 const arcOpen=new Set();
 const arc$=n=>(n<0?'−':'')+'$'+Math.abs(Math.round(n)).toLocaleString('en-CA');
@@ -4100,71 +4142,78 @@ function arcBars(a){
    and the tab order, exactly like the quote-link base.
    With nothing saved it falls back to this archive's four biggest categories,
    so a card is never blank the first time it is opened. */
-function arcChartCats(a){
+/* ONE category at a time. Four overlapping lines turned the year into a tangle
+   that had to be decoded rather than read; one line answers one question.
+   Groceries by default because it is the line worth watching, falling back to
+   the year's biggest category when this ledger has no such name. */
+const ARC_CHART_DEFAULT='Groceries';
+function arcChartCat(a){
   const by=a.byCat||{}, all=Object.keys(by);
-  const saved=store.get('sparta.arcChartCats',null);
-  if(Array.isArray(saved)) return saved.filter(c=>all.includes(c));
+  const saved=store.get('sparta.arcChartCat',null);
+  if(saved && all.includes(saved)) return saved;
+  if(all.includes(ARC_CHART_DEFAULT)) return ARC_CHART_DEFAULT;
   return all.slice().sort((x,y)=>
-    by[y].reduce((s,v)=>s+v,0)-by[x].reduce((s,v)=>s+v,0)).slice(0,4);
+    by[y].reduce((s,v)=>s+v,0)-by[x].reduce((s,v)=>s+v,0))[0] || null;
 }
-function arcSetChartCats(list){ store.set('sparta.arcChartCats',list) }
+function arcSetChartCat(c){ store.set('sparta.arcChartCat',c) }
 /* Monthly's 12-month trend, drawn off the SEALED byCat rather than the live
-   ledger: same geometry, same axis, same dots, same hit targets, same legend
-   and the same gear. One line per chosen category, in that category's colour. */
+   ledger: same geometry, same axis, same dots, same hit targets, same gear.
+   One line, for the one category chosen in that gear. */
 function arcTrend(a){
-  const by=a.byCat||{}, cats=Object.keys(by);
-  const chosen=arcChartCats(a).filter(c=>by[c]);
-  const W=1100,H=260,L=68,R=16,T=18,B=34;
-  let peak=0; chosen.forEach(c=>by[c].forEach(v=>{ if(v>peak) peak=v }));
+  const by=a.byCat||{}, cats=Object.keys(by).sort((x,y)=>
+    by[y].reduce((s,v)=>s+v,0)-by[x].reduce((s,v)=>s+v,0));
+  const pick=arcChartCat(a), arr=pick?by[pick]:null;
+  const W=1100,H=250,L=72,R=18,T=18,B=34;
+  let peak=0; if(arr) arr.forEach(v=>{ if(v>peak) peak=v });
   let top=500; while(peak>top) top*=2;
   const px=i=>L+i*(W-L-R)/11;
   const py=v=>H-B-(v/top)*(H-T-B);
   let grid='',ylab='';
   [0,top/2,top].forEach(v=>{ const y=py(v);
     grid+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="rgba(255,255,255,.08)"/>';
-    ylab+='<text x="'+(L-10)+'" y="'+(y+4)+'" text-anchor="end" font-size="11.5" '+
-      'fill="rgba(255,255,255,.55)">$'+(v>=1000?(v/1000)+'k':v)+'</text>';
+    ylab+='<text x="'+(L-12)+'" y="'+(y+4)+'" text-anchor="end" font-size="11.5" '+
+      'fill="rgba(255,255,255,.62)">$'+(v>=1000?(v/1000)+'k':v)+'</text>';
   });
-  const xlab=ARC_MON.map((m,i)=>'<text x="'+px(i).toFixed(1)+'" y="'+(H-B+22)+
+  const xlab=ARC_MON.map((m,i)=>'<text x="'+px(i).toFixed(1)+'" y="'+(H-B+23)+
     '" text-anchor="middle" font-size="11" font-weight="600" '+
-    'fill="rgba(255,255,255,.55)">'+m+'</text>').join('');
-  let paths='',dots='';
-  chosen.forEach(c=>{
-    const col=meColor(c), arr=by[c];
-    paths+='<path d="'+arr.map((v,i)=>(i?'L':'M')+px(i).toFixed(1)+' '+py(v).toFixed(1)).join(' ')+
+    'fill="rgba(255,255,255,.62)">'+m+'</text>').join('');
+  let path='',dots='';
+  if(arr){
+    const col=meColor(pick);
+    path='<path d="'+arr.map((v,i)=>(i?'L':'M')+px(i).toFixed(1)+' '+py(v).toFixed(1)).join(' ')+
       '" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
-    arr.forEach((v,i)=>{
-      dots+='<circle cx="'+px(i).toFixed(1)+'" cy="'+py(v).toFixed(1)+'" r="3.5" fill="'+col+
-        '" stroke="#141C33" stroke-width="1.5"/>'+
-        '<circle class="archit" cx="'+px(i).toFixed(1)+'" cy="'+py(v).toFixed(1)+'" r="13" '+
-        'fill="transparent" style="pointer-events:all;cursor:pointer" data-c="'+arcEsc(c)+
-        '" data-m="'+i+'" data-v="'+v+'" data-col="'+col+'"/>';
-    });
-  });
+    dots=arr.map((v,i)=>'<circle cx="'+px(i).toFixed(1)+'" cy="'+py(v).toFixed(1)+
+      '" r="3.5" fill="'+col+'" stroke="#141C33" stroke-width="1.5"/>'+
+      '<circle class="archit" cx="'+px(i).toFixed(1)+'" cy="'+py(v).toFixed(1)+'" r="13" '+
+      'fill="transparent" style="pointer-events:all;cursor:pointer" data-c="'+arcEsc(pick)+
+      '" data-m="'+i+'" data-v="'+v+'" data-col="'+col+'"/>').join('');
+  }
+  /* radios, not checkboxes: the control has to say "one of these", and a row of
+     ticks that silently un-ticks the last one is the usual way that goes wrong */
   const gear='<span class="arc-gearwrap">'+
-    '<button class="arc-gear" type="button" data-act="gear" title="Choose categories">⚙</button>'+
+    '<button class="arc-gear" type="button" data-act="gear" title="Choose a category">⚙</button>'+
     '<div class="skeu-pop arc-pop">'+
-      '<div class="skeu-label" style="margin-bottom:8px">SHOW CATEGORIES</div>'+
+      '<div class="skeu-label" style="margin-bottom:8px">SHOW CATEGORY</div>'+
       '<div class="me-poplist arc-poplist">'+ (cats.length?cats.map(c=>
-        '<label><input type="checkbox" data-arccat="'+arcEsc(c)+'"'+(chosen.includes(c)?' checked':'')+'>'+
-        '<span class="dot" style="background:'+meColor(c)+';color:'+meColor(c)+'"></span>'+arcEsc(c)+'</label>'
-      ).join(''):'<span style="font-size:11.5px;color:#93A2B8">No Monthly categories in this year</span>')+'</div>'+
-      '<div class="duo" style="margin-top:10px">'+
-        '<button class="arc-popbtn" type="button" data-act="popall">All</button>'+
-        '<button class="arc-popbtn" type="button" data-act="popnone">None</button>'+
+        '<label><input type="radio" name="arccat-'+a.id+'" data-arccat="'+arcEsc(c)+'"'+
+        (c===pick?' checked':'')+'>'+
+        '<span class="dot" style="background:'+meColor(c)+';color:'+meColor(c)+'"></span>'+
+        arcEsc(c)+'</label>').join('')
+        :'<span style="font-size:11.5px;color:#93A2B8">No Monthly categories in this year</span>')+
       '</div></div></span>';
-  const legend='<div class="me-legend arc-legend">'+(chosen.length
-    ? chosen.map(c=>'<span><i style="background:'+meColor(c)+'"></i>'+arcEsc(c)+'</span>').join('')
-    : '<span style="color:#7F8C9C">No categories selected</span>')+'</div>';
+  const label=pick
+    ? '<div class="me-legend arc-legend"><span><i style="background:'+meColor(pick)+'"></i>'+
+      arcEsc(pick)+'</span></div>'
+    : '<div class="me-legend arc-legend"><span style="color:#7F8C9C">No category selected</span></div>';
   return { gear, html:'<div class="arc-tw"><svg viewBox="0 0 '+W+' '+H+'" class="arc-svg" '+
-    'preserveAspectRatio="xMidYMid meet" aria-label="Monthly spending by category">'+
+    'preserveAspectRatio="xMidYMid meet" aria-label="Monthly spending for one category">'+
     grid+ylab+
     '<line x1="'+L+'" y1="'+T+'" x2="'+L+'" y2="'+(H-B)+'" stroke="rgba(255,255,255,.14)"/>'+
     '<line x1="'+L+'" y1="'+(H-B)+'" x2="'+(W-R)+'" y2="'+(H-B)+'" stroke="rgba(255,255,255,.14)"/>'+
-    paths+dots+xlab+
-    (chosen.length?'':'<text x="'+(W/2)+'" y="'+(H/2)+'" text-anchor="middle" font-size="13" '+
-      'fill="rgba(255,255,255,.42)">No data — pick categories with the gear</text>')+
-    '</svg><div class="ctip arc-tip"></div></div>'+legend };
+    path+dots+xlab+
+    (arr?'':'<text x="'+(W/2)+'" y="'+(H/2)+'" text-anchor="middle" font-size="13" '+
+      'fill="rgba(255,255,255,.42)">No Monthly spending recorded for this year</text>')+
+    '</svg><div class="ctip arc-tip"></div></div>'+label };
 }
 function arcTable(rows){
   if(!rows.length) return '<p class="arc-none">Nothing recorded.</p>';
@@ -4192,9 +4241,10 @@ function arcCardHTML(a){
   const open=arcOpen.has(a.id), st=a.stats||{};
   const hl=(a.highlights||[]);
   const contrib=arcContribLine(a.contrib);
-  const pts=(contrib?['<li class="first"><div class="h">Contributions</div><div class="l">'+
+  const pts=(contrib?['<li class="t-contrib"><div class="h">Contributions</div><div class="l">'+
       contrib+'</div></li>']:[])
-    .concat(hl.map(h=>'<li><div class="h">'+arcEsc(h.title)+'</div><div class="l">'+arcEsc(h.line)+'</div></li>'))
+    .concat(hl.map(h=>'<li class="t-'+arcHlTone(h)+'"><div class="h">'+arcEsc(h.title)+
+      '</div><div class="l">'+arcEsc(h.line)+'</div></li>'))
     .join('');
   const trend = open ? arcTrend(a) : null;
   const body = !open ? '' :
@@ -4202,7 +4252,8 @@ function arcCardHTML(a){
       '<div class="ay-sec"><p class="ay-bh">Month by month</p>'+
         '<div class="ay-mid"><div class="ay-scroll">'+arcBars(a)+'</div></div></div>'+
       '<div class="ay-sec"><div class="ay-3">'+
-        '<div><p class="ay-bh">Highlights</p><ul class="ay-hl">'+pts+'</ul></div>'+
+        '<div><p class="ay-bh">Highlights</p><div class="ay-hlbox"><ul class="ay-hl">'+
+          pts+'</ul></div></div>'+
         '<div><p class="ay-bh">Expenses</p>'+arcTable(a.exp||[])+'</div>'+
         '<div><p class="ay-bh">Income</p>'+arcTable(a.inc||[])+'</div>'+
       '</div></div>'+
@@ -4293,9 +4344,7 @@ function arcBind(){
     const cb=e.target.closest('[data-arccat]'); if(!cb) return;
     const card=cb.closest('.ay'); if(!card) return;
     const rec=state.archives.find(a=>a.id===card.dataset.id); if(!rec) return;
-    const list=[...cb.closest('.arc-poplist').querySelectorAll('[data-arccat]')]
-      .filter(x=>x.checked).map(x=>x.dataset.arccat);
-    arcSetChartCats(list);
+    arcSetChartCat(cb.dataset.arccat);
     arcRedrawTrend(card,rec);
   });
   // close an open popover on an outside click
@@ -4314,13 +4363,6 @@ function arcBind(){
       const was=pop.classList.contains('open');
       box.querySelectorAll('.arc-pop.open').forEach(p=>p.classList.remove('open'));
       if(!was) pop.classList.add('open');
-      return;
-    }
-    if(act==='popall'||act==='popnone'){
-      const pop=btn.closest('.arc-pop');
-      const all=[...pop.querySelectorAll('[data-arccat]')].map(cb=>cb.dataset.arccat);
-      arcSetChartCats(act==='popall'?all:[]);
-      arcRedrawTrend(card,rec);
       return;
     }
     if(act==='toggle'){ arcOpen.has(id)?arcOpen.delete(id):arcOpen.add(id); renderArchives(); return }

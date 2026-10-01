@@ -446,6 +446,44 @@ Three guards, each of which has a test that fails without it:
 test, so a deliberately typed `0` survives. It stays editable on the Yearly tab like any
 other year's.
 
+### How an Archives card is built visually
+
+**One sheet of glass, not four.** The card is a single frosted surface; the header is the
+only thing raised off it. Boxing each section turned one card into a stack of four, so the
+sections are told apart by a hairline (`.ay-sec + .ay-sec`) and a single heading style
+instead. **Highlights is the one exception** — it is commentary rather than figures, so it
+keeps a pane of its own (`.ay-hlbox`), one pane around the whole list rather than one per
+point.
+
+Three measurements the whole body is built from, and nothing should introduce a fourth:
+heading `margin-bottom:12px`, section gap `24px`, column gutter `22px`.
+
+**Highlight colours are keyed on what the card SAYS**, via `ARC_HL_TONE`. The `tone` field
+`yfHighlights()` emits is too coarse on its own — "Over budget" and "Biggest expense" are
+both `exp`, and only the first is a warning. Five colours:
+
+| | tokens | cards |
+|---|---|---|
+| alarm | `--hl-alarm` red | `deficit`, `over`, `climb` |
+| spending | `--hl-spend` amber | `peakExp`, `oddExp`, `topCatExp`, `bigTx` |
+| good news | `--hl-good` green | `peakInc`, `lowExp`, `bestSave`, `under`, `topCatInc`, `oddInc` |
+| neutral | `--hl-info` blue | `rate`, `who` |
+| contributions | `--hl-contrib` teal | the stored contributions line |
+
+`arcSnapshot` keeps each card's `key` for this. Archives sealed before it existed carry no
+key, so `arcHlTone()` falls back to `tone`.
+
+**The money pair is `--arc-in` / `--arc-out`**, blue and orange at full chroma. They were
+desaturated once "to sit in the glass" and went chalky — on a deep indigo panel a wash
+reads as dirty rather than subtle. Do not reach for Yearly's `--yf-inc` / `--yf-exp` here;
+those are mixed for a flat dark panel.
+
+**The 12-month trend draws ONE line**, for one category chosen with radios in the gear
+(`sparta.arcChartCat`, a device preference — see the rollover rules above for why it is not
+in the record). Default `Groceries`, falling back to the year's biggest category when the
+ledger has no such name. Four overlapping lines turned the year into something to decode
+rather than read.
+
 ### Archives housekeeping
 
 `RESET_CLEAR.archive()` empties the records and **does not touch the ledger** they were
@@ -1072,7 +1110,7 @@ These have each caused real, shipped bugs in this project. When making changes, 
 suite under `tests/` has become the only thing making a 6,400-line single file safe to
 change, so it is kept green rather than skipped.
 
-- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fifteen suites, **1,061 checks**.
+- `cd "Sparta Finance Tracker/tests" && ./run-all.sh` — fifteen suites, **1,070 checks**.
   Needs `node_modules` (Playwright); link it, run, then remove the link.
 - Add a check when behaviour is pinned down, especially arithmetic. Every money rule in
   §0 has one, because each was re-litigated at least once.
@@ -1091,9 +1129,9 @@ change, so it is kept green rather than skipped.
   and the category-by-month grid at full width. Sealing is automatic on the first load of
   a new year, with **+ Add year** as the manual route for the year in progress. See §2 for
   the data shape and the rollover rules.
-  Still open on it: the trend keeps Monthly's exact behaviour of drawing all twelve months,
-  so a year logged only to September shows its lines fall to $0 for the rest — correct for
-  a genuinely closed year, misleading on the current-year preview.
+  The trend keeps Monthly's exact behaviour of drawing all twelve months, so a year logged
+  only to September shows its line fall to $0 for the rest — correct for a genuinely closed
+  year, and accepted as-is for the current-year preview.
 - **Plan tab** exists and is built out (segments, dated items, running balance, lowest
   point) — see `tests/test-plan.js` for the behaviour it guarantees.
 - No live Firebase listener (§4) — acceptable per user, don't add without asking.

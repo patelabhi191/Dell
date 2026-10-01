@@ -179,7 +179,15 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     // Highlights lead the row now, so the tables are columns 2 and 3
     expRows: [...document.querySelectorAll('.ay-3 > div:nth-child(2) .ay-t tr td:first-child')].map(e => e.textContent),
     incRows: [...document.querySelectorAll('.ay-3 > div:nth-child(3) .ay-t tr td:first-child')].map(e => e.textContent),
-    first: (document.querySelector('.ay-hl .first .l') || {}).textContent || '',
+    first: (document.querySelector('.ay-hl .t-contrib .l') || {}).innerText || '',
+    firstLines: document.querySelectorAll('.ay-hl .t-contrib .l span').length,
+    // every point wears one of the five tone classes, none left unclassified
+    tones: [...document.querySelectorAll('.ay-hl li')].map(li =>
+      (li.className.match(/t-\w+/) || [''])[0]),
+    hlPanes: document.querySelectorAll('.ay-hlbox').length,
+    secPanes: [...document.querySelectorAll('.ay-sec')]
+      .filter(e => getComputedStyle(e).backgroundImage !== 'none'
+                || getComputedStyle(e).backgroundColor !== 'rgba(0, 0, 0, 0)').length,
     hl: document.querySelectorAll('.ay-hl li').length,
     cmCats: [...document.querySelectorAll('.ay-cm tbody tr td:first-child')].map(e => e.textContent),
     cmCols: document.querySelectorAll('.ay-cm thead th').length,
@@ -200,18 +208,26 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     body.expRows.join(','));
   check(body.incRows.join(',') === 'Paycheck', 'the Income table lists its own', body.incRows.join(','));
   check(/ABI put .* into TFSA/.test(body.first) && /POO added/.test(body.first),
-    'Highlights lead with the contributions line', body.first);
+    'Highlights lead with the contributions line', body.first.replace(/\n/g, ' | '));
+  check(body.firstLines === 2, 'with ABI on one line and POO on the next', String(body.firstLines));
+  check(body.tones.length > 1 && body.tones.every(Boolean) && new Set(body.tones).size >= 3,
+    'every highlight is coloured by what it says, across at least three tones',
+    [...new Set(body.tones)].join(','));
+  check(body.hlPanes === 1, 'Highlights sits on a pane of its own', String(body.hlPanes));
+  check(body.secPanes === 0,
+    'and it is the ONLY one — the body is a single sheet of glass, not a stack of cards',
+    String(body.secPanes));
   check(body.hl > 1, 'and carry the Yearly highlight cards underneath it', String(body.hl));
   check(body.cmCats.includes('Grocery') && body.cmCats.includes('Dining'),
     'Category by month lists Monthly\'s categories', body.cmCats.join(','));
   check(!body.cmCats.includes('Rent'),
     'and not Yearly\'s — a bill in a month says nothing about habits');
   check(body.cmCols === 14, 'the grid is category + 12 months + total', String(body.cmCols));
-  check(body.trendLines >= 1 && body.trendDots === body.trendLines * 12,
-    'the trend draws one line per chosen category with a point on every month',
+  check(body.trendLines === 1 && body.trendDots === 12,
+    'the trend draws exactly ONE line, with a point on every month',
     `${body.trendLines} lines, ${body.trendDots} dots`);
-  check(body.gear && body.legend.length === body.trendLines,
-    'with Monthly\'s gear and a legend entry per line', body.legend.join(','));
+  check(body.gear && body.legend.length === 1,
+    'with Monthly\'s gear and the chosen category named beside it', body.legend.join(','));
   check(body.yAxis.length === 3 && body.yAxis[0] === '$0',
     'and Monthly\'s three-stop value axis, anchored at $0', body.yAxis.join(' '));
   // one bar per SERIES per month, not one per row: nine months earn and nine spend
@@ -424,9 +440,34 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     'the category choice is NOT stored inside the archive');
   const stampBefore = await page.evaluate(() => state.updatedAt);
   await page.waitForTimeout(60);
-  await page.evaluate(() => arcSetChartCats(['Grocery']));
+  await page.evaluate(() => arcSetChartCat('Grocery'));
   check(await page.evaluate(() => state.updatedAt) === stampBefore,
     'so choosing categories does not re-stamp the ledger or push a new copy up');
+
+  // the picker is one-of-N, and picking really does change the line
+  await page.click('.arc-gear');
+  await page.waitForSelector('.arc-pop.open');
+  const picker = await page.evaluate(() => ({
+    inputs: [...document.querySelectorAll('[data-arccat]')].map(i => i.type),
+    names: new Set([...document.querySelectorAll('[data-arccat]')].map(i => i.name)).size,
+    checked: document.querySelectorAll('[data-arccat]:checked').length,
+    opts: [...document.querySelectorAll('[data-arccat]')].map(i => i.dataset.arccat),
+  }));
+  check(picker.inputs.every(t => t === 'radio') && picker.names === 1,
+    'the category picker is radios in one group, so it reads as one-of-these',
+    picker.inputs.join(','));
+  check(picker.checked === 1, 'with exactly one chosen at a time', String(picker.checked));
+  const lineBefore = await page.$eval('.arc-tw path', e => e.getAttribute('d'));
+  const shown = await page.$eval('.arc-legend span', e => e.textContent);
+  const other = picker.opts.find(c => c !== shown);
+  await page.click(`[data-arccat="${other}"]`);
+  await page.waitForTimeout(300);
+  check(await page.$eval('.arc-tw path', e => e.getAttribute('d')) !== lineBefore,
+    'and choosing another category actually redraws the line', other);
+  check(await page.$$eval('.arc-tw path', n => n.length) === 1,
+    'still exactly one line afterwards');
+  check(await page.$eval('.arc-legend span', e => e.textContent) === other,
+    'with the legend naming what is drawn');
 
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
