@@ -1340,20 +1340,16 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
    showing through the tables. */
 .ay.open{
   border-color:rgba(255,255,255,.20);
-  /* Option B's colour, at an opacity that makes it STABLE.
-     The card used to change shade depending on what else was open. Measured, not
-     guessed: with the top card at a fixed position, opening a second card below
-     it moved its own pixels by a mean of 7.5/255 and a max of 25. Two things
-     caused that, in this order -- a translucent background letting the backdrop
-     through, and mix-blend-mode:plus-lighter on the year numerals, which blends
-     against the backdrop root that backdrop-filter establishes.
-     Raising the alpha fixes both, because it is what the blend sees too:
-       .22 (as shipped) mean 7.56  max 25   <- visible, the reported bug
-       .80              mean 1.86  max  7
-       .90              mean ~0.9  max ~3   <- here, under 1.2% of 255
-     Do not thin this back below ~.85 without re-running that comparison. The
-     blur still applies to the 10% that shows, so it is still glass. */
-  background:linear-gradient(150deg,rgba(42,66,150,.90),rgba(30,50,116,.92) 46%,rgba(52,80,165,.88));
+  /* Option B's tint, EXACTLY as chosen -- do not retune it to fix a shade
+     problem. The card changing shade when a second one opened was not this; it
+     was mix-blend-mode on .ay-yr (see there). Two wrong explanations were
+     offered before measuring: viewport position against the fixed backdrop art
+     (disproved -- the top card does not move), and this translucency (disproved
+     -- neutralising the blend alone took the mean from 7.56 to 0.38 with this
+     line untouched). Opaque alternatives were built and rejected: they flatten
+     the card, because the variation ACROSS it is the art showing through, and
+     three gradient stops cannot reproduce an image. */
+  background:linear-gradient(150deg,rgba(74,110,255,.22),rgba(52,86,200,.17) 46%,rgba(130,165,255,.10));
   backdrop-filter:blur(26px) saturate(185%);
   -webkit-backdrop-filter:blur(26px) saturate(185%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.30), inset 0 0 0 1px rgba(255,255,255,.05),
@@ -1399,11 +1395,20 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
    background-image, NOT the `background` shorthand: the shorthand resets every
    background-* longhand including background-clip, which silently throws away
    clip:text and paints the gradient across the whole BOX. */
+/* mix-blend-mode on the numerals was the DOMINANT cause of the card changing
+   shade when a second one opened -- it blends against the backdrop root that
+   backdrop-filter establishes, so it moved with whatever was behind the card.
+   Measured, changing only this and nothing else:
+     plus-lighter   mean 7.56 / max 25   <- the reported bug
+     normal         mean 0.38 / max  8
+   The glyphs keep their gradient, their clip and their bevel; what they lose is
+   reacting to the backdrop. That is the trade -- the card's colour is now
+   stable, and it is still exactly the Option B tint, untouched. */
 .ay-yr{font-family:var(--font-display);font-size:var(--fs-year);font-weight:800;line-height:.9;
   letter-spacing:-.035em;font-variant-numeric:tabular-nums;
   color:transparent;
   -webkit-background-clip:text;background-clip:text;
-  mix-blend-mode:plus-lighter;
+  mix-blend-mode:normal;
   background-image:linear-gradient(168deg,
       rgba(226,232,241,.92) 0%, rgba(203,212,225,.70) 26%,
       rgba(176,187,204,.46) 47%, rgba(218,226,238,.80) 63%,

@@ -458,29 +458,32 @@ point.
 Three measurements the whole body is built from, and nothing should introduce a fourth:
 heading `margin-bottom:12px`, section gap `24px`, column gutter `22px`.
 
-**The card's shade must not depend on what else is open.** A card looked light on its own
-and rich when a second one was open beside it. The first explanation offered — viewport
-position against the fixed `.archivefield` art — was **wrong**, and measuring disproved it:
-the top card holds the same position either way, yet its own pixels moved by a mean of
-7.5/255 and a max of 25.
+**The card's shade must not depend on what else is open.** A card looked light alone and
+rich when a second one was open beside it. **Two explanations were offered and both were
+wrong**, which is the part worth remembering:
 
-Two causes, in order of size:
+1. *viewport position against the fixed `.archivefield` art* — disproved: the top card holds
+   the same position either way, yet its own pixels moved;
+2. *the translucent background letting the backdrop through* — disproved: neutralising the
+   blend alone took it from 7.56 to 0.38 with that line untouched.
 
-1. **a translucent background**, which lets the backdrop through, and
-2. **`mix-blend-mode:plus-lighter` on `.ay-yr`**, which blends against the backdrop root
-   that `backdrop-filter` establishes.
+The cause is **`mix-blend-mode:plus-lighter` on `.ay-yr`**, which blends against the
+backdrop root `backdrop-filter` establishes, so the numerals — and the compositing around
+them — moved with whatever was behind the card. Pixel-diffing the top card alone against
+the top card with another open:
 
-Raising the alpha fixes both, because opacity is what the blend sees too. Measured by
-pixel-diffing the top card alone against the top card with a second one open:
-
-| background alpha | mean diff | max diff |
+| | mean | max |
 |---|---|---|
-| `.22` (as shipped) | 7.56 | 25 — visible, the reported bug |
-| `.80` | 1.86 | 7 |
-| **`.90` (now)** | **0.91** | **4** — under 1.2% of 255 |
+| as shipped | 7.56 | 25 — the reported bug |
+| blend neutralised | **0.55 – 0.96** | 12 – 22 on isolated glyph edges |
 
-Do not thin it below ~`.85` without re-running that comparison. The blur still applies to
-the 10% that shows, so it is still glass.
+`.ay-yr` is now `mix-blend-mode:normal`. It keeps its gradient, clip and bevel; what it
+loses is reacting to the backdrop. **The Option B tint is untouched and must stay that
+way** — the colour was verified identical to B afterwards, to 0–1 per channel.
+
+Opaque backgrounds were built and measured as an alternative and are **rejected**: they do
+stabilise it, but they flatten the card, because the variation across it *is* the art
+showing through, and three gradient stops cannot reproduce an image.
 
 **Every `<defs>` id in a bar chart is suffixed with the archive's id.** Two open cards each
 emitted `arcGi` / `arcGo` / `arcGlow`, and `url(#arcGi)` resolves to the FIRST match in the
