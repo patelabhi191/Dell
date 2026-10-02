@@ -458,6 +458,18 @@ point.
 Three measurements the whole body is built from, and nothing should introduce a fourth:
 heading `margin-bottom:12px`, section gap `24px`, column gutter `22px`.
 
+**The card's blue has to live in its own tint.** `.archivefield` is `position:fixed`, so the
+backdrop art is pinned to the viewport rather than the page. Open a second year and the
+first pushes it down into a different region of that art — and `backdrop-filter` samples
+whatever is there. Identical CSS, two visibly different shades, which is what it looked
+like. The tint is now `rgba(74,110,255,.22)` at `saturate(185%)`, strong enough that
+position barely moves it. Do not thin it back toward the old `rgba(146,154,255,.13)`
+without re-checking two open cards at once.
+
+**Only `.ay.open` carries glass.** A collapsed card is a flat `rgba(255,255,255,.022)` with
+no `backdrop-filter`, so it is unaffected by any of the above — and it is harder to read
+wherever the backdrop's light sweep crosses it. Known, not yet addressed.
+
 **Highlight colours are keyed on what the card SAYS**, via `ARC_HL_TONE`. The `tone` field
 `yfHighlights()` emits is too coarse on its own — "Over budget" and "Biggest expense" are
 both `exp`, and only the first is a warning. Five colours:
