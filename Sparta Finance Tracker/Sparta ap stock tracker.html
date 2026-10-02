@@ -81,12 +81,12 @@
      colours with color-mix(), so you only ever change the one value.
      --arc-card-a/b/c are rgba: a value written WITHOUT an alpha is opaque, and
      the card stops being glass wherever that stop dominates. */
-  --arc-bar-in:var(--yf-inc);
-  --arc-bar-out:var(--yf-exp);
-  --arc-card-a:rgba(74,110,255,.22);
-  --arc-card-b:rgba(52,86,200,.17);
-  --arc-card-c:rgba(130,165,255,.10);
-  --arc-card-sat:185%;
+  --arc-bar-in:#800020;
+  --arc-bar-out:#F77E2D;
+  --arc-card-a:rgb(32 88 175 / 10%);
+  --arc-card-b:rgb(46 64 121 / 10%);
+  --arc-card-c:rgb(36 65 119);
+  --arc-card-sat:105%;
   /* The year numerals are a gradient CLIPPED TO THE TEXT, so what reads as
      "glass" is the gradient's level -- hi where it catches the light, lo where
      the card shows through. Raise both and it goes solid white; lower both and
@@ -3394,7 +3394,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-02D</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-03</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
