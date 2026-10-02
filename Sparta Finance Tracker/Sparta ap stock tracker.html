@@ -1340,13 +1340,20 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
    showing through the tables. */
 .ay.open{
   border-color:rgba(255,255,255,.20);
-  /* The blue lives in the CARD's tint, not in whatever happens to be behind it.
-     .archivefield is position:fixed, so the backdrop art is pinned to the
-     viewport: open a second card and the first pushes it down into a different,
-     richer region of that art, and backdrop-filter samples it. Same CSS, two
-     different shades -- which is exactly what it looked like. A faint tint left
-     the result at the mercy of position; this carries it. */
-  background:linear-gradient(150deg,rgba(74,110,255,.22),rgba(52,86,200,.17) 46%,rgba(130,165,255,.10));
+  /* Option B's colour, at an opacity that makes it STABLE.
+     The card used to change shade depending on what else was open. Measured, not
+     guessed: with the top card at a fixed position, opening a second card below
+     it moved its own pixels by a mean of 7.5/255 and a max of 25. Two things
+     caused that, in this order -- a translucent background letting the backdrop
+     through, and mix-blend-mode:plus-lighter on the year numerals, which blends
+     against the backdrop root that backdrop-filter establishes.
+     Raising the alpha fixes both, because it is what the blend sees too:
+       .22 (as shipped) mean 7.56  max 25   <- visible, the reported bug
+       .80              mean 1.86  max  7
+       .90              mean ~0.9  max ~3   <- here, under 1.2% of 255
+     Do not thin this back below ~.85 without re-running that comparison. The
+     blur still applies to the 10% that shows, so it is still glass. */
+  background:linear-gradient(150deg,rgba(42,66,150,.90),rgba(30,50,116,.92) 46%,rgba(52,80,165,.88));
   backdrop-filter:blur(26px) saturate(185%);
   -webkit-backdrop-filter:blur(26px) saturate(185%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.30), inset 0 0 0 1px rgba(255,255,255,.05),
@@ -3329,7 +3336,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-02B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-02C</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -4252,7 +4259,8 @@ function arcContribLine(c){
   return '<span>ABI put '+arc$(c.abiT)+' into TFSA and '+arc$(c.abiF)+' into FHSA.</span>'+
          '<span>POO added '+arc$(c.pooT)+' TFSA, '+arc$(c.pooF)+' FHSA.</span>';
 }
-function arcBars(a){
+function arcBars(a,uidSuffix){
+  const U=uidSuffix||'';
   const max=Math.max(...a.mInc,...a.mExp,1), H=112, T=14;
   const y=v=>H-(v/max)*(H-T);
   let out='<svg viewBox="0 0 900 140" class="arc-svg" aria-label="Income and expenses by month">'+
@@ -4260,17 +4268,17 @@ function arcBars(a){
        A flat fill reads as a painted rectangle on a lit surface; this reads as
        an object sitting on it. */
     '<defs>'+
-      '<linearGradient id="arcGi" x1="0" y1="0" x2="0" y2="1">'+
+      '<linearGradient id="arcGi'+U+'" x1="0" y1="0" x2="0" y2="1">'+
         '<stop offset="0" stop-color="var(--arc-in-g1)"/>'+
         '<stop offset="0.55" stop-color="var(--arc-in-g2)"/>'+
         '<stop offset="1" stop-color="var(--arc-in-g2)"/></linearGradient>'+
-      '<linearGradient id="arcGo" x1="0" y1="0" x2="0" y2="1">'+
+      '<linearGradient id="arcGo'+U+'" x1="0" y1="0" x2="0" y2="1">'+
         '<stop offset="0" stop-color="var(--arc-out-g1)"/>'+
         '<stop offset="0.55" stop-color="var(--arc-out-g2)"/>'+
         '<stop offset="1" stop-color="var(--arc-out-g2)"/></linearGradient>'+
-      '<filter id="arcGlow" x="-60%" y="-30%" width="220%" height="170%">'+
+      '<filter id="arcGlow'+U+'" x="-60%" y="-30%" width="220%" height="170%">'+
         '<feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="var(--arc-in)" flood-opacity=".6"/></filter>'+
-      '<filter id="arcGlowO" x="-60%" y="-30%" width="220%" height="170%">'+
+      '<filter id="arcGlowO'+U+'" x="-60%" y="-30%" width="220%" height="170%">'+
         '<feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="var(--arc-out)" flood-opacity=".6"/></filter>'+
     '</defs>'+
     '<line x1="46" y1="'+H+'" x2="890" y2="'+H+'" stroke="rgba(255,255,255,.14)"/>'+
@@ -4282,11 +4290,11 @@ function arcBars(a){
     // full opacity: .92 muted every bar by 8% before the glass even reached it
     // the rim is what makes it read as glass rather than as a faded fill
     if(a.mInc[i]>0) out+='<rect x="'+x+'" y="'+y(a.mInc[i]).toFixed(1)+'" width="19" height="'+
-      (H-y(a.mInc[i])).toFixed(1)+'" rx="3" fill="url(#arcGi)" stroke="var(--arc-in-rim)" '+
-      'stroke-width="1" filter="url(#arcGlow)"/>';
+      (H-y(a.mInc[i])).toFixed(1)+'" rx="3" fill="url(#arcGi'+U+')" stroke="var(--arc-in-rim)" '+
+      'stroke-width="1" filter="url(#arcGlow'+U+')"/>';
     if(a.mExp[i]>0) out+='<rect x="'+(x+21)+'" y="'+y(a.mExp[i]).toFixed(1)+'" width="19" height="'+
-      (H-y(a.mExp[i])).toFixed(1)+'" rx="3" fill="url(#arcGo)" stroke="var(--arc-out-rim)" '+
-      'stroke-width="1" filter="url(#arcGlowO)"/>';
+      (H-y(a.mExp[i])).toFixed(1)+'" rx="3" fill="url(#arcGo'+U+')" stroke="var(--arc-out-rim)" '+
+      'stroke-width="1" filter="url(#arcGlowO'+U+')"/>';
     out+='<text x="'+(x+20)+'" y="130" text-anchor="middle" font-size="9.5" fill="var(--text-dim)">'+
       ARC_MON[i].toUpperCase()+'</text>';
   }
@@ -4418,7 +4426,7 @@ function arcCardHTML(a){
   const body = !open ? '' :
     '<div class="ay-body">'+
       '<div class="ay-sec"><p class="ay-bh">Month by month</p>'+
-        '<div class="ay-mid"><div class="ay-scroll">'+arcBars(a)+'</div></div></div>'+
+        '<div class="ay-mid"><div class="ay-scroll">'+arcBars(a,a.id)+'</div></div></div>'+
       '<div class="ay-sec"><div class="ay-3">'+
         '<div class="ay-hlcol"><p class="ay-bh">Highlights</p><div class="ay-hlbox"><ul class="ay-hl">'+
           pts+'</ul></div></div>'+
