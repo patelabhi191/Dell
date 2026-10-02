@@ -1411,6 +1411,9 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 }
 .ay-meta{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-dim);font-weight:var(--fw-label)}
 .ay-meta b{color:var(--arc);font-weight:700}
+/* unmistakable at a glance, so a fabricated year is never read as a sealed one */
+.ay-meta b.ay-dummy{color:var(--hl-spend)}
+#arcBar{gap:8px}
 .ay-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 1.2fr;align-items:stretch;
   padding:16px 0}
 .ay-col{display:flex;flex-direction:column;justify-content:center;gap:12px;padding:0 20px;min-width:0}
@@ -2526,6 +2529,7 @@ select{color-scheme:dark}
       <select id="meMonthSel"></select>
     </div>
     <div class="yearbar" id="arcBar">
+      <button class="btn ghost" id="arcAddDummy" title="Add a fabricated year to look at the layout. Touches no real data.">+ Dummy year</button>
       <button class="btn" id="arcAddYear">+ Add year</button>
     </div>
     <div class="yearbar" id="yfYearWrap">
@@ -4107,6 +4111,56 @@ function arcSnapshot(year){
    unreachable as a result -- arcAutoSeal() below sweeps up every past year the
    ledger holds that has never been archived, which covers both the 1 January
    rollover and a backfill of years entered before Archives existed. */
+/* A filled-in year that touches NOTHING real: no ledger rows are read or
+   written, and the record is flagged dummy:true so the automatic seal skips it
+   and the card says so on its face. Purely for looking at the layout with more
+   than one year on screen.
+   Figures are derived from the year itself rather than random, so the same year
+   always produces the same card and two presses cannot look alike by accident. */
+function arcDummyRec(year){
+  const r=(k,lo,hi)=>{                       // deterministic per year+slot
+    const x=Math.sin((year*97+k*131)%1e4)*10000;
+    return lo+(x-Math.floor(x))*(hi-lo);
+  };
+  const mInc=[],mExp=[];
+  for(let i=0;i<12;i++){ mInc.push(Math.round(r(i,4600,8200)/10)*10);
+                         mExp.push(Math.round(r(i+20,2100,5200)/10)*10) }
+  const totInc=mInc.reduce((a,b)=>a+b,0), totExp=mExp.reduce((a,b)=>a+b,0);
+  const start=Math.round(r(99,6000,30000)/50)*50, end=start+totInc-totExp;
+  const invested=Math.round(r(7,3000,11000)/50)*50, moved=Math.round(r(8,500,4000)/50)*50;
+  const saved=end-start;
+  const mk=(names,base)=>names.map((c,i)=>({c,v:Math.round(r(base+i,900,19000)/10)*10}))
+    .sort((a,b)=>b.v-a.v);
+  const byCat={};
+  ['Groceries','Dining Out','Transit','Shopping','Health/medical','TV/Phone/Internet']
+    .forEach((c,k)=>{ byCat[c]=Array.from({length:12},(_,i)=>Math.round(r(k*13+i,80,520))) });
+  const ln='Dummy data \u2014 for layout only.';
+  return { id:uid(), year, sealedAt:Date.now(), sealed:true, dummy:true,
+    stats:{start,end,invested,moved,saved,offPaper:saved+invested+moved,
+           growth: start>0?(end/start-1)*100:0},
+    entries: 40+Math.round(r(3,0,80)),
+    exp: mk(['Rent','Investment','Other Bank','Credit Bill','Travel','Personal'],30),
+    inc: mk(['Paycheck','Bonus','Gift/Stocks'],60),
+    mInc, mExp,
+    contrib:{ abiT:Math.round(r(11,0,7000)/50)*50, abiF:Math.round(r(12,0,8000)/50)*50,
+              pooT:Math.round(r(13,0,7000)/50)*50, pooF:Math.round(r(14,0,8000)/50)*50 },
+    highlights:[{key:'peakExp',tone:'exp',title:'Biggest spending month',line:ln},
+                {key:'peakInc',tone:'inc',title:'Best earning month',line:ln},
+                {key:'rate',tone:'neutral',title:'Savings rate',line:ln},
+                {key:'over',tone:'exp',title:'Over budget',line:ln}],
+    byCat };
+}
+/* Walks back from the newest free year, so each press adds one more card rather
+   than fighting over a slot. */
+function arcAddDummy(){
+  const taken=new Set(state.archives.map(a=>a.year));
+  let year=new Date().getFullYear();
+  while(taken.has(year)) year--;
+  if(year<1971){ toast('No free year left to fake'); return }
+  state.archives.push(arcDummyRec(year));
+  normalizeArchives(); arcPersist(); renderArchives();
+  toast(year+' added as dummy data \u2014 nothing real was touched');
+}
 function arcAddYear(){
   const year=new Date().getFullYear();
   const prior=state.archives.find(a=>a.year===year);
@@ -4142,7 +4196,9 @@ function arcAutoSeal(){
     // a SEALED record is final, and so is one its figures were corrected by
     // hand; only a provisional preview of a year that has since ended is
     // re-taken, because a preview was never claiming to be the last word
-    if(prior && (prior.sealed || prior.edited)) return;
+    // a dummy occupies its year on purpose; sealing over it would replace test
+    // data with real figures the moment the app was opened
+    if(prior && (prior.sealed || prior.edited || prior.dummy)) return;
     const rec=arcSnapshot(y);
     if(!rec.entries && !rec.stats.start) return;       // an empty year is not an archive
     if(prior) state.archives[state.archives.indexOf(prior)]=rec;
@@ -4374,8 +4430,9 @@ function arcCardHTML(a){
         '<span class="ay-bhright">'+trend.label+trend.gear+'</span></div>'+trend.html+'</div>'+
       '<div class="ay-sec"><p class="ay-bh">Category by month · Monthly</p>'+arcMatrix(a.byCat)+'</div>'+
     '</div>';
-  const meta=a.sealed ? 'Sealed · <b>'+(a.entries||0).toLocaleString('en-CA')+' entries</b>'
-                      : 'Preview · <b>sealed 31 Dec</b>';
+  const meta=a.dummy ? '<b class="ay-dummy">Dummy</b> · test data only'
+    : a.sealed ? 'Sealed · <b>'+(a.entries||0).toLocaleString('en-CA')+' entries</b>'
+               : 'Preview · <b>sealed 31 Dec</b>';
   const dn=(st.growth||0)<0;
   return '<div class="ay'+(open?' open':'')+'" data-id="'+a.id+'">'+
     '<div class="ay-top">'+
@@ -8139,6 +8196,7 @@ renderPlan();
 arcBind();
 renderArchives();
 $('arcAddYear').onclick=()=>arcAddYear();
+$('arcAddDummy').onclick=()=>arcAddDummy();
 
 /* ============ tab order ============ */
 const TAB_DEFAULT=['dash','contrib','yearly','monthly','archive','plan'];

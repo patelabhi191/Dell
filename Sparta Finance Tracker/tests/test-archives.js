@@ -478,6 +478,62 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
   check(await page.$eval('.arc-legend span', e => e.textContent) === other,
     'with the legend naming what is drawn');
 
+  // ─────────────────────────────────────────────────────────────────────────
+  section('8b · the dummy year button');
+
+  await page.evaluate(() => { state.archives = []; arcPersist(); renderArchives() });
+  await page.waitForTimeout(200);
+  const ledgerBefore = await page.evaluate(() => state.yf.txns.length);
+  for (let i = 0; i < 3; i++) {
+    await page.click('#arcAddDummy');
+    await page.waitForFunction(() => !document.getElementById('toast').classList.contains('show'));
+  }
+  const dum = await page.evaluate(() => ({
+    years: state.archives.map(a => a.year),
+    allDummy: state.archives.every(a => a.dummy === true),
+    metas: [...document.querySelectorAll('.ay-meta')].map(e => e.textContent.trim()),
+    ledger: state.yf.txns.length,
+    order: [...document.querySelectorAll('#arcBar button')].map(e => e.id),
+    sameTwice: JSON.stringify(arcDummyRec(2019).stats) === JSON.stringify(arcDummyRec(2019).stats),
+    differByYear: JSON.stringify(arcDummyRec(2019).stats) !== JSON.stringify(arcDummyRec(2018).stats),
+  }));
+  check(dum.years.length === 3 && new Set(dum.years).size === 3,
+    'each press adds a card on its own year rather than fighting over a slot', dum.years.join());
+  check(dum.allDummy, 'all three are flagged as dummies');
+  check(dum.metas.every(m => /^Dummy/.test(m)),
+    'and say so on their face, so a fabricated year cannot read as a sealed one', dum.metas[0]);
+  check(dum.ledger === ledgerBefore,
+    'the ledger is untouched — a dummy reads and writes no real rows',
+    `${ledgerBefore} -> ${dum.ledger}`);
+  check(dum.order.join() === 'arcAddDummy,arcAddYear', 'the button sits left of Add year', dum.order.join());
+  check(dum.sameTwice, 'the figures are derived from the year, so a year always renders the same');
+  check(dum.differByYear, 'and two different years cannot come out identical');
+
+  // a dummy must survive the automatic seal, or opening the app would overwrite
+  // test data with real figures
+  const kept = await page.evaluate(() => {
+    const y = state.archives[0].year, before = JSON.stringify(state.archives[0].stats);
+    arcAutoSeal();
+    const now = state.archives.find(a => a.year === y);
+    return { survived: !!now && !!now.dummy, same: now && JSON.stringify(now.stats) === before };
+  });
+  check(kept.survived && kept.same, 'and the automatic seal steps over it rather than replacing it');
+
+  // it has to render a whole card off fabricated data, not just a header
+  await page.locator('.ay-head').nth(0).click();
+  await page.waitForSelector('.ay-body');
+  const shape = await page.evaluate(() => ({
+    secs: document.querySelectorAll('.ay-bh').length,
+    bars: document.querySelectorAll('.ay-sec svg rect').length,
+    trend: document.querySelectorAll('.arc-tw .archit').length,
+    rows: document.querySelectorAll('.ay-cm tbody tr').length,
+    contrib: !!document.querySelector('.ay-contrib'),
+  }));
+  check(shape.secs === 6 && shape.bars === 24 && shape.trend === 12 && shape.rows > 0 && shape.contrib,
+    'an expanded dummy draws the whole card — bars, trend, matrix and contributions',
+    JSON.stringify(shape));
+  await page.evaluate(() => { state.archives = []; arcPersist(); renderArchives() });
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
 

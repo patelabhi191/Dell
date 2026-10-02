@@ -466,6 +466,20 @@ like. The tint is now `rgba(74,110,255,.22)` at `saturate(185%)`, strong enough 
 position barely moves it. Do not thin it back toward the old `rgba(146,154,255,.13)`
 without re-checking two open cards at once.
 
+**`+ Dummy year`** sits left of `+ Add year` and fabricates a complete, sealed-looking
+record — `arcDummyRec(year)` — without reading or writing a single ledger row. It exists to
+look at the layout with several years on screen. Three things make it safe:
+
+- the record carries `dummy:true`, and **`arcAutoSeal()` steps over it**, so opening the app
+  cannot replace test data with real figures;
+- the card says `Dummy · test data only` in amber, so a fabricated year can never be read as
+  a sealed one;
+- the figures come from `Math.sin` seeded on the year, not `Math.random`, so a year always
+  renders identically and two years cannot coincide.
+
+Each press walks back from the newest free year, so presses accumulate rather than fight
+over a slot. Clear data → Archives removes them like any other record.
+
 **Only `.ay.open` carries glass.** A collapsed card is a flat `rgba(255,255,255,.022)` with
 no `backdrop-filter`, so it is unaffected by any of the above — and it is harder to read
 wherever the backdrop's light sweep crosses it. Known, not yet addressed.
