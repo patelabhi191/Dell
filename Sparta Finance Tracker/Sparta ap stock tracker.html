@@ -1292,6 +1292,13 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
      Contributions already owns. */
   --arc-in:var(--yf-inc); --arc-in-hi:#91DBFB;
   --arc-out:var(--yf-exp); --arc-out-hi:#FCB27F;
+  /* the bars as frosted glass rather than solid paint: a translucent body, a
+     brighter lit top, and a bright rim. The alphas ARE the effect -- push them
+     up if it reads too soft, down if it reads solid. */
+  --arc-in-g1:rgba(158,224,252,.80);  --arc-in-g2:rgba(56,189,248,.46);
+  --arc-in-rim:rgba(190,236,255,.72);
+  --arc-out-g1:rgba(253,190,146,.80); --arc-out-g2:rgba(249,115,22,.46);
+  --arc-out-rim:rgba(255,212,178,.72);
   --hl-alarm:#FF6B6B; --hl-spend:#FFA23D; --hl-good:#4ADE80;
   --hl-info:#7DA8FF; --hl-contrib:#2DD4BF}
 #archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
@@ -1446,7 +1453,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .arc-svg{width:100%;height:auto;display:block;overflow:visible}
 /* 75% and centred: at full width the bars sat so far apart the year stopped
    reading as one shape. The remaining quarter is left empty on purpose. */
-.ay-mid{width:75%;margin:0 auto}
+.ay-mid{width:91%;margin:0 auto}
 .arc-tw{position:relative}
 /* heading row: the title on the left, the category gear on the right, the way
    Monthly's skeu-h carries its own */
@@ -1472,11 +1479,13 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   inset:2.5px;border-radius:50%;background:var(--arc)}
 #archiveView .arc-poplist label{color:var(--text)}
 /* the legend is Monthly's component; inside Archives it joins the 4px rhythm */
-.arc-legend{color:var(--text-dim);gap:12px;margin-top:12px}
+.ay-bhright{display:flex;align-items:center;gap:12px;flex:none}
+.arc-legend{color:var(--text-dim);gap:12px;margin:0;display:inline-flex}
 .arc-legend span{gap:8px}
-/* the rule every third row in the matrix */
-.ay-cm tbody tr.rule td{border-bottom:1px solid rgba(0,0,0,.5);
-  box-shadow:0 1px 0 rgba(255,255,255,.07)}
+/* the rule every third row. It was a BLACK line with a faint white keyline under
+   it, which on this panel read as a gap rather than a divider -- it has to be
+   brighter than the ordinary row borders, not darker. */
+.ay-cm tbody tr.rule td{border-bottom:1px solid rgba(255,255,255,.28)}
 @media(max-width:760px){.arc-tw{overflow-x:auto}.arc-tw .arc-svg{min-width:620px}}
 .arc-tip{position:absolute;transform:translate(-50%,-100%);pointer-events:none;opacity:0;
   transition:opacity .15s;white-space:nowrap;
@@ -1490,6 +1499,16 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
    stays one reserved strip rather than two separate gaps -- whatever goes there
    later gets the full height. Highlights take the 80% underneath. */
 .ay-3{display:grid;grid-template-columns:45fr 27.5fr 27.5fr;gap:0;align-items:stretch}
+/* Highlights spans both rows so the hairline beside it still runs full height;
+   Contributions takes the width of Expenses and Income together underneath. */
+.ay-3 .ay-hlcol{grid-column:1;grid-row:1/3}
+.ay-3 .ay-contrib{grid-column:2/4;grid-row:2;padding-top:14px;margin-top:14px;
+  border-top:1px solid rgba(255,255,255,.10)}
+.ay-contrib .h{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
+  font-weight:var(--fw-label);margin-bottom:3px;color:var(--hl-contrib)}
+.ay-contrib .l{font-size:12px;line-height:1.38;color:var(--text);font-weight:500}
+.ay-contrib .l span{display:block}
+.ay-contrib .l span+span{margin-top:4px}
 /* the same hairline that separates Invested from Moved else in the header */
 .ay-3>*{padding:0 22px}
 .ay-3>*:first-child{padding-left:0}
@@ -1514,7 +1533,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   border-radius:var(--r-card);padding:0 14px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 8px 22px rgba(5,8,22,.18)}
 .ay-hl{display:flex;flex-direction:column;margin:0;padding:0}
-.ay-hl li{list-style:none;padding:9px 0}
+.ay-hl li{list-style:none;padding:7px 0}
 .ay-hl li+li{border-top:1px solid rgba(255,255,255,.08)}
 .ay-hl .h{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;font-weight:var(--fw-label);
   margin-bottom:3px;color:var(--hl-info)}
@@ -1524,19 +1543,22 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .ay-hl .t-spend .h{color:var(--hl-spend)}
 .ay-hl .t-good  .h{color:var(--hl-good)}
 .ay-hl .t-info  .h{color:var(--hl-info)}
-.ay-hl .t-contrib .h{color:var(--hl-contrib)}
-.ay-hl .l{font-size:12px;line-height:1.45;color:var(--text);font-weight:500}
+.ay-hl .l{font-size:12px;line-height:1.38;color:var(--text);font-weight:500}
 .ay-hl .l span{display:block}
 .ay-hl .l span+span{margin-top:4px}
 /* category-by-month is 14 columns wide; it scrolls sideways inside the card */
 .ay-scroll{overflow-x:auto}
 .ay-cm{border-collapse:collapse;min-width:720px;width:100%}
-.ay-cm th,.ay-cm td{padding:5px 7px;font-size:10.5px;white-space:nowrap;
+.ay-cm th,.ay-cm td{padding:6px 8px;font-size:var(--fs-dense);white-space:nowrap;
   border-bottom:1px solid rgba(255,255,255,.055)}
 .ay-cm th{color:var(--text-dim);font-size:var(--fs-micro);letter-spacing:var(--ls-label);
   text-transform:uppercase;font-weight:700;padding-bottom:7px}
-.ay-cm td{color:var(--text);font-variant-numeric:tabular-nums;text-align:right}
+.ay-cm td{color:var(--text);font-variant-numeric:tabular-nums;text-align:right;
+  font-size:var(--fs-body)}
 .ay-cm td.z{color:var(--text-faint)}
+/* the category names carry their own colour, so they are brightened rather than
+   recoloured -- the colour IS the link to the trend line */
+.ay-cm td:first-child{font-size:var(--fs-body);font-weight:600;filter:brightness(1.24)}
 .ay-cm td:first-child,.ay-cm th:first-child{text-align:left;color:var(--text);position:sticky;left:0;
   /* tinted to the glass rather than near-black: the column only has to stay
      opaque while the table is scrolled sideways, and a dark band under the
@@ -1556,6 +1578,11 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 @media(max-width:760px){.ay-3{grid-template-columns:1fr}
   .ay-3>*{padding:14px 0}
   .ay-3>*+*{border-left:0;border-top:1px solid rgba(255,255,255,.10)}
+  /* the explicit grid-column on these two survives the 1fr collapse and creates
+     implicit tracks 2-4 that do not exist here, so the row silently went back to
+     three columns on a phone. They have to be reset, not just the template. */
+  .ay-3 .ay-hlcol{grid-column:1;grid-row:auto}
+  .ay-3 .ay-contrib{grid-column:1;grid-row:auto;margin-top:0;padding-top:14px}
   .ay-mid{width:100%}
   /* the two SVGs keep their aspect ratio, so a 900-wide viewBox squashed into a
      phone makes the month labels unreadable. They scroll instead of shrinking. */
@@ -4172,11 +4199,13 @@ function arcBars(a){
        an object sitting on it. */
     '<defs>'+
       '<linearGradient id="arcGi" x1="0" y1="0" x2="0" y2="1">'+
-        '<stop offset="0" stop-color="var(--arc-in-hi)"/>'+
-        '<stop offset="1" stop-color="var(--arc-in)"/></linearGradient>'+
+        '<stop offset="0" stop-color="var(--arc-in-g1)"/>'+
+        '<stop offset="0.55" stop-color="var(--arc-in-g2)"/>'+
+        '<stop offset="1" stop-color="var(--arc-in-g2)"/></linearGradient>'+
       '<linearGradient id="arcGo" x1="0" y1="0" x2="0" y2="1">'+
-        '<stop offset="0" stop-color="var(--arc-out-hi)"/>'+
-        '<stop offset="1" stop-color="var(--arc-out)"/></linearGradient>'+
+        '<stop offset="0" stop-color="var(--arc-out-g1)"/>'+
+        '<stop offset="0.55" stop-color="var(--arc-out-g2)"/>'+
+        '<stop offset="1" stop-color="var(--arc-out-g2)"/></linearGradient>'+
       '<filter id="arcGlow" x="-60%" y="-30%" width="220%" height="170%">'+
         '<feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="var(--arc-in)" flood-opacity=".6"/></filter>'+
       '<filter id="arcGlowO" x="-60%" y="-30%" width="220%" height="170%">'+
@@ -4189,10 +4218,13 @@ function arcBars(a){
   for(let i=0;i<12;i++){
     const x=60+i*70;
     // full opacity: .92 muted every bar by 8% before the glass even reached it
+    // the rim is what makes it read as glass rather than as a faded fill
     if(a.mInc[i]>0) out+='<rect x="'+x+'" y="'+y(a.mInc[i]).toFixed(1)+'" width="19" height="'+
-      (H-y(a.mInc[i])).toFixed(1)+'" rx="3" fill="url(#arcGi)" filter="url(#arcGlow)"/>';
+      (H-y(a.mInc[i])).toFixed(1)+'" rx="3" fill="url(#arcGi)" stroke="var(--arc-in-rim)" '+
+      'stroke-width="1" filter="url(#arcGlow)"/>';
     if(a.mExp[i]>0) out+='<rect x="'+(x+21)+'" y="'+y(a.mExp[i]).toFixed(1)+'" width="19" height="'+
-      (H-y(a.mExp[i])).toFixed(1)+'" rx="3" fill="url(#arcGo)" filter="url(#arcGlowO)"/>';
+      (H-y(a.mExp[i])).toFixed(1)+'" rx="3" fill="url(#arcGo)" stroke="var(--arc-out-rim)" '+
+      'stroke-width="1" filter="url(#arcGlowO)"/>';
     out+='<text x="'+(x+20)+'" y="130" text-anchor="middle" font-size="9.5" fill="var(--text-dim)">'+
       ARC_MON[i].toUpperCase()+'</text>';
   }
@@ -4227,7 +4259,12 @@ function arcTrend(a){
   const pick=arcChartCat(a), arr=pick?by[pick]:null;
   const W=1100,H=250,L=72,R=18,T=18,B=34;
   let peak=0; if(arr) arr.forEach(v=>{ if(v>peak) peak=v });
-  let top=500; while(peak>top) top*=2;
+  /* Doubling from 500 gave only 500 / 1k / 2k / 4k as ceilings, so a $540 month
+     was drawn against $1,000 and used half the height it had. This rounds up to
+     a clean step just above the peak, so the line fills the panel whatever the
+     category -- the same fix Yearly's monthly chart already got. */
+  const step=Math.pow(10,Math.max(0,String(Math.round(peak)).length-2));
+  const top=Math.max(Math.ceil(peak/step)*step, step);
   const px=i=>L+i*(W-L-R)/11;
   const py=v=>H-B-(v/top)*(H-T-B);
   let grid='',ylab='';
@@ -4263,11 +4300,14 @@ function arcTrend(a){
         arcEsc(c)+'</label>').join('')
         :'<span style="font-size:11.5px;color:#93A2B8">No Monthly categories in this year</span>')+
       '</div></div></span>';
+  /* The legend sits in the heading row beside the gear, not under the chart:
+     it names what the gear selected, so the two belong together — and the row
+     under the chart was dead space the next section can have. */
   const label=pick
-    ? '<div class="me-legend arc-legend"><span><i style="background:'+meColor(pick)+'"></i>'+
-      arcEsc(pick)+'</span></div>'
-    : '<div class="me-legend arc-legend"><span style="color:#7F8C9C">No category selected</span></div>';
-  return { gear, html:'<div class="arc-tw"><svg viewBox="0 0 '+W+' '+H+'" class="arc-svg" '+
+    ? '<span class="me-legend arc-legend"><span><i style="background:'+meColor(pick)+'"></i>'+
+      arcEsc(pick)+'</span></span>'
+    : '<span class="me-legend arc-legend"><span style="color:var(--text-dim)">No category selected</span></span>';
+  return { gear, label, html:'<div class="arc-tw"><svg viewBox="0 0 '+W+' '+H+'" class="arc-svg" '+
     'preserveAspectRatio="xMidYMid meet" aria-label="Monthly spending for one category">'+
     grid+ylab+
     '<line x1="'+L+'" y1="'+T+'" x2="'+L+'" y2="'+(H-B)+'" stroke="rgba(255,255,255,.14)"/>'+
@@ -4275,7 +4315,7 @@ function arcTrend(a){
     path+dots+xlab+
     (arr?'':'<text x="'+(W/2)+'" y="'+(H/2)+'" text-anchor="middle" font-size="13" '+
       'fill="var(--text-faint)">No Monthly spending recorded for this year</text>')+
-    '</svg><div class="ctip arc-tip"></div></div>'+label };
+    '</svg><div class="ctip arc-tip"></div></div>' };
 }
 function arcTable(rows){
   if(!rows.length) return '<p class="arc-none">Nothing recorded.</p>';
@@ -4303,24 +4343,29 @@ function arcCardHTML(a){
   const open=arcOpen.has(a.id), st=a.stats||{};
   const hl=(a.highlights||[]);
   const contrib=arcContribLine(a.contrib);
-  const pts=(contrib?['<li class="t-contrib"><div class="h">Contributions</div><div class="l">'+
-      contrib+'</div></li>']:[])
-    .concat(hl.map(h=>'<li class="t-'+arcHlTone(h)+'"><div class="h">'+arcEsc(h.title)+
-      '</div><div class="l">'+arcEsc(h.line)+'</div></li>'))
-    .join('');
+  const pts=hl.map(h=>'<li class="t-'+arcHlTone(h)+'"><div class="h">'+arcEsc(h.title)+
+      '</div><div class="l">'+arcEsc(h.line)+'</div></li>').join('');
+  /* Contributions is not an observation about the year the way the highlights
+     are -- it is a statement of fact, and it belongs with the figures. It sits
+     under Expenses and Income across both their columns, in a highlight's shape
+     but with no pane of its own. */
+  const contribBlock = contrib
+    ? '<div class="ay-contrib"><div class="h">Contributions</div><div class="l">'+contrib+'</div></div>'
+    : '';
   const trend = open ? arcTrend(a) : null;
   const body = !open ? '' :
     '<div class="ay-body">'+
       '<div class="ay-sec"><p class="ay-bh">Month by month</p>'+
         '<div class="ay-mid"><div class="ay-scroll">'+arcBars(a)+'</div></div></div>'+
       '<div class="ay-sec"><div class="ay-3">'+
-        '<div><p class="ay-bh">Highlights</p><div class="ay-hlbox"><ul class="ay-hl">'+
+        '<div class="ay-hlcol"><p class="ay-bh">Highlights</p><div class="ay-hlbox"><ul class="ay-hl">'+
           pts+'</ul></div></div>'+
         '<div><p class="ay-bh">Expenses</p>'+arcTable(a.exp||[])+'</div>'+
         '<div><p class="ay-bh">Income</p>'+arcTable(a.inc||[])+'</div>'+
+        contribBlock+
       '</div></div>'+
       '<div class="ay-sec"><div class="ay-bhrow"><p class="ay-bh">12-month trend</p>'+
-        trend.gear+'</div>'+trend.html+'</div>'+
+        '<span class="ay-bhright">'+trend.label+trend.gear+'</span></div>'+trend.html+'</div>'+
       '<div class="ay-sec"><p class="ay-bh">Category by month · Monthly</p>'+arcMatrix(a.byCat)+'</div>'+
     '</div>';
   const meta=a.sealed ? 'Sealed · <b>'+(a.entries||0).toLocaleString('en-CA')+' entries</b>'
@@ -4367,7 +4412,8 @@ function arcRedrawTrend(card,rec){
   if(!sec) return;
   const open=!!sec.querySelector('.arc-pop.open');
   const t=arcTrend(rec);
-  sec.innerHTML='<div class="ay-bhrow"><p class="ay-bh">12-month trend</p>'+t.gear+'</div>'+t.html;
+  sec.innerHTML='<div class="ay-bhrow"><p class="ay-bh">12-month trend</p>'+
+    '<span class="ay-bhright">'+t.label+t.gear+'</span></div>'+t.html;
   if(open) sec.querySelector('.arc-pop').classList.add('open');
 }
 function renderArchives(){

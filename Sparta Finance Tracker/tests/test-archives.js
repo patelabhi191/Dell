@@ -179,8 +179,13 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     // Highlights lead the row now, so the tables are columns 2 and 3
     expRows: [...document.querySelectorAll('.ay-3 > div:nth-child(2) .ay-t tr td:first-child')].map(e => e.textContent),
     incRows: [...document.querySelectorAll('.ay-3 > div:nth-child(3) .ay-t tr td:first-child')].map(e => e.textContent),
-    first: (document.querySelector('.ay-hl .t-contrib .l') || {}).innerText || '',
-    firstLines: document.querySelectorAll('.ay-hl .t-contrib .l span').length,
+    first: (document.querySelector('.ay-contrib .l') || {}).innerText || '',
+    firstLines: document.querySelectorAll('.ay-contrib .l span').length,
+    contribInList: document.querySelectorAll('.ay-hl .t-contrib').length,
+    contribSpan: document.querySelector('.ay-contrib')
+      ? getComputedStyle(document.querySelector('.ay-contrib')).gridColumn : '',
+    contribPane: document.querySelector('.ay-contrib')
+      ? getComputedStyle(document.querySelector('.ay-contrib')).backgroundColor : '',
     // every point wears one of the five tone classes, none left unclassified
     tones: [...document.querySelectorAll('.ay-hl li')].map(li =>
       (li.className.match(/t-\w+/) || [''])[0]),
@@ -208,8 +213,12 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     body.expRows.join(','));
   check(body.incRows.join(',') === 'Paycheck', 'the Income table lists its own', body.incRows.join(','));
   check(/ABI put .* into TFSA/.test(body.first) && /POO added/.test(body.first),
-    'Highlights lead with the contributions line', body.first.replace(/\n/g, ' | '));
+    'the contributions line sits under Expenses and Income', body.first.replace(/\n/g, ' | '));
   check(body.firstLines === 2, 'with ABI on one line and POO on the next', String(body.firstLines));
+  check(body.contribInList === 0, 'and is NOT in the highlights list any more');
+  check(body.contribSpan === '2 / 4', 'spanning both table columns', body.contribSpan);
+  check(body.contribPane === 'rgba(0, 0, 0, 0)',
+    'with no pane of its own \u2014 Highlights is still the only block on glass', body.contribPane);
   check(body.tones.length > 1 && body.tones.every(Boolean) && new Set(body.tones).size >= 3,
     'every highlight is coloured by what it says, across at least three tones',
     [...new Set(body.tones)].join(','));
