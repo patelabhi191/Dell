@@ -1409,11 +1409,17 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   color:transparent;
   -webkit-background-clip:text;background-clip:text;
   mix-blend-mode:normal;
+  /* PURE WHITE at varying alpha, halfway between W1 (bright) and W2 (glass).
+     The old stops mixed cool GREYS -- #E2E8F1, #CBD4E1, #B0BBCC -- which is why
+     the year read muddy rather than glassy. With the card behind now blue, the
+     alpha IS the glass: the peaks stay bright enough to read as white, the
+     troughs go sheer enough for the blue to come through. Keep them white; if
+     this needs tuning, move the ALPHAS, not the colour. */
   background-image:linear-gradient(168deg,
-      rgba(226,232,241,.92) 0%, rgba(203,212,225,.70) 26%,
-      rgba(176,187,204,.46) 47%, rgba(218,226,238,.80) 63%,
-      rgba(186,196,212,.52) 82%, rgba(214,222,236,.90) 100%);
-  -webkit-text-stroke:.6px rgba(226,232,241,.20);
+      rgba(255,255,255,.87) 0%, rgba(255,255,255,.61) 26%,
+      rgba(255,255,255,.41) 47%, rgba(255,255,255,.73) 63%,
+      rgba(255,255,255,.47) 82%, rgba(255,255,255,.82) 100%);
+  -webkit-text-stroke:.65px rgba(255,255,255,.34);
   text-shadow:0 1px 0 rgba(255,255,255,.26), 0 -1px 0 rgba(0,0,0,.30),
               0 9px 24px rgba(0,0,0,.38);
 }
@@ -1530,7 +1536,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .ay-contrib .l{font-size:12px;line-height:1.38;color:var(--text);font-weight:500}
 .ay-contrib .l span{display:block}
 .ay-contrib .l span+span{margin-top:4px}
-/* the same hairline that separates Invested from Moved else in the header */
+/* the same hairline that separates the stat columns in the header */
 .ay-3>*{padding:0 22px}
 .ay-3>*:first-child{padding-left:0}
 .ay-3>*:last-child{padding-right:0}
@@ -4458,9 +4464,9 @@ function arcCardHTML(a){
             '<span class="ay-s"><span>End</span><b class="end">'+arc$(st.end)+'</b></span></span>'+
           '<span class="ay-col">'+
             '<span class="ay-s"><span>Invested</span><b class="inv">'+arc$(st.invested)+'</b></span>'+
-            '<span class="ay-s"><span>Saved total</span><b class="sav">'+arc$(st.saved)+'</b></span></span>'+
+            '<span class="ay-s"><span>Moved else</span><b class="mov">'+arc$(st.moved)+'</b></span></span>'+
           '<span class="ay-col">'+
-            '<span class="ay-s"><span>Moved else</span><b class="mov">'+arc$(st.moved)+'</b></span>'+
+            '<span class="ay-s"><span>Saved total</span><b class="sav">'+arc$(st.saved)+'</b></span>'+
             '<span class="ay-s"><span>Off paper sav</span><b class="off">'+arc$(st.offPaper)+'</b></span></span>'+
           '<span class="ay-gro"><em'+(dn?' class="dn"':'')+'>'+arcPct(st.growth)+'</em>'+
             '<span>Savings growth</span></span>'+

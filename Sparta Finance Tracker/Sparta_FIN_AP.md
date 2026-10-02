@@ -477,7 +477,11 @@ the top card with another open:
 | as shipped | 7.56 | 25 — the reported bug |
 | blend neutralised | **0.55 – 0.96** | 12 – 22 on isolated glyph edges |
 
-`.ay-yr` is now `mix-blend-mode:normal`. It keeps its gradient, clip and bevel; what it
+`.ay-yr` is now `mix-blend-mode:normal`, and its fill is **pure white at varying alpha**
+rather than the cool greys it carried before (`#E2E8F1`, `#CBD4E1`, `#B0BBCC`) — those were
+why it read muddy rather than glassy. With the card behind now blue, **the alpha is the
+glass**: peaks at `.87` keep it reading white, troughs at `.41` let the blue through. If it
+needs tuning, move the alphas, not the colour. It keeps its gradient, clip and bevel; what it
 loses is reacting to the backdrop. **The Option B tint is untouched and must stay that
 way** — the colour was verified identical to B afterwards, to 0–1 per channel.
 
