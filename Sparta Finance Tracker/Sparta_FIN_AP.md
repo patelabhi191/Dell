@@ -446,6 +446,30 @@ Three guards, each of which has a test that fails without it:
 test, so a deliberately typed `0` survives. It stays editable on the Yearly tab like any
 other year's.
 
+### Tuning the Archives colours by hand
+
+Six variables on `:root`, together, so they appear when you inspect `<html>` and can be
+edited live in DevTools. **Everything else is derived from them** — nothing about the card
+or the bars carries a second copy of a colour.
+
+| variable | what it does | default |
+|---|---|---|
+| `--arc-bar-in` | the income bar | `var(--yf-inc)` — Yearly's blue |
+| `--arc-bar-out` | the expense bar | `var(--yf-exp)` — Yearly's orange |
+| `--arc-card-a` | expanded card, gradient stop 1 (top-left) | `rgba(74,110,255,.22)` |
+| `--arc-card-b` | expanded card, stop 2 (middle, 46%) | `rgba(52,86,200,.17)` |
+| `--arc-card-c` | expanded card, stop 3 (bottom-right) | `rgba(130,165,255,.10)` |
+| `--arc-card-sat` | how hard the card saturates what is behind it | `185%` |
+
+The bars' lit top, translucent body and rim are mixed FROM the two bar colours with
+`color-mix()` in `#archiveView`. **They used to be hardcoded `rgba`, which meant changing
+the bar colour did nothing** — the frosted fill ignored it. Tune the *look* (how light the
+top, how sheer the body) with the percentages in `#archiveView`; tune the *colour* on
+`:root`.
+
+The alpha on the card stops is load-bearing, not decoration: see the shade-drift note
+below before raising it.
+
 ### How an Archives card is built visually
 
 **One sheet of glass, not four.** The card is a single frosted surface; the header is the
