@@ -1280,15 +1280,15 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 }
 /* ═════════ Archives — minimal: flat surfaces, thin rules, indigo accent ═════════ */
 #archiveView{--arc:#8B93F8;
-  /* Blue and orange at full chroma. The first pass desaturated them to "sit in"
-     the glass and they went chalky -- on a deep indigo panel a wash reads as
-     dirty, not subtle. These are luminous instead: an electric cyan-blue far
-     enough off the panel's violet to separate at a glance, and an orange hot
-     enough to hold its own beside it.
+  /* Electric cyan in, bright red out, each with a lighter top stop for the
+     gradient. The panel measures hue 218-222 and swings x1.77 in luminance, so
+     an earlier run of flat mid-tone fills read as dull whatever the hue; what
+     fixed it was the SURFACE (see --ay-plate below) plus a lit gradient and a
+     glow, not another palette.
      Five highlight tones, mapped by what the card SAYS rather than by its
      tone field alone: alarm, spending, good news, neutral, and the teal that
      Contributions already owns. */
-  --arc-in:#35D6FF; --arc-out:#FF8A33;
+  --arc-in:#00F0FF; --arc-in-hi:#7DFBFF; --arc-out:#FF5252; --arc-out-hi:#FF9A9A;
   --hl-alarm:#FF6B6B; --hl-spend:#FFA23D; --hl-good:#4ADE80;
   --hl-info:#7DA8FF; --hl-contrib:#2DD4BF}
 #archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
@@ -1444,6 +1444,15 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 /* 75% and centred: at full width the bars sat so far apart the year stopped
    reading as one shape. The remaining quarter is left empty on purpose. */
 .ay-mid{width:75%;margin:0 auto}
+/* The glass behind this chart was measured at hue 218-222 swinging x1.77 in
+   luminance -- #0D1E3B at its darkest, #2D457A where the specular streak
+   crosses -- so no fixed bar colour could hold contrast across it. The plate
+   gives the bars ONE flat dark surface: the swing drops to x1.24 and the
+   worst-case contrast goes 6.64 -> 10.58 (income) and 2.93 -> 4.67 (expense).
+   The glass still frames it, so the card is unchanged everywhere else. */
+.ay-mid{background:rgba(5,9,22,.52);border:1px solid rgba(255,255,255,.07);
+  border-radius:var(--r-card);padding:12px 14px 6px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
 .arc-tw{position:relative}
 /* heading row: the title on the left, the category gear on the right, the way
    Monthly's skeu-h carries its own */
@@ -3289,7 +3298,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-01B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-02</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -4164,16 +4173,32 @@ function arcBars(a){
   const max=Math.max(...a.mInc,...a.mExp,1), H=112, T=14;
   const y=v=>H-(v/max)*(H-T);
   let out='<svg viewBox="0 0 900 140" class="arc-svg" aria-label="Income and expenses by month">'+
+    /* A lit top edge falling to full colour, and a glow in the bar's own hue.
+       A flat fill reads as a painted rectangle on a lit surface; this reads as
+       an object sitting on it. */
+    '<defs>'+
+      '<linearGradient id="arcGi" x1="0" y1="0" x2="0" y2="1">'+
+        '<stop offset="0" stop-color="var(--arc-in-hi)"/>'+
+        '<stop offset="1" stop-color="var(--arc-in)"/></linearGradient>'+
+      '<linearGradient id="arcGo" x1="0" y1="0" x2="0" y2="1">'+
+        '<stop offset="0" stop-color="var(--arc-out-hi)"/>'+
+        '<stop offset="1" stop-color="var(--arc-out)"/></linearGradient>'+
+      '<filter id="arcGlow" x="-60%" y="-30%" width="220%" height="170%">'+
+        '<feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="var(--arc-in)" flood-opacity=".6"/></filter>'+
+      '<filter id="arcGlowO" x="-60%" y="-30%" width="220%" height="170%">'+
+        '<feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="var(--arc-out)" flood-opacity=".6"/></filter>'+
+    '</defs>'+
     '<line x1="46" y1="'+H+'" x2="890" y2="'+H+'" stroke="rgba(255,255,255,.14)"/>'+
     '<line x1="46" y1="'+T+'" x2="890" y2="'+T+'" stroke="rgba(255,255,255,.06)"/>'+
     '<text x="38" y="'+(H+4)+'" text-anchor="end" font-size="9.5" fill="var(--text-dim)">$0</text>'+
     '<text x="38" y="'+(T+8)+'" text-anchor="end" font-size="9.5" fill="var(--text-dim)">'+arc$(max)+'</text>';
   for(let i=0;i<12;i++){
     const x=60+i*70;
+    // full opacity: .92 muted every bar by 8% before the glass even reached it
     if(a.mInc[i]>0) out+='<rect x="'+x+'" y="'+y(a.mInc[i]).toFixed(1)+'" width="19" height="'+
-      (H-y(a.mInc[i])).toFixed(1)+'" rx="3" fill="var(--arc-in)" fill-opacity=".92"/>';
+      (H-y(a.mInc[i])).toFixed(1)+'" rx="3" fill="url(#arcGi)" filter="url(#arcGlow)"/>';
     if(a.mExp[i]>0) out+='<rect x="'+(x+21)+'" y="'+y(a.mExp[i]).toFixed(1)+'" width="19" height="'+
-      (H-y(a.mExp[i])).toFixed(1)+'" rx="3" fill="var(--arc-out)" fill-opacity=".92"/>';
+      (H-y(a.mExp[i])).toFixed(1)+'" rx="3" fill="url(#arcGo)" filter="url(#arcGlowO)"/>';
     out+='<text x="'+(x+20)+'" y="130" text-anchor="middle" font-size="9.5" fill="var(--text-dim)">'+
       ARC_MON[i].toUpperCase()+'</text>';
   }

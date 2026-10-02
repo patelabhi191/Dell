@@ -473,10 +473,29 @@ both `exp`, and only the first is a warning. Five colours:
 `arcSnapshot` keeps each card's `key` for this. Archives sealed before it existed carry no
 key, so `arcHlTone()` falls back to `tone`.
 
-**The money pair is `--arc-in` / `--arc-out`**, blue and orange at full chroma. They were
-desaturated once "to sit in the glass" and went chalky — on a deep indigo panel a wash
-reads as dirty rather than subtle. Do not reach for Yearly's `--yf-inc` / `--yf-exp` here;
-those are mixed for a flat dark panel.
+**The money pair is `--arc-in` / `--arc-out`** — electric cyan `#00F0FF` in, bright red
+`#FF5252` out, each with a lighter `-hi` stop for the bar gradient. Do not reach for
+Yearly's `--yf-inc` / `--yf-exp` here; those are mixed for a flat dark panel.
+
+**The surface was the problem, not the palette.** Four separate palettes were rendered and
+measured before this was understood. The glass behind the chart samples at **hue 218–222**
+— it is blue, not the indigo it looks — and swings **×1.77 in luminance** across one panel
+(`#0D1E3B` at its darkest, `#2D457A` where the specular streak crosses). Two consequences:
+
+- every cyan, teal, turquoise and jade tried was a *neighbour* of the background, 20–40°
+  away, so it sat in the surface rather than on it;
+- no fixed bar colour can hold contrast across a ×1.77 swing — it reads on the left and
+  washes out on the right, which is what "dull" and "off track" actually were.
+
+`.ay-mid` is the fix: one flat dark plate under the chart only. Swing drops to **×1.24**,
+and worst-case contrast (bar against the *lightest* point of the surface it sits on) goes
+**6.64 → 10.58** for income and **2.93 → 4.67** for expense. The glass still frames it, so
+the rest of the card is untouched. Reach for the plate before reaching for another palette.
+
+Three things lift any palette and are independent of hue: the bars draw at **full opacity**
+(`fill-opacity:.92` was muting every one by 8%), with a **vertical gradient** from the `-hi`
+stop, and a **glow in their own hue**. A flat mid-tone fill on a lit surface reads as a
+painted rectangle however well the colour is chosen.
 
 **The 12-month trend draws ONE line**, for one category chosen with radios in the gear
 (`sparta.arcChartCat`, a device preference — see the rollover rules above for why it is not
