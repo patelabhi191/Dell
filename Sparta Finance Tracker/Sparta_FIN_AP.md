@@ -448,9 +448,9 @@ other year's.
 
 ### Tuning the Archives colours by hand
 
-Six variables on `:root`, together, so they appear when you inspect `<html>` and can be
-edited live in DevTools. **Everything else is derived from them** — nothing about the card
-or the bars carries a second copy of a colour.
+Eleven variables on `:root`, together, so they appear when you inspect `<html>` and can be
+edited live in DevTools. **Everything else is derived from them** — nothing about the card,
+the bars or the year numerals carries a second copy of a colour.
 
 | variable | what it does | default |
 |---|---|---|
@@ -460,6 +460,11 @@ or the bars carries a second copy of a colour.
 | `--arc-card-b` | expanded card, stop 2 (middle, 46%) | `rgba(52,86,200,.17)` |
 | `--arc-card-c` | expanded card, stop 3 (bottom-right) | `rgba(130,165,255,.10)` |
 | `--arc-card-sat` | how hard the card saturates what is behind it | `185%` |
+| `--arc-yr-col` | the year numerals' colour | `#fff` |
+| `--arc-yr-hi` | the year's gradient level at its lit peaks | `87%` |
+| `--arc-yr-lo` | the year's gradient level at its troughs | `41%` |
+| `--arc-yr-edge` | the hairline outline around the glyphs | `34%` |
+| `--arc-yr-angle` | which way the sheen runs across them | `168deg` |
 
 The bars' lit top, translucent body and rim are mixed FROM the two bar colours with
 `color-mix()` in `#archiveView`. **They used to be hardcoded `rgba`, which meant changing
@@ -467,8 +472,29 @@ the bar colour did nothing** — the frosted fill ignored it. Tune the *look* (h
 top, how sheer the body) with the percentages in `#archiveView`; tune the *colour* on
 `:root`.
 
-The alpha on the card stops is load-bearing, not decoration: see the shade-drift note
+**The year numerals are a gradient clipped to the text**, so what reads as glass is the
+gradient's *level*: `--arc-yr-hi` where it catches the light, `--arc-yr-lo` where the card
+shows through. Raise both and it goes solid white; lower both and it dissolves into the
+card; widen the gap and the sheen gets harder. The six stops in `.ay-yr` are mixes of
+`--arc-yr-peak` and `--arc-yr-sheer` (derived in `#archiveView`) at the percentages where
+each one used to sit between `.41` and `.87`, so the *shape* of the sheen lives in the rule
+and its *strength* on `:root`. Keep the colour white unless a tinted year is wanted — the
+stops once mixed cool greys (`#E2E8F1`, `#CBD4E1`, `#B0BBCC`) and read muddy rather than
+sheer.
+
+**Every card stop needs an alpha.** `--arc-card-a/b/c` are `rgba`, and a value written
+without one — `rgb(36 65 119)` — is fully opaque, so the glass stops being glass wherever
+that stop dominates. The alpha is load-bearing, not decoration: see the shade-drift note
 below before raising it.
+
+`tests/check-yr.js` measures all of this — it diffs the numerals against the previous build
+and then moves each knob to prove it is wired. It is a hand-run diagnostic, not part of
+`run-all.sh`. Two things it had to learn the hard way: **freeze the animations first**, or
+the decorative waves move between two screenshots and ~20 levels of noise look like a
+result; and `getComputedStyle` leaves `color-mix()` **unresolved** inside
+`background-image`, so a regex over it finds nothing and every assertion built on it passes
+vacuously (bug class 18 again). Resolve colours through a probe element's
+`background-color` instead.
 
 ### How an Archives card is built visually
 

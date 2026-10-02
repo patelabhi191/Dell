@@ -62,7 +62,7 @@
      slightly differently on each tab. */
   --r-panel:var(--radius); --r-card:14px; --r-ctl:10px;
   --pad-panel:22px;
-  /* ══════ ARCHIVES — the three things worth tuning by hand ══════════════
+  /* ══════ ARCHIVES — the things worth tuning by hand ════════════════════
      Put here, on :root, so they show up when you inspect <html> in DevTools and
      can be edited live. Everything else about the Archives card is derived from
      these, so changing one of them changes every place it is used.
@@ -71,15 +71,33 @@
        --arc-bar-out    the expense bar     (default: Yearly's orange)
        --arc-card-a/b/c the expanded card's background, three gradient stops
        --arc-card-sat   how much the card saturates whatever is behind it
+       --arc-yr-col     the year numerals' colour
+       --arc-yr-hi      the GRADIENT LEVEL at its lit peaks   (how solid)
+       --arc-yr-lo      the GRADIENT LEVEL at its troughs     (how sheer)
+       --arc-yr-edge    the hairline outline around the glyphs
+       --arc-yr-angle   which way the sheen runs across them
 
      The bar's lit top, translucent body and rim are all mixed FROM the two bar
-     colours with color-mix(), so you only ever change the one value. */
+     colours with color-mix(), so you only ever change the one value.
+     --arc-card-a/b/c are rgba: a value written WITHOUT an alpha is opaque, and
+     the card stops being glass wherever that stop dominates. */
   --arc-bar-in:var(--yf-inc);
   --arc-bar-out:var(--yf-exp);
   --arc-card-a:rgba(74,110,255,.22);
   --arc-card-b:rgba(52,86,200,.17);
   --arc-card-c:rgba(130,165,255,.10);
   --arc-card-sat:185%;
+  /* The year numerals are a gradient CLIPPED TO THE TEXT, so what reads as
+     "glass" is the gradient's level -- hi where it catches the light, lo where
+     the card shows through. Raise both and it goes solid white; lower both and
+     it dissolves into the card; widen the gap and the sheen gets harder.
+     Keep the COLOUR white unless you want a tinted year -- the alphas are the
+     glass, and cool greys (#CBD4E1 and the like) read muddy, not sheer. */
+  --arc-yr-col:#fff;
+  --arc-yr-hi:87%;
+  --arc-yr-lo:41%;
+  --arc-yr-edge:34%;
+  --arc-yr-angle:168deg;
   --stroke:rgba(255,255,255,0.12);
   --stroke-top:rgba(255,255,255,0.28);
   --text:#EAF0FA;
@@ -1322,6 +1340,10 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   --arc-out-g1:color-mix(in srgb, #fff 52%, var(--arc-bar-out));
   --arc-out-g2:color-mix(in srgb, var(--arc-bar-out) 46%, transparent);
   --arc-out-rim:color-mix(in srgb, #fff 62%, var(--arc-bar-out));
+  /* The two ends of the year's gradient. Every stop below is mixed between
+     these, so the six stops stay in proportion when you move hi or lo. */
+  --arc-yr-peak:color-mix(in srgb, var(--arc-yr-col) var(--arc-yr-hi), transparent);
+  --arc-yr-sheer:color-mix(in srgb, var(--arc-yr-col) var(--arc-yr-lo), transparent);
   --hl-alarm:#FF6B6B; --hl-spend:#FFA23D; --hl-good:#4ADE80;
   --hl-info:#7DA8FF; --hl-contrib:#2DD4BF}
 #archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
@@ -1432,17 +1454,19 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   color:transparent;
   -webkit-background-clip:text;background-clip:text;
   mix-blend-mode:normal;
-  /* PURE WHITE at varying alpha, halfway between W1 (bright) and W2 (glass).
-     The old stops mixed cool GREYS -- #E2E8F1, #CBD4E1, #B0BBCC -- which is why
-     the year read muddy rather than glassy. With the card behind now blue, the
-     alpha IS the glass: the peaks stay bright enough to read as white, the
-     troughs go sheer enough for the blue to come through. Keep them white; if
-     this needs tuning, move the ALPHAS, not the colour. */
-  background-image:linear-gradient(168deg,
-      rgba(255,255,255,.87) 0%, rgba(255,255,255,.61) 26%,
-      rgba(255,255,255,.41) 47%, rgba(255,255,255,.73) 63%,
-      rgba(255,255,255,.47) 82%, rgba(255,255,255,.82) 100%);
-  -webkit-text-stroke:.65px rgba(255,255,255,.34);
+  /* One colour at six LEVELS, not six colours. The old stops mixed cool greys
+     -- #E2E8F1, #CBD4E1, #B0BBCC -- which is why the year read muddy rather
+     than glassy. Now every stop is a mix of --arc-yr-peak and --arc-yr-sheer,
+     so the shape of the sheen is fixed here and its STRENGTH lives on :root.
+     The percentages are where each stop sat between the old .41 and .87. */
+  background-image:linear-gradient(var(--arc-yr-angle),
+      var(--arc-yr-peak) 0%,
+      color-mix(in srgb, var(--arc-yr-peak) 43.4783%, var(--arc-yr-sheer)) 26%,
+      var(--arc-yr-sheer) 47%,
+      color-mix(in srgb, var(--arc-yr-peak) 69.5652%, var(--arc-yr-sheer)) 63%,
+      color-mix(in srgb, var(--arc-yr-peak) 13.0435%, var(--arc-yr-sheer)) 82%,
+      color-mix(in srgb, var(--arc-yr-peak) 89.1304%, var(--arc-yr-sheer)) 100%);
+  -webkit-text-stroke:.65px color-mix(in srgb, var(--arc-yr-col) var(--arc-yr-edge), transparent);
   text-shadow:0 1px 0 rgba(255,255,255,.26), 0 -1px 0 rgba(0,0,0,.30),
               0 9px 24px rgba(0,0,0,.38);
 }
@@ -3370,7 +3394,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-02C</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-02D</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
