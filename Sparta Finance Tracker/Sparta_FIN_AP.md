@@ -487,15 +487,22 @@ measured before this was understood. The glass behind the chart samples at **hue
 - no fixed bar colour can hold contrast across a ×1.77 swing — it reads on the left and
   washes out on the right, which is what "dull" and "off track" actually were.
 
-`.ay-mid` is the fix: one flat dark plate under the chart only. Swing drops to **×1.24**,
-and worst-case contrast (bar against the *lightest* point of the surface it sits on) goes
-**6.64 → 10.58** for income and **2.93 → 4.67** for expense. The glass still frames it, so
-the rest of the card is untouched. Reach for the plate before reaching for another palette.
+A plate under the chart was built and measured as the fix — `.ay-mid` with a flat dark
+background — and it worked: swing **×1.77 → ×1.24**, worst-case contrast **6.64 → 10.58**
+(income) and **2.93 → 4.67** (expense), where "worst" is each bar against the *lightest*
+point of the surface it sits on.
 
-Three things lift any palette and are independent of hue: the bars draw at **full opacity**
-(`fill-opacity:.92` was muting every one by 8%), with a **vertical gradient** from the `-hi`
-stop, and a **glow in their own hue**. A flat mid-tone fill on a lit surface reads as a
-painted rectangle however well the colour is chosen.
+**It was then removed by request**, because it boxed a section inside a body that is
+deliberately one uninterrupted sheet. The numbers above are therefore what the chart
+*could* have; what it has is 6.64 / 2.93 on a surface that swings ×1.77. That is an
+accepted trade, not an oversight — do not re-add the plate as a "fix" without asking.
+
+What carries the bars instead is independent of the surface, and must not be removed:
+**full opacity**, a **vertical gradient** from the `-hi` stop, and a **glow in each bar's
+own hue**.
+
+`fill-opacity:.92` was muting every bar by 8% before the glass reached it; a flat mid-tone
+fill on a lit surface reads as a painted rectangle however well the colour is chosen.
 
 **The 12-month trend draws ONE line**, for one category chosen with radios in the gear
 (`sparta.arcChartCat`, a device preference — see the rollover rules above for why it is not
