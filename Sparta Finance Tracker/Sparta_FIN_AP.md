@@ -473,9 +473,14 @@ both `exp`, and only the first is a warning. Five colours:
 `arcSnapshot` keeps each card's `key` for this. Archives sealed before it existed carry no
 key, so `arcHlTone()` falls back to `tone`.
 
-**The money pair is `--arc-in` / `--arc-out`** — electric cyan `#00F0FF` in, bright red
-`#FF5252` out, each with a lighter `-hi` stop for the bar gradient. Do not reach for
-Yearly's `--yf-inc` / `--yf-exp` here; those are mixed for a flat dark panel.
+**The money pair is `--arc-in` / `--arc-out`, and they ALIAS Yearly's `--yf-inc` /
+`--yf-exp`** — the same blue `#38BDF8` and orange `#F97316`, pointed at rather than copied,
+so the two tabs cannot drift apart. The `-hi` stops (`#91DBFB` / `#FCB27F`) are those two
+mixed 45% toward white, for the bar gradient only.
+
+An earlier note here said *not* to use Yearly's tokens on this panel. That was wrong, and
+the trail is worth keeping: cyan/red, emerald/crimson, turquoise/magenta, lime/vermilion and
+jade/gold were each built and measured before it became clear the hue was never the problem.
 
 **The surface was the problem, not the palette.** Four separate palettes were rendered and
 measured before this was understood. The glass behind the chart samples at **hue 218–222**
@@ -502,7 +507,9 @@ What carries the bars instead is independent of the surface, and must not be rem
 own hue**.
 
 `fill-opacity:.92` was muting every bar by 8% before the glass reached it; a flat mid-tone
-fill on a lit surface reads as a painted rectangle however well the colour is chosen.
+fill on a lit surface reads as a painted rectangle however well the colour is chosen. Those
+three — full opacity, the gradient, the glow — are what make these bars read. Do not remove
+them in the course of changing a colour.
 
 **The 12-month trend draws ONE line**, for one category chosen with radios in the gear
 (`sparta.arcChartCat`, a device preference — see the rollover rules above for why it is not

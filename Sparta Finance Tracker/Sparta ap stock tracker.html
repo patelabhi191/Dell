@@ -1280,15 +1280,18 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 }
 /* ═════════ Archives — minimal: flat surfaces, thin rules, indigo accent ═════════ */
 #archiveView{--arc:#8B93F8;
-  /* Electric cyan in, bright red out, each with a lighter top stop for the
-     gradient. The panel measures hue 218-222 and swings x1.77 in luminance, so
-     an earlier run of flat mid-tone fills read as dull whatever the hue; what
-     fixed it was the SURFACE (see --ay-plate below) plus a lit gradient and a
-     glow, not another palette.
+  /* The SAME blue and orange Yearly uses, aliased rather than copied so the two
+     tabs cannot drift apart -- change --yf-inc / --yf-exp and Archives follows.
+     The -hi stops are those two mixed 45% toward white, for the bar gradient.
+     Earlier runs tried cyan/red, emerald/crimson, turquoise/magenta, lime and
+     jade; the panel measures hue 218-222 and swings x1.77 in luminance, so flat
+     mid-tone fills read as dull whatever the hue. What carries these is the lit
+     gradient, the glow and full opacity -- not the choice of hue.
      Five highlight tones, mapped by what the card SAYS rather than by its
      tone field alone: alarm, spending, good news, neutral, and the teal that
      Contributions already owns. */
-  --arc-in:#00F0FF; --arc-in-hi:#7DFBFF; --arc-out:#FF5252; --arc-out-hi:#FF9A9A;
+  --arc-in:var(--yf-inc); --arc-in-hi:#91DBFB;
+  --arc-out:var(--yf-exp); --arc-out-hi:#FCB27F;
   --hl-alarm:#FF6B6B; --hl-spend:#FFA23D; --hl-good:#4ADE80;
   --hl-info:#7DA8FF; --hl-contrib:#2DD4BF}
 #archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
