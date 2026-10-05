@@ -745,19 +745,80 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     check(!('txns' in snap) && !('rows' in snap) && !JSON.stringify(snap).includes('Loblaws'),
       'no row-level detail is carried — no dates, descriptions or who');
     check(!('cats' in snap), 'the configured category lists are NOT carried');
-    check(snap.entries === 8,
-      'ENTRIES COUNTS YEARLY ROWS ONLY — 8 of the 16 rows in the year; the card says "N entries" and does not include Monthly',
-      snap.entries);
-    // the Monthly income row reaches nothing at all
+    // ── the three fixes ────────────────────────────────────────────────────
+    // (a) entries counts EVERY row in the year, not just Yearly's: q1-q8 on
+    //     Yearly, n1-n8 on Monthly (n8 being the income row).
+    check(snap.entries === 16, 'entries counts every row in the year, both tabs', snap.entries);
+    check(snap.entriesYf === 8 && snap.entriesMe === 8,
+      'and the split is kept, so the card can say which is which',
+      `${snap.entriesYf} / ${snap.entriesMe}`);
+    // the ledger holds 17 rows; a count that just took the array's length would
+    // read 17, so this also pins that next year's row is excluded
+    check(await X.page.evaluate(() => state.yf.txns.length) === 17 && snap.entries === 16,
+      'next year\'s row is in the ledger but not in the count', snap.entries);
+
+    // (b) a Monthly INCOME row no longer vanishes. It stays OUT of every total
+    //     -- End is a Yearly figure -- and is carried in a field of its own.
     check(snap.mInc.reduce((a, v) => a + v, 0) === 10000,
-      'a Monthly INCOME row is not in the income months (yfTxns excludes tab==="me")');
-    check(!('Refund' in snap.byCat),
-      'nor in the category grid (meMonthlyByCat keeps expenses only) — it reaches no figure on the card');
+      'a Monthly income row still does not touch the income months');
+    check(!('Refund' in snap.byCat), 'nor the category grid, which is expenses only');
+    check(snap.stats.end === 12890, 'and it does not move End');
+    check(Array.isArray(snap.meInc) && snap.meInc.length === 12 && snap.meInc[6] === 640,
+      'but it IS carried, in meInc, under July', JSON.stringify(snap.meInc));
     // and Monthly spending is in the grid but in no total, which is the shape
     // of the whole thing rather than a bug: Yearly's End models a bank balance
     const meSpend = 220 + 130 + 310 + 95 + 500;        // un-allotted Monthly rows
     check(!snap.mExp.some(v => v === meSpend) && snap.stats.end === 12890,
       'Monthly spending appears in the grid but in no total — End is a Yearly-only figure');
+
+    /* ── and the card has to SHOW all three, or the fix is only in the data ──
+       Switch to the Archives view FIRST. Everything inside a display:none tab
+       measures 0x0, so the rendered checks below would read every note as
+       invisible while its text was perfectly correct (bug class 14). */
+    await goArchive(X.page);
+    await X.page.evaluate(y => {
+      state.archives = [arcSnapshot(y)]; arcPersist(); renderArchives();
+      document.querySelector('.ay-yr').click();
+    }, AY);
+    /* wait for the body to have finished opening rather than guessing at it --
+       a fixed sleep measured the notes mid-transition and read them as 0-high */
+    await X.page.waitForFunction(() => {
+      const e = document.querySelector('.ay.open .ay-menote');
+      return !!e && e.getBoundingClientRect().height > 5;
+    }, null, { timeout: 5000 });
+    const shown = await X.page.evaluate(() => {
+      const c = document.querySelector('.ay.open');
+      const sec = [...c.querySelectorAll('.ay-sec')]
+        .find(x => /Category by month/i.test(x.querySelector('.ay-bh')?.textContent || ''));
+      const vis = e => { if (!e) return false; const r = e.getBoundingClientRect();
+        return r.width > 50 && r.height > 5 };
+      const note = sec && sec.querySelector('.ay-bnote:not(.ay-menote)');
+      const me = sec && sec.querySelector('.ay-menote');
+      return { meta: c.querySelector('.ay-meta').textContent.replace(/\s+/g, ' ').trim(),
+        note: note && note.textContent.trim(), noteVisible: vis(note),
+        me: me && me.textContent.replace(/\s+/g, ' ').trim(), meVisible: vis(me) };
+    });
+    check(/16 entries/.test(shown.meta) && /8 yearly/.test(shown.meta) && /8 monthly/.test(shown.meta),
+      'the card says 16 entries and breaks it down', shown.meta);
+    check(shown.noteVisible && /not spending on top of them/i.test(shown.note || ''),
+      'the grid carries a line saying it is detail inside the figures above', shown.note);
+    check(shown.meVisible && /\$640/.test(shown.me || '') && /counted in none/i.test(shown.me || ''),
+      'and the Monthly income is stated, with its figure', shown.me);
+
+    /* The line must be ABSENT when there is no Monthly income -- a note that is
+       always there says nothing, and this is the half that would rot silently. */
+    const noMe = await X.page.evaluate(y => {
+      const snap = arcSnapshot(y);
+      snap.meInc = Array(12).fill(0);
+      state.archives = [snap]; arcPersist(); renderArchives();
+      document.querySelector('.ay-yr').click();
+      return true;
+    }, AY);
+    await X.page.waitForTimeout(350);
+    check(noMe && await X.page.evaluate(() => !document.querySelector('.ay.open .ay-menote')),
+      'with no Monthly income the line is absent, not an empty one');
+    check(await X.page.evaluate(() => !!document.querySelector('.ay.open .ay-bnote')),
+      '...while the grid\'s own note stays, since it is always true');
 
     await X.ctx.close();
   }

@@ -477,16 +477,31 @@ in `stats`, and the highlights. Monthly reaches the card through **exactly one f
 - **`me.rules`, `me.imported`, `me.chartCats`** — settings rather than data for that year.
   `chartCats` especially: the trend's category choice must not be frozen into the record.
 
-**Two sharp edges worth knowing about:**
+**Three things that were wrong here, and how they were closed:**
 
-1. **`entries` counts Yearly rows only.** A year with 8 Yearly and 8 Monthly rows seals as
-   `entries: 8`, and the card says "Sealed · 8 entries" on a card whose own body shows a
-   Monthly grid. Under-reports by every Monthly row.
-2. **A Monthly *income* row reaches nothing.** `yfTxns()` excludes `tab==='me'` and
-   `meMonthlyByCat()` keeps expenses only, so such a row is in neither `mInc` nor `byCat`.
-   Neither Monthly row-creator can make one — both hardcode `type:'expense'` — so this only
-   arises from an import or an old file, but when it does the money silently vanishes from
-   the archive.
+1. **`entries` counted Yearly rows only.** A year with 8 Yearly and 8 Monthly rows sealed as
+   `entries: 8`, on a card whose own body showed a grid built from the other 8. It now counts
+   every row in the year, and `entriesYf` / `entriesMe` keep the split, so the card reads
+   "Sealed · 16 entries · 8 yearly · 8 monthly". Records sealed before this keep their old
+   number — an archive is a snapshot — and re-archiving the year corrects it.
+2. **A Monthly *income* row reached nothing.** `yfTxns()` excludes `tab==='me'` and
+   `meMonthlyByCat()` keeps expenses only, so it was in neither `mInc` nor `byCat` nor any
+   total. It is now carried in **`meInc`** (twelve months) and stated under the grid, with
+   its figure, only when there is some. It is deliberately **not** folded into `mInc`: End
+   models a bank balance driven by the Yearly tab, and moving it would make the archive
+   disagree with Yearly. Worth knowing that **the Monthly tab also hides these rows** —
+   `meTxns()` filters to expenses — so the archive is now the only place that money is
+   visible at all. Neither Monthly row-creator can make one (both hardcode `type:'expense'`),
+   so it takes an import or an older file.
+3. **The card described two pots of money and did not say so.** Monthly spending appears in
+   the grid and in no total above it, which is the Yearly model working as intended rather
+   than a bug — but nothing on the card said as much, so the two halves looked like they
+   should add up. The grid now carries a line: *detail inside the figures above, not spending
+   on top of them.*
+
+Both notes use `.ay-bnote` and set **no colour, size or leading of their own**. `#archiveView
+p` is an id selector and beats a class, so all prose on this tab is already on one spec;
+declaring them again would lose silently and leave two specs claiming one role.
 
 ### Tuning the Archives colours by hand
 

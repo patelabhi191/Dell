@@ -1634,6 +1634,16 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .ay-hl .l{font-size:12px;line-height:1.38;color:var(--text);font-weight:500}
 .ay-hl .l span{display:block}
 .ay-hl .l span+span{margin-top:4px}
+/* A heading says what a section IS; this says how it relates to the one above,
+   which the grid needed and nothing else on the card does.
+   Colour, size and leading are deliberately NOT set here: `#archiveView p` is
+   an id selector and wins over a class, so every piece of prose on this tab is
+   already on one spec. Declaring them here would lose silently and leave two
+   specs in the file claiming the same role. Only the spacing is ours. */
+.ay-bnote{margin:-6px 0 12px;max-width:72ch}
+.ay-menote{margin:12px 0 0}
+.ay-menote b{color:var(--text);font-variant-numeric:tabular-nums}
+.ay-split{color:var(--text-faint);font-weight:400;letter-spacing:0;text-transform:none}
 /* category-by-month is 14 columns wide; it scrolls sideways inside the card */
 .ay-scroll{overflow-x:auto}
 .ay-cm{border-collapse:collapse;min-width:720px;width:100%}
@@ -3408,7 +3418,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-05</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-05B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -4171,11 +4181,30 @@ function arcSnapshot(year){
        contributions keep being added after a year is sealed, and an archive
        that quietly changes is not an archive. */
     const cb=(acct,who)=>contributedBy(acct,year,who);
+    /* EVERY row in the year, not just Yearly's. txns above is yfTxns(), which
+       ends in t.tab!=='me' -- counting it alone made a year of 8 Yearly and 8
+       Monthly rows seal as "8 entries", on a card whose own body shows a grid
+       built from the other 8. The split is kept so the card can say which. */
+    const inYear=(state.yf.txns||[]).filter(t=>(t.date||'').slice(0,4)===String(year));
+    const meRows=inYear.filter(t=>t.tab==='me');
+    /* A Monthly INCOME row reaches nothing otherwise: yfTxns() excludes
+       tab==='me' and meMonthlyByCat() keeps expenses only -- so the money was
+       in no figure on the card at all. Neither Monthly row-creator can make
+       one (both hardcode type:'expense'), so it takes an import or an older
+       file, but when it happens it must not vanish. It is carried SEPARATELY
+       rather than folded into mInc: End models a bank balance driven by the
+       Yearly tab, and moving it would make the archive disagree with Yearly. */
+    const meInc=Array(12).fill(0);
+    meRows.filter(t=>t.type==='income').forEach(t=>{
+      const m=parseInt((t.date||'').slice(5,7),10)-1;
+      if(m>=0&&m<12) meInc[m]+=t.amt;
+    });
     return { id:uid(), year, sealedAt:Date.now(),
       sealed: year < new Date().getFullYear(),
       stats:{start,end,invested,moved,saved,offPaper:saved+invested+moved,
              growth: start>0 ? (end/start-1)*100 : 0},
-      entries: txns.length,
+      entries: inYear.length, entriesYf: txns.length, entriesMe: meRows.length,
+      meInc,
       exp:cat('expense'), inc:cat('income'),
       mInc, mExp,
       contrib:{ abiT:cb('TFSA','ABI'), abiF:cb('FHSA','ABI'),
@@ -4217,7 +4246,8 @@ function arcDummyRec(year){
   return { id:uid(), year, sealedAt:Date.now(), sealed:true, dummy:true,
     stats:{start,end,invested,moved,saved,offPaper:saved+invested+moved,
            growth: start>0?(end/start-1)*100:0},
-    entries: 40+Math.round(r(3,0,80)),
+    entries: 40+Math.round(r(3,0,80)), entriesYf: 18, entriesMe: 22,
+    meInc: Array(12).fill(0),
     exp: mk(['Rent','Investment','Other Bank','Credit Bill','Travel','Personal'],30),
     inc: mk(['Paycheck','Bonus','Gift/Stocks'],60),
     mInc, mExp,
@@ -4481,6 +4511,17 @@ function arcMatrix(byCat){
   }).join('');
   return '<div class="ay-scroll"><table class="ay-cm"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
 }
+/* Money recorded as income on the Monthly tab. It is in no total on this card
+   and must not be -- End is a Yearly figure -- but it is not allowed to vanish
+   either, so it is stated plainly and only when there is some. The Monthly tab
+   itself also hides these rows (meTxns() filters to expenses), so the archive
+   is the only place this money is visible at all. */
+function arcMeIncLine(a){
+  const tot=(a.meInc||[]).reduce((x,v)=>x+v,0);
+  if(!(Math.abs(tot)>=0.005)) return '';
+  return '<p class="ay-bnote ay-menote">Monthly income this year: <b>'+arc$(tot)+
+    '</b> — recorded on Monthly, counted in none of the figures above.</p>';
+}
 function arcCardHTML(a){
   const open=arcOpen.has(a.id), st=a.stats||{};
   const hl=(a.highlights||[]);
@@ -4508,10 +4549,14 @@ function arcCardHTML(a){
       '</div></div>'+
       '<div class="ay-sec"><div class="ay-bhrow"><p class="ay-bh">12-month trend</p>'+
         '<span class="ay-bhright">'+trend.label+trend.gear+'</span></div>'+trend.html+'</div>'+
-      '<div class="ay-sec"><p class="ay-bh">Category by month · Monthly</p>'+arcMatrix(a.byCat)+'</div>'+
+      '<div class="ay-sec"><p class="ay-bh">Category by month · Monthly</p>'+
+        '<p class="ay-bnote">Detail inside the figures above, not spending on top of them. '+
+        'Expenses and End are driven by the Yearly tab; these rows explain where that money went.</p>'+
+        arcMatrix(a.byCat)+arcMeIncLine(a)+'</div>'+
     '</div>';
   const meta=a.dummy ? '<b class="ay-dummy">Dummy</b> · test data only'
-    : a.sealed ? 'Sealed · <b>'+(a.entries||0).toLocaleString('en-CA')+' entries</b>'
+    : a.sealed ? 'Sealed · <b>'+(a.entries||0).toLocaleString('en-CA')+' entries</b>'+
+                 (a.entriesMe ? ' <span class="ay-split">'+a.entriesYf+' yearly · '+a.entriesMe+' monthly</span>' : '')
                : 'Preview · <b>sealed 31 Dec</b>';
   const dn=(st.growth||0)<0;
   return '<div class="ay'+(open?' open':'')+'" data-id="'+a.id+'">'+
