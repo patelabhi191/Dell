@@ -578,6 +578,63 @@ const YEAR = 2026;
   check(foreign.stillThere,
     'and they are left intact, so switching back finds them where they were');
 
+
+  /* ── 9. the sells store ──────────────────────────────────────────────────
+     A store that backs up but never restores, or that survives a clear, is
+     worse than not having one -- so all three paths are pinned together. */
+  section('9. closed positions round-trip');
+  await page.evaluate(() => {
+    state.sells = [{ id: 's1', t: Date.UTC(2026, 8, 18), sym: 'NVDA', acct: 'TFSA',
+                     qty: 4, price: 905, avg: 775, ccy: 'USD' },
+                   { id: 's2', t: Date.UTC(2026, 5, 27), sym: 'ENB', acct: 'Other',
+                     qty: 60, price: 38.7, avg: 41.7, ccy: 'CAD' }];
+    persist();
+  });
+  const sKey = await page.evaluate(() =>
+    Object.keys(localStorage).filter(k => /\.dash\.sells$/.test(k)));
+  check(sKey.length === 1 && /^sparta\.[a-z0-9]+\.dash\.sells$/.test(sKey[0]),
+    'sells are written under the namespaced Dashboard key', sKey.join(','));
+  check(await page.evaluate(() => corePayload().sells.length) === 2,
+    'and they are in corePayload(), so a backup carries them');
+  /* The currency is the load-bearing field: without it a row cannot be
+     formatted, and a converted total would be wrong tomorrow. */
+  check(await page.evaluate(() => {
+    const s = corePayload().sells[0];
+    return s.ccy === 'USD' && s.price === 905 && s.avg === 775 && !('proceeds' in s) && !('pnl' in s);
+  }), 'each row carries native price, cost and currency — never a derived total');
+
+  await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(400);
+  check(await page.evaluate(() => state.sells.length) === 2, 'they survive a reload');
+
+  // a payload written before sells existed must not wipe the ones here
+  check(await page.evaluate(() => {
+    const p = corePayload(); delete p.sells;
+    applyPayload(p);
+    return state.sells.length;
+  }) === 2, 'an older payload with no sells key leaves them alone, rather than emptying them');
+
+  check(await page.evaluate(() => {
+    const p = corePayload(); p.sells = [{ id: 'x', t: 1, sym: 'Z', acct: 'TFSA', qty: 1, price: 2, avg: 1, ccy: 'USD' }];
+    applyPayload(p);
+    return state.sells.length === 1 && state.sells[0].sym === 'Z';
+  }), 'and a payload that HAS them replaces what is here');
+
+  /* Seed the neighbours first: earlier sections in this file clear several
+     stores, so asserting on whatever happens to be left would be asserting on
+     the fixture rather than on the tick. */
+  await page.evaluate(() => {
+    state.sells = [{ id: 's9', t: 1, sym: 'Q', acct: 'TFSA', qty: 1, price: 2, avg: 1, ccy: 'USD' }];
+    state.yf.txns = [{ id: 'keepme', date: '2026-01-01', type: 'expense', amt: 5, cat: 'Rent', tab: 'yf' }];
+    state.notes = { points: [{ id: 'p', text: 'keep' }], text: '', stocks: ['KEEP'] };
+    persist(); yfPersist(); notesPersist();
+  });
+  await page.evaluate(() => { RESET_CLEAR.dash() });
+  check(await page.evaluate(() => state.sells.length) === 0,
+    'the Dashboard tick empties the sells');
+  check(await page.evaluate(() =>
+    state.yf.txns.some(t => t.id === 'keepme') && state.notes.stocks.includes('KEEP')),
+    'and leaves the Yearly ledger and the notes standing, so the tick is still scoped');
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nSTORAGE: ${pass} passed, ${fail} failed`);

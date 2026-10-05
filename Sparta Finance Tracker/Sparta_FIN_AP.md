@@ -446,6 +446,93 @@ Three guards, each of which has a test that fails without it:
 test, so a deliberately typed `0` survives. It stays editable on the Yearly tab like any
 other year's.
 
+## Dashboard
+
+### Closed positions (`state.sells`, `sparta.dash.sells`)
+
+Sells used to be recorded **nowhere**: `confirmSell()` adjusted cash, dropped the holding,
+showed the realised P/L in a toast and kept nothing. Everything sold before this shipped is
+unrecoverable; the panel fills from the first sale after it.
+
+```js
+{ id, t,            // ms timestamp -- the date column
+  sym, acct, qty,
+  price, avg, ccy } // NATIVE price and average cost, plus the currency they are in
+```
+
+**Native figures only, never a converted total** — a record that bakes in today's exchange
+rate is wrong tomorrow. Proceeds, cost and P/L are all derived at render time. The row is
+written in `confirmSell()` **before** the holding is touched, because a full sale removes the
+row and `h.avg` goes with it.
+
+**The USD/CAD switch deliberately does not reach this panel.** A Wealthsimple account holds one
+currency per holding: a `.TO` position settles in CAD and a US one in USD, so restating either
+would invent a number that was never real. Rows use `fmtNat`; the tiles total **per currency**
+and show two figures where both are present, never added together. A currency with no sales is
+omitted rather than shown as a zero. Percentages are currency-free and always correct.
+`natToBase()` and `fmt()` appear nowhere in `renderSells()`.
+
+### Eye on Stocks
+
+Split out of the shared notepad into `#eyePanel`, which is **Dashboard-only** — a watchlist
+with live quotes says nothing on a TFSA/FHSA room tracker. The points stay shared and still
+move between the two tabs with `applyView()`. `notes.stocks` was always a separate array from
+`notes.points`, so nothing needed migrating, and `notes.text` (the old Strategy box) is left
+in storage untouched — the field is gone, nothing deletes the value.
+
+A row expands to three Finnhub calls (`/quote`, `/stock/profile2`, `/stock/metric`), **fetched
+on expand and cached for the session**: the free tier is about 60 calls a minute and this is
+three per stock, so fetching the list at boot would be rate-limited before the page finished
+drawing. Figures are shown in the stock's own currency.
+
+**`.TO` has no data on the free tier**, so for a Canadian holding the row shows the ticker, the
+quote link and a sentence saying why. That is the *ordinary* result for this portfolio, not a
+failure, and it has to read as deliberate. Note `quote.c === 0` is Finnhub saying it has no
+such symbol, not a price of zero.
+
+Expanding a stock is a **read**: it must never call `markUserEdit()` or `touchUpdatedAt()`, or a
+tab left on the Dashboard would outrank a phone that was actually used — the data-loss path
+closed in §4b/4c of `test-storage.js`.
+
+### The broker mark
+
+Two brokers, each holding a TFSA and an FHSA, so the account alone cannot say where a position
+lives. `h.broker` is `''` (Wealthsimple, the default) or `'Q'` (QuestTrade), toggled by a button
+to the left of the ticker. It is a **label**: it changes no total, no filter and no figure, and
+adding a position under TFSA/FHSA is unaffected. Blank is not invisible — the box keeps its
+width so tickers stay aligned whether or not a row is marked, and it is a real `<button>` so it
+can be tabbed to. The grey is the `--text-dim` the "Other" account tag uses.
+
+The optional **current price** field is gone from Add a position: a new holding starts at the
+buy price with `manual:false` and is left to the live refresh, which is exactly what leaving
+that field blank used to do.
+
+### Panels fill the gaps
+
+The two columns were independent stacks, so the shorter one left dead space rather than pulling
+the next panel up — measured at 1024px, the left column held 881px of content in a 1585px
+column, 704px of nothing under Holdings, while the right was full.
+
+`dashLayout()` pins hero, holdings and the notepad to the left (the notepad at the holdings
+width, as asked) and assigns every other panel to whichever column is **shorter**. Below 900px
+the grid is already one column and the distribution is skipped entirely. Slack is now ~25px at
+1440/1280 and ~102px at 1024.
+
+Four things it has to get right, three of them learned by getting them wrong:
+
+1. **Measure the pinned stack, not `L.children`.** Summing the column counted flow panels the
+   *previous* run had already put there, so their height went in twice and a one-panel move
+   that would have closed the gap was invisible. It sat at 407px where 4px was reachable.
+2. **Largest-first, then a swap pass.** Walking the declared order puts the first few panels in
+   the empty column before their combined height is known; it finished 598px out of balance.
+3. **Touch the DOM only where it is already wrong.** Moving a node removes and re-inserts it,
+   which blurs anything focused inside — re-appending unconditionally meant adding a note point
+   stole the caret the moment the panel's own growth woke the `ResizeObserver`.
+4. **Carry the caret across a move that does have to happen.** A panel that grew may genuinely
+   change column, which is exactly when someone is typing in it: adding tickers to Eye on Stocks
+   grew the panel on every Enter, and the keystroke after a move went nowhere. `dashLayout()`
+   saves `document.activeElement` and its selection and restores both.
+
 ### What crosses from Yearly and Monthly into an archive, and what does not
 
 An archive is a **summary**, not a copy of the ledger, and the line between the two is easy

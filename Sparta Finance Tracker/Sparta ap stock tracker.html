@@ -399,9 +399,10 @@ button{font-family:var(--font-body);cursor:pointer}
 .col{display:flex;flex-direction:column;gap:20px}
 
 /* ---------- Notepad, shared by Dashboard + Contributions ---------- */
-/* .grid is two columns on Dashboard, so the panel has to be told to span
-   both; #contribView is a plain block and needs only the gap. */
-#dashView>#notepadPanel{grid-column:1/-1}
+/* On Dashboard the notepad is the width of the holdings list it sits under;
+   #contribView is a plain block, so there it is already full width and needs
+   only the gap. The layout script keeps it in the left column. */
+#dashView #notepadPanel{grid-column:1}
 #contribView>#notepadPanel{margin-top:20px}
 .np-points{display:flex;flex-direction:column;gap:8px}
 .np-row{display:flex;align-items:center;gap:10px}
@@ -412,9 +413,63 @@ button{font-family:var(--font-body);cursor:pointer}
   font-family:var(--font-body);transition:color .2s,border-color .2s}
 .np-del:hover{color:var(--rose);border-color:var(--rose)}
 .np-empty{color:var(--text-faint);font-size:12.5px}
-.np-split{display:grid;grid-template-columns:60% 1fr;gap:16px;align-items:start;margin-top:16px}
-@media(max-width:900px){.np-split{grid-template-columns:1fr}}
 .np-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+/* ---------- Eye on Stocks: one row per stock, expanding to its figures ----- */
+/* ---------- Past sells ---------- */
+#sellsPanel .st-sum{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}
+#sellsPanel .st-sum>div{flex:1 1 130px;background:rgba(255,255,255,.028);
+  border:1px solid var(--stroke);border-radius:var(--r-ctl);padding:11px 13px}
+#sellsPanel .st-sum .k{font-size:var(--fs-micro);letter-spacing:var(--ls-label);
+  text-transform:uppercase;color:var(--text-faint);font-weight:700;display:block;margin-bottom:5px}
+#sellsPanel .st-sum .v{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;display:block}
+/* a second currency sits under the first rather than beside it -- these tiles
+   are narrow, and the two are never added together */
+#sellsPanel .st-sum .v+.v{font-size:13.5px;margin-top:3px;opacity:.92}
+/* .htable right-aligns everything after the first column, which is right for
+   figures and wrong for a date and a ticker */
+#sellsPanel th:nth-child(-n+2),#sellsPanel td:nth-child(-n+2){text-align:left}
+.np-stocks{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.np-stock{border:1px solid var(--stroke);border-radius:var(--r-card);
+  background:rgba(255,255,255,.022);overflow:hidden}
+.np-sthead{display:flex;align-items:center;gap:12px;width:100%;padding:13px 15px;
+  background:none;border:0;cursor:pointer;text-align:left;color:var(--text);font:inherit}
+.np-sthead:hover{background:rgba(255,255,255,.03)}
+.np-sttick{font-weight:800;font-size:15px;letter-spacing:-.01em;display:flex;align-items:center;gap:6px;flex:none}
+.np-stname{color:var(--text-dim);font-size:12.5px;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.np-stpx{margin-left:auto;display:flex;align-items:baseline;gap:9px;flex:none;
+  font-variant-numeric:tabular-nums}
+.np-stpx b{font-size:15px;font-weight:700}
+.np-stpx span{font-size:12px;font-weight:600}
+.np-stdrop{flex:none;color:var(--text-faint);transition:transform .2s}
+.np-stock.open .np-stdrop{transform:rotate(180deg)}
+.np-stkill{flex:none;width:28px;height:28px;border-radius:8px;border:1px solid var(--stroke);
+  background:transparent;color:var(--text-faint);cursor:pointer;font-size:14px;line-height:1;
+  font-family:var(--font-body);margin-left:4px}
+.np-stkill:hover{color:var(--rose);border-color:var(--rose)}
+.np-strow{display:flex;align-items:center;padding-right:11px}
+.np-strow .np-sthead{flex:1;min-width:0}
+.np-stbody{padding:0 15px 15px;border-top:1px solid rgba(255,255,255,.07)}
+.np-stgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+  gap:1px;background:rgba(255,255,255,.07);border-radius:10px;overflow:hidden;margin-top:14px}
+.np-stcell{background:rgba(14,20,38,.5);padding:10px 12px}
+.np-stcell .k{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
+  color:var(--text-faint);font-weight:700;display:block;margin-bottom:5px}
+.np-stcell .v{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums}
+/* where today's price sits inside the year's range */
+.np-range{margin-top:14px}
+.np-rbar{position:relative;height:6px;border-radius:3px;margin:9px 0 7px;
+  background:linear-gradient(90deg,rgba(255,255,255,.10),rgba(255,255,255,.22))}
+.np-rdot{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;
+  transform:translate(-50%,-50%);background:var(--teal);box-shadow:0 0 0 3px rgba(94,234,212,.22)}
+.np-rends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-dim);
+  font-variant-numeric:tabular-nums}
+.np-stmsg{font-size:12.5px;color:var(--text-faint);line-height:1.6;margin:12px 0 0}
+@media(max-width:560px){
+  .np-sthead{flex-wrap:wrap;gap:8px}
+  .np-stname{width:100%;order:3}
+  .np-stpx{margin-left:0}
+}
 .np-chip{display:inline-flex;align-items:center;gap:7px;padding:5px 8px 5px 12px;
   border-radius:999px;font-size:12px;font-weight:600;letter-spacing:.04em;
   background:rgba(94,234,212,.13);color:var(--teal);border:1px solid rgba(94,234,212,.32)}
@@ -447,6 +502,17 @@ button{font-family:var(--font-body);cursor:pointer}
 .tag-tfsa{background:rgba(94,234,212,.15);color:var(--teal);border:1px solid rgba(94,234,212,.35)}
 .tag-fhsa{background:rgba(167,139,250,.15);color:var(--violet);border:1px solid rgba(167,139,250,.35)}
 .tag-other{background:rgba(234,240,250,.1);color:var(--text-dim);border:1px solid rgba(234,240,250,.22)}
+/* Which broker a holding sits with. Blank is the default and means Wealthsimple
+   -- the common case stays unmarked, so only the exception carries a letter.
+   It is blank but NOT invisible: the box keeps its width so the tickers stay in
+   one line whether or not a row is marked, and it is a real button so it can be
+   tabbed to. The grey is the same --text-dim the "Other" account tag uses. */
+.bk{flex:none;width:17px;height:19px;margin-right:7px;padding:0;border:0;background:none;
+  border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:800;
+  letter-spacing:.02em;line-height:19px;text-align:center;color:var(--text-dim);
+  transition:background .15s,color .15s}
+.bk:hover{background:rgba(234,240,250,.09);color:var(--text)}
+.bk:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
 .statrow #otherCard{grid-column:1/-1}
 
 /* ---------- Cash panel ---------- */
@@ -2771,7 +2837,7 @@ select{color-scheme:dark}
   <div class="grid" id="dashView">
     <!-- LEFT COLUMN -->
     <div class="col">
-      <section class="panel hero">
+      <section class="panel hero" id="heroCard">
         <div class="eyebrow" id="heroLabel">Total portfolio · All accounts</div>
         <div class="value" id="heroValue">$0.00</div>
         <div class="delta">
@@ -2791,7 +2857,7 @@ select{color-scheme:dark}
         </div>
       </section>
 
-      <section class="panel holdings">
+      <section class="panel holdings" id="holdingsCard">
         <h3>Holdings <span style="font-size:11px;color:var(--text-faint);font-weight:500" id="lastUpd"></span></h3>
         <div class="tscroll">
         <table class="htable" id="htable">
@@ -2807,7 +2873,7 @@ select{color-scheme:dark}
 
     <!-- RIGHT COLUMN -->
     <div class="col">
-      <div class="statrow">
+      <div class="statrow" id="statRow">
         <section class="panel stat">
           <div class="label">TFSA value</div>
           <div class="num" id="tfsaVal">$0.00</div>
@@ -2825,7 +2891,7 @@ select{color-scheme:dark}
         </section>
       </div>
 
-      <section class="panel cash">
+      <section class="panel cash" id="cashCard">
         <h3>Available balance</h3>
         <div class="cashrow"><span>TFSA cash <span class="acct-tag tag-tfsa">TFSA</span></span><span class="n" id="cashT">$0.00</span></div>
         <div class="cashrow"><span>FHSA cash <span class="acct-tag tag-fhsa">FHSA</span></span><span class="n" id="cashF">$0.00</span></div>
@@ -2846,7 +2912,7 @@ select{color-scheme:dark}
         </div>
       </section>
 
-      <section class="panel formcard">
+      <section class="panel formcard" id="addCard">
         <h3>Add a position</h3>
         <div class="hform">
           <div>
@@ -2866,14 +2932,10 @@ select{color-scheme:dark}
             <input id="fPrice" type="number" min="0" step="0.01" placeholder="182.50">
           </div>
           <div class="full">
-            <label for="fManual">Current price — optional <span id="fManualHint" style="text-transform:none;letter-spacing:0;color:var(--text-faint)"></span></label>
-            <input id="fManual" type="number" min="0" step="0.01" placeholder="Leave blank to fetch live">
-          </div>
-          <div class="full">
             <button class="btn primary" id="addHolding" style="width:100%">Add to portfolio</button>
           </div>
         </div>
-        <p class="note">Buying deducts cost from that account's cash when available. Same symbol + account averages into one position. Prices you enter are read in the currency selected at the top (USD/CAD) and converted with the live exchange rate.</p>
+        <p class="note">Buying deducts cost from that account's cash when available.</p>
       </section>
 
       <section class="panel formcard" id="importCard">
@@ -2916,7 +2978,25 @@ select{color-scheme:dark}
             <button class="btn ghost" id="impCancel">Cancel</button>
           </div>
         </div>
-        <p class="note" id="impNote">In Wealthsimple (desktop browser): <b>Profile → Documents → Generate document → Holdings report (CSV)</b>, pick your accounts, then upload the file here. Columns are detected automatically. Average cost is taken from <b>Book Value (Market) ÷ Quantity</b>, and the currency from <b>Book Value Currency (Market)</b> — falling back to the exchange column or ticker suffix (.TO = CAD). Each holding keeps its own currency and its prices are always shown in that currency, never converted. Importing updates quantities and average costs only — it never changes your cash balances.</p>
+        <p class="note" id="impNote">It never changes your cash balances.</p>
+      </section>
+
+      <!-- Closed positions. Fills from the first sale after this shipped --
+           nothing before that was ever recorded. -->
+      <section class="panel cash" id="sellsPanel">
+        <h3>Past sells</h3>
+        <div class="st-sum" id="sellSum"></div>
+        <div class="tscroll">
+          <table class="htable" id="sellTable">
+            <thead><tr><th>Date</th><th>Ticker</th><th>% profit</th><th>$ made</th></tr></thead>
+            <tbody id="sellBody"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="sellEmpty">Nothing sold yet — this fills in when you use the
+          <b>$</b> button on a holding.</p>
+        <p class="note" id="sellNote2" style="margin:12px 0 0">Each sale stays in the currency it
+          happened in and is never converted, so the USD / CAD switch at the top does not change
+          these figures.</p>
       </section>
     </div>
 
@@ -2928,18 +3008,18 @@ select{color-scheme:dark}
         <button class="btn ghost" id="npAdd" style="font-size:12px;padding:8px 14px">+ Add point</button>
       </h3>
       <div class="np-points" id="npPoints"></div>
-      <div class="np-split">
-        <div>
-          <label for="npText">Strategy</label>
-          <textarea id="npText" placeholder="Write your strategy here…"></textarea>
-        </div>
-        <div>
-          <label for="npStockInput">Eye on Stocks</label>
-          <input id="npStockInput" type="text" placeholder="Add a stock, press Enter" autocomplete="off">
-          <div class="np-chips" id="npStocks"></div>
-        </div>
-      </div>
       <p class="note" style="margin:10px 0 0">Shared with the other of Dashboard / Contributions — both show the same notes.</p>
+    </section>
+
+    <!-- Eye on Stocks. Dashboard ONLY, unlike the notepad above it: a watchlist
+         with live quotes has nothing to say on a TFSA/FHSA room tracker. It
+         lives inside #dashView and is never moved, so applyView() ignores it.
+         Its data is still state.notes.stocks, which was always a separate
+         array from the points, so nothing had to be migrated. -->
+    <section class="panel cash" id="eyePanel">
+      <h3>Eye on Stocks</h3>
+      <input id="npStockInput" type="text" placeholder="Add a stock, press Enter" autocomplete="off">
+      <div class="np-stocks" id="npStocks"></div>
     </section>
   </div>
 
@@ -3425,7 +3505,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-06</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-07</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -3685,6 +3765,10 @@ let state = {
   holdings: loadNS('sparta.dash.holdings','sparta.holdings', []),   // {id,sym,acct,qty,avg,price,manual}
   cash: Object.assign({TFSA:0, FHSA:0, Other:0}, loadNS('sparta.dash.cash','sparta.cash',{})),
   history: loadNS('sparta.dash.history','sparta.history', []),      // {t, total}
+  /* Closed positions. Each row keeps the NATIVE price and average cost plus the
+     currency they were in -- never a converted total, because a record that
+     bakes in today's exchange rate is wrong tomorrow. {id,t,sym,acct,qty,price,avg,ccy} */
+  sells: loadNS('sparta.dash.sells',null, []),
   ccy: store.get('sparta.ccy', 'CAD'),
   fx: store.get('sparta.fx', 1.37),           // USD -> CAD rate
   contribs: loadNS('sparta.contrib.entries','sparta.contribs', []), // {t, acct, amt} in USD base
@@ -3739,6 +3823,7 @@ function persist(){
   store.set('sparta.dash.holdings',state.holdings);   // --- Dashboard store ---
   store.set('sparta.dash.cash',state.cash);
   store.set('sparta.dash.history',state.history);
+  store.set('sparta.dash.sells',state.sells);
   store.set('sparta.key',state.apiKey);
   store.set('sparta.ccy',state.ccy);
   store.set('sparta.fx',state.fx);
@@ -3849,7 +3934,10 @@ function render(){
     const arrow=price>h.avg?'▲':price<h.avg?'▼':'▬';
     const tr=document.createElement('tr');
     tr.innerHTML=`
-      <td><span class="sym">${h.sym}<a class="qlink" href="${quoteHref(h.sym)}" target="_blank"
+      <td><span class="sym"><button class="bk" data-bk="${h.id}" type="button"
+        title="${h.broker==='Q'?'QuestTrade — click to clear':'Mark as QuestTrade'}"
+        aria-label="${h.broker==='Q'?h.sym+' is at QuestTrade':'Mark '+h.sym+' as QuestTrade'}"
+        aria-pressed="${h.broker==='Q'}">${h.broker==='Q'?'Q':''}</button>${h.sym}<a class="qlink" href="${quoteHref(h.sym)}" target="_blank"
         rel="noopener noreferrer" title="Open ${h.sym} in a new tab" aria-label="Open ${h.sym} on the quote site"
         ><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
@@ -3865,11 +3953,14 @@ function render(){
   });
   $('htable').style.display=rows.length?'table':'none';
   $('hEmpty').style.display=rows.length?'none':'block';
+  tb.querySelectorAll('.bk').forEach(b=>b.onclick=()=>toggleBroker(b.dataset.bk));
   tb.querySelectorAll('.rm.sell').forEach(b=>b.onclick=()=>sellHolding(b.dataset.id));
   tb.querySelectorAll('.rm:not(.sell)').forEach(b=>b.onclick=()=>removeHolding(b.dataset.id));
 
   drawChart();
+  renderSells();
   renderContribs();
+  dashLayoutSoon();
 }
 
 /* ============ contributions ============ */
@@ -4851,6 +4942,161 @@ function snapshot(force){
   cloudSavePoint(entry);
 }
 
+/* ============ Dashboard layout: panels fill the gaps ============
+   The two columns are independent stacks, so whichever runs shorter leaves
+   dead space at the bottom rather than pulling the next panel up. Measured at
+   1024px before this existed: the left column held 881px of content inside a
+   1585px column -- 704px of nothing under Holdings -- while the right was full.
+
+   So: three panels are pinned to the left, and every other panel is appended
+   to whichever column is currently SHORTER. A panel's column is therefore not
+   fixed; that is the point, and it means Past sells may sit left one day and
+   right the next as the holdings list grows.
+
+   Below 900px the grid is already one column, so the distribution is skipped
+   and the declared order is used -- shuffling panels on a phone would move
+   things around for no reason. */
+/* Put `list` in `col`, touching the DOM only where it is already wrong.
+   This is not an optimisation -- moving a node REMOVES and re-inserts it, which
+   blurs anything focused inside. Re-appending unconditionally meant that adding
+   a note point stole the caret the moment the panel's own growth woke the
+   ResizeObserver, so the next keystroke went nowhere. */
+function place(col,list){
+  list.forEach((e,i)=>{ if(col.children[i]!==e) col.insertBefore(e, col.children[i]||null) });
+}
+const DASH_PINNED=['heroCard','holdingsCard','notepadPanel'];
+const DASH_FLOW=['statRow','cashCard','addCard','importCard','sellsPanel','eyePanel'];
+let dashLaying=false, dashRaf=0;
+
+function dashLayout(){
+  const grid=$('dashView'); if(!grid || grid.style.display==='none') return;
+  const cols=grid.querySelectorAll(':scope > .col');
+  if(cols.length!==2) return;
+  if(dashLaying) return;                       // a reflow of ours must not re-enter
+  dashLaying=true;
+  /* Moving a node removes and re-inserts it, which blurs whatever is focused
+     inside. place() already avoids touching anything that is in the right
+     place, but a panel that GREW may genuinely have to change column -- which
+     is exactly when someone is typing in it. Typing a ticker into Eye on
+     Stocks grew the panel, moved it, and the next keystroke went nowhere.
+     So carry the caret across the move. */
+  const a=document.activeElement;
+  const keep = a && a!==document.body && grid.contains(a) ? a : null;
+  const sel = keep && typeof keep.selectionStart==='number'
+    ? [keep.selectionStart, keep.selectionEnd] : null;
+  try{
+    const [L,R]=cols;
+    const el=id=>document.getElementById(id);
+    // one column: append everything in the order it is declared and stop
+    const single=window.matchMedia('(max-width:900px)').matches;
+    const pinned=DASH_PINNED.map(el).filter(Boolean);
+    if(single){ place(L,pinned); place(R,DASH_FLOW.map(el).filter(Boolean)); return }
+    /* Measure everything FIRST, then assign tallest-first.
+       Walking the declared order and putting each panel in the shorter column
+       does not work: the right column starts at zero, so the first few panels
+       all land there before their combined height is known, and it finished
+       598px out of balance. Longest-processing-time -- place the tallest
+       remaining panel in the shorter column -- is the standard fix and gets
+       within one panel of optimal.
+       The assignment decides the COLUMN; the declared order still decides the
+       order within it, so panels do not shuffle vertically. */
+    const flow=DASH_FLOW.map(id=>el(id)).filter(Boolean)
+      .map((e,i)=>({ e, i, h:e.offsetHeight+20 }));
+    /* The pinned stack only. Summing L.children here counted the flow panels
+       that the PREVIOUS run had already put in the left column, so their height
+       went in twice and the balancer could not see a one-panel move that would
+       have closed the gap -- it sat at 407px when 4px was reachable. */
+    const base=DASH_PINNED.reduce((a,id)=>{ const e=el(id); return a+(e?e.offsetHeight+20:0) },0);
+    const side=new Map();
+    let hl=base, hr=0;
+    [...flow].sort((a,b)=>b.h-a.h).forEach(p=>{
+      if(hl<=hr){ side.set(p,0); hl+=p.h } else { side.set(p,1); hr+=p.h }
+    });
+    /* LPT alone is not enough here, because the pinned stack is already heavy:
+       it left 407px out of balance where moving one panel across left 99px.
+       So: keep moving any single panel that reduces the gap, until none does.
+       Each pass must strictly improve, so this terminates; the cap is only a
+       guard against a float making 'strictly' untrue. */
+    for(let pass=0; pass<8; pass++){
+      let moved=false;
+      for(const p of flow){
+        const to=side.get(p)?0:1, gap=Math.abs(hl-hr);
+        const nl=hl+(to===0?p.h:-p.h), nr=hr+(to===0?-p.h:p.h);
+        if(Math.abs(nl-nr)<gap-0.5){ side.set(p,to); hl=nl; hr=nr; moved=true }
+      }
+      if(!moved) break;
+    }
+    place(L, pinned.concat(flow.filter(p=>!side.get(p)).map(p=>p.e)));
+    place(R, flow.filter(p=>side.get(p)).map(p=>p.e));
+  } finally {
+    if(keep && keep.isConnected && document.activeElement!==keep){
+      keep.focus({preventScroll:true});
+      if(sel) try{ keep.setSelectionRange(sel[0],sel[1]) }catch(e){}
+    }
+    dashLaying=false;
+  }
+}
+/* Coalesce: a resize, a render and a panel growing can all land in one frame. */
+function dashLayoutSoon(){
+  if(dashRaf) return;
+  dashRaf=requestAnimationFrame(()=>{ dashRaf=0; dashLayout() });
+}
+if(typeof ResizeObserver==='function'){
+  const ro=new ResizeObserver(()=>{ if(!dashLaying) dashLayoutSoon() });
+  // observe the panels rather than the columns: observing a column would see
+  // the height change this function itself causes and loop
+  addEventListener('load',()=>{
+    DASH_FLOW.concat(DASH_PINNED).forEach(id=>{ const e=document.getElementById(id); if(e) ro.observe(e) });
+  });
+}
+addEventListener('resize',dashLayoutSoon);
+
+/* ---------- Past sells ----------
+   Rows and totals BOTH stay in the currency the trade happened in. The USD/CAD
+   switch at the top deliberately does not reach this panel: a Wealthsimple
+   account holds one currency per holding, so a .TO sale settled in CAD and a US
+   one in USD, and restating either at today's rate would invent a number that
+   was never real. Where both currencies are present each tile shows two
+   figures -- they are never added together.
+   Percentages are currency-free, so they are always right. */
+function renderSells(){
+  const tb=$('sellBody'); if(!tb) return;
+  const rows=(state.sells||[]).filter(s=>state.filter==='ALL'||s.acct===state.filter)
+    .slice().sort((a,b)=>b.t-a.t);
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  tb.innerHTML=rows.map(s=>{
+    const proceeds=s.qty*s.price, cost=s.qty*s.avg, pnl=proceeds-cost;
+    const pct=cost>0?(pnl/cost)*100:0;
+    const cls=pnl>0?'up':pnl<0?'down':'flat';
+    const d=new Date(s.t);
+    return `<tr><td style="white-space:nowrap">${isoLocal(d)}</td>`+
+      `<td><span class="sym">${esc(s.sym)}<small>${esc(s.acct)} · ${s.qty}</small></span></td>`+
+      `<td class="${cls}" style="font-weight:600">${(pct>=0?'+':'−')+Math.abs(pct).toFixed(2)}%</td>`+
+      `<td class="pl ${cls}">${signedNat(pnl,s.ccy)}</td></tr>`;
+  }).join('');
+  $('sellTable').style.display=rows.length?'table':'none';
+  $('sellEmpty').style.display=rows.length?'none':'block';
+  $('sellNote2').style.display=rows.length?'block':'none';
+
+  // one bucket per currency, never merged
+  const by={};
+  rows.forEach(s=>{ const b=by[s.ccy]||(by[s.ccy]={pnl:0,cost:0,n:0,win:0});
+    const proceeds=s.qty*s.price, cost=s.qty*s.avg;
+    b.pnl+=proceeds-cost; b.cost+=cost; b.n++; if(proceeds>cost) b.win++; });
+  const ccys=Object.keys(by).sort();
+  const lines=(f)=>ccys.map(c=>f(by[c],c)).join('');
+  const wins=rows.filter(s=>s.qty*s.price>s.qty*s.avg).length;
+  $('sellSum').innerHTML = !rows.length ? '' :
+    `<div><span class="k">Realised P / L</span>${lines((b,c)=>
+      `<span class="v ${b.pnl>0?'up':b.pnl<0?'down':'flat'}">${signedNat(b.pnl,c)}</span>`)}</div>`+
+    `<div><span class="k">Return on cost</span>${lines((b,c)=>
+      `<span class="v ${b.pnl>0?'up':b.pnl<0?'down':'flat'}">${
+        b.cost>0?(b.pnl>=0?'+':'−')+Math.abs(b.pnl/b.cost*100).toFixed(2)+'%':'—'
+      }<small style="font-weight:600;opacity:.6"> ${esc(c)}</small></span>`)}</div>`+
+    `<div><span class="k">Sells</span><span class="v">${rows.length}</span></div>`+
+    `<div><span class="k">Winners</span><span class="v">${wins} of ${rows.length}</span></div>`;
+}
+
 /* ============ live prices ============ */
 let timer=null;
 async function fetchPrices(showToast){
@@ -4890,10 +5136,9 @@ function addHolding(){
   const acct=$('fAcct').value;
   const qty=parseFloat($('fQty').value);
   const price=parseFloat($('fPrice').value);      // kept in the displayed currency
-  const man=parseFloat($('fManual').value);
   if(!sym){ toast('Enter a ticker symbol'); return }
   if(!(qty>0)){ toast('Enter a quantity greater than 0'); return }
-  if(!(price>0)){ toast('Enter the buy price you paid — the field below it is optional'); return }
+  if(!(price>0)){ toast('Enter the buy price you paid'); return }
   const cost=natToBase(qty*price,state.ccy);
   if(state.cash[acct]>=cost){ state.cash[acct]-=cost; toast(`Bought ${sym} — ${money(cost)} from ${acct} cash`) }
   else toast(`Added ${sym} (${acct} cash not deducted — insufficient balance)`);
@@ -4901,11 +5146,14 @@ function addHolding(){
   if(ex){
     ex.avg=(ex.avg*ex.qty+price*qty)/(ex.qty+qty);
     ex.qty+=qty;
-    if(man>0){ex.manual=true;ex.price=man}
   }else{
-    state.holdings.push({id:uid(),sym,acct,qty,avg:price,ccy:state.ccy,nat:true,price:man>0?man:price,manual:man>0});
+    /* No current-price field any more: a new position starts at the buy price
+       and is left to the live refresh, which is exactly what leaving that field
+       blank used to do. A price typed by hand on an existing holding still
+       wins -- h.manual is untouched here. */
+    state.holdings.push({id:uid(),sym,acct,qty,avg:price,ccy:state.ccy,nat:true,price,manual:false});
   }
-  $('fSym').value=$('fQty').value=$('fPrice').value=$('fManual').value='';
+  $('fSym').value=$('fQty').value=$('fPrice').value='';
   snapshot(); persist(); render(); fetchPrices(false);
 }
 let sellId=null;
@@ -4946,6 +5194,11 @@ function confirmSell(){
   q=Math.min(q,h.qty);
   const proceeds=natToBase(q*p,c);
   const pnl=q*p-q*h.avg;
+  /* Record the sale BEFORE the holding is touched: a full sale removes the row
+     and h.avg goes with it. Native figures only -- what was paid and what was
+     received, in the currency it happened in. */
+  state.sells.push({ id:uid(), t:Date.now(), sym:h.sym, acct:h.acct,
+    qty:q, price:p, avg:h.avg, ccy:c });
   state.cash[h.acct]+=proceeds;
   const full=Math.abs(q-h.qty)<1e-9;
   if(full) state.holdings=state.holdings.filter(x=>x.id!==sellId);
@@ -4955,6 +5208,16 @@ function confirmSell(){
   toast(`Sold ${q} ${h.sym} at ${fmtNat(p,c)} — ${money(proceeds)} to ${h.acct} cash (${signedNat(pnl,c)})`);
 }
 function closeSell(){ $('sellModal').classList.remove('open'); sellId=null }
+/* Two brokers, both holding a TFSA and an FHSA, so the account alone cannot say
+   where a position lives. This is a LABEL and nothing else: it changes no total,
+   no filter and no figure -- adding a position under TFSA/FHSA works exactly as
+   before. Blank means Wealthsimple. */
+function toggleBroker(id){
+  markUserEdit();
+  const h=state.holdings.find(x=>x.id===id); if(!h) return;
+  h.broker = h.broker==='Q' ? '' : 'Q';
+  persist(); render();
+}
 function removeHolding(id){
   markUserEdit();
   const h=state.holdings.find(x=>x.id===id); if(!h) return;
@@ -4988,11 +5251,6 @@ $('rangeSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
   $('rangeSeg').querySelectorAll('button').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); drawChart();
 });
-function updateManualHint(){
-  const el=$('fManualHint'); if(!el) return;
-  el.textContent=state.apiKey?'(blank = fetch live price)':'(live prices off — blank uses your buy price)';
-  $('fManual').placeholder=state.apiKey?'Leave blank to fetch live':'Leave blank to use buy price';
-}
 $('addHolding').onclick=addHolding;
 if($('sellQty')){
   $('sellQty').addEventListener('input',updateSellPreview);
@@ -5057,7 +5315,7 @@ const RESET_ROWS=[
 ];
 const RESET_CLEAR={
   dash(){
-    state.holdings=[]; state.cash={TFSA:0,FHSA:0,Other:0}; state.history=[];
+    state.holdings=[]; state.cash={TFSA:0,FHSA:0,Other:0}; state.history=[]; state.sells=[];
     ['sparta.holdings','sparta.cash','sparta.history'].forEach(k=>store.del(k));   // legacy keys
     persist();
   },
@@ -5146,7 +5404,7 @@ if($('resetGo')) $('resetGo').onclick=()=>{
   resetSync();
   toast(`Cleared ${names}${alsoCloud?' \u2014 here and in the cloud':' \u2014 this browser only'}`);
 };
-['fSym','fQty','fPrice','fManual'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')addHolding()}));
+['fSym','fQty','fPrice'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')addHolding()}));
 $('cashAmt').addEventListener('keydown',e=>{if(e.key==='Enter')moveCash(1)});
 
 /* ============ view tabs / currency ============ */
@@ -5169,6 +5427,9 @@ function applyView(view){
   // same element on both tabs and cannot fall out of step with itself.
   if(view==='dash'||view==='contrib'){
     const np=$('notepadPanel'); if(np) $(view==='dash'?'dashView':'contribView').appendChild(np);
+    // appendChild above drops the notepad at the END of #dashView, outside both
+    // columns; the layout puts it back under Holdings where it belongs
+    if(view==='dash' && typeof dashLayout==='function') dashLayout();
   }
   // year selector belongs to Contributions only
   $('yearBar').classList.toggle('show',contrib);
@@ -5461,6 +5722,7 @@ function applyPayload(p){
   if(!p) return;
   fbApplying=true;
   state.holdings=p.holdings||[]; state.cash=Object.assign({TFSA:0,FHSA:0,Other:0},p.cash||{});
+  if(Array.isArray(p.sells)) state.sells=p.sells;   // absent in payloads written before sells existed
   state.history=(p.history||[]).map(e=>e.k?e:Object.assign({},e,{k:String(e.t)}));
   state.contribs=p.contribs||[];
   state.limits=p.limits||{TFSA:7000,FHSA:8000}; state.limitsY=p.limitsY||{}; state.yearly=p.yearly||[];
@@ -5595,7 +5857,7 @@ function corePayload(){
   return { pin:{ on:store.get('sparta.pinOn',false), code:store.get('sparta.pinCode',null) },
     holdings:coreHoldings(), cash:state.cash, contribs:state.contribs,
     limits:state.limits, limitsY:state.limitsY, yearly:state.yearly, yf:state.yf, me:state.me,
-    notes:state.notes, plan:state.plan, archives:state.archives,
+    notes:state.notes, plan:state.plan, archives:state.archives, sells:state.sells,
     updatedAt:state.updatedAt||Date.now() };
 }
 function encodeHistory(){
@@ -7958,12 +8220,156 @@ function renderNotes(){
         `<button class="np-del" title="Delete point" aria-label="Delete point">\u00d7</button>`+
       `</div>`).join('')
     : '<p class="np-empty">No points yet \u2014 press \u201c+ Add point\u201d to start.</p>';
-  const t=$('npText'); if(t && t.value!==state.notes.text) t.value=state.notes.text;
-  const sBox=$('npStocks');
-  if(sBox) sBox.innerHTML = state.notes.stocks.length
-    ? state.notes.stocks.map(s=>`<span class="np-chip" data-s="${esc(s)}">${esc(s)}`+
-        `<button title="Remove" aria-label="Remove ${esc(s)}">\u00d7</button></span>`).join('')
-    : '<p class="np-empty">Nothing on the list yet.</p>';
+  renderStocks();
+}
+/* Eye on Stocks. One row per symbol; expanding it fetches that symbol's figures
+   from Finnhub once and keeps them for the session. */
+function renderStocks(){
+  const sBox=$('npStocks'); if(!sBox) return;
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  if(!state.notes.stocks.length){
+    sBox.innerHTML='<p class="np-empty">Nothing on the list yet.</p>'; return;
+  }
+  sBox.innerHTML=state.notes.stocks.map(sym=>{
+    const open=npOpen.has(sym.toUpperCase());
+    const d=npQuotes[sym.toUpperCase()];
+    return `<div class="np-stock${open?' open':''}" data-s="${esc(sym)}">`+
+      `<div class="np-strow"><button class="np-sthead" type="button" data-act="toggle"`+
+        ` aria-expanded="${open}">`+
+        `<span class="np-sttick">${esc(sym)}</span>`+
+        `<span class="np-stname">${d&&d.name?esc(d.name):''}</span>`+
+        npHeadPrice(sym,d)+
+        `<svg class="np-stdrop" viewBox="0 0 24 24" width="13" height="13" fill="none"`+
+          ` stroke="currentColor" stroke-width="2.6" stroke-linecap="round"`+
+          ` stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`+
+      `</button>`+
+      `<button class="np-stkill" data-act="remove" title="Remove ${esc(sym)}"`+
+        ` aria-label="Remove ${esc(sym)}">\u00d7</button></div>`+
+      (open?`<div class="np-stbody">${npBody(sym,d)}</div>`:'')+
+    `</div>`;
+  }).join('');
+}
+/* ---------- Eye on Stocks: the figures behind an expanded row ----------
+   Three Finnhub endpoints per symbol, fetched ONCE when a row is opened and
+   kept for the session. Not on load: the free tier is about 60 calls a minute
+   and this is three per stock, so a watchlist that fetched everything at boot
+   would be rate-limited before the page finished drawing.
+
+   Everything here is READ-ONLY with respect to the user's data. It must never
+   call markUserEdit() or touchUpdatedAt() -- a watchlist that re-stamps the
+   browser would let a tab sitting on the Dashboard outrank a phone that was
+   actually used, which is the data-loss path closed in 4b/4c of test-storage.
+
+   A stock's figures are shown in the stock's OWN currency and are never
+   converted: a .TO position settles in CAD and a US one in USD, and restating
+   either at today's rate would invent a number that was never real. */
+const npQuotes=Object.create(null);     // SYM -> {state:'ok'|'none'|'err', ...}
+const npOpen=new Set();                 // which rows are expanded
+const npInFlight=new Set();
+
+function npHeadPrice(sym,d){
+  if(!d||d.state!=='ok'||!(d.price>0)) return '<span class="np-stpx"></span>';
+  const cls=d.chg>0?'up':d.chg<0?'down':'flat';
+  const arrow=d.chg>0?'▲ +':d.chg<0?'▼ −':'▬ ';
+  return `<span class="np-stpx"><b>${fmtNat(d.price,d.ccy)}</b>`+
+    `<span class="${cls}">${arrow}${Math.abs(d.chg||0).toFixed(2)}%</span></span>`;
+}
+function npBody(sym,d){
+  if(!d) return '<p class="np-stmsg">Loading…</p>';
+  if(d.state==='err') return '<p class="np-stmsg">Could not reach the price service. '+
+    'Close and open this row to try again.</p>';
+  if(d.state==='none') return '<p class="np-stmsg">'+npNoDataWhy(sym)+'</p>';
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const n=v=>fmtNat(v,d.ccy);
+  let range='';
+  if(d.lo>0&&d.hi>d.lo&&d.price>0){
+    const pos=Math.max(0,Math.min(100,((d.price-d.lo)/(d.hi-d.lo))*100));
+    range=`<div class="np-range">`+
+      `<div class="np-rends"><span>52-week range</span><span>${
+        d.dayLo>0&&d.dayHi>0?'Day '+n(d.dayLo)+' – '+n(d.dayHi):''}</span></div>`+
+      `<div class="np-rbar"><i class="np-rdot" style="left:${pos.toFixed(1)}%"></i></div>`+
+      `<div class="np-rends"><span>${n(d.lo)}</span><span>${n(d.hi)}</span></div></div>`;
+  }
+  /* Only cells with a figure are drawn. Finnhub leaves plenty of these null by
+     sector and by listing, and a grid of dashes says nothing. */
+  const cells=[];
+  const add=(k,v,cls)=>{ if(v!=null&&v!=='') cells.push([k,v,cls||'']) };
+  const num=(v,dp)=>(v==null||!isFinite(v))?null:Number(v).toFixed(dp==null?2:dp);
+  const pct=v=>(v==null||!isFinite(v))?null:(v>=0?'+':'−')+Math.abs(v).toFixed(2)+'%';
+  add('Market cap', d.mcap!=null?npBig(d.mcap,d.ccy):null);
+  add('P/E (TTM)', num(d.pe));
+  add('Beta', num(d.beta));
+  add('Div yield', d.divY!=null?Number(d.divY).toFixed(2)+'%':null);
+  add('52w change', pct(d.ret52), d.ret52>0?'up':d.ret52<0?'down':'');
+  add('EPS (TTM)', d.eps!=null?n(d.eps):null);
+  add('Rev growth', pct(d.revG), d.revG>0?'up':d.revG<0?'down':'');
+  add('Prev close', d.prev>0?n(d.prev):null);
+  add('10d avg vol', d.vol!=null?npBig(d.vol):null);
+  add('Debt / equity', num(d.de));
+  const grid=cells.length
+    ? `<div class="np-stgrid">${cells.map(([k,v,c])=>
+        `<div class="np-stcell"><span class="k">${esc(k)}</span>`+
+        `<span class="v${c?' '+c:''}">${esc(v)}</span></div>`).join('')}</div>`
+    : '<p class="np-stmsg">No company figures published for this symbol.</p>';
+  return range+grid+
+    `<p class="np-stmsg"><a class="qlink" href="${quoteHref(sym)}" target="_blank"`+
+    ` rel="noopener noreferrer">Open ${esc(sym)} on the quote site ↗</a>`+
+    (d.ccy?` · figures in ${esc(d.ccy)}, never converted`:'')+`</p>`;
+}
+/* Why a row has nothing to show. Said plainly, because for a Canadian
+   portfolio this is the ORDINARY result rather than a failure: Finnhub's free
+   tier does not cover TSX symbols, so a .TO row will land here every time. */
+function npNoDataWhy(sym){
+  if(!state.apiKey) return 'Live prices are off — add a Finnhub key in Settings to see figures here.';
+  if(/\.(TO|V|CN|NE)$/i.test(sym)) return 'Finnhub’s free tier does not cover Canadian listings, '+
+    'so there are no figures for this symbol. The quote link still works.';
+  return 'No data published for this symbol.';
+}
+const npBig=(v,ccy)=>{
+  const a=Math.abs(v), p=ccy?(ccy==='CAD'?'C$':'$'):'';
+  if(a>=1e12) return p+(v/1e12).toFixed(2)+'T';
+  if(a>=1e9)  return p+(v/1e9).toFixed(2)+'B';
+  if(a>=1e6)  return p+(v/1e6).toFixed(2)+'M';
+  if(a>=1e3)  return p+(v/1e3).toFixed(1)+'K';
+  return p+Number(v).toFixed(0);
+};
+async function npFetch(sym){
+  const K=sym.toUpperCase();
+  if(npQuotes[K]||npInFlight.has(K)) return;
+  if(!state.apiKey){ npQuotes[K]={state:'none'}; renderStocks(); return }
+  npInFlight.add(K);
+  const url=p=>`https://finnhub.io/api/v1/${p}&token=${state.apiKey}`;
+  const get=async p=>{ const r=await fetch(url(p)); if(!r.ok) throw new Error(r.status);
+    return r.json() };
+  try{
+    const e=encodeURIComponent(sym);
+    const [q,prof,met]=await Promise.all([
+      get(`quote?symbol=${e}`).catch(()=>null),
+      get(`stock/profile2?symbol=${e}`).catch(()=>null),
+      get(`stock/metric?symbol=${e}&metric=all`).catch(()=>null),
+    ]);
+    const m=(met&&met.metric)||{};
+    // c===0 is Finnhub's "I do not have this symbol", not a price of zero
+    if(!q||!(q.c>0)){ npQuotes[K]={state:'none'} }
+    else npQuotes[K]={ state:'ok',
+      name:(prof&&prof.name)||'', ccy:(prof&&prof.currency)||'USD',
+      price:q.c, chg:q.dp, dayLo:q.l, dayHi:q.h, prev:q.pc,
+      lo:m['52WeekLow'], hi:m['52WeekHigh'], ret52:m['52WeekPriceReturnDaily'],
+      pe:m.peTTM, beta:m.beta, divY:m.dividendYieldIndicatedAnnual,
+      eps:m.epsTTM, revG:m.revenueGrowthTTMYoy,
+      vol:m['10DayAverageTradingVolume']!=null?m['10DayAverageTradingVolume']*1e6:null,
+      de:m['totalDebt/totalEquityQuarterly'],
+      mcap:(prof&&prof.marketCapitalization)?prof.marketCapitalization*1e6:null };
+  }catch(err){ npQuotes[K]={state:'err'} }
+  npInFlight.delete(K);
+  renderStocks();
+}
+function npToggleStock(sym){
+  const K=sym.toUpperCase();
+  if(npOpen.has(K)) npOpen.delete(K);
+  else { npOpen.add(K); if(!npQuotes[K]) npFetch(sym) }
+  renderStocks();
+  if(typeof dashLayout==='function') dashLayout();
 }
 function npIndex(id){ return state.notes.points.findIndex(p=>p.id===id) }
 function npFocus(i,toEnd){
@@ -8005,12 +8411,15 @@ if($('npAdd')) $('npAdd').onclick=()=>npAddAt(-1);
 function npAddStock(raw){
   const s=String(raw||'').trim(); if(!s) return false;
   if(state.notes.stocks.some(x=>x.toLowerCase()===s.toLowerCase())) return false;
-  state.notes.stocks.push(s); notesPersist(); renderNotes(); return true;
+  state.notes.stocks.push(s); notesPersist(); renderNotes();
+  if(typeof dashLayout==='function') dashLayout();
+  return true;
 }
 function npRemoveStock(s){
   const i=state.notes.stocks.findIndex(x=>x.toLowerCase()===String(s).toLowerCase());
   if(i<0) return;
   state.notes.stocks.splice(i,1); notesPersist(); renderNotes();
+  if(typeof dashLayout==='function') dashLayout();
 }
 if($('npStockInput')) $('npStockInput').addEventListener('keydown',e=>{
   if(e.key==='Enter'){ e.preventDefault(); npAddStock(e.target.value); e.target.value='' }
@@ -8020,11 +8429,10 @@ if($('npStockInput')) $('npStockInput').addEventListener('keydown',e=>{
   }
 });
 if($('npStocks')) $('npStocks').addEventListener('click',e=>{
-  const btn=e.target.closest('.np-chip button'); if(!btn) return;
-  npRemoveStock(btn.closest('.np-chip').dataset.s);
-});
-if($('npText')) $('npText').addEventListener('input',e=>{
-  state.notes.text=e.target.value; notesPersistSoon();
+  const row=e.target.closest('.np-stock'); if(!row) return;
+  const sym=row.dataset.s;
+  if(e.target.closest('[data-act="remove"]')){ npOpen.delete(sym.toUpperCase()); npRemoveStock(sym) }
+  else if(e.target.closest('[data-act="toggle"]')) npToggleStock(sym);
 });
 renderNotes();
 
@@ -8565,7 +8973,7 @@ if(!fbConfigProblem() && state.fbOn){
 setTimeout(()=>{ fbBooting=false },8000);   // failsafe: never stay read-only forever
 setCcy(state.ccy);
 fetchFX(); setInterval(fetchFX,3600e3);
-setLive(); startTimer(); updateManualHint();
+setLive(); startTimer();
 (function runCompaction(){
   const n=compactHistory();
   if(n) console.log('[sparta] compacted '+n+' intraday snapshots into daily closes');

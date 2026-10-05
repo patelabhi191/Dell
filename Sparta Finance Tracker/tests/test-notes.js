@@ -30,15 +30,39 @@ const section = t => console.log(`\n── ${t} ──`);
   check(await page.evaluate(() => document.querySelectorAll('#notepadPanel').length) === 1,
     'exactly one #notepadPanel after seven tab switches');
   await go('dash');
-  check(await page.evaluate(() => document.getElementById('notepadPanel').parentElement.id) === 'dashView',
-    'on Dashboard it lives in #dashView');
+  /* It is INSIDE a column now rather than a direct child: the layout keeps it
+     under Holdings at the holdings width. Ancestry is what matters. */
+  check(await page.evaluate(() => {
+    const p = document.getElementById('notepadPanel');
+    return !!p.closest('#dashView') && p.parentElement.classList.contains('col');
+  }), 'on Dashboard it lives inside #dashView, in a column');
+  check(await page.evaluate(() => {
+    const p = document.getElementById('notepadPanel');
+    const prev = p.previousElementSibling;
+    return !!prev && prev.id === 'holdingsCard';
+  }), 'and directly under the holdings list, as asked');
   await go('contrib');
   check(await page.evaluate(() => document.getElementById('notepadPanel').parentElement.id) === 'contribView',
     'on Contributions it lives in #contribView');
   check(await page.evaluate(() => {
     const p = document.getElementById('notepadPanel');
     return p.parentElement.lastElementChild === p;
-  }), 'it is the last panel on the view');
+  }), 'on Contributions it is the last panel on the view');
+  /* Full width on Contributions, holdings width on Dashboard -- the one thing
+     that differs between the two tabs. */
+  const npW = async () => page.evaluate(() => {
+    const p = document.getElementById('notepadPanel');
+    return { w: Math.round(p.getBoundingClientRect().width),
+             parent: Math.round(p.parentElement.getBoundingClientRect().width),
+             holdings: (() => { const h = document.getElementById('holdingsCard');
+               return h ? Math.round(h.getBoundingClientRect().width) : null })() };
+  });
+  const cW = await npW();
+  check(Math.abs(cW.w - cW.parent) < 4, 'on Contributions it is full width', JSON.stringify(cW));
+  await go('dash');
+  const dW = await npW();
+  check(dW.holdings && Math.abs(dW.w - dW.holdings) < 2,
+    'on Dashboard it is exactly the holdings width', JSON.stringify(dW));
 
   section('2. points: add, type, Enter, Backspace, delete');
   await go('dash');
@@ -72,12 +96,17 @@ const section = t => console.log(`\n── ${t} ──`);
     state.notes.text = 'Strategy text'; notesPersist(); renderNotes(); });
   await go('contrib');
   check((await rows())[0] === 'From Dashboard', 'the Dashboard point shows on Contributions', (await rows())[0]);
-  check(await page.inputValue('#npText') === 'Strategy text', 'the prose shows on Contributions');
-  await page.fill('#npText', 'Edited on Contributions'); await page.waitForTimeout(500);
+  /* The Strategy box is gone from both tabs. Its STORED value is deliberately
+     left alone -- nothing in the app deletes it -- so this pins the absence of
+     the field and the survival of the data in the same breath. */
+  check(await page.evaluate(() => !document.getElementById('npText')),
+    'the Strategy field is gone from Contributions');
   await page.fill('#npPoints .np-row input', 'Edited point'); await page.waitForTimeout(500);
   await go('dash');
-  check(await page.inputValue('#npText') === 'Edited on Contributions',
-    'the Contributions prose edit shows on Dashboard');
+  check(await page.evaluate(() => !document.getElementById('npText')),
+    'and from Dashboard');
+  check(await page.evaluate(() => state.notes.text) === 'Strategy text',
+    'but notes.text is still in state, untouched');
   check((await rows())[0] === 'Edited point', 'the Contributions point edit shows on Dashboard');
 
   section('4. render() must not disturb an in-progress edit');
@@ -98,7 +127,8 @@ const section = t => console.log(`\n── ${t} ──`);
     'sparta.notes is written');
   await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(400);
   await go('dash');
-  check(await page.inputValue('#npText') === 'Edited on Contributions', 'prose survives a reload');
+  check(await page.evaluate(() => state.notes.text) === 'Strategy text',
+    'notes.text survives a reload -- nothing quietly deleted it');
   check((await rows())[0] === 'Edited point', 'points survive a reload');
 
   section('6. normalizeNotes() repairs junk rather than throwing');
@@ -149,7 +179,7 @@ const section = t => console.log(`\n── ${t} ──`);
   await go('dash');
   await page.evaluate(() => { state.notes.stocks = []; notesPersist(); renderNotes(); });
   const chips = () => page.evaluate(() =>
-    [...document.querySelectorAll('#npStocks .np-chip')].map(c => c.dataset.s));
+    [...document.querySelectorAll('#npStocks .np-stock')].map(c => c.dataset.s));
   await page.click('#npStockInput');
   await page.keyboard.type('NVDA'); await page.keyboard.press('Enter'); await page.waitForTimeout(120);
   check(JSON.stringify(await chips()) === JSON.stringify(['NVDA']), 'Enter adds a chip',
@@ -171,17 +201,28 @@ const section = t => console.log(`\n── ${t} ──`);
   await page.keyboard.press('Backspace'); await page.waitForTimeout(150);
   check(JSON.stringify(await chips()) === JSON.stringify(['NVDA', 'VFV']),
     'Backspace on an empty input removes the last chip');
-  await page.click('#npStocks .np-chip:nth-child(1) button'); await page.waitForTimeout(150);
+  await page.click('#npStocks .np-stock:nth-child(1) [data-act="remove"]'); await page.waitForTimeout(150);
   check(JSON.stringify(await chips()) === JSON.stringify(['VFV']), 'the chip button removes that one');
 
-  section('10. stocks: shared, persisted, render()-safe');
+  section('10. stocks: Dashboard only, persisted, render()-safe');
+  /* Eye on Stocks is no longer part of the shared notepad -- it is its own
+     panel and it exists on the Dashboard alone, because a watchlist with live
+     quotes says nothing on a TFSA/FHSA room tracker. The points stay shared. */
   await go('contrib');
-  check(JSON.stringify(await chips()) === JSON.stringify(['VFV']), 'the list shows on Contributions');
+  check(await page.evaluate(() => {
+    const e = document.getElementById('eyePanel');
+    return !e || !e.closest('#contribView');
+  }), 'Eye on Stocks does not follow the notepad to Contributions');
+  check((await rows()).length > 0, '...while the points still do');
+  await go('dash');
+  check(await page.evaluate(() => {
+    const e = document.getElementById('eyePanel');
+    return !!e && !!e.closest('#dashView');
+  }), 'and it is present on the Dashboard');
   await page.click('#npStockInput');
   await page.keyboard.type('XEQT'); await page.keyboard.press('Enter'); await page.waitForTimeout(150);
-  await go('dash');
   check(JSON.stringify(await chips()) === JSON.stringify(['VFV', 'XEQT']),
-    'a stock added on Contributions shows on Dashboard');
+    'a stock added on the Dashboard is in the list');
   check(JSON.stringify(await page.evaluate(() => corePayload().notes.stocks)) ===
     JSON.stringify(['VFV', 'XEQT']), 'corePayload() carries the stocks');
   await page.evaluate(() => { const i = document.getElementById('npStockInput');
@@ -214,34 +255,34 @@ const section = t => console.log(`\n── ${t} ──`);
   await page.evaluate(() => { state.notes = { points: [], text: '', stocks: ['VFV'] };
     notesPersist(); renderNotes(); });
 
-  section('12. the 60/40 split');
+  section('12. widths, now that Strategy is gone');
+  /* The .np-split 60/40 pair it used to check no longer exists: the notepad is
+     points alone, and Eye on Stocks is its own panel. What matters now is that
+     each panel is the right WIDTH on each tab and neither overflows on a phone. */
   for (const v of ['dash', 'contrib']) {
     await go(v);
-    await page.setViewportSize({ width: 1360, height: 1000 }); await page.waitForTimeout(180);
-    const g = await page.evaluate(() => {
-      const sp = document.querySelector('.np-split');
-      const [a, b] = [...sp.children].map(c => c.getBoundingClientRect().width);
-      const w = sp.getBoundingClientRect().width;
-      return { strategy: +(a / w).toFixed(3), stocks: +(b / w).toFixed(3),
-               sameRow: [...sp.children].every((c, _, arr) =>
-                 Math.abs(c.getBoundingClientRect().top - arr[0].getBoundingClientRect().top) < 2) };
+    await page.setViewportSize({ width: 1360, height: 1000 }); await page.waitForTimeout(220);
+    check(await page.evaluate(() => !document.querySelector('.np-split')),
+      `${v}: the old Strategy/stocks split is gone`);
+    const w = await page.evaluate(() => {
+      const p = document.getElementById('notepadPanel');
+      const h = document.getElementById('holdingsCard');
+      const r = e => e ? Math.round(e.getBoundingClientRect().width) : null;
+      return { np: r(p), parent: r(p.parentElement), holdings: r(h),
+               dash: !!p.closest('#dashView') };
     });
-    check(Math.abs(g.strategy - 0.6) < 0.02, `${v}: Strategy is 60% wide`, String(g.strategy));
-    check(g.stocks > 0.34 && g.stocks < 0.40, `${v}: stocks column takes the rest`, String(g.stocks));
-    check(g.sameRow, `${v}: the two sit side by side at 1360px`);
-    await page.setViewportSize({ width: 900, height: 1000 }); await page.waitForTimeout(180);
-    const stacked = await page.evaluate(() => {
-      const c = [...document.querySelector('.np-split').children];
-      return c[1].getBoundingClientRect().top > c[0].getBoundingClientRect().top + 10;
-    });
-    check(stacked, `${v}: they stack to one column at 900px`);
-    for (const w of [560, 390]) {
-      await page.setViewportSize({ width: w, height: 1000 }); await page.waitForTimeout(150);
+    if (w.dash) check(Math.abs(w.np - w.holdings) < 2,
+      'dash: the notepad matches the holdings width', JSON.stringify(w));
+    else check(Math.abs(w.np - w.parent) < 4,
+      'contrib: the notepad is full width', JSON.stringify(w));
+    for (const px of [560, 390]) {
+      await page.setViewportSize({ width: px, height: 1000 }); await page.waitForTimeout(200);
       const over = await page.evaluate(() => {
-        const p = document.getElementById('notepadPanel');
-        return +(p.scrollWidth - p.clientWidth).toFixed(1);
+        const ids = ['notepadPanel', 'eyePanel'];
+        return ids.map(id => { const p = document.getElementById(id);
+          return p ? +(p.scrollWidth - p.clientWidth).toFixed(1) : 0 });
       });
-      check(over <= 0.5, `${v} @ ${w}px: no overflow`, `${over}px`);
+      check(over.every(o => o <= 0.5), `${v} @ ${px}px: no overflow`, JSON.stringify(over));
     }
   }
   await page.setViewportSize({ width: 1360, height: 1000 });

@@ -80,7 +80,7 @@ const section = t => console.log(`\n── ${t} ──`);
   await page.selectOption('#fAcct', 'TFSA');
   await page.fill('#fQty', '5');
   await page.fill('#fPrice', '400');
-  await page.fill('#fManual', '410');
+  // the optional current-price field is gone; a new position starts at the buy price
   await page.click('#addHolding');
   await page.waitForTimeout(150);
   check(await count('#hbody tr') === rows0 + 1, 'add holding: one new row rendered');
@@ -89,7 +89,7 @@ const section = t => console.log(`\n── ${t} ──`);
   // same symbol + account averages into the existing position
   const before = await page.evaluate(() => state.holdings.filter(h => h.sym === 'MSFT').length);
   await page.fill('#fSym', 'MSFT'); await page.selectOption('#fAcct', 'TFSA');
-  await page.fill('#fQty', '5'); await page.fill('#fPrice', '420'); await page.fill('#fManual', '410');
+  await page.fill('#fQty', '5'); await page.fill('#fPrice', '420');
   await page.click('#addHolding'); await page.waitForTimeout(150);
   const after = await page.evaluate(() => state.holdings.filter(h => h.sym === 'MSFT'));
   check(after.length === before && after[0].qty === 10, 'same symbol+account averages into one position',
@@ -442,6 +442,338 @@ const section = t => console.log(`\n── ${t} ──`);
 
     check(s5.errs.length === 0, 'no page errors from the chart', s5.errs.join(' | '));
     await s5.ctx.close();
+  }
+
+
+  /* ── THE BROKER MARK ─────────────────────────────────────────────────────
+     Two brokers, both holding a TFSA and an FHSA, so the account alone cannot
+     say where a position lives. It is a LABEL: it must change no total, no
+     filter and no figure. Blank means Wealthsimple, so only the exception is
+     marked. */
+  {
+    const B = await open(browser, url);
+    const bk = () => B.page.evaluate(() =>
+      [...document.querySelectorAll('#hbody .bk')].map(b => b.textContent));
+    check((await bk()).length === 4 && (await bk()).every(t => t === ''),
+      'every holding gets a mark and all start blank', JSON.stringify(await bk()));
+    /* Blank but not invisible: the box has to hold its width or the tickers
+       shift sideways the moment one row is marked. */
+    const box = await B.page.evaluate(() => {
+      const r = document.querySelector('#hbody .bk').getBoundingClientRect();
+      return { w: Math.round(r.width), h: Math.round(r.height) };
+    });
+    check(box.w >= 14 && box.h >= 16, 'a blank mark still has a clickable area', JSON.stringify(box));
+
+    const totals0 = await B.page.evaluate(() => ({
+      hero: document.getElementById('heroValue').textContent,
+      rows: document.querySelectorAll('#hbody tr').length }));
+    await B.page.click('#hbody .bk');
+    await B.page.waitForTimeout(250);
+    const marked = await B.page.evaluate(() => {
+      const b = document.querySelector('#hbody .bk');
+      const other = document.querySelector('.tag-other');
+      return { txt: b.textContent, pressed: b.getAttribute('aria-pressed'),
+        colour: getComputedStyle(b).color,
+        otherColour: other ? getComputedStyle(other).color : null,
+        stored: state.holdings[0].broker,
+        hero: document.getElementById('heroValue').textContent,
+        rows: document.querySelectorAll('#hbody tr').length };
+    });
+    check(marked.txt === 'Q' && marked.stored === 'Q' && marked.pressed === 'true',
+      'clicking marks it Q, and says so to a screen reader', JSON.stringify(marked));
+    check(marked.colour === marked.otherColour,
+      'in the same grey the "Other" tag uses', marked.colour);
+    /* The assertion that matters: a label must not move money. */
+    check(marked.hero === totals0.hero && marked.rows === totals0.rows,
+      'and it changes no figure and hides no row', `${totals0.hero} / ${marked.hero}`);
+
+    await B.page.click('#hbody .bk'); await B.page.waitForTimeout(200);
+    check(await B.page.evaluate(() => state.holdings[0].broker) === '',
+      'clicking again clears it');
+
+    await B.page.evaluate(() => { state.holdings[0].broker = 'Q'; persist(); render() });
+    await B.page.reload({ waitUntil: 'load' }); await B.page.waitForTimeout(400);
+    check(await B.page.evaluate(() =>
+      state.holdings[0].broker === 'Q' && document.querySelector('#hbody .bk').textContent === 'Q'),
+      'the mark survives a reload');
+    check(await B.page.evaluate(() => corePayload().holdings[0].broker === 'Q'),
+      'and travels in a backup, so it is not lost on a restore');
+
+    /* Adding a position is unchanged, and the optional current-price field is
+       gone -- a new holding starts at the buy price and is left to the refresh. */
+    check(await B.page.evaluate(() => !document.getElementById('fManual')),
+      'the optional current-price field is gone from Add a position');
+    const added = await B.page.evaluate(() => {
+      document.getElementById('fSym').value = 'TEST';
+      document.getElementById('fAcct').value = 'FHSA';
+      document.getElementById('fQty').value = '3';
+      document.getElementById('fPrice').value = '20';
+      addHolding();
+      const h = state.holdings.find(x => x.sym === 'TEST');
+      return h && { acct: h.acct, qty: h.qty, avg: h.avg, price: h.price, manual: h.manual };
+    });
+    check(added && added.acct === 'FHSA' && added.qty === 3 && added.avg === 20,
+      'a position still adds under the account chosen', JSON.stringify(added));
+    check(added.price === 20 && added.manual === false,
+      'it starts at the buy price and is left to the live refresh', JSON.stringify(added));
+
+    check(B.errs.length === 0, 'no page errors from the broker mark', B.errs.join(' | '));
+    await B.ctx.close();
+  }
+
+  /* ── PAST SELLS ──────────────────────────────────────────────────────────
+     Sells were not recorded at all before this: confirmSell() adjusted cash,
+     dropped the holding and kept nothing. The panel therefore starts empty and
+     fills from the first sale, and the thing worth testing hardest is that a
+     trade keeps the currency it happened in -- a record that stored a converted
+     total would be wrong the next day. */
+  {
+    const S = await open(browser, url);
+    const q = sel => S.page.evaluate(x => {
+      const e = document.querySelector(x); return e ? e.textContent.replace(/\s+/g, ' ').trim() : null }, sel);
+
+    check(await S.page.evaluate(() => Array.isArray(state.sells) && state.sells.length === 0),
+      'the sells store starts empty');
+    check(await S.page.evaluate(() =>
+      getComputedStyle(document.getElementById('sellEmpty')).display !== 'none'),
+      'and the panel says so rather than showing an empty table');
+
+    // AAPL is USD (avg 180.50), ENB is CAD (avg 48.20) in the seed
+    const sell = (sym, qty, price) => S.page.evaluate(([sym, qty, price]) => {
+      const h = state.holdings.find(x => x.sym === sym);
+      sellHolding(h.id);
+      document.getElementById('sellQty').value = String(qty);
+      document.getElementById('sellPrice').value = String(price);
+      confirmSell();
+    }, [sym, qty, price]);
+
+    await sell('AAPL', 5, 250);        // +$347.50 on a $902.50 cost  => +38.50%
+    await sell('ENB', 10, 40);         // −C$82.00 on a C$482.00 cost => −17.01%
+    await S.page.waitForTimeout(200);
+
+    const rec = await S.page.evaluate(() => state.sells.map(s =>
+      ({ sym: s.sym, qty: s.qty, price: s.price, avg: s.avg, ccy: s.ccy })));
+    check(rec.length === 2, 'both sales are recorded', JSON.stringify(rec));
+    check(rec[0].ccy === 'USD' && rec[1].ccy === 'CAD',
+      'each keeps the currency it happened in', rec.map(r => r.ccy).join('/'));
+    check(rec[0].price === 250 && rec[0].avg === 180.5,
+      'the NATIVE price and average cost are stored, not a converted total',
+      JSON.stringify(rec[0]));
+
+    const cells = await S.page.evaluate(() =>
+      [...document.querySelectorAll('#sellBody tr')].map(tr =>
+        [...tr.children].map(td => td.textContent.replace(/\s+/g, ' ').trim())));
+    check(cells.length === 2, 'two rows are drawn', JSON.stringify(cells));
+    const usd = cells.find(c => /AAPL/.test(c[1])), cad = cells.find(c => /ENB/.test(c[1]));
+    check(usd[2] === '+38.50%' && usd[3] === '+$347.50',
+      'the USD row reads in dollars, and the figures are right', JSON.stringify(usd));
+    check(cad[2] === '−17.01%' && cad[3] === '−C$82.00',
+      'the CAD row reads in Canadian dollars', JSON.stringify(cad));
+
+    // ── the toggle must not reach this panel ──────────────────────────────
+    const before = await q('#sellsPanel');
+    const hero0 = await q('#heroValue');
+    await S.page.evaluate(() => { state.ccy = state.ccy === 'CAD' ? 'USD' : 'CAD'; render() });
+    await S.page.waitForTimeout(200);
+    const after = await q('#sellsPanel');
+    const hero1 = await q('#heroValue');
+    /* The companion assertion is the point: without it this passes against a
+       panel that renders nothing at all. */
+    check(hero0 !== hero1, 'flipping USD/CAD does move the hero total', hero0 + ' -> ' + hero1);
+    check(before === after, 'but changes nothing in Past sells — every figure is native');
+
+    // ── totals are per currency and never added together ──────────────────
+    const tiles = await S.page.evaluate(() =>
+      [...document.querySelectorAll('#sellSum > div')].map(d =>
+        [...d.querySelectorAll('.v')].map(v => v.textContent.replace(/\s+/g, ' ').trim())));
+    check(tiles[0].length === 2 && tiles[0].some(t => /\$347\.50/.test(t))
+      && tiles[0].some(t => /C\$82\.00/.test(t)),
+      'Realised P/L shows both currencies, unmerged', JSON.stringify(tiles[0]));
+    check(!tiles[0].some(t => /265|\+\$265/.test(t)),
+      'and nothing anywhere is the two added together');
+    check(tiles[2][0] === '2' && tiles[3][0] === '1 of 2',
+      'the counts are currency-free and single', JSON.stringify([tiles[2], tiles[3]]));
+
+    // ── a USD-only portfolio gets one figure, not an empty half ───────────
+    await S.page.evaluate(() => { state.sells = state.sells.filter(s => s.ccy === 'USD'); render() });
+    await S.page.waitForTimeout(150);
+    check((await S.page.evaluate(() =>
+      document.querySelectorAll('#sellSum > div:first-child .v').length)) === 1,
+      'one currency gives one figure, with no blank second line');
+
+    // ── the account filter applies, like every other Dashboard figure ─────
+    await S.page.evaluate(() => { state.filter = 'FHSA'; render() });
+    await S.page.waitForTimeout(150);
+    check(await S.page.evaluate(() => document.querySelectorAll('#sellBody tr').length) === 0,
+      'a sale in another account is filtered out');
+    await S.page.evaluate(() => { state.filter = 'ALL'; render() });
+
+    // ── a partial sale records what was sold, and leaves the average alone ─
+    await S.page.evaluate(() => { state.sells = []; render() });
+    const part = await S.page.evaluate(() => {
+      const h = state.holdings.find(x => x.sym === 'VFV');
+      const before = { qty: h.qty, avg: h.avg };
+      sellHolding(h.id);
+      document.getElementById('sellQty').value = '5';
+      document.getElementById('sellPrice').value = '150';
+      confirmSell();
+      const after = state.holdings.find(x => x.sym === 'VFV');
+      return { before, after: { qty: after.qty, avg: after.avg }, rec: state.sells[0] };
+    });
+    check(part.rec.qty === 5 && part.after.qty === part.before.qty - 5,
+      'a partial sale records 5, not the whole position', JSON.stringify(part));
+    check(part.after.avg === part.before.avg,
+      'and the average cost is untouched by a partial sale');
+
+    check(S.errs.length === 0, 'no page errors from Past sells', S.errs.join(' | '));
+    await S.ctx.close();
+  }
+
+  /* ── EYE ON STOCKS ───────────────────────────────────────────────────────
+     Three Finnhub endpoints per symbol, fetched once when a row is opened. The
+     half that matters is what happens when there is nothing to fetch: for a
+     Canadian portfolio the free tier returns nothing for .TO, so the no-data
+     path is the ORDINARY one and has to read as deliberate. */
+  {
+    const E = await open(browser, url, Object.assign({}, SEED, {
+      'sparta.notes': JSON.stringify({ points: [], text: '', stocks: ['NVDA', 'SHOP.TO'] }) }));
+    let calls = 0;
+    await E.page.route('**finnhub.io/**', r => {
+      calls++;
+      const u = r.request().url();
+      if (/\/quote\?/.test(u)) return r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify(/SHOP/.test(u) ? { c: 0 } : { c: 905.2, dp: 2.41, h: 912.75, l: 889.1, pc: 883.9 }) });
+      if (/profile2/.test(u)) return r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ name: 'NVIDIA Corporation', currency: 'USD', marketCapitalization: 2230000 }) });
+      return r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ metric: { '52WeekHigh': 974, '52WeekLow': 392.3, peTTM: 64.8, beta: 1.74 } }) });
+    });
+    await E.page.evaluate(() => { state.apiKey = 'test-key' });
+
+    check(calls === 0, 'nothing is fetched until a row is opened — the free tier is 60/min');
+    check(await E.page.evaluate(() => document.querySelectorAll('#npStocks .np-stock').length) === 2,
+      'one row per watched stock');
+
+    await E.page.click('#npStocks .np-stock[data-s="NVDA"] [data-act="toggle"]');
+    await E.page.waitForFunction(() => !!document.querySelector('.np-stock[data-s="NVDA"] .np-stgrid'));
+    const after1 = calls;
+    check(after1 === 3, 'opening a row fetches quote, profile and metrics — three calls', String(after1));
+    const body = await E.page.evaluate(() => {
+      const r = document.querySelector('.np-stock[data-s="NVDA"]');
+      return { head: r.querySelector('.np-stpx').textContent.replace(/\s+/g, ' ').trim(),
+        cells: [...r.querySelectorAll('.np-stcell')].map(c => c.textContent.replace(/\s+/g, ' ').trim()),
+        dot: !!r.querySelector('.np-rdot') };
+    });
+    check(/\$905\.20/.test(body.head), 'the price shows in the stock\'s own currency', body.head);
+    check(body.dot, 'the 52-week bar is drawn when a range is published');
+    check(body.cells.some(c => /P\/E/.test(c) && /64\.8/.test(c)), 'metrics are listed', JSON.stringify(body.cells));
+
+    // collapse and re-open: the figures are cached for the session
+    await E.page.click('#npStocks .np-stock[data-s="NVDA"] [data-act="toggle"]');
+    await E.page.waitForTimeout(120);
+    await E.page.click('#npStocks .np-stock[data-s="NVDA"] [data-act="toggle"]');
+    await E.page.waitForTimeout(400);
+    check(calls === after1, 're-opening does not fetch again', `${after1} -> ${calls}`);
+
+    // c:0 is Finnhub saying it has no such symbol, not a price of zero
+    await E.page.click('#npStocks .np-stock[data-s="SHOP.TO"] [data-act="toggle"]');
+    /* .np-stmsg is also the "Loading…" placeholder, so waiting for the element
+       alone wins the race against the fetch and reads the wrong text. */
+    await E.page.waitForFunction(() => {
+      const e = document.querySelector('.np-stock[data-s="SHOP.TO"] .np-stmsg');
+      return !!e && !/Loading/.test(e.textContent);
+    });
+    const msg = await E.page.evaluate(() =>
+      document.querySelector('.np-stock[data-s="SHOP.TO"] .np-stmsg').textContent.replace(/\s+/g, ' ').trim());
+    check(/does not cover Canadian listings/i.test(msg),
+      'a .TO symbol says why there is nothing, rather than looking broken', msg);
+
+    // reading a watchlist must never make this browser look edited
+    const stamp = await E.page.evaluate(() => localStorage.getItem(nsKey('sparta.updatedAt')));
+    await E.page.waitForTimeout(300);
+    check(await E.page.evaluate(() => localStorage.getItem(nsKey('sparta.updatedAt'))) === stamp,
+      'expanding a stock does not re-stamp updatedAt — it is a read');
+
+    check(E.errs.length === 0, 'no page errors from Eye on Stocks', E.errs.join(' | '));
+    await E.ctx.close();
+  }
+
+  /* ── THE DASHBOARD FILLS ITS GAPS ────────────────────────────────────────
+     Before this, the left column held 881px of content inside a 1585px column
+     at 1024px -- 704px of nothing under Holdings -- while the right was full. */
+  {
+    const L = await open(browser, url);
+    const layout = () => L.page.evaluate(() => [...document.querySelectorAll('#dashView > .col')].map(c => ({
+      ids: [...c.children].map(e => e.id || e.className.split(' ')[0]),
+      slack: Math.round(c.getBoundingClientRect().bottom -
+        (c.lastElementChild ? c.lastElementChild.getBoundingClientRect().bottom : c.getBoundingClientRect().top)),
+      content: [...c.children].reduce((a, e) => a + e.getBoundingClientRect().height + 20, 0),
+    })));
+    for (const w of [1440, 1280, 1024]) {
+      await L.page.setViewportSize({ width: w, height: 1000 });
+      await L.page.waitForTimeout(400);
+      const a = await layout();
+      const gap = Math.abs(a[0].content - a[1].content);
+      check(gap < 260, `${w}px: the two columns are within a panel of each other`,
+        `${Math.round(gap)}px`);
+      /* Settling matters more than the exact arrangement: a layout that keeps
+         changing its mind would thrash on every resize. */
+      await L.page.evaluate(() => dashLayout());
+      await L.page.waitForTimeout(150);
+      const b = await layout();
+      check(JSON.stringify(a.map(x => x.ids)) === JSON.stringify(b.map(x => x.ids)),
+        `${w}px: running it again changes nothing`, JSON.stringify(b.map(x => x.ids)));
+      check(a[0].ids.slice(0, 3).join() === 'heroCard,holdingsCard,notepadPanel',
+        `${w}px: hero, holdings and the notepad stay pinned left, in order`,
+        a[0].ids.join());
+    }
+    // one column on a phone: the declared order, not a shuffle
+    await L.page.setViewportSize({ width: 390, height: 900 });
+    await L.page.waitForTimeout(400);
+    const ph = await layout();
+    check(ph[1].ids.join() === 'statRow,cashCard,addCard,importCard,sellsPanel,eyePanel',
+      '390px: the flowing panels keep their declared order', ph[1].ids.join());
+
+    // returning from Contributions must put the notepad back under Holdings
+    await L.page.setViewportSize({ width: 1280, height: 1000 });
+    await L.page.evaluate(() => applyView('contrib'));
+    await L.page.waitForTimeout(250);
+    await L.page.evaluate(() => applyView('dash'));
+    await L.page.waitForTimeout(400);
+    check(await L.page.evaluate(() => {
+      const p = document.getElementById('notepadPanel');
+      return p.parentElement.classList.contains('col') &&
+             p.previousElementSibling && p.previousElementSibling.id === 'holdingsCard';
+    }), 'coming back from Contributions leaves the notepad under Holdings');
+
+    /* Moving a node blurs whatever is focused inside it, so the layout must not
+       touch the DOM when the arrangement has not changed. This caught a real
+       bug: adding a note point stole the caret. */
+    await L.page.click('#npAdd'); await L.page.waitForTimeout(150);
+    await L.page.keyboard.type('still typing');
+    await L.page.waitForTimeout(600);
+    check(await L.page.evaluate(() => {
+      const i = document.querySelector('#npPoints .np-row input');
+      return document.activeElement === i && i.value === 'still typing';
+    }), 'a relayout does not steal the caret from a note being typed');
+
+    /* The harder half: a panel that GREW may legitimately have to change column,
+       and that move does blur what is inside it. Typing tickers into Eye on
+       Stocks grew the panel on every Enter, so the keystroke after a move went
+       nowhere. The caret has to be carried across the move, not merely avoided. */
+    await L.page.click('#npStockInput');
+    for (const t of ['AAA', 'BBB', 'CCC']) {
+      await L.page.keyboard.type(t);
+      await L.page.keyboard.press('Enter');
+      await L.page.waitForTimeout(250);
+    }
+    check(await L.page.evaluate(() => document.activeElement.id) === 'npStockInput',
+      'focus stays in the ticker input across the relayouts those additions caused');
+    check(await L.page.evaluate(() => state.notes.stocks.join()) === 'AAA,BBB,CCC',
+      'so all three tickers actually landed', await L.page.evaluate(() => state.notes.stocks.join()));
+
+    check(L.errs.length === 0, 'no page errors from the layout', L.errs.join(' | '));
+    await L.ctx.close();
   }
 
   await browser.close(); srv.close();
