@@ -649,6 +649,119 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     `${gg.sealed} / ${Math.round(gg.stats.end)}`);
   await G.c.close();
 
+
+  /* ── 10. WHAT CROSSES FROM YEARLY AND MONTHLY, AND WHAT DOES NOT ──────────
+     An archive is a summary, not a copy of the ledger, and the line between
+     the two is easy to move by accident. This section seeds one year where
+     every answer is hand-computable and pins BOTH halves: each figure that is
+     carried, against arithmetic done here rather than by the app; and each
+     thing that is deliberately left behind, so dropping something new goes
+     noticed and picking something up unintentionally does too.
+
+     The asymmetry it pins is the important part. Everything derived from
+     yfTxns() is YEARLY-TAB ONLY -- that function ends in `t.tab!=='me'` -- so
+     Monthly's rows reach the card through exactly one field, byCat, and
+     through no total at all. */
+  {
+    const AY = 2025;                       // a closed year, so it seals as sealed
+    const T = [
+      // Yearly tab
+      { id:'q1', tab:'yf', type:'income',  date:`${AY}-01-15`, amt:5000, cat:'Paycheck',    who:'ABI' },
+      { id:'q2', tab:'yf', type:'income',  date:`${AY}-02-15`, amt:5000, cat:'Paycheck',    who:'ABI' },
+      { id:'q3', tab:'yf', type:'expense', date:`${AY}-01-05`, amt:1200, cat:'Rent',        who:'ABI' },
+      { id:'q4', tab:'yf', type:'expense', date:`${AY}-02-05`, amt:1200, cat:'Rent',        who:'ABI' },
+      { id:'q5', tab:'yf', type:'expense', date:`${AY}-03-01`, amt:3000, cat:'Investment',  who:'ABI' },
+      { id:'q6', tab:'yf', type:'expense', date:`${AY}-03-02`, amt: 800, cat:'Other Bank',  who:'ABI' },
+      { id:'q7', tab:'yf', type:'expense', date:`${AY}-04-10`, amt: 500, cat:'Credit Bill', who:'ABI' },
+      // a Yearly row whose category was later removed from the configured list
+      { id:'q8', tab:'yf', type:'expense', date:`${AY}-06-03`, amt: 410, cat:'Gone from list', who:'ABI' },
+      // Monthly tab
+      { id:'n1', tab:'me', type:'expense', date:`${AY}-01-07`, amt:220, cat:'Groceries',  who:'ABI', mOnly:true },
+      { id:'n2', tab:'me', type:'expense', date:`${AY}-01-19`, amt:130, cat:'Dining Out', who:'ABI', mOnly:true },
+      { id:'n3', tab:'me', type:'expense', date:`${AY}-02-11`, amt:310, cat:'Groceries',  who:'ABI', mOnly:true },
+      { id:'n4', tab:'me', type:'expense', date:`${AY}-05-03`, amt: 95, cat:'Transit',    who:'POO', mOnly:true },
+      // allocations against q7: they must add to NO total, but DO belong in the
+      // grid, under the bill's month rather than their own date
+      { id:'n5', tab:'me', type:'expense', date:`${AY}-04-14`, amt:300, cat:'Shopping',  who:'ABI', allot:'q7', allotM:`${AY}-04` },
+      { id:'n6', tab:'me', type:'expense', date:`${AY}-04-16`, amt:200, cat:'Groceries', who:'ABI', allot:'q7', allotM:`${AY}-04` },
+      // paying the card is not spending -- ME_NONSPEND keeps it out of the grid
+      { id:'n7', tab:'me', type:'expense', date:`${AY}-04-28`, amt:500, cat:'Bill Payment', who:'ABI', mOnly:true },
+      // a Monthly INCOME row. Neither Monthly creator can make one (both
+      // hardcode type:'expense'), but an import or an old file can.
+      { id:'n8', tab:'me', type:'income',  date:`${AY}-07-04`, amt:640, cat:'Refund', who:'ABI', mOnly:true },
+      // next year, which must not leak into this one
+      { id:'z1', tab:'yf', type:'income',  date:`${AY+1}-01-15`, amt:9999, cat:'Paycheck', who:'ABI' },
+    ];
+    const tSeed = Object.assign({}, SEED, {
+      'sparta.yf.data': JSON.stringify({ txns: T,
+        cats: { exp: ['Rent','Investment','Other Bank','Credit Bill','Never used'], inc: ['Paycheck','Bonus'] },
+        planned: { [AY]: { Rent: 15000, Investment: 4000 } },
+        start: { [AY]: 10000 } }),
+    });
+    const X = await open(browser, url, tSeed);
+    const snap = await X.page.evaluate(y => arcSnapshot(y), AY);
+
+    // ── carried, and correct ────────────────────────────────────────────────
+    // Yearly income 5000+5000; expenses 1200+1200+3000+800+500+410 = 7110
+    check(snap.stats.start === 10000, 'Start comes across from yf.start', snap.stats.start);
+    check(snap.stats.end === 10000 + 10000 - 7110, 'End is start + Yearly income − Yearly expenses', snap.stats.end);
+    check(snap.stats.saved === 2890, 'Saved is end − start', snap.stats.saved);
+    check(snap.stats.invested === 3000, 'Invested comes from the Investment category', snap.stats.invested);
+    check(snap.stats.moved === 800, 'Moved else comes from Other Bank', snap.stats.moved);
+    check(snap.stats.offPaper === 2890 + 3000 + 800, 'Off-paper savings adds the three back together', snap.stats.offPaper);
+    check(Math.abs(snap.stats.growth - 28.9) < 0.001, 'Growth is end/start − 1', snap.stats.growth);
+    check(JSON.stringify(snap.mInc) === JSON.stringify([5000,5000,0,0,0,0,0,0,0,0,0,0]),
+      'the twelve income months are carried', JSON.stringify(snap.mInc));
+    check(JSON.stringify(snap.mExp) === JSON.stringify([1200,1200,3800,500,0,410,0,0,0,0,0,0]),
+      'the twelve expense months are carried, allocations excluded', JSON.stringify(snap.mExp));
+    // a category removed from the configured list still has money against it,
+    // and leaving it out would make the table disagree with the End above it
+    check(snap.exp.some(r => r.c === 'Gone from list' && r.v === 410),
+      'a category no longer on the configured list is still carried',
+      JSON.stringify(snap.exp.map(r => r.c)));
+    check(!snap.exp.some(r => r.c === 'Never used') && !snap.inc.some(r => r.c === 'Bonus'),
+      'a configured category with no money against it is dropped');
+    // Monthly reaches the card through byCat and nothing else
+    check(JSON.stringify(snap.byCat['Groceries']) === JSON.stringify([220,310,0,200,0,0,0,0,0,0,0,0]),
+      'the grid carries Monthly rows AND allocations, under the bill\'s month',
+      JSON.stringify(snap.byCat['Groceries']));
+    check(snap.byCat['Transit'] && snap.byCat['Transit'][4] === 95,
+      'a Monthly row from either person is carried', JSON.stringify(snap.byCat['Transit']));
+    check(!('Bill Payment' in snap.byCat), 'paying a card is kept out of the grid, as on the Monthly tab');
+    check(snap.contrib.abiT === 3000, 'contributions are read at seal time and stored', JSON.stringify(snap.contrib));
+    check(snap.highlights.length > 0 && snap.highlights.every(h => h.key && h.title && h.line),
+      'the highlights are stored whole, not re-derived later', snap.highlights.length);
+    /* NOT a string search for 9999 -- growth is 28.89999999999999, so that
+       assertion failed on the build's own arithmetic rather than on a leak. */
+    check(snap.mInc.reduce((a, v) => a + v, 0) === 10000 && !snap.mInc.includes(9999) &&
+      !snap.inc.some(r => r.v === 9999),
+      'next January\'s income does not leak into this year',
+      JSON.stringify(snap.inc));
+
+    // ── NOT carried. Each of these is a deliberate limit, pinned so that
+    //    changing it has to be a decision rather than an accident. ──────────
+    check(!('planned' in snap) && !JSON.stringify(snap).includes('15000'),
+      'the budget (yf.planned) is NOT carried — the highlights were computed from it at seal time, but it cannot be shown again');
+    check(!('txns' in snap) && !('rows' in snap) && !JSON.stringify(snap).includes('Loblaws'),
+      'no row-level detail is carried — no dates, descriptions or who');
+    check(!('cats' in snap), 'the configured category lists are NOT carried');
+    check(snap.entries === 8,
+      'ENTRIES COUNTS YEARLY ROWS ONLY — 8 of the 16 rows in the year; the card says "N entries" and does not include Monthly',
+      snap.entries);
+    // the Monthly income row reaches nothing at all
+    check(snap.mInc.reduce((a, v) => a + v, 0) === 10000,
+      'a Monthly INCOME row is not in the income months (yfTxns excludes tab==="me")');
+    check(!('Refund' in snap.byCat),
+      'nor in the category grid (meMonthlyByCat keeps expenses only) — it reaches no figure on the card');
+    // and Monthly spending is in the grid but in no total, which is the shape
+    // of the whole thing rather than a bug: Yearly's End models a bank balance
+    const meSpend = 220 + 130 + 310 + 95 + 500;        // un-allotted Monthly rows
+    check(!snap.mExp.some(v => v === meSpend) && snap.stats.end === 12890,
+      'Monthly spending appears in the grid but in no total — End is a Yearly-only figure');
+
+    await X.ctx.close();
+  }
+
   console.log(`\nARCHIVES: ${pass} passed, ${fail} failed`);
   await browser.close(); srv.close();
   process.exit(fail ? 1 : 0);

@@ -446,6 +446,48 @@ Three guards, each of which has a test that fails without it:
 test, so a deliberately typed `0` survives. It stays editable on the Yearly tab like any
 other year's.
 
+### What crosses from Yearly and Monthly into an archive, and what does not
+
+An archive is a **summary**, not a copy of the ledger, and the line between the two is easy
+to move by accident. Pinned in `test-archives.js` §10 against a year where every answer is
+hand-computable.
+
+The asymmetry is the thing to understand. `yfTxns()` ends in `t.tab!=='me'`, so **everything
+derived from it is Yearly-tab only** — `mInc`, `mExp`, `exp`, `inc`, `entries`, every figure
+in `stats`, and the highlights. Monthly reaches the card through **exactly one field,
+`byCat`**, and through no total at all.
+
+| from | carried as | notes |
+|---|---|---|
+| `yf.start[year]` | `stats.start` | |
+| Yearly rows | `stats.end/saved/invested/moved/offPaper/growth` | End = start + Yearly income − Yearly expenses |
+| Yearly rows | `mInc` / `mExp`, twelve months each | allocations excluded from `mExp` |
+| Yearly rows | `exp` / `inc`, per category | a category off the configured list is **kept** if money is against it; a configured one with nothing against it is dropped |
+| Monthly rows | `byCat`, category × 12 | allocations included, under the **bill's** month; `Bill Payment` excluded, as on the Monthly tab |
+| Contributions tab | `contrib` | read at seal time and stored, because contributions keep being added afterwards |
+| computed | `highlights` | stored whole, not re-derived |
+
+**Left behind, each one deliberate:**
+
+- **The budget** (`yf.planned[year]`). The highlights were computed from it at seal time, but
+  the figures are gone, so a sealed card can never show budget against actual again.
+- **All row-level detail** — no dates, descriptions, amounts or who. A summary by design.
+- **The configured category lists** (`yf.cats`), so a category that was set up but never used
+  leaves no trace.
+- **`me.rules`, `me.imported`, `me.chartCats`** — settings rather than data for that year.
+  `chartCats` especially: the trend's category choice must not be frozen into the record.
+
+**Two sharp edges worth knowing about:**
+
+1. **`entries` counts Yearly rows only.** A year with 8 Yearly and 8 Monthly rows seals as
+   `entries: 8`, and the card says "Sealed · 8 entries" on a card whose own body shows a
+   Monthly grid. Under-reports by every Monthly row.
+2. **A Monthly *income* row reaches nothing.** `yfTxns()` excludes `tab==='me'` and
+   `meMonthlyByCat()` keeps expenses only, so such a row is in neither `mInc` nor `byCat`.
+   Neither Monthly row-creator can make one — both hardcode `type:'expense'` — so this only
+   arises from an import or an old file, but when it does the money silently vanishes from
+   the archive.
+
 ### Tuning the Archives colours by hand
 
 Eleven variables on `:root`, together, so they appear when you inspect `<html>` and can be
