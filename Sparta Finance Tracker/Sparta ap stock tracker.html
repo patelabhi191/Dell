@@ -1338,16 +1338,23 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
      They were hardcoded rgba before, which meant changing the bar colour did
      nothing to the bars -- the frosted fill ignored it. color-mix keeps them in
      step: the lit top is the colour mixed toward white, the body is the colour
-     at 46% alpha, the rim is a bright edge of the same hue.
-     Tune the LOOK with the percentages here; tune the COLOUR on :root. */
+     at 62% alpha, the rim is a bright edge of the same hue.
+     Tune the LOOK with the percentages here; tune the COLOUR on :root.
+
+     39 / 62 / 48 is "A3": less glass than the 52 / 46 / 62 it started at, by
+     about three fifths of the way to a matte bar. The three move TOGETHER on
+     purpose -- they are one material, and sliding the body's alpha without the
+     lit top and the rim following is how a bar stops reading as one object.
+     Below roughly 43 / 56 / 52 the change stops being visible at all on a card
+     this dark, which is why the step is this large rather than a nudge. */
   --arc-in:var(--arc-bar-in);
-  --arc-in-g1:color-mix(in srgb, #fff 52%, var(--arc-bar-in));
-  --arc-in-g2:color-mix(in srgb, var(--arc-bar-in) 46%, transparent);
-  --arc-in-rim:color-mix(in srgb, #fff 62%, var(--arc-bar-in));
+  --arc-in-g1:color-mix(in srgb, #fff 39%, var(--arc-bar-in));
+  --arc-in-g2:color-mix(in srgb, var(--arc-bar-in) 62%, transparent);
+  --arc-in-rim:color-mix(in srgb, #fff 48%, var(--arc-bar-in));
   --arc-out:var(--arc-bar-out);
-  --arc-out-g1:color-mix(in srgb, #fff 52%, var(--arc-bar-out));
-  --arc-out-g2:color-mix(in srgb, var(--arc-bar-out) 46%, transparent);
-  --arc-out-rim:color-mix(in srgb, #fff 62%, var(--arc-bar-out));
+  --arc-out-g1:color-mix(in srgb, #fff 39%, var(--arc-bar-out));
+  --arc-out-g2:color-mix(in srgb, var(--arc-bar-out) 62%, transparent);
+  --arc-out-rim:color-mix(in srgb, #fff 48%, var(--arc-bar-out));
   --hl-alarm:#FF6B6B; --hl-spend:#FFA23D; --hl-good:#4ADE80;
   --hl-info:#7DA8FF; --hl-contrib:#2DD4BF}
 #archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
@@ -3418,7 +3425,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-05B</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-06</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">

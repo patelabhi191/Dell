@@ -531,6 +531,14 @@ the bar colour did nothing** — the frosted fill ignored it. Tune the *look* (h
 top, how sheer the body) with the percentages in `#archiveView`; tune the *colour* on
 `:root`.
 
+**The three gloss percentages are `39 / 62 / 48`** — lit top, body alpha, rim. They started
+at `52 / 46 / 62`, which read as glass floating above the card; this is about three fifths
+of the way from there to a matte bar, so the bars still have form but sit *on* the surface
+rather than over it. Two things learned by rendering the range rather than reasoning about
+it: the three must move **together**, because they are one material and sliding the body's
+alpha alone stops the bar reading as a single object; and below roughly `43 / 56 / 52` the
+change is not visible at all on a card this dark, so the useful steps are large.
+
 **The year numerals are a gradient clipped to the text**, so what reads as glass is the
 gradient's *level*: `--arc-yr-hi` where it catches the light, `--arc-yr-lo` where the card
 shows through. Raise both and it goes solid white; lower both and it dissolves into the
