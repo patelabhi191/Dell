@@ -461,8 +461,10 @@ the bars or the year numerals carries a second copy of a colour.
 | `--arc-card-c` | expanded card, stop 3 (bottom-right) | `rgba(130,165,255,.10)` |
 | `--arc-card-sat` | how hard the card saturates what is behind it | `185%` |
 | `--arc-yr-col` | the year numerals' colour | `#fff` |
-| `--arc-yr-hi` | the year's gradient level at its lit peaks | `87%` |
-| `--arc-yr-lo` | the year's gradient level at its troughs | `41%` |
+| `--arc-yr-hi` | the year's gradient level at its lit peaks, **open** | `87%` |
+| `--arc-yr-lo` | the year's gradient level at its troughs, **open** | `41%` |
+| `--arc-yr-hi-row` | the same, for a card that is merely **listed** | `95%` |
+| `--arc-yr-lo-row` | ditto | `52%` |
 | `--arc-yr-edge` | the hairline outline around the glyphs | `34%` |
 | `--arc-yr-angle` | which way the sheen runs across them | `168deg` |
 
@@ -481,6 +483,17 @@ each one used to sit between `.41` and `.87`, so the *shape* of the sheen lives 
 and its *strength* on `:root`. Keep the colour white unless a tinted year is wanted — the
 stops once mixed cool greys (`#E2E8F1`, `#CBD4E1`, `#B0BBCC`) and read muddy rather than
 sheer.
+
+**A listed card's year is brighter than an open one, deliberately.** Open, the numerals sit
+on glass with a blue card behind them, so sheer troughs read as glass. Shut, there is no
+glass behind them at all — only the page — so the same alphas read as grey. `.ay:not(.open)
+.ay-yr` therefore swaps in the `-row` pair. The derivation of `--arc-yr-peak`/`--arc-yr-sheer`
+had to **move from `#archiveView` onto `.ay-yr`** to make that work: a custom property is
+substituted on the element that *declares* it, so peak and sheer resolved on the ancestor
+inherit down already fixed and an override of `hi`/`lo` further in does nothing at all.
+Declared on the same element the override targets, the cascade settles `hi`/`lo` first and
+the two ends follow. Measured both states: shut reads `.95/.52`, open `.87/.41`, and one card
+opening leaves the other alone.
 
 **Every card stop needs an alpha.** `--arc-card-a/b/c` are `rgba`, and a value written
 without one — `rgb(36 65 119)` — is fully opaque, so the glass stops being glass wherever

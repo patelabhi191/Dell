@@ -74,6 +74,7 @@
        --arc-yr-col     the year numerals' colour
        --arc-yr-hi      the GRADIENT LEVEL at its lit peaks   (how solid)
        --arc-yr-lo      the GRADIENT LEVEL at its troughs     (how sheer)
+       --arc-yr-hi/lo-row  the same two for a card that is merely LISTED
        --arc-yr-edge    the hairline outline around the glyphs
        --arc-yr-angle   which way the sheen runs across them
 
@@ -96,6 +97,13 @@
   --arc-yr-col:#fff;
   --arc-yr-hi:87%;
   --arc-yr-lo:41%;
+  /* A LISTED card is brighter than an open one, and on purpose. Open, the year
+     sits on glass with a blue card behind it, so a sheer troughs reads as glass.
+     Shut, there is no glass behind it at all -- only the page -- so the same
+     alphas read as grey rather than sheer. W1: barely transparent, the blue
+     showing only in the gradient's dips. */
+  --arc-yr-hi-row:95%;
+  --arc-yr-lo-row:52%;
   --arc-yr-edge:34%;
   --arc-yr-angle:168deg;
   --stroke:rgba(255,255,255,0.12);
@@ -1340,10 +1348,6 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   --arc-out-g1:color-mix(in srgb, #fff 52%, var(--arc-bar-out));
   --arc-out-g2:color-mix(in srgb, var(--arc-bar-out) 46%, transparent);
   --arc-out-rim:color-mix(in srgb, #fff 62%, var(--arc-bar-out));
-  /* The two ends of the year's gradient. Every stop below is mixed between
-     these, so the six stops stay in proportion when you move hi or lo. */
-  --arc-yr-peak:color-mix(in srgb, var(--arc-yr-col) var(--arc-yr-hi), transparent);
-  --arc-yr-sheer:color-mix(in srgb, var(--arc-yr-col) var(--arc-yr-lo), transparent);
   --hl-alarm:#FF6B6B; --hl-spend:#FFA23D; --hl-good:#4ADE80;
   --hl-info:#7DA8FF; --hl-contrib:#2DD4BF}
 #archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
@@ -1454,6 +1458,13 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   color:transparent;
   -webkit-background-clip:text;background-clip:text;
   mix-blend-mode:normal;
+  /* The two ends of the gradient, derived HERE rather than on #archiveView.
+     A custom property is substituted on the element that declares it, so peak
+     and sheer resolved up there would inherit down already fixed and the
+     listed-card override below would do nothing. Declared on the same element
+     it overrides, the cascade settles hi/lo first and these follow. */
+  --arc-yr-peak:color-mix(in srgb, var(--arc-yr-col) var(--arc-yr-hi), transparent);
+  --arc-yr-sheer:color-mix(in srgb, var(--arc-yr-col) var(--arc-yr-lo), transparent);
   /* One colour at six LEVELS, not six colours. The old stops mixed cool greys
      -- #E2E8F1, #CBD4E1, #B0BBCC -- which is why the year read muddy rather
      than glassy. Now every stop is a mix of --arc-yr-peak and --arc-yr-sheer,
@@ -1470,6 +1481,9 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   text-shadow:0 1px 0 rgba(255,255,255,.26), 0 -1px 0 rgba(0,0,0,.30),
               0 9px 24px rgba(0,0,0,.38);
 }
+/* Shut, in the list: brighter, barely transparent. Nothing else changes -- same
+   colour, same angle, same six stops in the same proportions. */
+.ay:not(.open) .ay-yr{--arc-yr-hi:var(--arc-yr-hi-row);--arc-yr-lo:var(--arc-yr-lo-row)}
 @media (prefers-reduced-transparency:reduce){
   .ay-yr{mix-blend-mode:normal;background-image:none;color:#EAF0FA;
     -webkit-text-stroke:0;text-shadow:none}
@@ -3394,7 +3408,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-03</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-05</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
