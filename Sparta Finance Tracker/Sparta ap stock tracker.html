@@ -410,8 +410,12 @@ button{font-family:var(--font-body);cursor:pointer}
    #contribView is a plain block, so there it is full width already. */
 #contribView>#notepadPanel{margin-top:20px}
 .np-points{display:flex;flex-direction:column;gap:8px}
-.np-row{display:flex;align-items:center;gap:10px}
-.np-row input{flex:1;min-width:0}
+/* flex-start, not center: once a point wraps onto a second line the bullet and
+   the bin belong beside the FIRST line, not floating in the middle of the row */
+.np-row{display:flex;align-items:flex-start;gap:10px}
+.np-row textarea{flex:1;min-width:0;resize:none;overflow:hidden;line-height:1.45;
+  min-height:0;height:auto;font-family:var(--font-body)}
+.np-bullet,.np-del{margin-top:5px}
 .np-bullet{flex:none;color:var(--teal);font-size:16px;line-height:1}
 .np-del{flex:none;width:32px;height:32px;border-radius:9px;border:1px solid var(--stroke);
   background:transparent;color:var(--text-faint);cursor:pointer;font-size:15px;line-height:1;
@@ -433,6 +437,41 @@ button{font-family:var(--font-body);cursor:pointer}
 /* .htable right-aligns everything after the first column, which is right for
    figures and wrong for a date and a ticker */
 #sellsPanel th:nth-child(-n+2),#sellsPanel td:nth-child(-n+2){text-align:left}
+/* This table lives in the narrow column and carries five columns, so it is
+   tightened to fit rather than left to scroll sideways -- a horizontal
+   scrollbar under four short rows reads as something being cut off. */
+#sellsPanel .htable th,#sellsPanel .htable td{padding:9px 4px}
+#sellsPanel .htable th{white-space:nowrap}        /* "% profit" on one line */
+#sellsPanel .htable td{font-size:12.5px}
+/* day and month over the year, so the column needs no more width than "06 Oct" */
+.sl-d{display:block;font-weight:600;white-space:nowrap}
+.sl-y{display:block;font-size:10px;color:var(--text-faint);letter-spacing:.04em}
+/* the account and quantity stay on ONE line: "FHSA - 8888" was wrapping under
+   the ticker and taking a third row per sale */
+#sellsPanel .sym small{white-space:nowrap}
+/* the two row buttons stack, because side by side they cost width the figures
+   need and the rows are tall enough to hold both */
+.sl-act{display:flex;flex-direction:column;gap:4px;align-items:center}
+.sl-act .rm{width:26px;padding:3px 0;text-align:center}
+/* From / To / Search on one line, the dates sharing what the button leaves */
+.sell-range{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin:0 0 14px}
+.sell-range label{display:block;font-size:var(--fs-micro);letter-spacing:var(--ls-label);
+  text-transform:uppercase;color:var(--text-faint);font-weight:700;margin-bottom:5px}
+.sell-range input{width:100%;min-width:0;padding:8px 9px;font-size:12.5px}
+.sell-range .btn{padding:9px 14px;font-size:12.5px;white-space:nowrap}
+/* The percentage rides under the money as well, hidden until it is needed. */
+.sl-sub{display:none;font-size:10.5px;font-weight:600;opacity:.78}
+@media(max-width:430px){
+  .sell-range{grid-template-columns:1fr 1fr}
+  .sell-range .btn{grid-column:1/-1}
+  /* Five columns cannot hold a four-figure amount AND a percentage at phone
+     width -- measured 328px of table in 248px of panel at 320px. So the
+     percentage column folds under the amount, which is exactly what the
+     holdings table does with its P/L. One column goes, nothing is lost. */
+  #sellsPanel .pc{display:none}
+  #sellsPanel .sl-sub{display:block}
+  #sellsPanel .htable th,#sellsPanel .htable td{padding:8px 3px;font-size:11.5px}
+}
 .np-stocks{display:flex;flex-direction:column;gap:10px;margin-top:12px}
 .np-stock{border:1px solid var(--stroke);border-radius:var(--r-card);
   background:rgba(255,255,255,.022);overflow:hidden}
@@ -3030,14 +3069,24 @@ select{color-scheme:dark}
       <section class="panel cash" id="sellsPanel">
         <h3>Past sells</h3>
         <div class="st-sum" id="sellSum"></div>
+        <!-- A ledger grows without limit, so the panel shows a window rather
+             than everything. Thirty days to today by default. -->
+        <div class="sell-range">
+          <div><label for="sellFrom">From</label>
+            <input id="sellFrom" type="date"></div>
+          <div><label for="sellTo">To</label>
+            <input id="sellTo" type="date"></div>
+          <button class="btn" id="sellSearch" type="button">Search</button>
+        </div>
         <div class="tscroll">
           <table class="htable" id="sellTable">
-            <thead><tr><th>Date</th><th>Ticker</th><th>% profit</th><th>$ made</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Ticker</th><th class="pc">% profit</th><th>$ made</th><th></th></tr></thead>
             <tbody id="sellBody"></tbody>
           </table>
         </div>
         <p class="empty" id="sellEmpty">Nothing sold yet — this fills in when you use the
           <b>$</b> button on a holding.</p>
+        <p class="empty" id="sellNone" style="display:none">No sales in these dates.</p>
         <p class="note" id="sellNote2" style="margin:12px 0 0">Each sale stays in the currency it
           happened in and is never converted, so the USD / CAD switch at the top does not change
           these figures.</p>
@@ -3549,7 +3598,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-09</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-10</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -5056,9 +5105,31 @@ function dashLayoutSoon(){
    was never real. Where both currencies are present each tile shows two
    figures -- they are never added together.
    Percentages are currency-free, so they are always right. */
+/* The window the panel shows. A ledger grows without limit, so listing all of
+   it was never going to hold: thirty days to today, changed with the two date
+   boxes. It is a VIEW preference and is not stored -- it costs nothing to set
+   again, and persisting it would mean a sale could be missing on next load with
+   no sign of why. */
+let sellFrom=null, sellTo=null;
+const sellDayStart=d=>{ const [y,m,dd]=String(d).split('-').map(Number);
+  // built from parts, never Date(string): 'YYYY-MM-DD' parses as UTC and reads
+  // a day early west of Greenwich (bug class 13)
+  return (y&&m&&dd)?new Date(y,m-1,dd,0,0,0,0).getTime():null };
+const sellDayEnd=d=>{ const t=sellDayStart(d); return t==null?null:t+86399999 };
+function sellRangeInit(){
+  if(sellFrom&&sellTo) return;
+  const now=new Date();
+  sellTo=isoLocal(now);
+  sellFrom=isoLocal(new Date(now.getFullYear(),now.getMonth(),now.getDate()-30));
+  if($('sellFrom')) $('sellFrom').value=sellFrom;
+  if($('sellTo'))   $('sellTo').value=sellTo;
+}
 function renderSells(){
   const tb=$('sellBody'); if(!tb) return;
-  const rows=(state.sells||[]).filter(s=>state.filter==='ALL'||s.acct===state.filter)
+  sellRangeInit();
+  const from=sellDayStart(sellFrom), to=sellDayEnd(sellTo);
+  const inScope=(state.sells||[]).filter(s=>state.filter==='ALL'||s.acct===state.filter);
+  const rows=inScope.filter(s=>(from==null||s.t>=from)&&(to==null||s.t<=to))
     .slice().sort((a,b)=>b.t-a.t);
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
   tb.innerHTML=rows.map(s=>{
@@ -5066,19 +5137,29 @@ function renderSells(){
     const pct=cost>0?(pnl/cost)*100:0;
     const cls=pnl>0?'up':pnl<0?'down':'flat';
     const d=new Date(s.t);
-    return `<tr><td style="white-space:nowrap">${isoLocal(d)}</td>`+
+    /* Day then month, built rather than localised: en-CA renders "Oct 04" and
+       the day belongs first here. */
+    const dd=String(d.getDate()).padStart(2,'0');
+    const mon=d.toLocaleDateString('en-CA',{month:'short'});
+    return `<tr><td><span class="sl-d">${dd} ${mon}`+
+        `</span><span class="sl-y">${d.getFullYear()}</span></td>`+
       `<td><span class="sym">${esc(s.sym)}<small>${esc(s.acct)} · ${s.qty}</small></span></td>`+
-      `<td class="${cls}" style="font-weight:600">${(pct>=0?'+':'−')+Math.abs(pct).toFixed(2)}%</td>`+
-      `<td class="pl ${cls}">${signedNat(pnl,s.ccy)}</td>`+
-      `<td style="white-space:nowrap"><button class="rm sell" data-edit="${s.id}" `+
+      `<td class="pc ${cls}" style="font-weight:600">${(pct>=0?'+':'−')+Math.abs(pct).toFixed(2)}%</td>`+
+      `<td class="pl ${cls}">${signedNat(pnl,s.ccy)}`+
+        `<span class="sl-sub">${(pct>=0?"+":"\u2212")+Math.abs(pct).toFixed(2)}%</span></td>`+
+      `<td><span class="sl-act"><button class="rm sell" data-edit="${s.id}" `+
         `title="Correct this sale" aria-label="Correct the ${esc(s.sym)} sale">✎</button>`+
         `<button class="rm" data-del="${s.id}" title="Undo this sale" `+
-        `aria-label="Undo the ${esc(s.sym)} sale">✕</button></td></tr>`;
+        `aria-label="Undo the ${esc(s.sym)} sale">✕</button></span></td></tr>`;
   }).join('');
   tb.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editSell(b.dataset.edit));
   tb.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>deleteSell(b.dataset.del));
   $('sellTable').style.display=rows.length?'table':'none';
-  $('sellEmpty').style.display=rows.length?'none':'block';
+  /* Two different nothings: no sales at all, and none in the dates asked for.
+     Showing "nothing sold yet" to someone who has sold plenty would read as
+     lost data. */
+  $('sellEmpty').style.display=(!rows.length&&!inScope.length)?'block':'none';
+  $('sellNone').style.display=(!rows.length&&inScope.length)?'block':'none';
   $('sellNote2').style.display=rows.length?'block':'none';
 
   // one bucket per currency, never merged
@@ -5088,7 +5169,6 @@ function renderSells(){
     b.pnl+=proceeds-cost; b.cost+=cost; b.n++; if(proceeds>cost) b.win++; });
   const ccys=Object.keys(by).sort();
   const lines=(f)=>ccys.map(c=>f(by[c],c)).join('');
-  const wins=rows.filter(s=>s.qty*s.price>s.qty*s.avg).length;
   $('sellSum').innerHTML = !rows.length ? '' :
     `<div><span class="k">Realised P / L</span>${lines((b,c)=>
       `<span class="v ${b.pnl>0?'up':b.pnl<0?'down':'flat'}">${signedNat(b.pnl,c)}</span>`)}</div>`+
@@ -5096,8 +5176,7 @@ function renderSells(){
       `<span class="v ${b.pnl>0?'up':b.pnl<0?'down':'flat'}">${
         b.cost>0?(b.pnl>=0?'+':'−')+Math.abs(b.pnl/b.cost*100).toFixed(2)+'%':'—'
       }<small style="font-weight:600;opacity:.6"> ${esc(c)}</small></span>`)}</div>`+
-    `<div><span class="k">Sells</span><span class="v">${rows.length}</span></div>`+
-    `<div><span class="k">Winners</span><span class="v">${wins} of ${rows.length}</span></div>`;
+    '';
 }
 
 /* ============ live prices ============ */
@@ -5237,6 +5316,14 @@ function sellReverse(rec,q2,p2){
 /* Reversing a credit can overdraw an account, and that is allowed: refusing
    would make a real correction impossible the moment the money had moved on.
    It is said out loud instead. */
+if($('sellSearch')) $('sellSearch').onclick=()=>{
+  sellFrom=$('sellFrom').value||sellFrom;
+  sellTo=$('sellTo').value||sellTo;
+  // a range typed backwards is a slip, not an empty result
+  if(sellDayStart(sellFrom)>sellDayStart(sellTo)){ const t=sellFrom; sellFrom=sellTo; sellTo=t;
+    $('sellFrom').value=sellFrom; $('sellTo').value=sellTo; }
+  renderSells();
+};
 function sellCashNote(acct){
   return state.cash[acct]<-1e-9 ? ` — ${acct} cash is now ${money(state.cash[acct])}` : '';
 }
@@ -5558,6 +5645,8 @@ function applyView(view){
     // appendChild above drops the notepad at the END of #dashView, outside both
     // columns; the layout puts it back under Holdings where it belongs
     if(view==='dash' && typeof dashLayout==='function') dashLayout();
+    // the notepad was hidden a moment ago, where every textarea measures 0
+    if(typeof npAutoSize==='function') requestAnimationFrame(()=>npAutoSize());
   }
   // year selector belongs to Contributions only
   $('yearBar').classList.toggle('show',contrib);
@@ -8341,13 +8430,16 @@ function renderNotes(){
   const box=$('npPoints'); if(!box) return;
   const pts=normalizeNotes().points;
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  /* A textarea, not an input: a long point used to run past the right edge and
+     the rest was simply invisible. It wraps and the row grows downwards now. */
   box.innerHTML = pts.length
     ? pts.map(p=>`<div class="np-row" data-id="${p.id}">`+
         `<span class="np-bullet">\u2022</span>`+
-        `<input type="text" value="${esc(p.text)}" aria-label="Note" placeholder="Write a point\u2026">`+
+        `<textarea rows="1" aria-label="Note" placeholder="Write a point\u2026">${esc(p.text)}</textarea>`+
         `<button class="np-del" title="Delete point" aria-label="Delete point">\u00d7</button>`+
       `</div>`).join('')
     : '<p class="np-empty">No points yet \u2014 press \u201c+ Add point\u201d to start.</p>';
+  npAutoSize();
   renderStocks();
 }
 /* Eye on Stocks. One row per symbol; expanding it fetches that symbol's figures
@@ -8500,8 +8592,24 @@ function npToggleStock(sym){
   if(typeof dashLayout==='function') dashLayout();
 }
 function npIndex(id){ return state.notes.points.findIndex(p=>p.id===id) }
+/* Grow each row to its content. scrollHeight is 0 on a hidden element, so a
+   pass that runs while the tab is off screen would collapse every row to
+   nothing -- hence the offsetParent guard, and the second pass from applyView()
+   when the tab comes back (bug class 14). */
+function npAutoSize(el){
+  const list = el ? [el] : [...document.querySelectorAll('#npPoints textarea')];
+  list.forEach(t=>{
+    if(!t.offsetParent && t!==document.activeElement) return;
+    t.style.height='auto';
+    /* scrollHeight counts padding but NOT the border, while height is
+       border-box here -- so setting one to the other leaves the box a border
+       short and clips the last line's descenders. Add the difference back. */
+    const border=t.offsetHeight-t.clientHeight;
+    t.style.height=Math.max(t.scrollHeight+border,22)+'px';
+  });
+}
 function npFocus(i,toEnd){
-  const rows=$('npPoints').querySelectorAll('.np-row input');
+  const rows=$('npPoints').querySelectorAll('.np-row textarea');
   const el=rows[Math.max(0,Math.min(i,rows.length-1))];
   if(el){ el.focus(); if(toEnd) el.setSelectionRange(el.value.length,el.value.length) }
 }
@@ -8523,11 +8631,16 @@ if($('npPoints')){
     const row=e.target.closest('.np-row'); if(!row) return;
     const i=npIndex(row.dataset.id); if(i<0) return;
     state.notes.points[i].text=e.target.value; notesPersistSoon();
+    npAutoSize(e.target);            // grow as it is typed, not only on render
   });
   $('npPoints').addEventListener('keydown',e=>{
     const row=e.target.closest('.np-row'); if(!row) return;
     const i=npIndex(row.dataset.id); if(i<0) return;
-    if(e.key==='Enter'){ e.preventDefault(); npAddAt(i+1) }
+    /* Enter adds the next point, as it did when this was an input. A textarea
+       would otherwise insert a newline, and a point is one line of thought --
+       wrapping is for length, not for composing paragraphs. Shift+Enter is
+       left alone for anyone who does want a break. */
+    if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); npAddAt(i+1) }
     else if(e.key==='Backspace' && e.target.value===''){ e.preventDefault(); npRemove(row.dataset.id) }
   });
   $('npPoints').addEventListener('click',e=>{

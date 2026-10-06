@@ -507,6 +507,49 @@ The optional **current price** field is gone from Add a position: a new holding 
 buy price with `manual:false` and is left to the live refresh, which is exactly what leaving
 that field blank used to do.
 
+### Past sells: a window, not the whole ledger
+
+A sell ledger only grows, so the panel shows **thirty days to today** by default, changed with
+the two date boxes and the Search button. The range is a *view* preference and is deliberately
+not stored: it costs nothing to set again, and persisting it would mean a sale could be missing
+on the next load with no sign of why. A backwards range is swapped rather than showing nothing.
+
+Two different empty states, because they mean different things: **nothing sold yet**, and
+**nothing in these dates**. Showing the first to someone who has sold plenty would read as lost
+data.
+
+The Sells and Winners tiles were removed — a count of rows is readable from the rows.
+
+**Fitting five columns into the narrow column.** Measured against the worst case it will really
+meet: a four-digit quantity, a four-figure amount and a percentage. The date is day and month
+over the year, so the column needs no more width than `04 Oct`; the account and quantity are
+`white-space:nowrap`, since `FHSA · 8888` was wrapping under the ticker and costing a third row;
+the headers are nowrap so `% profit` stays on one line; and the correct and undo buttons stack
+rather than sitting side by side. At **≤430px the percentage column folds under the amount** —
+five columns cannot hold a four-figure amount *and* a percentage at phone width (measured 328px
+of table in 248px of panel at 320px), and putting the percentage under the figure is exactly
+what the holdings table already does with its P/L. Result: zero sideways scroll from 1440 down
+to 320px.
+
+### A note wraps instead of disappearing
+
+The notepad's rows were `<input>`, so a long point ran past the right edge and the rest was
+simply invisible. They are `<textarea rows="1">` now, grown to their content by `npAutoSize()`.
+
+Three things that needed care:
+
+1. **scrollHeight counts padding but not the border**, while the height is border-box — setting
+   one from the other leaves the box a border short and clips the last line's descenders. The
+   difference is added back.
+2. **A hidden element measures 0**, so a sizing pass that runs while the tab is off screen
+   collapses every row to nothing. Hence the `offsetParent` guard and the second pass from
+   `applyView()` when the tab comes back (bug class 14).
+3. **Enter must still add the next point**, not a newline — a textarea would do the latter by
+   default. `Shift+Enter` is left alone for anyone who does want a break.
+
+`.np-row` aligns to `flex-start` so the bullet and the bin sit beside the first line rather than
+floating in the middle of a grown row.
+
 ### Correcting a past sell
 
 A wrong quantity or price used to be permanent, and it was wrong in **two** places: the

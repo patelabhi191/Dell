@@ -572,9 +572,15 @@ const section = t => console.log(`\n── ${t} ──`);
       'the NATIVE price and average cost are stored, not a converted total',
       JSON.stringify(rec[0]));
 
+    /* The amount cell also carries the percentage as a hidden sub-line, shown
+       only at phone width, so read the VISIBLE text or every amount reads twice. */
     const cells = await S.page.evaluate(() =>
       [...document.querySelectorAll('#sellBody tr')].map(tr =>
-        [...tr.children].map(td => td.textContent.replace(/\s+/g, ' ').trim())));
+        [...tr.children].map(td => {
+          const c = td.cloneNode(true);
+          c.querySelectorAll('.sl-sub').forEach(x => x.remove());
+          return c.textContent.replace(/\s+/g, ' ').trim();
+        })));
     check(cells.length === 2, 'two rows are drawn', JSON.stringify(cells));
     const usd = cells.find(c => /AAPL/.test(c[1])), cad = cells.find(c => /ENB/.test(c[1]));
     check(usd[2] === '+38.50%' && usd[3] === '+$347.50',
@@ -603,8 +609,9 @@ const section = t => console.log(`\n── ${t} ──`);
       'Realised P/L shows both currencies, unmerged', JSON.stringify(tiles[0]));
     check(!tiles[0].some(t => /265|\+\$265/.test(t)),
       'and nothing anywhere is the two added together');
-    check(tiles[2][0] === '2' && tiles[3][0] === '1 of 2',
-      'the counts are currency-free and single', JSON.stringify([tiles[2], tiles[3]]));
+    /* The Sells and Winners tiles were removed -- a count of rows is readable
+       from the rows. Only the two money tiles remain. */
+    check(tiles.length === 2, 'there are exactly two tiles', String(tiles.length));
 
     // ── a USD-only portfolio gets one figure, not an empty half ───────────
     await S.page.evaluate(() => { state.sells = state.sells.filter(s => s.ccy === 'USD'); render() });
@@ -745,6 +752,73 @@ const section = t => console.log(`\n── ${t} ──`);
     check((await look()).cash === -15000,
       'undoing a sale whose proceeds were spent takes the balance negative rather than refusing',
       String((await look()).cash));
+
+    /* ── the panel shows a WINDOW, not the whole ledger ──────────────────
+       Thirty days to today by default, because a sell ledger only grows. */
+    await setup(); await sell(100, 150);
+    await C.page.evaluate(() => {
+      // one sale today, one well outside the default window
+      state.sells.push({ id: 'old', t: Date.now() - 120 * 864e5, sym: 'OLD', acct: 'TFSA',
+        qty: 1, price: 2, avg: 1, ccy: 'USD' });
+      persist(); render();
+    });
+    await C.page.waitForTimeout(200);
+    const dflt = await C.page.evaluate(() => ({
+      rows: document.querySelectorAll('#sellBody tr').length,
+      from: document.getElementById('sellFrom').value,
+      to: document.getElementById('sellTo').value,
+      stored: state.sells.length,
+    }));
+    check(dflt.rows === 1 && dflt.stored === 2,
+      'a sale outside the last 30 days is not listed, but is still stored',
+      JSON.stringify(dflt));
+    check(/^\d{4}-\d{2}-\d{2}$/.test(dflt.from) && /^\d{4}-\d{2}-\d{2}$/.test(dflt.to),
+      'the range boxes are filled in with that window', JSON.stringify(dflt));
+
+    // widening the range brings it back
+    await C.page.evaluate(() => {
+      document.getElementById('sellFrom').value = '2000-01-01';
+      document.getElementById('sellSearch').click();
+    });
+    await C.page.waitForTimeout(200);
+    check(await C.page.evaluate(() => document.querySelectorAll('#sellBody tr').length) === 2,
+      'widening the From date brings the older sale back');
+
+    /* A range typed backwards is a slip, not a request for nothing. */
+    await C.page.evaluate(() => {
+      document.getElementById('sellFrom').value = '2030-01-01';
+      document.getElementById('sellTo').value = '2000-01-01';
+      document.getElementById('sellSearch').click();
+    });
+    await C.page.waitForTimeout(200);
+    check(await C.page.evaluate(() =>
+      document.getElementById('sellFrom').value < document.getElementById('sellTo').value &&
+      document.querySelectorAll('#sellBody tr').length === 2),
+      'a backwards range is swapped rather than showing an empty table');
+
+    /* Two different nothings: never sold anything, and nothing in these dates. */
+    await C.page.evaluate(() => {
+      document.getElementById('sellFrom').value = '2001-01-01';
+      document.getElementById('sellTo').value = '2001-12-31';
+      document.getElementById('sellSearch').click();
+    });
+    await C.page.waitForTimeout(200);
+    check(await C.page.evaluate(() => {
+      const none = document.getElementById('sellNone'), empty = document.getElementById('sellEmpty');
+      return getComputedStyle(none).display !== 'none' && getComputedStyle(empty).display === 'none';
+    }), 'an empty window says so, rather than claiming nothing was ever sold');
+
+    // ── the two counting tiles are gone ───────────────────────────────────
+    await C.page.evaluate(() => {
+      document.getElementById('sellFrom').value = '2000-01-01';
+      document.getElementById('sellTo').value = '2100-01-01';
+      document.getElementById('sellSearch').click();
+    });
+    await C.page.waitForTimeout(200);
+    const keys = await C.page.evaluate(() =>
+      [...document.querySelectorAll('#sellSum > div .k')].map(k => k.textContent.trim()));
+    check(keys.length === 2 && !keys.some(k => /Sells|Winners/.test(k)),
+      'only Realised P/L and Return on cost remain', JSON.stringify(keys));
 
     // ── the buttons are actually on the rows ──────────────────────────────
     await setup(); await sell(100, 150);
@@ -914,6 +988,114 @@ const section = t => console.log(`\n── ${t} ──`);
 
     check(E.errs.length === 0, 'no page errors from Eye on Stocks', E.errs.join(' | '));
     await E.ctx.close();
+  }
+
+  /* ── PAST SELLS FITS ITS COLUMN ──────────────────────────────────────────
+     It lives in the narrow right column and carries five columns of figures,
+     so it is measured against the worst case it will really meet: a four-digit
+     quantity, a four-figure amount and a percentage. A sideways scrollbar under
+     three short rows reads as something being cut off. */
+  {
+    const W = await open(browser, url);
+    await W.page.evaluate(() => {
+      const now = Date.now();
+      state.sells = [
+        { id: 'a', t: now - 2 * 864e5, sym: 'AAOX', acct: 'FHSA', qty: 8888, price: 2.3249, avg: 1.2, ccy: 'USD' },
+        { id: 'b', t: now - 3 * 864e5, sym: 'ENB.TO', acct: 'Other', qty: 1234, price: 60, avg: 50, ccy: 'CAD' }];
+      persist(); render();
+    });
+    await W.page.waitForTimeout(300);
+    const money = await W.page.evaluate(() => {
+      const td = document.querySelectorAll('#sellBody tr td')[3].cloneNode(true);
+      td.querySelectorAll('.sl-sub').forEach(x => x.remove());
+      return td.textContent.trim();
+    });
+    check(/^\+\$9,9\d\d\.\d\d$/.test(money), 'the worst case really is a four-figure amount', money);
+
+    for (const w of [1440, 1280, 1024, 900, 560, 430, 390, 320]) {
+      await W.page.setViewportSize({ width: w, height: 1100 });
+      await W.page.waitForTimeout(300);
+      const r = await W.page.evaluate(() => {
+        const p = document.getElementById('sellsPanel'), sc = p.querySelector('.tscroll');
+        const small = p.querySelector('.sym small');
+        const th = [...p.querySelectorAll('thead th')];
+        const pc = p.querySelector('td.pc'), sub = p.querySelector('.sl-sub');
+        const act = p.querySelector('.sl-act');
+        const d = p.querySelector('.sl-d'), y = p.querySelector('.sl-y');
+        return {
+          over: Math.round(sc.scrollWidth - sc.clientWidth),
+          smallLines: small.getClientRects().length,
+          headerLines: Math.max(...th.map(t => t.getClientRects().length)),
+          pctShown: getComputedStyle(pc).display !== 'none',
+          subShown: getComputedStyle(sub).display !== 'none',
+          stacked: act.getBoundingClientRect().height > 36,
+          dateOverYear: y.getBoundingClientRect().top > d.getBoundingClientRect().top + 4,
+        };
+      });
+      check(r.over === 0, `${w}px: no sideways scroll`, `${r.over}px`);
+      /* "FHSA - 8888" used to wrap under the ticker and cost a third row. */
+      check(r.smallLines === 1, `${w}px: the account and quantity stay on one line`, String(r.smallLines));
+      check(r.headerLines === 1, `${w}px: "% profit" is on one line`, String(r.headerLines));
+      check(r.stacked, `${w}px: correct and undo are stacked, not side by side`);
+      check(r.dateOverYear, `${w}px: the day and month sit above the year`);
+      /* Exactly one of the two is showing -- at phone width the percentage
+         column folds under the amount, the way the holdings table does. */
+      check(r.pctShown !== r.subShown,
+        `${w}px: the percentage shows once, in its column or under the amount`,
+        JSON.stringify({ col: r.pctShown, sub: r.subShown }));
+    }
+    await W.page.setViewportSize({ width: 1360, height: 1000 });
+    check(W.errs.length === 0, 'no page errors from Past sells at any width', W.errs.join(' | '));
+    await W.ctx.close();
+  }
+
+  /* ── A NOTE WRAPS AND THE ROW GROWS ──────────────────────────────────────
+     A long point used to run past the right edge and the rest was invisible. */
+  {
+    const N = await open(browser, url, Object.assign({}, SEED, {
+      'sparta.notes': JSON.stringify({ points: [
+        { id: 'p1', text: 'This is a deliberately long note that should wrap onto several lines '
+          + 'instead of running off the right edge and vanishing the way it used to.' },
+        { id: 'p2', text: 'Short' }], text: '', stocks: [] }) }));
+    await N.page.setViewportSize({ width: 1280, height: 1200 });
+    await N.page.waitForTimeout(500);
+    const look = () => N.page.evaluate(() => [...document.querySelectorAll('#npPoints textarea')]
+      .map(t => ({ h: Math.round(t.getBoundingClientRect().height),
+                   clipped: t.scrollHeight > t.clientHeight + 1 })));
+    let v = await look();
+    check(v[0].h > v[1].h + 20, 'the long point is taller than the short one', JSON.stringify(v));
+    /* scrollHeight counts padding but not the border, so a height set naively
+       from it leaves the last line's descenders clipped. */
+    check(v.every(x => !x.clipped), 'and nothing is cut off at the bottom', JSON.stringify(v));
+
+    await N.page.click('#npPoints textarea');
+    await N.page.keyboard.press('End');
+    await N.page.keyboard.type(' And more typed live to push it onto a further line entirely.');
+    await N.page.waitForTimeout(400);
+    const grown = await look();
+    check(grown[0].h > v[0].h, 'it grows as it is typed, not only on render',
+      `${v[0].h} -> ${grown[0].h}`);
+
+    /* Enter still starts the next point rather than inserting a newline -- a
+       textarea would do the latter by default. */
+    const before = await N.page.evaluate(() => state.notes.points.length);
+    await N.page.keyboard.press('Enter');
+    await N.page.waitForTimeout(200);
+    check(await N.page.evaluate(() => state.notes.points.length) === before + 1,
+      'Enter still adds the next point instead of a line break');
+    check(!(await N.page.evaluate(() => state.notes.points[0].text)).includes('\n'),
+      'and no newline was left in the point it was pressed in');
+
+    /* A hidden tab measures 0, so the heights have to be taken again when it
+       comes back or every row collapses (bug class 14). */
+    await N.page.evaluate(() => applyView('contrib')); await N.page.waitForTimeout(300);
+    await N.page.evaluate(() => applyView('dash')); await N.page.waitForTimeout(500);
+    const back = await look();
+    check(back[0].h === grown[0].h && !back[0].clipped,
+      'the heights survive a trip to Contributions and back', JSON.stringify(back));
+
+    check(N.errs.length === 0, 'no page errors from the notepad', N.errs.join(' | '));
+    await N.ctx.close();
   }
 
   /* ── EACH PANEL KEEPS ITS SIDE ───────────────────────────────────────────

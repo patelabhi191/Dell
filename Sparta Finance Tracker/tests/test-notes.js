@@ -23,7 +23,7 @@ const section = t => console.log(`\n── ${t} ──`);
   const go = async v => { await page.click(`#viewSeg button[data-view="${v}"]`); await page.waitForTimeout(220); };
   const pts = () => page.evaluate(() => state.notes.points.map(p => p.text));
   const rows = () => page.evaluate(() =>
-    [...document.querySelectorAll('#npPoints .np-row input')].map(i => i.value));
+    [...document.querySelectorAll('#npPoints .np-row textarea')].map(i => i.value));
 
   section('1. the panel is one element, moved — never copied');
   for (const v of ['dash', 'contrib', 'yearly', 'dash', 'contrib', 'plan', 'dash']) await go(v);
@@ -81,7 +81,7 @@ const section = t => console.log(`\n── ${t} ──`);
   await page.keyboard.press('Enter'); await page.waitForTimeout(120);
   check((await rows()).length === 2, 'Enter inserts a row below');
   check(await page.evaluate(() => {
-    const r = [...document.querySelectorAll('#npPoints .np-row input')];
+    const r = [...document.querySelectorAll('#npPoints .np-row textarea')];
     return document.activeElement === r[1];
   }), 'focus moves to the inserted row');
   await page.keyboard.type('Hold VFV');
@@ -108,7 +108,7 @@ const section = t => console.log(`\n── ${t} ──`);
      the field and the survival of the data in the same breath. */
   check(await page.evaluate(() => !document.getElementById('npText')),
     'the Strategy field is gone from Contributions');
-  await page.fill('#npPoints .np-row input', 'Edited point'); await page.waitForTimeout(500);
+  await page.fill('#npPoints .np-row textarea', 'Edited point'); await page.waitForTimeout(500);
   await go('dash');
   check(await page.evaluate(() => !document.getElementById('npText')),
     'and from Dashboard');
@@ -117,13 +117,13 @@ const section = t => console.log(`\n── ${t} ──`);
   check((await rows())[0] === 'Edited point', 'the Contributions point edit shows on Dashboard');
 
   section('4. render() must not disturb an in-progress edit');
-  await page.click('#npPoints .np-row input');
-  await page.evaluate(() => { const i = document.querySelector('#npPoints .np-row input');
+  await page.click('#npPoints .np-row textarea');
+  await page.evaluate(() => { const i = document.querySelector('#npPoints .np-row textarea');
     i.focus(); i.setSelectionRange(3, 3); });
   await page.evaluate(() => render());
   await page.waitForTimeout(120);
   const kept = await page.evaluate(() => {
-    const i = document.querySelector('#npPoints .np-row input');
+    const i = document.querySelector('#npPoints .np-row textarea');
     return { focused: document.activeElement === i, caret: i.selectionStart };
   });
   check(kept.focused, 'focus survives render()');
