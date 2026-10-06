@@ -577,7 +577,10 @@ button{font-family:var(--font-body);cursor:pointer}
 .bk::before{content:"";position:absolute;inset:-12px -2px}
 .bk:hover{background:rgba(234,240,250,.09);color:var(--text)}
 .bk:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
-.statrow #otherCard{grid-column:1/-1}
+/* Other used to span both columns, which made it read as a different KIND of
+   thing rather than simply the third account. With a fourth card alongside it
+   the row is a plain 2x2 and every account is the same shape. */
+.statrow .stat{min-width:0}
 
 /* ---------- Cash panel ---------- */
 .cash{padding:22px}
@@ -2968,9 +2971,17 @@ select{color-scheme:dark}
           <div class="foot" id="fhsaCash">Cash $0.00</div>
         </section>
         <section class="panel stat" id="otherCard" style="display:none">
-          <div class="label">Other value <span class="acct-tag tag-other">NON-REGISTERED</span></div>
+          <div class="label">Other value</div>
           <div class="num" id="otherVal">$0.00</div>
           <div class="foot" id="otherCash">Cash $0.00</div>
+        </section>
+        <!-- A placeholder, deliberately. It is not an account: nothing writes to
+             it, it is in no total, and the account filter does not know about it.
+             It reads zero until there is something real behind it. -->
+        <section class="panel stat" id="pooCard">
+          <div class="label">POO&rsquo;s WS value</div>
+          <div class="num" id="pooVal">$0.00</div>
+          <div class="foot" id="pooCash">Cash $0.00</div>
         </section>
       </div>
 
@@ -3598,7 +3609,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-10</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-11</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -4009,6 +4020,10 @@ function render(){
   $('otherCard').style.display=otherUsed?'block':'none';
   $('otherVal').textContent=fmt(marketVal(ot)+state.cash.Other);
   $('otherCash').textContent='Cash '+fmt(state.cash.Other);
+  /* Zero, but formatted the same way as the rest -- so it follows the USD/CAD
+     switch and reads C$0.00 beside the others rather than a bare 0. */
+  $('pooVal').textContent=fmt(0);
+  $('pooCash').textContent='Cash '+fmt(0);
 
   // table
   const rowPL=h=>{ const price=h.price??h.avg, cost=h.qty*h.avg;

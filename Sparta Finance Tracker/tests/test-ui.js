@@ -990,6 +990,66 @@ const section = t => console.log(`\n── ${t} ──`);
     await E.ctx.close();
   }
 
+  /* ── FOUR ACCOUNT CARDS ──────────────────────────────────────────────────
+     Other used to span both columns, which made it read as a different kind of
+     thing rather than the third account. With a fourth card beside it the row
+     is a plain 2x2 and every account is the same shape. */
+  {
+    const V = await open(browser, url);
+    await V.page.setViewportSize({ width: 1280, height: 1100 });
+    await V.page.waitForTimeout(400);
+    const look = () => V.page.evaluate(() => {
+      const r = document.getElementById('statRow');
+      const shown = [...r.children].filter(c => getComputedStyle(c).display !== 'none');
+      return { ids: shown.map(c => c.id || 'acct'),
+        widths: shown.map(c => Math.round(c.getBoundingClientRect().width)),
+        rows: new Set(shown.map(c => Math.round(c.getBoundingClientRect().y))).size,
+        over: r.scrollWidth - r.clientWidth };
+    });
+    let v = await look();
+    check(v.ids.length === 4 && v.ids.includes('pooCard'),
+      'there are four cards, including the new one', JSON.stringify(v.ids));
+    check(new Set(v.widths).size === 1,
+      'all four are the same width — Other no longer spans the row', JSON.stringify(v.widths));
+    check(v.rows === 2 && v.over === 0, 'they sit two by two with no overflow', JSON.stringify(v));
+
+    /* It is a placeholder, not an account: nothing may write to it, it is in no
+       total, and the account filter does not know about it. */
+    const hero0 = await V.page.evaluate(() => document.getElementById('heroValue').textContent);
+    check(await V.page.evaluate(() => document.getElementById('pooVal').textContent) === 'C$0.00',
+      'it reads zero, formatted like the others rather than a bare 0');
+    check(await V.page.evaluate(() => !('POO' in state.cash) && !state.holdings.some(h => h.acct === 'POO')),
+      'and it is not an account in state');
+    await V.page.evaluate(() => { state.ccy = 'USD'; render() });
+    await V.page.waitForTimeout(200);
+    check(await V.page.evaluate(() => document.getElementById('pooVal').textContent) === '$0.00',
+      'but it still follows the USD/CAD switch');
+    check(await V.page.evaluate(() => document.getElementById('heroValue').textContent) !== hero0,
+      'the switch really was thrown', hero0);
+    await V.page.evaluate(() => { state.ccy = 'CAD'; render() });
+
+    // Other still hides itself when nothing is in it, leaving three
+    await V.page.evaluate(() => {
+      state.holdings = state.holdings.filter(h => h.acct !== 'Other');
+      state.cash.Other = 0; persist(); render();
+    });
+    await V.page.waitForTimeout(250);
+    v = await look();
+    check(!v.ids.includes('otherCard') && v.ids.includes('pooCard'),
+      'an unused Other still hides itself, and the placeholder stays', JSON.stringify(v.ids));
+
+    for (const w of [1024, 560, 390]) {
+      await V.page.setViewportSize({ width: w, height: 1100 });
+      await V.page.waitForTimeout(250);
+      const r = await look();
+      check(r.over === 0 && new Set(r.widths).size === 1,
+        `${w}px: still even, still no overflow`, JSON.stringify(r.widths));
+    }
+    await V.page.setViewportSize({ width: 1360, height: 1000 });
+    check(V.errs.length === 0, 'no page errors from the account cards', V.errs.join(' | '));
+    await V.ctx.close();
+  }
+
   /* ── PAST SELLS FITS ITS COLUMN ──────────────────────────────────────────
      It lives in the narrow right column and carries five columns of figures,
      so it is measured against the worst case it will really meet: a four-digit

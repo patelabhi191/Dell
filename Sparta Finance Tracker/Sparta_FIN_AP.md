@@ -507,6 +507,21 @@ The optional **current price** field is gone from Add a position: a new holding 
 buy price with `manual:false` and is left to the live refresh, which is exactly what leaving
 that field blank used to do.
 
+### The four account cards
+
+Four cards in a plain 2x2: TFSA, FHSA, Other and **POO's WS value**.
+
+`Other` used to carry `grid-column:1/-1` and span the whole row, which made it read as a
+different *kind* of thing rather than simply the third account. With a fourth card beside it the
+span is gone and every account is the same shape. Other still hides itself when it holds nothing,
+leaving three.
+
+**`#pooCard` is a placeholder, deliberately.** Nothing writes to it, it is in no total, and the
+account filter does not know about it — `state.cash` still has three keys. It reads zero, but
+through `fmt()` like every other figure, so it follows the USD/CAD switch and shows `C$0.00`
+beside the others rather than a bare `0`. Wiring it to real data is a separate piece of work;
+until then the tests pin that it stays out of `state` and out of the hero total.
+
 ### Past sells: a window, not the whole ledger
 
 A sell ledger only grows, so the panel shows **thirty days to today** by default, changed with
