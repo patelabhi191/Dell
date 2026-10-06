@@ -452,16 +452,24 @@ button{font-family:var(--font-body);cursor:pointer}
    for phones, one for the 901-1100px range where 1024 is the narrowest
    two-column case -- collapse into the single question actually being asked. */
 #sellsPanel{container-type:inline-size}
-/* The table takes the width its CONTENT needs and centres what is left over.
-   Stretching it to the panel was the whole problem: its natural width is ~319px
-   against a 382px panel, and because Date and Ticker are left-aligned while the
-   figures are right-aligned, nearly all of that 63px landed in one place -- the
-   gap between Ticker and Profit measured 83px against 19px and 58px either
-   side. Solving the fixed-width version for even gaps gives -2px of room, which
-   is why retuning the percentages only ever moved the gap somewhere else.
-   Centred and content-sized, the three gaps are 18 / 28 / 18. */
-#sellTable{table-layout:auto;width:auto;margin-inline:auto}
-#sellsPanel .htable th{white-space:nowrap}        /* "% profit" on one line */
+/* The table is full width, which is what .htable gives every other table in the
+   app -- so there is no width rule here at all. A content-sized table centred in
+   the panel did even out the gaps, but it floated with margin either side while
+   the tiles, the date row and the footnote all ran edge to edge, and it read as
+   a separate thing rather than part of the panel.
+
+   What made the gap uneven was never the width, it was WHERE the surplus went.
+   Stretched with fixed proportions, Date and Ticker are left-aligned while the
+   figures are right-aligned, so the slack from both sides piled into the one
+   boundary between them: 83px against 19px and 58px either side.
+
+   The surplus goes to the trailing actions column instead. It is the only
+   column whose extra width is not a gap between two figures -- it is the margin
+   before the row's buttons, which the holdings table already carries at 56px.
+   26% puts it at 55px in the right-hand column, and the three gaps between the
+   figures come out 20 / 22 / 20 with nothing left over to pile up anywhere. */
+#sellTable th:last-child,#sellTable td:last-child{width:26%}
+#sellsPanel .htable th{white-space:nowrap}        /* every heading on one line */
 #sellsPanel .htable td{font-size:12.5px}
 /* day and month over the year, so the column needs no more width than "06 Oct" */
 .sl-d{display:block;font-weight:600;white-space:nowrap}
@@ -471,7 +479,11 @@ button{font-family:var(--font-body);cursor:pointer}
 #sellsPanel .sym small{white-space:nowrap}
 /* the two row buttons stack, because side by side they cost width the figures
    need and the rows are tall enough to hold both */
-.sl-act{display:flex;flex-direction:column;gap:4px;align-items:center}
+/* inline-flex, not flex: a block-level flex fills the cell and centres the
+   buttons in it, so widening the column floats them away from the edge. Shrunk
+   to its content, the cell's own text-align:right keeps them against the right
+   edge where the holdings table's buttons sit. */
+.sl-act{display:inline-flex;flex-direction:column;gap:4px;align-items:center}
 .sl-act .rm{width:26px;padding:3px 0;text-align:center}
 /* From / To / Search on one line, the dates sharing what the button leaves */
 .sell-range{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin:0 0 14px}
@@ -3116,10 +3128,12 @@ select{color-scheme:dark}
         </div>
         <div class="tscroll">
           <table class="htable" id="sellTable">
-            <!-- The table is content-sized, so there is nothing to divide up.
-                 Dropping the column definitions also drops the trap that came
-                 with them: hiding a cell without hiding its column shifted
-                 every remaining cell onto the wrong one. -->
+            <!-- No colgroup: the columns follow their content and the surplus
+                 goes to the last one. Dropping the column definitions also
+                 dropped the trap that came with them -- hiding a cell without
+                 hiding its column shifted every remaining cell onto the wrong
+                 one. The last header is empty on purpose; it is the actions
+                 column, which carries no label in any table here. -->
             <thead><tr><th>Date</th><th>Ticker</th><th class="pc">Profit</th><th>$ made</th><th></th></tr></thead>
             <tbody id="sellBody"></tbody>
           </table>
@@ -3638,7 +3652,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-13A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-06A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">

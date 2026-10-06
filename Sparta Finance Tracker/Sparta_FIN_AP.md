@@ -535,36 +535,52 @@ data.
 
 The Sells and Winners tiles were removed — a count of rows is readable from the rows.
 
-**The table is its own natural width and centred** — `table-layout:auto; width:auto;
-margin-inline:auto`, with no `<colgroup>` at all. That took three passes to arrive at, and the
-reason is worth keeping: **the gap was never a proportions problem, it was a stretching
-problem.** A table defaults to filling its container, and with Date and Ticker left-aligned
-against Profit and `$ made` right-aligned, nearly all of that slack lands at the one boundary
-between them. The content needs ~319px; the panel's content box is 382px; so 63px went into the
-gap beside the ticker.
+**The table is full width, and the surplus goes to the trailing actions column.** There is no
+width rule at all — `.htable` already gives every table in the app `width:100%`, and this one
+takes it like the rest. The only rule is `#sellTable th:last-child,td:last-child{width:26%}`.
 
-Measured header gaps, Date → Ticker → Profit → `$ made`:
+That is the fourth answer to this question and the first that satisfies both halves of it, so
+the two failures before it are worth keeping:
 
-| | 1 | 2 | 3 |
-|---|---|---|---|
-| fixed proportions | 19px | **83px** | 58px |
-| natural width, centred | 18px | 18px | 18px |
+| attempt | gaps | why it was wrong |
+|---|---|---|
+| fixed proportions, stretched | 19 / **83** / 58 | the slack piled into one boundary |
+| natural width, centred | 18 / 18 / 18 | even, but floating with 25–239px of margin either side while the tiles, the date row and the footnote all ran edge to edge — it read as a separate thing dropped into the panel |
+| **full width, surplus to the last column** | **20 / 22 / 20** | — |
 
-Solving the fixed layout for even gaps gives **G = −2px** — there was no spare room to
-redistribute, which is why retuning the percentages moved the gap around three times without
-shrinking it. The leftover room now sits outside the table as margin, where it is symmetric and
-invisible, instead of inside it as one wide gap.
+**The gap was never a width problem, it was a question of where the surplus goes.** Date and
+Ticker are left-aligned while Profit and `$ made` are right-aligned, so the slack from both sides
+piles into the single boundary between them — which is why centring fixed it (no slack at all)
+and why every attempt to retune the proportions only moved it somewhere else. Solving the
+stretched layout for even gaps gives **G = −2px**: there was no spare room to redistribute.
 
-**The side padding IS the gap.** `9px` each side gives the even 18px, and it had been squeezed to
-`3px` only to make the stretched layout fit. `#sellsPanel .sym small{letter-spacing:.02em}`
-likewise: the sub-line carries `.06em` globally, which widened the ticker column ~6px for nothing
-here.
+The actions column is the one place the surplus can go without becoming a gap between two
+figures. Its extra width is the margin before the row's buttons, and **the holdings table already
+carries 56px there** — 26% puts this one at 55px in the right-hand column and leaves the three
+gaps between the figures at 20 / 22 / 20.
+
+**`.sl-act` is `inline-flex`, not `flex`.** A block-level flex fills the cell and centres the
+buttons in it, so widening that column floats them away from the edge — at 900px, where the
+Dashboard is one column and the panel is ~800px wide, they sat 110px short of it. Shrunk to its
+content, the cell's own `text-align:right` keeps them against the right edge where the holdings
+table's buttons sit.
+
+**The side padding is the base gap.** `9px` each side gives the 18px the gaps start from, and it
+had been squeezed to `3px` only to make the stretched layout fit.
+`#sellsPanel .sym small{letter-spacing:.02em}` likewise: the sub-line carries `.06em` globally,
+which widened the ticker column ~6px for nothing here.
 
 The header is `Profit`, not `% profit` — the values all carry a `%`, so it was saying it twice,
 and it was the widest thing in its column. **Amounts over a million are shortened** — exact to
 `+C$999,999.99`, then `+C$1.23M` via `sellAmt()`, which reuses `npBig()` from Eye on Stocks. The
 summary tiles keep full precision: they have the room, and a headline total is worth reading to
 the cent.
+
+**Two cases spread wider and neither is a fault.** With the widest content (`BRK.B`,
+`Other · 12345`, `+C$116,166.00`) the table is already at its natural width, so there is no
+surplus to place and the gaps are whatever the content makes them. And when the Dashboard
+collapses to one column the panel is ~800px for ~320px of content, so the columns spread —
+exactly as the holdings table does at that width, where its first gap measures 136px.
 
 **The body gaps are looser than the header's and that is the content, not slack.** The ticker
 cell's sub-line (`FHSA · 60`) is wider than the ticker itself, so the ink under that heading stops
@@ -597,13 +613,17 @@ what the holdings table already does with its P/L. Result: zero sideways scroll 
 to 320px — with `8px 5px` of padding below the container threshold, since four columns at `9px`
 need 252px against the 248px a 320px phone leaves.
 
-**The tests measure gaps, not columns.** There used to be an assertion that short and long
-content gave identical column widths; it encoded the fixed layout and is false by design now. It
-also passed three times over while the thing on screen got worse. What is asserted instead is the
-distance between the rendered *text* of adjacent columns — a `Range` over each cell's first text
-node, first line only — with the header gaps within 12px of each other and no gap more than 25px
-off any other, at 1440 / 1280 / 1024 / 900 / 560 / 430 / 390 / 320 for both typical and
-worst-case figures. That fails at 83px against the fixed-proportion build.
+**The tests measure what was complained about, which has now been two different things.** An
+assertion that short and long content gave identical column widths went when the fixed layout did
+— it had passed three times over while the thing on screen got worse. The gap assertions that
+replaced it are kept but narrowed to the width the panel is built for, and the primary assertion
+is now **alignment**: the table's left and right edges match the summary tiles above it and the
+footnote below it to within 1px, at every width, for three data shapes. Measuring against the
+panel itself would pass on a table that merely happened to be as wide as the padding box, so it
+is measured against the panel's other full-width children. That fails against the centred build
+by 25–239px depending on the width. Alongside it: the row's buttons sit within 2px of the right
+edge however wide their column gets (fails against the block-level flex), and the gaps between the
+figures stay within 12px of each other at 1440 and 1280.
 
 ### A note wraps instead of disappearing
 

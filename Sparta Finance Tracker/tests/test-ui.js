@@ -1208,22 +1208,31 @@ const section = t => console.log(`\n── ${t} ──`);
       return { text: td.textContent.trim(), col: td.clientWidth,
                need: Math.ceil(ink + pad) };
     });
-    check(slack.col - slack.need <= 4,
-      'the Profit column is its content plus padding, with no slack',
+    /* Not zero: the table is full width now, so every column takes a small
+       share of whatever the actions column does not absorb. The bound is what
+       separates "a few px of surplus" from the fault this started as -- the
+       header-driven build gave this column 100px to show a ~50px figure, which
+       is 32px of slack and still fails here. */
+    check(slack.col - slack.need <= 12,
+      'the Profit column is its content plus padding, give or take a few px',
       JSON.stringify(slack));
 
-    /* ── THE GAPS ARE EVEN ───────────────────────────────────────────────
-       The complaint, stated as a number. Three passes before this one asserted
-       COLUMN widths and passed while the gap on screen got worse; this measures
-       the distance between the rendered TEXT of adjacent columns, which is the
-       thing being looked at. Against the fixed-proportion build the header gaps
-       were 19 / 83 / 58 -- the table was stretched to fill the panel and, with
-       two columns left-aligned and two right-aligned, nearly all the slack
-       landed at the one boundary beside the ticker. */
-    const gapsAt = () => W.page.evaluate(() => {
-      /* A Range over a text node gives the ink, not the box. The ticker cell
-         also holds a block sub-line, so only the first line counts -- rects
-         further down are a different row of text, not a neighbouring column. */
+    /* ── FLUSH WITH THE PANEL, AND EVEN WHERE IT COUNTS ──────────────────
+       Two properties, and the first is the one that was got wrong twice.
+
+       A content-sized table centred in the panel evened the gaps perfectly, but
+       it floated with margin either side while the summary tiles, the date row
+       and the footnote all ran edge to edge -- so it read as a separate thing
+       dropped into the panel rather than part of it. .htable gives every other
+       table in the app width:100%, and this one now takes it too.
+
+       What made the gap uneven was never the width, it was where the surplus
+       went: with Date and Ticker left-aligned against two right-aligned figures,
+       the slack from both sides piles into the single boundary between them.
+       Sending it to the trailing actions column instead keeps it out of the
+       figures entirely -- that column's extra width is the margin before the
+       row's buttons, which the holdings table already carries at 56px. */
+    const geom = () => W.page.evaluate(() => {
       const ink = el => {
         const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
         let n, best = null;
@@ -1242,32 +1251,85 @@ const section = t => console.log(`\n── ${t} ──`);
       const run = sel => [...document.querySelectorAll(sel)]
         .filter(c => getComputedStyle(c).display !== 'none').map(ink).filter(Boolean);
       const sp = c => c.slice(1).map((x, i) => Math.round(x.l - c[i].r));
-      return { head: sp(run('#sellTable thead th')), body: sp(run('#sellBody tr:first-child td')) };
+      const R = e => e.getBoundingClientRect();
+      const tbl = R(document.getElementById('sellTable'));
+      /* The panel's other full-width children are the yardstick -- comparing the
+         table against the PANEL would pass on a table that merely happened to be
+         as wide as the padding box. */
+      const tiles = R(document.getElementById('sellSum'));
+      const note = R(document.getElementById('sellNote2'));
+      const act = document.querySelector('#sellBody tr:first-child .sl-act');
+      const cell = act && act.closest('td');
+      const cs = cell && getComputedStyle(cell);
+      return {
+        head: sp(run('#sellTable thead th')),
+        edgeL: Math.round(tbl.left - tiles.left), edgeR: Math.round(tiles.right - tbl.right),
+        noteL: Math.round(tbl.left - note.left), noteR: Math.round(note.right - tbl.right),
+        /* the buttons must hug the right edge however wide that column gets:
+           a block-level flex fills the cell and centres them instead */
+        actGap: cell ? Math.round(R(cell).right - parseFloat(cs.paddingRight) - R(act).right) : null,
+      };
     });
-    const TYPICAL = [{ id: 't', t: Date.now() - 864e5, sym: 'AAOX', acct: 'FHSA',
-      qty: 60, price: 8.6, avg: 5.53, ccy: 'USD' }];                  // +55.53%, +$184.20
-    const WORST = [{ id: 'w', t: Date.now() - 864e5, sym: 'ENB.TO', acct: 'FHSA',
-      qty: 8888, price: 200.5, avg: 18.23, ccy: 'CAD' }];             // +999.99%, seven figures
-    for (const [name, rows] of [['typical', TYPICAL], ['worst', WORST]]) {
+    const SEEDS = {
+      typical: [{ id: 't', t: Date.now() - 864e5, sym: 'AAOX', acct: 'FHSA',
+        qty: 60, price: 8.6, avg: 5.53, ccy: 'USD' }],              // +55.52%, +$184.20
+      worst: [{ id: 'w', t: Date.now() - 864e5, sym: 'ENB.TO', acct: 'FHSA',
+        qty: 8888, price: 200.5, avg: 18.23, ccy: 'CAD' }],         // +999.99%, seven figures
+      long: [{ id: 'l', t: Date.now() - 864e5, sym: 'BRK.B', acct: 'Other',
+        qty: 12345, price: 9.9, avg: 0.5, ccy: 'CAD' }],            // the widest of everything
+    };
+    for (const [name, rows] of Object.entries(SEEDS)) {
       await W.page.evaluate(r => { state.sells = r; persist(); render() }, rows);
       for (const w of [1440, 1280, 1024, 900, 560, 430, 390, 320]) {
         await W.page.setViewportSize({ width: w, height: 1100 });
         await W.page.waitForTimeout(300);
-        const g = await gapsAt();
-        const hs = Math.max(...g.head) - Math.min(...g.head);
-        const all = [...g.head, ...g.body];
-        const as = Math.max(...all) - Math.min(...all);
-        /* The headings are plain single-line text in every column, so they are
-           the clean reading and they are what the eye scans along. */
-        check(hs <= 12, `${w}px (${name}): the header gaps are even`,
-          JSON.stringify(g.head));
-        /* The body is looser by construction: the ticker's sub-line ("FHSA · 60")
-           is wider than the ticker itself, so the ink under that heading stops
-           short of its column's edge. That is the content, not slack. */
-        check(as <= 25, `${w}px (${name}): and no gap is 25px off any other`,
+        const g = await geom();
+        /* THE COMPLAINT, as a number. The centred build sits 25-239px inside
+           its panel depending on the width, so this fails against it outright. */
+        check(Math.abs(g.edgeL) <= 1 && Math.abs(g.edgeR) <= 1,
+          `${w}px (${name}): the table runs edge to edge like the tiles above it`,
           JSON.stringify(g));
+        check(Math.abs(g.noteL) <= 1 && Math.abs(g.noteR) <= 1,
+          `${w}px (${name}): and lines up with the footnote below it`,
+          JSON.stringify({ L: g.noteL, R: g.noteR }));
+        /* Widening that column must not float the buttons into the middle of
+           it, which is what display:flex did -- at 900px the panel is ~800px
+           wide and they sat 110px short of the edge. */
+        check(g.actGap !== null && g.actGap <= 2,
+          `${w}px (${name}): the row's buttons stay against the right edge`,
+          String(g.actGap));
       }
     }
+
+    /* The gaps themselves, at the width this panel is actually built for: the
+       right-hand column of the two-column Dashboard. There the surplus is small
+       enough to be absorbed entirely by the actions column, so nothing is left
+       to pile up between two figures. Against the stretched fixed-proportion
+       build these read 19 / 83 / 58. */
+    for (const [name, rows] of Object.entries(SEEDS)) {
+      if (name === 'long') continue;      // no surplus to place; see below
+      await W.page.evaluate(r => { state.sells = r; persist(); render() }, rows);
+      for (const w of [1440, 1280]) {
+        await W.page.setViewportSize({ width: w, height: 1100 });
+        await W.page.waitForTimeout(300);
+        const g = await geom();
+        const spread = Math.max(...g.head) - Math.min(...g.head);
+        check(spread <= 12, `${w}px (${name}): the gaps between the figures are even`,
+          JSON.stringify(g.head));
+      }
+    }
+    /* With the widest content there IS no surplus -- the table is already at its
+       natural width -- so the gaps are whatever the content makes them and no
+       layout choice can even them out. Asserted so that is on the record rather
+       than looking like a case that was quietly skipped. */
+    await W.page.evaluate(r => { state.sells = r; persist(); render() }, SEEDS.long);
+    await W.page.setViewportSize({ width: 1280, height: 1100 });
+    await W.page.waitForTimeout(300);
+    const tight = await geom();
+    check(Math.min(...tight.head) >= 16,
+      'with the widest content the columns are still not touching',
+      JSON.stringify(tight.head));
+
     await W.page.setViewportSize({ width: 1280, height: 1100 });
     await W.page.waitForTimeout(300);
 
