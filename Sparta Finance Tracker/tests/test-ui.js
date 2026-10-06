@@ -458,11 +458,23 @@ const section = t => console.log(`\n── ${t} ──`);
       'every holding gets a mark and all start blank', JSON.stringify(await bk()));
     /* Blank but not invisible: the box has to hold its width or the tickers
        shift sideways the moment one row is marked. */
+    /* The visible box is only as wide as the gutter it sits in, so measure the
+       HIT area -- the pseudo-element — rather than the box, or this asserts the
+       wrong thing and a 10x15 tap target passes for comfortable. */
     const box = await B.page.evaluate(() => {
-      const r = document.querySelector('#hbody .bk').getBoundingClientRect();
-      return { w: Math.round(r.width), h: Math.round(r.height) };
+      const b = document.querySelector('#hbody .bk');
+      const r = b.getBoundingClientRect();
+      const be = getComputedStyle(b, '::before');
+      const grow = s => Math.abs(parseFloat(s) || 0);
+      return { w: Math.round(r.width + grow(be.left) + grow(be.right)),
+               h: Math.round(r.height + grow(be.top) + grow(be.bottom)),
+               boxW: Math.round(r.width) };
     });
-    check(box.w >= 14 && box.h >= 16, 'a blank mark still has a clickable area', JSON.stringify(box));
+    check(box.w >= 14 && box.h >= 28,
+      'a blank mark still has a comfortable hit area', JSON.stringify(box));
+    check(box.boxW <= 10,
+      'while the mark itself stays inside the 10px gutter, so tickers do not move',
+      String(box.boxW));
 
     const totals0 = await B.page.evaluate(() => ({
       hero: document.getElementById('heroValue').textContent,
@@ -627,6 +639,203 @@ const section = t => console.log(`\n── ${t} ──`);
 
     check(S.errs.length === 0, 'no page errors from Past sells', S.errs.join(' | '));
     await S.ctx.close();
+  }
+
+  /* ── CORRECTING A SALE ───────────────────────────────────────────────────
+     A wrong quantity or price used to be permanent, and it was wrong in TWO
+     places: the history line and the portfolio. So every check here asserts the
+     holding, the cash and the record together -- a correction that fixes the
+     row and leaves the shares missing is the failure worth catching.
+
+     Figures are hand-computed in the test rather than read back through the
+     app's own helpers, or this would only be checking that it agrees with
+     itself. 300 AAPL at $100 average, sold at $150. */
+  {
+    const C = await open(browser, url);
+    const setup = () => C.page.evaluate(() => {
+      state.holdings = [{ id: 'h1', sym: 'AAPL', acct: 'TFSA', qty: 300, avg: 100,
+                          ccy: 'USD', price: 120, manual: true }];
+      state.cash = { TFSA: 0, FHSA: 0, Other: 0 };
+      state.sells = []; state.ccy = 'USD'; state.fx = 1.37;
+      persist(); render();
+    });
+    const sell = (q, p) => C.page.evaluate(([q, p]) => {
+      sellHolding('h1');
+      document.getElementById('sellQty').value = String(q);
+      document.getElementById('sellPrice').value = String(p);
+      confirmSell();
+    }, [q, p]);
+    const edit = (q, p) => C.page.evaluate(([q, p]) => {
+      editSell(state.sells[0].id);
+      if (q != null) document.getElementById('sellQty').value = String(q);
+      if (p != null) document.getElementById('sellPrice').value = String(p);
+      confirmSell();
+    }, [q, p]);
+    const look = () => C.page.evaluate(() => ({
+      holdings: state.holdings.map(h => ({ sym: h.sym, qty: h.qty, avg: +h.avg.toFixed(4), ccy: h.ccy })),
+      cash: +state.cash.TFSA.toFixed(2),
+      sells: state.sells.map(r => ({ qty: r.qty, price: r.price, avg: r.avg })),
+    }));
+
+    // ── quantity down: the shares come back ───────────────────────────────
+    await setup(); await sell(300, 150); await edit(100, null);
+    let v = await look();
+    check(v.holdings.length === 1 && v.holdings[0].qty === 200 && v.holdings[0].avg === 100,
+      '300 sold then corrected to 100 puts 200 back at the original cost', JSON.stringify(v.holdings));
+    check(v.cash === 15000, 'and cash holds only the 100 that were really sold (100 x 150)', String(v.cash));
+    check(v.sells[0].qty === 100 && v.sells[0].price === 150 && v.sells[0].avg === 100,
+      'the record reads the corrected quantity, and its cost basis is NOT rewritten',
+      JSON.stringify(v.sells[0]));
+
+    // ── price only: no shares move ────────────────────────────────────────
+    await setup(); await sell(100, 150); await edit(null, 160);
+    v = await look();
+    check(v.holdings[0].qty === 200 && v.holdings[0].avg === 100,
+      'a price-only correction moves no shares', JSON.stringify(v.holdings[0]));
+    check(v.cash === 16000, 'and moves cash by the price difference alone', String(v.cash));
+
+    // ── the holding a full sale removed is re-created ─────────────────────
+    await setup(); await sell(300, 150);
+    check((await look()).holdings.length === 0, 'a full sale removes the holding');
+    await edit(50, null);
+    v = await look();
+    check(v.holdings.length === 1 && v.holdings[0].qty === 250 && v.holdings[0].avg === 100
+      && v.holdings[0].ccy === 'USD',
+      'correcting it brings the position back, with its cost and currency', JSON.stringify(v.holdings));
+    check(v.cash === 7500, 'and the cash follows', String(v.cash));
+
+    /* ── re-averaging. Shares bought in between at a different price, then the
+       sale undone: the returning shares carry their OWN cost, so the position
+       blends. 300 at 133.3333 + 100 back at 100 = 400 at exactly 125. */
+    await setup(); await sell(100, 150);
+    await C.page.evaluate(() => { const h = state.holdings[0];
+      h.avg = (h.avg * h.qty + 200 * 100) / (h.qty + 100); h.qty += 100; persist(); render() });
+    check((await look()).holdings[0].avg === 133.3333, 'a re-buy at 200 blends the average to 133.3333',
+      String((await look()).holdings[0].avg));
+    await C.page.evaluate(() => { window.confirm = () => true; deleteSell(state.sells[0].id) });
+    v = await look();
+    check(v.holdings[0].qty === 400 && v.holdings[0].avg === 125,
+      'undoing the sale returns them at their own cost and re-averages to 125', JSON.stringify(v.holdings[0]));
+    check(v.cash === 0 && v.sells.length === 0,
+      'the proceeds come back out and the record is gone', JSON.stringify({ cash: v.cash, n: v.sells.length }));
+
+    // ── a cancelled confirm does nothing at all ───────────────────────────
+    await setup(); await sell(100, 150);
+    const beforeCancel = JSON.stringify(await look());
+    await C.page.evaluate(() => { window.confirm = () => false; deleteSell(state.sells[0].id) });
+    check(JSON.stringify(await look()) === beforeCancel,
+      'cancelling the undo changes nothing');
+
+    /* ── a correction that cannot be honoured must write NOTHING. Without the
+       "changed nothing" half this passes on a partial write that has already
+       moved the cash. */
+    const beforeBad = JSON.stringify(await look());
+    await C.page.evaluate(() => { editSell(state.sells[0].id);
+      document.getElementById('sellQty').value = '9999'; confirmSell() });
+    check(JSON.stringify(await look()) === beforeBad,
+      'selling more than is held is refused, and leaves holding, cash and record untouched');
+    check(await C.page.evaluate(() => document.getElementById('sellModal').classList.contains('open')),
+      'and the dialog stays open so the figure can be fixed');
+    await C.page.evaluate(() => closeSell());
+
+    // ── overdrawing is allowed, because the money may have moved on ───────
+    await setup(); await sell(100, 150);
+    await C.page.evaluate(() => { state.cash.TFSA = 0; persist() });   // proceeds spent
+    await C.page.evaluate(() => { window.confirm = () => true; deleteSell(state.sells[0].id) });
+    check((await look()).cash === -15000,
+      'undoing a sale whose proceeds were spent takes the balance negative rather than refusing',
+      String((await look()).cash));
+
+    // ── the buttons are actually on the rows ──────────────────────────────
+    await setup(); await sell(100, 150);
+    check(await C.page.evaluate(() =>
+      document.querySelectorAll('#sellBody [data-edit]').length === 1 &&
+      document.querySelectorAll('#sellBody [data-del]').length === 1),
+      'each row carries a correct and an undo button');
+    await C.page.click('#sellBody [data-edit]');
+    await C.page.waitForTimeout(150);
+    check(await C.page.evaluate(() => {
+      const m = document.getElementById('sellModal');
+      return m.classList.contains('open') &&
+        /Correct the AAPL sale/.test(document.getElementById('sellTitle').textContent) &&
+        getComputedStyle(document.getElementById('sellEffectRow')).display !== 'none';
+    }), 'the pencil opens the dialog in correction mode, with the effect row shown');
+    /* The sell path and the correction path share one dialog, so the mode has
+       to reset -- otherwise the next ordinary sale runs the correction branch. */
+    await C.page.evaluate(() => closeSell());
+    await C.page.click('#hbody .rm.sell'); await C.page.waitForTimeout(150);
+    check(await C.page.evaluate(() =>
+      /^Sell /.test(document.getElementById('sellTitle').textContent) &&
+      getComputedStyle(document.getElementById('sellEffectRow')).display === 'none'),
+      'and closing it returns the dialog to plain selling');
+    await C.page.evaluate(() => closeSell());
+
+    check(C.errs.length === 0, 'no page errors from correcting a sale', C.errs.join(' | '));
+    await C.ctx.close();
+  }
+
+  /* ── LAYOUT FAULTS FROM THE LAST PASS ────────────────────────────────────── */
+  {
+    const F = await open(browser, url, Object.assign({}, SEED, {
+      'sparta.notes': JSON.stringify({ points: [], text: '', stocks: ['NVDA'] }) }));
+    await F.page.setViewportSize({ width: 1360, height: 1000 });
+    await F.page.waitForTimeout(400);
+    const cols = () => F.page.evaluate(() =>
+      getComputedStyle(document.getElementById('dashView')).gridTemplateColumns);
+    const before = await cols();
+    /* A long company name used to drag the whole page out of shape -- 684/428
+       became 572/561 -- because `1fr` is `minmax(auto,1fr)` and that auto floor
+       is the min-content width. The ellipsis caps the drawn text, not the floor. */
+    await F.page.evaluate(() => {
+      npQuotes['AAOI'] = { state: 'ok', ccy: 'USD', price: 12.3, chg: 1.2,
+        name: 'Applied Optoelectronics Incorporated Holdings Limited Worldwide' };
+      state.notes.stocks = ['AAOI']; npOpen.add('AAOI'); renderStocks(); dashLayout();
+    });
+    await F.page.waitForTimeout(400);
+    check(await cols() === before,
+      'a long watched name does not move the columns', `${before} -> ${await cols()}`);
+
+    await F.page.evaluate(() => {
+      state.holdings = [
+        { id: 'g1', sym: 'GOOGL', acct: 'TFSA', qty: 1, avg: 100, ccy: 'USD', price: 100, manual: true, broker: 'Q' },
+        { id: 'g2', sym: 'AAPL', acct: 'TFSA', qty: 1, avg: 40, ccy: 'USD', price: 40, manual: true }];
+      persist(); render();
+    });
+    for (const w of [1360, 900, 560, 390, 320]) {
+      await F.page.setViewportSize({ width: w, height: 900 });
+      await F.page.waitForTimeout(300);
+      const r = await F.page.evaluate(() => {
+        const row = s => [...document.querySelectorAll('#hbody tr')].find(x => new RegExp(s).test(x.textContent));
+        const m = r => { const td = r.querySelector('td'), sym = r.querySelector('.sym'),
+          q = r.querySelector('.qlink'), bk = r.querySelector('.bk');
+          const t = td.getBoundingClientRect(), y = sym.getBoundingClientRect(),
+                qr = q.getBoundingClientRect(), k = bk.getBoundingClientRect();
+          return { text: Math.round(y.left - t.left), q: Math.round(k.left - t.left),
+                   wrapped: qr.top > y.top + 16,
+                   topDelta: Math.round(k.top - y.top),
+                   clipped: k.left < td.closest('.tscroll').getBoundingClientRect().left - 0.5 } };
+        return { marked: m(row('GOOGL')), blank: m(row('AAPL')) };
+      });
+      check(!r.marked.wrapped && !r.blank.wrapped,
+        `${w}px: the ↗ stays on the ticker's line`, JSON.stringify(r));
+      /* The mark used to be inline, so it pushed every symbol right. Out of the
+         flow, a marked row and an unmarked one start at the same place. */
+      check(r.marked.text === r.blank.text,
+        `${w}px: a marked row's ticker starts where an unmarked one does`,
+        `${r.marked.text} / ${r.blank.text}`);
+      check(r.marked.q < r.marked.text && !r.marked.clipped,
+        `${w}px: and the mark sits left of it, in the gutter, not clipped by the scroller`,
+        JSON.stringify({ q: r.marked.q, clipped: r.marked.clipped }));
+      /* A table cell is vertically centred by default, so offsetting the mark
+         from the CELL dropped it 9px below the ticker the moment another cell
+         in the row was taller. It is anchored to the ticker instead. */
+      check(r.marked.topDelta === 0,
+        `${w}px: and it lines up with the ticker, not the middle of the cell`,
+        String(r.marked.topDelta));
+    }
+    await F.page.setViewportSize({ width: 1360, height: 1000 });
+    check(F.errs.length === 0, 'no page errors from the layout fixes', F.errs.join(' | '));
+    await F.ctx.close();
   }
 
   /* ── EYE ON STOCKS ───────────────────────────────────────────────────────

@@ -507,6 +507,69 @@ The optional **current price** field is gone from Add a position: a new holding 
 buy price with `manual:false` and is left to the live refresh, which is exactly what leaving
 that field blank used to do.
 
+### Correcting a past sell
+
+A wrong quantity or price used to be permanent, and it was wrong in **two** places: the
+history line *and* the portfolio. `sellReverse(rec, q2, p2)` puts both right.
+
+```
+dq = rec.qty - q2            // > 0 shares come back, < 0 more leave
+cash[acct] += natToBase(q2*p2 - rec.qty*rec.price, rec.ccy)
+dq > 0 and the holding exists  ->  avg = (avg*qty + rec.avg*dq) / (qty+dq);  qty += dq
+dq > 0 and it is gone          ->  re-create it at rec.avg, rec.ccy
+dq < 0                         ->  qty += dq, average untouched, remove at zero
+rec.qty = q2; rec.price = p2            // rec.avg is NEVER rewritten
+```
+
+**`rec.avg` is the cost basis of the shares that were sold**, and no correction touches it —
+it is what the P/L is computed from, and those shares cost what they cost.
+
+**It checks before it writes.** Selling more than is held is refused with the holding, the
+cash *and* the record all untouched; a half-applied correction that had already moved the cash
+would be worse than the original mistake.
+
+**Delete is the same path with `q2 = 0`**, then the record is dropped: the sale is undone, not
+merely forgotten.
+
+Two limits, both deliberate:
+
+- **Overdrawing is allowed.** Reversing a credit whose money has since been spent takes the
+  balance negative, and the toast says so. Refusing would make a real correction impossible
+  exactly when it is most needed.
+- **Re-averaging is not perfectly reversible.** If shares were bought in between at another
+  price, the returned shares blend in at `rec.avg` — correct going forward, but not the number
+  that existed before the sale. That is average-cost accounting, not a bug. 300 at 133.3333
+  plus 100 back at 100 gives exactly 400 at 125, and the test asserts that figure.
+
+The dialog is `#sellModal` reused, with `sellMode` switching `sellHolding` / `updateSellPreview`
+/ `confirmSell` between selling and correcting, plus one extra summary row the sell path hides.
+`closeSell()` resets the mode — otherwise the next ordinary sale would run the correction branch.
+
+### Three layout faults, and what caused each
+
+- **A long watched name moved the whole page.** `.grid` was `1.6fr 1fr`; `1fr` means
+  `minmax(auto,1fr)` and that auto floor is the content's **min-content** width, so one long
+  company name in Eye on Stocks took the columns from 684/428 to **572/561**. The name was
+  already ellipsised — an ellipsis caps the drawn text, not the floor the grid measures. Fixed
+  with `minmax(0,1.6fr) minmax(0,1fr)`.
+- **The ↗ dropped to its own line** in a narrow column (the first cell is 93px at 560px and
+  73px at 390px). `.sym` is now `white-space:nowrap`, with the sub-line free to wrap; the table
+  already sits in `.tscroll`, so a cell that needs room scrolls sideways like every other wide
+  table here.
+- **The broker mark pushed every ticker right**, because it was inline. It is now absolutely
+  positioned in the first cell's 10px left padding, so the ticker sits exactly where it did
+  before the mark existed and the mark lands flush with the "H" of *Holdings*.
+
+Three things that mark had to get right, each found by measuring:
+
+1. **Anchor it to the ticker, not the cell.** A table cell is vertically centred by default, so
+   offsetting from the cell dropped the mark 9px below the ticker as soon as another cell in
+   the row was taller. It hangs off `.sym` at `left:-10px`.
+2. **Keep the padding at 10px on narrow screens.** The rest of the row tightens to 6px there;
+   the gutter cannot, or the glyph is clipped — and `.tscroll` means it cannot spill left instead.
+3. **Grow the hit area, not the box.** 10px wide is unhittable, and widening it would push the
+   ticker back out, so a `::before` with negative insets gives ~14x39 at no layout cost.
+
 ### Panels fill the gaps
 
 The two columns were independent stacks, so the shorter one left dead space rather than pulling

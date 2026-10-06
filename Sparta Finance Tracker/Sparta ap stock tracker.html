@@ -394,7 +394,13 @@ button{font-family:var(--font-body);cursor:pointer}
 .seg.locked button{cursor:not-allowed}
 
 /* ---------- Grid ---------- */
-.grid{display:grid;grid-template-columns:1.6fr 1fr;gap:20px}
+/* minmax(0,...) rather than a bare fr. `1fr` means `minmax(auto,1fr)`, and that
+   auto floor is the content's MIN-CONTENT width -- so one long company name in
+   Eye on Stocks dragged the whole page out of shape: watching a stock whose name
+   did not fit took the columns from 684/428 to 572/561, the left losing 112px.
+   The name was already ellipsised; an ellipsis caps the drawn text but not the
+   min-content floor the grid measures. */
+.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
 .col{display:flex;flex-direction:column;gap:20px}
 
@@ -507,10 +513,26 @@ button{font-family:var(--font-body);cursor:pointer}
    It is blank but NOT invisible: the box keeps its width so the tickers stay in
    one line whether or not a row is marked, and it is a real button so it can be
    tabbed to. The grey is the same --text-dim the "Other" account tag uses. */
-.bk{flex:none;width:17px;height:19px;margin-right:7px;padding:0;border:0;background:none;
-  border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:800;
-  letter-spacing:.02em;line-height:19px;text-align:center;color:var(--text-dim);
+/* 10px wide because that is exactly the first cell's left padding: the mark
+   fills the gutter and the ticker keeps the position it had before the mark
+   existed. A wider box overlapped the text by 4px and read as cramped. It
+   cannot be nudged further left either -- the table sits in .tscroll, so
+   anything at a negative offset is clipped by the scroller. */
+/* Anchored to the TICKER, not to the cell. A table cell is vertically centred
+   by default, so its content does not sit at its padding edge -- offsetting
+   from the cell put the mark 9px below the ticker as soon as another cell in
+   the row was taller. -10px is the first cell's left padding, which puts the
+   mark in the gutter and inside .tscroll, so the scroller never clips it. */
+.bk{position:absolute;left:-10px;top:0;
+  width:10px;height:1.35em;padding:0;border:0;background:none;
+  border-radius:5px;cursor:pointer;font-family:var(--font-body);font-size:11px;font-weight:800;
+  letter-spacing:.02em;line-height:1.35em;text-align:center;color:var(--text-dim);
   transition:background .15s,color .15s}
+/* The visible mark is only 10px wide -- the width of the gutter it lives in --
+   which is far too small to hit, and widening it would push the ticker back
+   out. So the BOX stays 10px and the hit area is grown with a pseudo-element,
+   which costs no layout: ~38px tall by 14px, still clear of the quote link. */
+.bk::before{content:"";position:absolute;inset:-12px -2px}
 .bk:hover{background:rgba(234,240,250,.09);color:var(--text)}
 .bk:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
 .statrow #otherCard{grid-column:1/-1}
@@ -583,11 +605,18 @@ label{font-size:var(--fs-label);color:var(--text-faint);font-weight:var(--fw-lab
 .htable th{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-faint);font-weight:var(--fw-label);text-align:right;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08)}
 .htable th:first-child{text-align:left}
 .htable td{padding:13px 10px;text-align:right;font-size:13.5px;font-variant-numeric:tabular-nums;border-bottom:1px solid rgba(255,255,255,.05)}
-.htable td:first-child{text-align:left}
+.htable td:first-child{text-align:left;position:relative}
 .htable tr:last-child td{border-bottom:none}
 .htable tbody tr{transition:background .15s}
 .htable tbody tr:hover{background:rgba(255,255,255,.03)}
-.sym{font-family:var(--font-display);font-weight:600;font-size:14px}
+/* The ticker and its arrow are one thing and must stay on one line. The arrow
+   used to drop to a line of its own in a narrow column -- the first cell is 93px
+   at 560px and 73px at 390px -- which read as a broken row. The holdings table
+   already sits in .tscroll, so a cell that needs more room scrolls the table
+   sideways instead, which is what every other wide table here does. The sub-line
+   underneath is free to wrap as before. */
+.sym{font-family:var(--font-display);font-weight:600;font-size:14px;white-space:nowrap;position:relative}
+.sym small{white-space:normal}
 .sym small{display:block;font-family:var(--font-body);font-weight:500;color:var(--text-faint);font-size:10.5px;letter-spacing:.06em;margin-top:2px}
 /* the open-in-a-new-tab arrow beside a ticker */
 .qlink{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;
@@ -767,7 +796,14 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
   /* holdings table: tighten so 7 columns fit without feeling cramped */
   .holdings,.cash,.formcard,.stat,.hero{padding:18px 16px}
   .htable th,.htable td{padding:9px 6px;font-size:12px}
-  .htable td:first-child{max-width:96px}
+  /* The broker mark lives in the first cell's left padding, so that padding has
+     to stay wide enough to hold it -- 6px would clip the glyph, and the table
+     is inside .tscroll so it cannot spill left instead. --bk-top follows
+     padding-top for the same reason: the mark aligns with the TICKER, not with
+     the middle of a cell that also carries a sub-line. */
+  /* the broker mark sits in this padding, so it cannot shrink to 6px with the
+     rest -- and the table is inside .tscroll, so it cannot spill left instead */
+  .htable td:first-child{max-width:96px;padding-left:10px}
   .sym{font-size:12.5px}
   .sym small{font-size:9.5px}
   .rm{padding:4px 6px}
@@ -2988,7 +3024,7 @@ select{color-scheme:dark}
         <div class="st-sum" id="sellSum"></div>
         <div class="tscroll">
           <table class="htable" id="sellTable">
-            <thead><tr><th>Date</th><th>Ticker</th><th>% profit</th><th>$ made</th></tr></thead>
+            <thead><tr><th>Date</th><th>Ticker</th><th>% profit</th><th>$ made</th><th></th></tr></thead>
             <tbody id="sellBody"></tbody>
           </table>
         </div>
@@ -3505,7 +3541,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-07</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-08</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -3526,6 +3562,9 @@ select{color-scheme:dark}
       <div class="sell-sum"><span>Proceeds</span><b id="sellProceeds">—</b></div>
       <div class="sell-sum"><span>Cost of those shares</span><b id="sellCost">—</b></div>
       <div class="sell-sum" style="border-bottom:none"><span>Realised P / L</span><b id="sellPnl">—</b></div>
+      <!-- edit mode only: what the correction does to the position and the cash -->
+      <div class="sell-sum" id="sellEffectRow" style="display:none;border-bottom:none;border-top:1px solid rgba(255,255,255,.08);margin-top:4px;padding-top:9px">
+        <span>This correction</span><b id="sellEffect">—</b></div>
     </div>
     <div class="duo" style="margin-top:16px">
       <button class="btn primary" id="sellConfirm">Sell</button>
@@ -5072,8 +5111,14 @@ function renderSells(){
     return `<tr><td style="white-space:nowrap">${isoLocal(d)}</td>`+
       `<td><span class="sym">${esc(s.sym)}<small>${esc(s.acct)} · ${s.qty}</small></span></td>`+
       `<td class="${cls}" style="font-weight:600">${(pct>=0?'+':'−')+Math.abs(pct).toFixed(2)}%</td>`+
-      `<td class="pl ${cls}">${signedNat(pnl,s.ccy)}</td></tr>`;
+      `<td class="pl ${cls}">${signedNat(pnl,s.ccy)}</td>`+
+      `<td style="white-space:nowrap"><button class="rm sell" data-edit="${s.id}" `+
+        `title="Correct this sale" aria-label="Correct the ${esc(s.sym)} sale">✎</button>`+
+        `<button class="rm" data-del="${s.id}" title="Undo this sale" `+
+        `aria-label="Undo the ${esc(s.sym)} sale">✕</button></td></tr>`;
   }).join('');
+  tb.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editSell(b.dataset.edit));
+  tb.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>deleteSell(b.dataset.del));
   $('sellTable').style.display=rows.length?'table':'none';
   $('sellEmpty').style.display=rows.length?'none':'block';
   $('sellNote2').style.display=rows.length?'block':'none';
@@ -5156,10 +5201,12 @@ function addHolding(){
   $('fSym').value=$('fQty').value=$('fPrice').value='';
   snapshot(); persist(); render(); fetchPrices(false);
 }
-let sellId=null;
+let sellId=null, sellMode='new', sellRecId=null;
 function sellHolding(id){                       // opens the dialog rather than dumping everything
   const h=state.holdings.find(x=>x.id===id); if(!h) return;
-  sellId=id;
+  sellId=id; sellMode='new'; sellRecId=null;
+  $('sellConfirm').textContent='Sell';
+  $('sellEffectRow').style.display='none';
   const c=hCcy(h);
   $('sellTitle').textContent='Sell '+h.sym;
   $('sellSub').textContent=`You hold ${h.qty} in ${h.acct} at ${fmtNat(h.avg,c)} average cost. Amounts are in ${c}.`;
@@ -5171,7 +5218,104 @@ function sellHolding(id){                       // opens the dialog rather than 
   $('sellModal').classList.add('open');
   setTimeout(()=>$('sellQty').focus(),50);
 }
+/* ---------- correcting a sale ----------
+   A wrong quantity or price used to be permanent: the sale had already moved
+   cash and shrunk the holding, and nothing could reach back. Correcting one has
+   to put BOTH right, not just the history line.
+
+   The record's `avg` is the cost basis of the shares that were sold. It is never
+   rewritten by a correction -- it is what the P/L is computed from, and the
+   whole point is that those shares cost what they cost. */
+function sellRec(id){ return (state.sells||[]).find(x=>x.id===id) }
+
+function editSell(id){
+  const r=sellRec(id); if(!r) return;
+  sellMode='edit'; sellRecId=id; sellId=null;
+  $('sellTitle').textContent='Correct the '+r.sym+' sale';
+  $('sellSub').textContent=`Recorded as ${r.qty} at ${fmtNat(r.price,r.ccy)} from ${r.acct}, `+
+    `bought at ${fmtNat(r.avg,r.ccy)} average cost. Amounts are in ${r.ccy}.`;
+  $('sellQty').value=r.qty;
+  $('sellQty').removeAttribute('max');          // may go UP as well as down
+  $('sellPrice').value=r.price;
+  $('sellConfirm').textContent='Save correction';
+  $('sellEffectRow').style.display='flex';
+  $('sellNote').textContent='Changing the quantity moves shares between this sale and your '+
+    'holding, at the cost they were bought at. Changing the price moves cash in or out of '+
+    r.acct+'.';
+  updateSellPreview();
+  $('sellModal').classList.add('open');
+  setTimeout(()=>$('sellQty').focus(),50);
+}
+
+/* Put a sale back the way it should have been. Returns {ok} or {ok:false,msg},
+   and performs NO partial write -- it checks first, then mutates, so a refusal
+   leaves the holding, the cash and the record exactly as they were. */
+function sellReverse(rec,q2,p2){
+  const q1=rec.qty, p1=rec.price, ccy=rec.ccy, acct=rec.acct;
+  const dq=+(q1-q2).toFixed(8);                 // >0 shares come back, <0 more leave
+  let h=state.holdings.find(x=>x.sym===rec.sym&&x.acct===acct);
+  if(dq<0 && (!h || h.qty+1e-9 < -dq))
+    return {ok:false, msg:`You only hold ${h?h.qty:0} ${rec.sym} in ${acct} — cannot sell ${-dq} more`};
+  const delta=natToBase(q2*p2-q1*p1,ccy);
+  state.cash[acct]=+(state.cash[acct]+delta).toFixed(8);
+  if(dq>0){
+    if(h){
+      // the returning shares carry their own cost, so the position re-averages
+      h.avg=(h.avg*h.qty+rec.avg*dq)/(h.qty+dq);
+      h.qty=+(h.qty+dq).toFixed(8);
+    }else{
+      // a full sale removed the row; the correction brings it back
+      state.holdings.push({id:uid(),sym:rec.sym,acct,qty:dq,avg:rec.avg,ccy,
+        nat:true,price:rec.price,manual:false});
+    }
+  }else if(dq<0){
+    h.qty=+(h.qty+dq).toFixed(8);
+    if(h.qty<=1e-9) state.holdings=state.holdings.filter(x=>x!==h);
+  }
+  rec.qty=q2; rec.price=p2;
+  return {ok:true, delta, dq, cash:state.cash[acct]};
+}
+
+/* Reversing a credit can overdraw an account, and that is allowed: refusing
+   would make a real correction impossible the moment the money had moved on.
+   It is said out loud instead. */
+function sellCashNote(acct){
+  return state.cash[acct]<-1e-9 ? ` — ${acct} cash is now ${money(state.cash[acct])}` : '';
+}
+
+function confirmSellEdit(){
+  markUserEdit();
+  const r=sellRec(sellRecId); if(!r) return;
+  const q=parseFloat($('sellQty').value), p=parseFloat($('sellPrice').value);
+  if(!(q>0)){ toast('Enter how many shares were sold — use ✕ to undo the sale'); return }
+  if(!(p>=0)){ toast('Enter the price they sold at'); return }
+  const sym=r.sym, acct=r.acct;
+  const out=sellReverse(r,q,p);
+  if(!out.ok){ toast(out.msg); return }
+  closeSell();
+  snapshot(true); persist(); render();
+  const moved=out.dq>0?`${out.dq} ${sym} back to your holding`
+            : out.dq<0?`${-out.dq} more ${sym} sold`
+            : 'price corrected';
+  toast(`${sym} sale corrected — ${moved}, ${signed(out.delta)} to ${acct} cash`+sellCashNote(acct));
+}
+
+function deleteSell(id){
+  const r=sellRec(id); if(!r) return;
+  const back=natToBase(r.qty*r.price,r.ccy);
+  if(!confirm(`Undo this sale?\n\n${r.qty} ${r.sym} go back into ${r.acct} at `+
+    `${fmtNat(r.avg,r.ccy)} average cost, and ${money(back)} comes out of ${r.acct} cash.`)) return;
+  markUserEdit();
+  const acct=r.acct, sym=r.sym, qty=r.qty;
+  const out=sellReverse(r,0,r.price);
+  if(!out.ok){ toast(out.msg); return }
+  state.sells=state.sells.filter(x=>x.id!==id);
+  snapshot(true); persist(); render();
+  toast(`Sale undone — ${qty} ${sym} back in ${acct}, ${money(back)} out of cash`+sellCashNote(acct));
+}
+
 function updateSellPreview(){
+  if(sellMode==='edit') return updateSellEditPreview();
   const h=state.holdings.find(x=>x.id===sellId); if(!h) return;
   const c=hCcy(h);
   const q=parseFloat($('sellQty').value), p=parseFloat($('sellPrice').value);
@@ -5183,7 +5327,32 @@ function updateSellPreview(){
   $('sellPnl').textContent=signedNat(pnl,c);
   $('sellPnl').className=pnl>0?'up':pnl<0?'down':'flat';
 }
+/* The same three summary rows, read against the RECORD rather than a holding,
+   plus the one row the sell path does not have: what the correction moves. */
+function updateSellEditPreview(){
+  const r=sellRec(sellRecId); if(!r) return;
+  const c=r.ccy;
+  const q=parseFloat($('sellQty').value), p=parseFloat($('sellPrice').value);
+  const blank=()=>{ $('sellProceeds').textContent=$('sellCost').textContent=
+    $('sellPnl').textContent=$('sellEffect').textContent='\u2014' };
+  if(!(q>0)||!(p>=0)) return blank();
+  const proceeds=q*p, cost=q*r.avg, pnl=proceeds-cost;
+  $('sellProceeds').textContent=fmtNat(proceeds,c);
+  $('sellCost').textContent=fmtNat(cost,c);
+  $('sellPnl').textContent=signedNat(pnl,c);
+  $('sellPnl').className=pnl>0?'up':pnl<0?'down':'flat';
+  const dq=+(r.qty-q).toFixed(8);
+  const dCash=q*p-r.qty*r.price;
+  const parts=[];
+  if(dq>0) parts.push(`${dq} ${r.sym} back`);
+  else if(dq<0) parts.push(`${-dq} more sold`);
+  parts.push(`${signedNat(dCash,c)} cash`);
+  $('sellEffect').textContent=parts.join(' \u00b7 ');
+  $('sellEffect').className=dCash>0?'up':dCash<0?'down':'flat';
+}
+
 function confirmSell(){
+  if(sellMode==='edit') return confirmSellEdit();
   markUserEdit();
   const h=state.holdings.find(x=>x.id===sellId); if(!h) return;
   const c=hCcy(h);
@@ -5207,7 +5376,8 @@ function confirmSell(){
   snapshot(true); persist(); render();
   toast(`Sold ${q} ${h.sym} at ${fmtNat(p,c)} — ${money(proceeds)} to ${h.acct} cash (${signedNat(pnl,c)})`);
 }
-function closeSell(){ $('sellModal').classList.remove('open'); sellId=null }
+function closeSell(){ $('sellModal').classList.remove('open');
+  sellId=null; sellMode='new'; sellRecId=null }
 /* Two brokers, both holding a TFSA and an FHSA, so the account alone cannot say
    where a position lives. This is a LABEL and nothing else: it changes no total,
    no filter and no figure -- adding a position under TFSA/FHSA works exactly as
