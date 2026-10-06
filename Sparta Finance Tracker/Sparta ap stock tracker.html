@@ -440,23 +440,27 @@ button{font-family:var(--font-body);cursor:pointer}
 /* This table lives in the narrow column and carries five columns, so it is
    tightened to fit rather than left to scroll sideways -- a horizontal
    scrollbar under four short rows reads as something being cut off. */
-/* 3px of side padding and a 12px row, not 4px/12.5px: the five columns need
-   397px at the larger size and the panel's content box is 384px at 1280, so
-   half a point is the difference between keeping the Profit column on a normal
-   desktop and folding it away. */
-#sellsPanel .htable th,#sellsPanel .htable td{padding:9px 3px;font-size:12px}
+/* The side padding IS the base gap between columns, so 9px each side gives the
+   even 18px that the rest of this is tuned around. */
+#sellsPanel .htable th,#sellsPanel .htable td{padding:9px 9px;font-size:12px}
+/* The sub-line carries .06em globally, which widened the ticker column by ~6px
+   for nothing here and showed up as a wider gap beside it. */
+#sellsPanel .sym small{letter-spacing:.02em}
 /* What decides this layout is how wide the PANEL is, which is not a function of
    the window: the same 1280px window gives this panel 382px in the right column
    and 684px in the left. Keyed to the container, the old viewport bands -- one
    for phones, one for the 901-1100px range where 1024 is the narrowest
    two-column case -- collapse into the single question actually being asked. */
 #sellsPanel{container-type:inline-size}
-#sellTable{table-layout:fixed}
-/* Measured from the stated worst cases rather than chosen by eye: date 56,
-   ticker 100, Profit 81, amount 118, buttons 42 -- +999.99% and +C$999,999.99
-   at the real fonts and padding. */
-#sellTable .c-dt{width:15%} #sellTable .c-tk{width:26%} #sellTable .c-pc{width:21%}
-#sellTable .c-mn{width:27%} #sellTable .c-ac{width:11%}
+/* The table takes the width its CONTENT needs and centres what is left over.
+   Stretching it to the panel was the whole problem: its natural width is ~319px
+   against a 382px panel, and because Date and Ticker are left-aligned while the
+   figures are right-aligned, nearly all of that 63px landed in one place -- the
+   gap between Ticker and Profit measured 83px against 19px and 58px either
+   side. Solving the fixed-width version for even gaps gives -2px of room, which
+   is why retuning the percentages only ever moved the gap somewhere else.
+   Centred and content-sized, the three gaps are 18 / 28 / 18. */
+#sellTable{table-layout:auto;width:auto;margin-inline:auto}
 #sellsPanel .htable th{white-space:nowrap}        /* "% profit" on one line */
 #sellsPanel .htable td{font-size:12.5px}
 /* day and month over the year, so the column needs no more width than "06 Oct" */
@@ -484,14 +488,10 @@ button{font-family:var(--font-body);cursor:pointer}
    Nothing is lost; the figure simply moves. */
 @container (max-width:370px){
   #sellsPanel .pc{display:none}
-  /* The <col> goes with the cells. Hiding only the cells leaves the column in
-     the grid, so the remaining cells map onto the WRONG cols by position: the
-     amount inherited width:0 and the two buttons were handed 38%. */
-  #sellTable .c-pc{display:none}
   #sellsPanel .sl-sub{display:block}
-  #sellsPanel .htable th,#sellsPanel .htable td{padding:8px 3px;font-size:11.5px}
-  #sellTable .c-dt{width:18%} #sellTable .c-tk{width:31%}
-  #sellTable .c-mn{width:36%} #sellTable .c-ac{width:15%}
+  /* 5px, not the 9px above: four columns at 9px need 252px and a 320px phone
+     leaves the panel 248px, so the last 4px comes out of the padding. */
+  #sellsPanel .htable th,#sellsPanel .htable td{padding:8px 5px;font-size:11.5px}
 }
 @media(max-width:430px){
   .sell-range{grid-template-columns:1fr 1fr}
@@ -3116,13 +3116,10 @@ select{color-scheme:dark}
         </div>
         <div class="tscroll">
           <table class="htable" id="sellTable">
-            <!-- Fixed proportions, so the columns do not rearrange themselves as
-                 the figures change. Under auto layout the HEADER drove the
-                 widths: "% profit" is wider than any value under it, so that
-                 column took 100px to show "+55.41%" and left a gap beside the
-                 ticker. Shortened to "Profit" -- the values all carry a % sign,
-                 so the header was saying it twice. -->
-            <colgroup><col class="c-dt"><col class="c-tk"><col class="c-pc"><col class="c-mn"><col class="c-ac"></colgroup>
+            <!-- The table is content-sized, so there is nothing to divide up.
+                 Dropping the column definitions also drops the trap that came
+                 with them: hiding a cell without hiding its column shifted
+                 every remaining cell onto the wrong one. -->
             <thead><tr><th>Date</th><th>Ticker</th><th class="pc">Profit</th><th>$ made</th><th></th></tr></thead>
             <tbody id="sellBody"></tbody>
           </table>
@@ -3641,7 +3638,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-13</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-13A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">

@@ -535,52 +535,75 @@ data.
 
 The Sells and Winners tiles were removed — a count of rows is readable from the rows.
 
-**The columns are fixed proportions** (`table-layout:fixed` with a `<colgroup>`): 15 / 26 / 21 /
-27 / 11, becoming 18 / 31 / — / 36 / 15 when the percentage folds. Under auto layout the
-**header** drove the widths — `% profit` was wider than any value beneath it, so that column
-took 100px to show `+55.41%` and left a visible gap beside the ticker. The header is `Profit`
-now; the values all carry a `%`, so it was saying it twice.
+**The table is its own natural width and centred** — `table-layout:auto; width:auto;
+margin-inline:auto`, with no `<colgroup>` at all. That took three passes to arrive at, and the
+reason is worth keeping: **the gap was never a proportions problem, it was a stretching
+problem.** A table defaults to filling its container, and with Date and Ticker left-aligned
+against Profit and `$ made` right-aligned, nearly all of that slack lands at the one boundary
+between them. The content needs ~319px; the panel's content box is 382px; so 63px went into the
+gap beside the ticker.
 
-**The widths come from the stated worst cases, measured at the real fonts**: `+999.99%` (three
-digits plus the sign) and seven digits of value. Needed: date 56, ticker 100, Profit 81,
-amount 118, buttons 42. A first attempt sized them for `+1234.56%` and a six-figure amount —
-neither of which will occur — which left the Profit column holding slack and made the gap worse
-than before. **Size to what will happen, not to what might.**
+Measured header gaps, Date → Ticker → Profit → `$ made`:
 
-Those five columns need **397px** and the right column's content box is **384px** at 1280, so
-two things give:
+| | 1 | 2 | 3 |
+|---|---|---|---|
+| fixed proportions | 19px | **83px** | 58px |
+| natural width, centred | 18px | 18px | 18px |
 
-- **Amounts over a million are shortened** — exact to `+C$999,999.99`, then `+C$1.23M` via
-  `sellAmt()`, which reuses `npBig()` from Eye on Stocks. The summary tiles keep full precision:
-  they have the room, and a headline total is worth reading to the cent.
-- **3px of side padding and a 12px row** rather than 4px/12.5px. Half a point is the difference
-  between keeping Profit on a normal desktop and folding it away.
+Solving the fixed layout for even gaps gives **G = −2px** — there was no spare room to
+redistribute, which is why retuning the percentages moved the gap around three times without
+shrinking it. The leftover room now sits outside the table as margin, where it is symmetric and
+invisible, instead of inside it as one wide gap.
+
+**The side padding IS the gap.** `9px` each side gives the even 18px, and it had been squeezed to
+`3px` only to make the stretched layout fit. `#sellsPanel .sym small{letter-spacing:.02em}`
+likewise: the sub-line carries `.06em` globally, which widened the ticker column ~6px for nothing
+here.
+
+The header is `Profit`, not `% profit` — the values all carry a `%`, so it was saying it twice,
+and it was the widest thing in its column. **Amounts over a million are shortened** — exact to
+`+C$999,999.99`, then `+C$1.23M` via `sellAmt()`, which reuses `npBig()` from Eye on Stocks. The
+summary tiles keep full precision: they have the room, and a headline total is worth reading to
+the cent.
+
+**The body gaps are looser than the header's and that is the content, not slack.** The ticker
+cell's sub-line (`FHSA · 60`) is wider than the ticker itself, so the ink under that heading stops
+short of its column's edge. Nothing can close that without narrowing the sub-line.
 
 **The fold is a container query, not a media query.** What decides this layout is how wide the
 *panel* is, and that is not a function of the window: the same 1280px window gives this panel
-384px in the right column and 640px in the left. `#sellsPanel{container-type:inline-size}` with
+382px in the right column and 684px in the left. `#sellsPanel{container-type:inline-size}` with
 `@container (max-width:370px)` replaces two viewport bands — one for phones and one for the
 901–1100px range that existed only because 1024px is the narrowest two-column case.
 
 Two things that had to be measured rather than reasoned about:
 
-- **Hiding the percentage cells is not enough — the `<col>` has to go too.** With only the cells
-  hidden the remaining cells map onto the wrong columns by position: the amount inherited
-  `width:0` and the two buttons were handed 38%. `#sellTable .c-pc{display:none}` removes the
-  slot.
+- **Hiding the percentage cells used to need the `<col>` hidden with them.** With only the cells
+  hidden the remaining cells mapped onto the wrong columns by position: the amount inherited
+  `width:0` and the two buttons were handed 38%. Deleting the `<colgroup>` removed the trap
+  along with the widths — with no `<col>` elements, hiding the cells is enough on its own.
 - **A container query measures the content box**, so the threshold is compared against the panel
-  minus its 22px padding either side — 384px at 1280, not 428px.
+  minus its padding either side — 382px at 1280, not 428px.
 
 **Fitting five columns into the narrow column.** Measured against the worst case it will really
 meet: a four-digit quantity, a four-figure amount and a percentage. The date is day and month
 over the year, so the column needs no more width than `04 Oct`; the account and quantity are
 `white-space:nowrap`, since `FHSA · 8888` was wrapping under the ticker and costing a third row;
-the headers are nowrap so `% profit` stays on one line; and the correct and undo buttons stack
-rather than sitting side by side. At **≤430px the percentage column folds under the amount** —
-five columns cannot hold a four-figure amount *and* a percentage at phone width (measured 328px
-of table in 248px of panel at 320px), and putting the percentage under the figure is exactly
+the headers are nowrap so `Profit` stays on one line; and the correct and undo buttons stack
+rather than sitting side by side. When the **panel** falls under 370px the percentage column folds
+under the amount — five columns cannot hold a four-figure amount *and* a percentage at phone width
+(measured 328px of table in 248px of panel at 320px), and putting the percentage under the figure is exactly
 what the holdings table already does with its P/L. Result: zero sideways scroll from 1440 down
-to 320px.
+to 320px — with `8px 5px` of padding below the container threshold, since four columns at `9px`
+need 252px against the 248px a 320px phone leaves.
+
+**The tests measure gaps, not columns.** There used to be an assertion that short and long
+content gave identical column widths; it encoded the fixed layout and is false by design now. It
+also passed three times over while the thing on screen got worse. What is asserted instead is the
+distance between the rendered *text* of adjacent columns — a `Range` over each cell's first text
+node, first line only — with the header gaps within 12px of each other and no gap more than 25px
+off any other, at 1440 / 1280 / 1024 / 900 / 560 / 430 / 390 / 320 for both typical and
+worst-case figures. That fails at 83px against the fixed-proportion build.
 
 ### A note wraps instead of disappearing
 

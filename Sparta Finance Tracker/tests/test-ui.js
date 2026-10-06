@@ -1072,26 +1072,15 @@ const section = t => console.log(`\n── ${t} ──`);
     });
     check(/^\+\$9,9\d\d\.\d\d$/.test(money), 'the worst case really is a four-figure amount', money);
 
-    /* The columns are FIXED proportions now, so they must not move when the
-       content does. Under auto layout the header drove them: "% profit" was
-       wider than any value beneath it, so that column took 100px to show
-       "+55.41%" and left a gap beside the ticker. */
-    const widths = () => W.page.evaluate(() =>
-      [...document.querySelectorAll('#sellBody tr:first-child td')]
-        .filter(t => getComputedStyle(t).display !== 'none')
-        .map(t => t.clientWidth));
+    /* There used to be an assertion here that short and long content gave
+       IDENTICAL column widths. It encoded the fixed-proportion layout, and under
+       a content-sized table it is false by design -- the columns are SUPPOSED to
+       follow the content. It also passed three times over while the thing on
+       screen got worse, because a column's width says nothing about the gap the
+       eye actually sees. The property wanted is measured below instead: the
+       distance between the rendered TEXT of adjacent columns, evenly spread. */
     await W.page.setViewportSize({ width: 1280, height: 1100 });
     await W.page.waitForTimeout(300);
-    const wide = await widths();
-    await W.page.evaluate(() => {
-      state.sells = [{ id: 'z', t: Date.now() - 864e5, sym: 'AAOX', acct: 'FHSA',
-        qty: 5, price: 2.3, avg: 1.48, ccy: 'USD' }];
-      persist(); render();
-    });
-    await W.page.waitForTimeout(300);
-    check(JSON.stringify(await widths()) === JSON.stringify(wide),
-      'short tickers and small figures give the same columns as long ones',
-      JSON.stringify([wide, await widths()]));
     check(await W.page.evaluate(() =>
       document.querySelectorAll('#sellTable thead th')[2].textContent.trim()) === 'Profit',
       'the header is "Profit" — the values already carry the % sign');
@@ -1195,7 +1184,10 @@ const section = t => console.log(`\n── ${t} ──`);
     check(/^−C\$2\.50M$/.test(bound.neg), 'and a shortened loss keeps its sign', bound.neg);
 
     /* Typical figures must not leave the Profit column holding slack -- that is
-       the complaint. +55.53% is about 50px wide. */
+       the complaint. Under a content-sized table the column follows what is IN
+       it, so the probe reads the cell's own rendered text rather than the
+       worst case it could ever hold: sizing for +999.99% when +55.53% is on
+       screen is exactly the slack that was being complained about. */
     await W.page.evaluate(() => {
       state.sells = [{ id: 't', t: Date.now() - 864e5, sym: 'AAOX', acct: 'FHSA',
         qty: 60, price: 8.6, avg: 5.53, ccy: 'USD' }];
@@ -1204,17 +1196,80 @@ const section = t => console.log(`\n── ${t} ──`);
     await W.page.waitForTimeout(300);
     const slack = await W.page.evaluate(() => {
       const td = document.querySelector('#sellBody td.pc');
-      const probe = document.createElement('span');
-      probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap';
-      probe.style.font = getComputedStyle(td).font;
-      probe.textContent = '+999.99%';          // what the column is sized FOR
-      document.body.appendChild(probe);
-      const need = probe.getBoundingClientRect().width; probe.remove();
-      return { col: td.clientWidth, need: Math.ceil(need) };
+      /* A Range over the cell's own text node, NOT a probe span. A probe built
+         from getComputedStyle(td).font measured "+55.52%" at 64px against the
+         54px it really renders at -- the shorthand does not carry everything
+         that is set on this cell -- which made the check pass by over-stating
+         what the column needed. Measure the ink that is on screen. */
+      const r = document.createRange(); r.selectNodeContents(td);
+      const ink = r.getBoundingClientRect().width;
+      const cs = getComputedStyle(td);
+      const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      return { text: td.textContent.trim(), col: td.clientWidth,
+               need: Math.ceil(ink + pad) };
     });
-    check(slack.col - slack.need <= 20,
-      'the Profit column is sized to its worst case, not padded beyond it',
+    check(slack.col - slack.need <= 4,
+      'the Profit column is its content plus padding, with no slack',
       JSON.stringify(slack));
+
+    /* ── THE GAPS ARE EVEN ───────────────────────────────────────────────
+       The complaint, stated as a number. Three passes before this one asserted
+       COLUMN widths and passed while the gap on screen got worse; this measures
+       the distance between the rendered TEXT of adjacent columns, which is the
+       thing being looked at. Against the fixed-proportion build the header gaps
+       were 19 / 83 / 58 -- the table was stretched to fill the panel and, with
+       two columns left-aligned and two right-aligned, nearly all the slack
+       landed at the one boundary beside the ticker. */
+    const gapsAt = () => W.page.evaluate(() => {
+      /* A Range over a text node gives the ink, not the box. The ticker cell
+         also holds a block sub-line, so only the first line counts -- rects
+         further down are a different row of text, not a neighbouring column. */
+      const ink = el => {
+        const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        let n, best = null;
+        while ((n = w.nextNode())) {
+          if (!n.nodeValue.trim()) continue;
+          const r = document.createRange(); r.selectNodeContents(n);
+          const q = r.getClientRects()[0];
+          if (!q) continue;
+          if (!best) best = { l: q.left, r: q.right, top: q.top };
+          else if (Math.abs(q.top - best.top) < 4) {
+            best.l = Math.min(best.l, q.left); best.r = Math.max(best.r, q.right);
+          }
+        }
+        return best;
+      };
+      const run = sel => [...document.querySelectorAll(sel)]
+        .filter(c => getComputedStyle(c).display !== 'none').map(ink).filter(Boolean);
+      const sp = c => c.slice(1).map((x, i) => Math.round(x.l - c[i].r));
+      return { head: sp(run('#sellTable thead th')), body: sp(run('#sellBody tr:first-child td')) };
+    });
+    const TYPICAL = [{ id: 't', t: Date.now() - 864e5, sym: 'AAOX', acct: 'FHSA',
+      qty: 60, price: 8.6, avg: 5.53, ccy: 'USD' }];                  // +55.53%, +$184.20
+    const WORST = [{ id: 'w', t: Date.now() - 864e5, sym: 'ENB.TO', acct: 'FHSA',
+      qty: 8888, price: 200.5, avg: 18.23, ccy: 'CAD' }];             // +999.99%, seven figures
+    for (const [name, rows] of [['typical', TYPICAL], ['worst', WORST]]) {
+      await W.page.evaluate(r => { state.sells = r; persist(); render() }, rows);
+      for (const w of [1440, 1280, 1024, 900, 560, 430, 390, 320]) {
+        await W.page.setViewportSize({ width: w, height: 1100 });
+        await W.page.waitForTimeout(300);
+        const g = await gapsAt();
+        const hs = Math.max(...g.head) - Math.min(...g.head);
+        const all = [...g.head, ...g.body];
+        const as = Math.max(...all) - Math.min(...all);
+        /* The headings are plain single-line text in every column, so they are
+           the clean reading and they are what the eye scans along. */
+        check(hs <= 12, `${w}px (${name}): the header gaps are even`,
+          JSON.stringify(g.head));
+        /* The body is looser by construction: the ticker's sub-line ("FHSA · 60")
+           is wider than the ticker itself, so the ink under that heading stops
+           short of its column's edge. That is the content, not slack. */
+        check(as <= 25, `${w}px (${name}): and no gap is 25px off any other`,
+          JSON.stringify(g));
+      }
+    }
+    await W.page.setViewportSize({ width: 1280, height: 1100 });
+    await W.page.waitForTimeout(300);
 
     /* The fold follows the PANEL, not the window: a container query. Put the
        panel in the wide column at one viewport width and then the narrow one --
