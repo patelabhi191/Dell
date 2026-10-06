@@ -441,6 +441,16 @@ button{font-family:var(--font-body);cursor:pointer}
    tightened to fit rather than left to scroll sideways -- a horizontal
    scrollbar under four short rows reads as something being cut off. */
 #sellsPanel .htable th,#sellsPanel .htable td{padding:9px 4px}
+#sellTable{table-layout:fixed}
+#sellTable .c-dt{width:14%} #sellTable .c-tk{width:24%} #sellTable .c-pc{width:21%}
+#sellTable .c-mn{width:30%} #sellTable .c-ac{width:11%}
+/* 1024px is the TIGHTEST case: still two columns, so the panel is at its
+   narrowest, and a four-digit percentage next to a five-figure amount does not
+   fit at the full type size -- the percentage overflowed its column by 11px.
+   The figures step down here the same way they do on a phone. */
+@media(min-width:901px) and (max-width:1100px){
+  #sellsPanel .htable th,#sellsPanel .htable td{font-size:11.5px;padding:8px 3px}
+}
 #sellsPanel .htable th{white-space:nowrap}        /* "% profit" on one line */
 #sellsPanel .htable td{font-size:12.5px}
 /* day and month over the year, so the column needs no more width than "06 Oct" */
@@ -458,7 +468,8 @@ button{font-family:var(--font-body);cursor:pointer}
 .sell-range label{display:block;font-size:var(--fs-micro);letter-spacing:var(--ls-label);
   text-transform:uppercase;color:var(--text-faint);font-weight:700;margin-bottom:5px}
 .sell-range input{width:100%;min-width:0;padding:8px 9px;font-size:12.5px}
-.sell-range .btn{padding:9px 14px;font-size:12.5px;white-space:nowrap}
+/* the same shape as the "+ Add point" button in Notes just below it */
+.sell-range .btn{padding:8px 14px;font-size:12px;white-space:nowrap;background:transparent}
 /* The percentage rides under the money as well, hidden until it is needed. */
 .sl-sub{display:none;font-size:10.5px;font-weight:600;opacity:.78}
 @media(max-width:430px){
@@ -471,6 +482,18 @@ button{font-family:var(--font-body);cursor:pointer}
   #sellsPanel .pc{display:none}
   #sellsPanel .sl-sub{display:block}
   #sellsPanel .htable th,#sellsPanel .htable td{padding:8px 3px;font-size:11.5px}
+  /* The <col> has to go as well as the cells. Hiding only the cells leaves the
+     column in place, so the remaining cells map onto the WRONG cols by
+     position: the amount inherited the percentage column's width:0 and the two
+     buttons were handed 38%. Removing the col removes the slot. */
+  #sellTable .c-pc{display:none}
+  #sellTable .c-dt{width:19%} #sellTable .c-tk{width:30%}
+  #sellTable .c-mn{width:38%} #sellTable .c-ac{width:13%}
+  /* A five-figure Canadian amount is ~95px and the column is ~94px at 320px --
+     exactly no slack. The figures drop a point here rather than wrapping or
+     losing the account beside the ticker. */
+  #sellsPanel .htable td.pl{font-size:11px}
+  #sellsPanel .sl-sub{font-size:10px}
 }
 .np-stocks{display:flex;flex-direction:column;gap:10px;margin-top:12px}
 .np-stock{border:1px solid var(--stroke);border-radius:var(--r-card);
@@ -3087,11 +3110,18 @@ select{color-scheme:dark}
             <input id="sellFrom" type="date"></div>
           <div><label for="sellTo">To</label>
             <input id="sellTo" type="date"></div>
-          <button class="btn" id="sellSearch" type="button">Search</button>
+          <button class="btn ghost" id="sellSearch" type="button">Search</button>
         </div>
         <div class="tscroll">
           <table class="htable" id="sellTable">
-            <thead><tr><th>Date</th><th>Ticker</th><th class="pc">% profit</th><th>$ made</th><th></th></tr></thead>
+            <!-- Fixed proportions, so the columns do not rearrange themselves as
+                 the figures change. Under auto layout the HEADER drove the
+                 widths: "% profit" is wider than any value under it, so that
+                 column took 100px to show "+55.41%" and left a gap beside the
+                 ticker. Shortened to "Profit" -- the values all carry a % sign,
+                 so the header was saying it twice. -->
+            <colgroup><col class="c-dt"><col class="c-tk"><col class="c-pc"><col class="c-mn"><col class="c-ac"></colgroup>
+            <thead><tr><th>Date</th><th>Ticker</th><th class="pc">Profit</th><th>$ made</th><th></th></tr></thead>
             <tbody id="sellBody"></tbody>
           </table>
         </div>
@@ -3609,7 +3639,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-11</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-12</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">

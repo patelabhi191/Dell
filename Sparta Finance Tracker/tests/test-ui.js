@@ -1072,9 +1072,66 @@ const section = t => console.log(`\n── ${t} ──`);
     });
     check(/^\+\$9,9\d\d\.\d\d$/.test(money), 'the worst case really is a four-figure amount', money);
 
+    /* The columns are FIXED proportions now, so they must not move when the
+       content does. Under auto layout the header drove them: "% profit" was
+       wider than any value beneath it, so that column took 100px to show
+       "+55.41%" and left a gap beside the ticker. */
+    const widths = () => W.page.evaluate(() =>
+      [...document.querySelectorAll('#sellBody tr:first-child td')]
+        .filter(t => getComputedStyle(t).display !== 'none')
+        .map(t => t.clientWidth));
+    await W.page.setViewportSize({ width: 1280, height: 1100 });
+    await W.page.waitForTimeout(300);
+    const wide = await widths();
+    await W.page.evaluate(() => {
+      state.sells = [{ id: 'z', t: Date.now() - 864e5, sym: 'AAOX', acct: 'FHSA',
+        qty: 5, price: 2.3, avg: 1.48, ccy: 'USD' }];
+      persist(); render();
+    });
+    await W.page.waitForTimeout(300);
+    check(JSON.stringify(await widths()) === JSON.stringify(wide),
+      'short tickers and small figures give the same columns as long ones',
+      JSON.stringify([wide, await widths()]));
+    check(await W.page.evaluate(() =>
+      document.querySelectorAll('#sellTable thead th')[2].textContent.trim()) === 'Profit',
+      'the header is "Profit" — the values already carry the % sign');
+
+    // back to the worst case for the sweep
+    await W.page.evaluate(() => {
+      const now = Date.now();
+      state.sells = [
+        { id: 'a', t: now - 2 * 864e5, sym: 'BRK.B', acct: 'TFSA', qty: 12345, price: 9.9, avg: 0.5, ccy: 'CAD' },
+        { id: 'b', t: now - 3 * 864e5, sym: 'AAOX', acct: 'FHSA', qty: 5, price: 2.3, avg: 1.48, ccy: 'USD' }];
+      persist(); render();
+    });
+    await W.page.waitForTimeout(300);
+
     for (const w of [1440, 1280, 1024, 900, 560, 430, 390, 320]) {
       await W.page.setViewportSize({ width: w, height: 1100 });
       await W.page.waitForTimeout(300);
+      const fit = await W.page.evaluate(() => {
+        const p = document.getElementById('sellsPanel');
+        /* Real overflow only. A probe measuring a cell's whole textContent
+           joins the ticker and its sub-line into one string and reports ~56px
+           of overflow that is not there. */
+        const bad = [];
+        p.querySelectorAll('tbody td, thead th').forEach(td => {
+          if (getComputedStyle(td).display === 'none') return;
+          if (td.scrollWidth > td.clientWidth + 1) bad.push([td.className || '-', td.scrollWidth - td.clientWidth]);
+        });
+        const amt = p.querySelector('td.pl');
+        const r = document.createRange(); r.selectNode(amt.childNodes[0]);
+        return { bad, amtLines: r.getClientRects().length,
+          cols: [...p.querySelectorAll('#sellBody tr:first-child td')]
+            .filter(t => getComputedStyle(t).display !== 'none').map(t => t.clientWidth) };
+      });
+      check(fit.bad.length === 0, `${w}px: no cell overflows its column`, JSON.stringify(fit.bad));
+      /* Hiding the percentage CELLS at phone width without removing the <col>
+         shifted every remaining cell onto the wrong column: the amount
+         inherited width:0 and the two buttons were handed 38%. */
+      check(fit.amtLines === 1 && fit.cols.every(c => c > 20),
+        `${w}px: the amount stays on one line and no column collapses`,
+        JSON.stringify(fit));
       const r = await W.page.evaluate(() => {
         const p = document.getElementById('sellsPanel'), sc = p.querySelector('.tscroll');
         const small = p.querySelector('.sym small');
@@ -1105,6 +1162,17 @@ const section = t => console.log(`\n── ${t} ──`);
         JSON.stringify({ col: r.pctShown, sub: r.subShown }));
     }
     await W.page.setViewportSize({ width: 1360, height: 1000 });
+    await W.page.waitForTimeout(250);
+    /* Read both buttons rather than hardcoding the numbers, so the two cannot
+       drift apart later. */
+    const btns = await W.page.evaluate(() => {
+      const g = e => { const c = getComputedStyle(e);
+        return [c.fontSize, c.padding, c.backgroundColor, c.borderRadius].join('|') };
+      return { search: g(document.getElementById('sellSearch')), add: g(document.getElementById('npAdd')) };
+    });
+    check(btns.search === btns.add,
+      'Search is the same button as "+ Add point"', JSON.stringify(btns));
+
     check(W.errs.length === 0, 'no page errors from Past sells at any width', W.errs.join(' | '));
     await W.ctx.close();
   }

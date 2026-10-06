@@ -535,6 +535,23 @@ data.
 
 The Sells and Winners tiles were removed — a count of rows is readable from the rows.
 
+**The columns are fixed proportions** (`table-layout:fixed` with a `<colgroup>`): 14 / 24 / 21 /
+30 / 11, becoming 19 / 30 / — / 38 / 13 at ≤430px where the percentage column is hidden. Under
+auto layout the **header** drove the widths — `% profit` was wider than any value beneath it, so
+that column took 100px to show `+55.41%` and left a visible gap beside the ticker, and the
+proportions moved about as the data changed. The header is `Profit` now; the values all carry a
+`%`, so it was saying it twice.
+
+Two things that had to be measured rather than reasoned about:
+
+- **Hiding the percentage cells is not enough — the `<col>` has to go too.** With only the cells
+  hidden the remaining cells map onto the wrong columns by position: the amount inherited
+  `width:0` and the two buttons were handed 38%. `#sellTable .c-pc{display:none}` removes the
+  slot.
+- **1024px is the tightest case**, not the phone: still two columns, so the panel is at its
+  narrowest, and a four-digit percentage beside a five-figure amount overflowed by 11px at the
+  full type size. The figures step down there the same way they do at ≤430px.
+
 **Fitting five columns into the narrow column.** Measured against the worst case it will really
 meet: a four-digit quantity, a four-figure amount and a percentage. The date is day and month
 over the year, so the column needs no more width than `04 Oct`; the account and quantity are
