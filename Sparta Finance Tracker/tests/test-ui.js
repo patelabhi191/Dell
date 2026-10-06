@@ -814,7 +814,11 @@ const section = t => console.log(`\n── ${t} ──`);
                    wrapped: qr.top > y.top + 16,
                    topDelta: Math.round(k.top - y.top),
                    clipped: k.left < td.closest('.tscroll').getBoundingClientRect().left - 0.5 } };
-        return { marked: m(row('GOOGL')), blank: m(row('AAPL')) };
+        const g = row('GOOGL');
+        const bk = g.querySelector('.bk'), sym = g.querySelector('.sym');
+        return { marked: m(g), blank: m(row('AAPL')),
+          gap: Math.round(sym.getBoundingClientRect().left - bk.getBoundingClientRect().right),
+          linkGap: parseFloat(getComputedStyle(g.querySelector('.qlink')).marginLeft) };
       });
       check(!r.marked.wrapped && !r.blank.wrapped,
         `${w}px: the ↗ stays on the ticker's line`, JSON.stringify(r));
@@ -826,6 +830,11 @@ const section = t => console.log(`\n── ${t} ──`);
       check(r.marked.q < r.marked.text && !r.marked.clipped,
         `${w}px: and the mark sits left of it, in the gutter, not clipped by the scroller`,
         JSON.stringify({ q: r.marked.q, clipped: r.marked.clipped }));
+      /* Read the arrow's own margin rather than hardcoding 6, so the two sides
+         of the ticker cannot drift apart without this noticing. */
+      check(r.gap === r.linkGap,
+        `${w}px: the mark is spaced off the ticker exactly as the ↗ is`,
+        JSON.stringify({ mark: r.gap, link: r.linkGap }));
       /* A table cell is vertically centred by default, so offsetting the mark
          from the CELL dropped it 9px below the ticker the moment another cell
          in the row was taller. It is anchored to the ticker instead. */
@@ -907,83 +916,80 @@ const section = t => console.log(`\n── ${t} ──`);
     await E.ctx.close();
   }
 
-  /* ── THE DASHBOARD FILLS ITS GAPS ────────────────────────────────────────
-     Before this, the left column held 881px of content inside a 1585px column
-     at 1024px -- 704px of nothing under Holdings -- while the right was full. */
+  /* ── EACH PANEL KEEPS ITS SIDE ───────────────────────────────────────────
+     This replaces a section that asserted the two columns were within a panel
+     of each other -- the opposite of what is now wanted. Panels are assigned to
+     a fixed column and only move up and down inside it. The cost is known and
+     accepted: with Past sells on the right the right column runs ~950px past the
+     left at 1280px, so balance is deliberately NOT checked here. */
   {
-    const L = await open(browser, url);
-    const layout = () => L.page.evaluate(() => [...document.querySelectorAll('#dashView > .col')].map(c => ({
-      ids: [...c.children].map(e => e.id || e.className.split(' ')[0]),
-      slack: Math.round(c.getBoundingClientRect().bottom -
-        (c.lastElementChild ? c.lastElementChild.getBoundingClientRect().bottom : c.getBoundingClientRect().top)),
-      content: [...c.children].reduce((a, e) => a + e.getBoundingClientRect().height + 20, 0),
-    })));
-    for (const w of [1440, 1280, 1024]) {
+    const L = await open(browser, url, Object.assign({}, SEED, {
+      'sparta.notes': JSON.stringify({ points: [{ id: 'p', text: 'Hold' }], text: '', stocks: ['NVDA'] }) }));
+    const LEFT = 'heroCard,holdingsCard,eyePanel';
+    const RIGHT = 'statRow,cashCard,addCard,sellsPanel,notepadPanel,importCard';
+    const cols = () => L.page.evaluate(() => [...document.querySelectorAll('#dashView > .col')]
+      .map(c => [...c.children].map(e => e.id || e.className.split(' ')[0]).join(',')));
+
+    for (const w of [1440, 1280, 1024, 900, 390]) {
       await L.page.setViewportSize({ width: w, height: 1000 });
-      await L.page.waitForTimeout(400);
-      const a = await layout();
-      const gap = Math.abs(a[0].content - a[1].content);
-      check(gap < 260, `${w}px: the two columns are within a panel of each other`,
-        `${Math.round(gap)}px`);
-      /* Settling matters more than the exact arrangement: a layout that keeps
-         changing its mind would thrash on every resize. */
-      await L.page.evaluate(() => dashLayout());
-      await L.page.waitForTimeout(150);
-      const b = await layout();
-      check(JSON.stringify(a.map(x => x.ids)) === JSON.stringify(b.map(x => x.ids)),
-        `${w}px: running it again changes nothing`, JSON.stringify(b.map(x => x.ids)));
-      check(a[0].ids.slice(0, 3).join() === 'heroCard,holdingsCard,notepadPanel',
-        `${w}px: hero, holdings and the notepad stay pinned left, in order`,
-        a[0].ids.join());
+      await L.page.waitForTimeout(350);
+      const c = await cols();
+      check(c[0] === LEFT && c[1] === RIGHT,
+        `${w}px: every panel is in its own column, in order`, JSON.stringify(c));
     }
-    // one column on a phone: the declared order, not a shuffle
-    await L.page.setViewportSize({ width: 390, height: 900 });
-    await L.page.waitForTimeout(400);
-    const ph = await layout();
-    check(ph[1].ids.join() === 'statRow,cashCard,addCard,importCard,sellsPanel,eyePanel',
-      '390px: the flowing panels keep their declared order', ph[1].ids.join());
 
-    // returning from Contributions must put the notepad back under Holdings
+    /* The whole point: growing a panel must not move anything. Under the old
+       height-balancing this reshuffled, so it fails against that build. */
     await L.page.setViewportSize({ width: 1280, height: 1000 });
-    await L.page.evaluate(() => applyView('contrib'));
-    await L.page.waitForTimeout(250);
-    await L.page.evaluate(() => applyView('dash'));
-    await L.page.waitForTimeout(400);
-    check(await L.page.evaluate(() => {
-      const p = document.getElementById('notepadPanel');
-      return p.parentElement.classList.contains('col') &&
-             p.previousElementSibling && p.previousElementSibling.id === 'holdingsCard';
-    }), 'coming back from Contributions leaves the notepad under Holdings');
+    await L.page.waitForTimeout(300);
+    const before = JSON.stringify(await cols());
+    await L.page.evaluate(() => {
+      state.sells = Array.from({ length: 8 }, (_, i) => ({ id: 's' + i, t: Date.now() - i * 9e7,
+        sym: 'NVDA', acct: 'TFSA', qty: 4, price: 905, avg: 775, ccy: 'USD' }));
+      npQuotes['NVDA'] = { state: 'ok', name: 'NVIDIA', ccy: 'USD', price: 900, chg: 1,
+        lo: 300, hi: 1000, pe: 60 };
+      npOpen.add('NVDA');
+      state.notes.points.push({ id: 'x', text: 'another' }, { id: 'y', text: 'more' });
+      persist(); render(); renderNotes(); renderStocks();
+    });
+    await L.page.waitForTimeout(700);
+    check(JSON.stringify(await cols()) === before,
+      'growing Past sells, Eye on Stocks and Notes moves nothing between columns',
+      JSON.stringify(await cols()));
 
-    /* Moving a node blurs whatever is focused inside it, so the layout must not
-       touch the DOM when the arrangement has not changed. This caught a real
-       bug: adding a note point stole the caret. */
+    /* Nothing depends on a height now, so a repeat layout must touch no DOM at
+       all -- which is what keeps a typed caret alive. */
+    const moves = await L.page.evaluate(() => {
+      let n = 0;
+      document.querySelectorAll('#dashView > .col').forEach(c => {
+        const o = c.insertBefore.bind(c); c.insertBefore = (...a) => { n++; return o(...a) };
+      });
+      dashLayout(); dashLayout(); return n;
+    });
+    check(moves === 0, 'running the layout again moves no node', String(moves));
+
+    await L.page.evaluate(() => applyView('contrib')); await L.page.waitForTimeout(250);
+    await L.page.evaluate(() => applyView('dash')); await L.page.waitForTimeout(400);
+    const after = await cols();
+    check(after[1] === RIGHT,
+      'the notepad comes back from Contributions into the right column, in place',
+      JSON.stringify(after));
+
     await L.page.click('#npAdd'); await L.page.waitForTimeout(150);
     await L.page.keyboard.type('still typing');
-    await L.page.waitForTimeout(600);
+    await L.page.waitForTimeout(500);
+    /* The ADDED row, not the first one -- this seed already has a point, so
+       npAdd appends and the typing lands in the second input. */
     check(await L.page.evaluate(() => {
-      const i = document.querySelector('#npPoints .np-row input');
-      return document.activeElement === i && i.value === 'still typing';
-    }), 'a relayout does not steal the caret from a note being typed');
+      const a = document.activeElement;
+      return !!a.closest('#npPoints .np-row') && a.value === 'still typing';
+    }), 'and a note can still be typed without losing the caret');
 
-    /* The harder half: a panel that GREW may legitimately have to change column,
-       and that move does blur what is inside it. Typing tickers into Eye on
-       Stocks grew the panel on every Enter, so the keystroke after a move went
-       nowhere. The caret has to be carried across the move, not merely avoided. */
-    await L.page.click('#npStockInput');
-    for (const t of ['AAA', 'BBB', 'CCC']) {
-      await L.page.keyboard.type(t);
-      await L.page.keyboard.press('Enter');
-      await L.page.waitForTimeout(250);
-    }
-    check(await L.page.evaluate(() => document.activeElement.id) === 'npStockInput',
-      'focus stays in the ticker input across the relayouts those additions caused');
-    check(await L.page.evaluate(() => state.notes.stocks.join()) === 'AAA,BBB,CCC',
-      'so all three tickers actually landed', await L.page.evaluate(() => state.notes.stocks.join()));
-
+    await L.page.setViewportSize({ width: 1360, height: 1000 });
     check(L.errs.length === 0, 'no page errors from the layout', L.errs.join(' | '));
     await L.ctx.close();
   }
+
 
   await browser.close(); srv.close();
   console.log(`\nUI: ${pass} passed, ${fail} failed`);

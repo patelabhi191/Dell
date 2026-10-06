@@ -405,10 +405,9 @@ button{font-family:var(--font-body);cursor:pointer}
 .col{display:flex;flex-direction:column;gap:20px}
 
 /* ---------- Notepad, shared by Dashboard + Contributions ---------- */
-/* On Dashboard the notepad is the width of the holdings list it sits under;
-   #contribView is a plain block, so there it is already full width and needs
-   only the gap. The layout script keeps it in the left column. */
-#dashView #notepadPanel{grid-column:1}
+/* Nothing to say about the notepad's width on Dashboard any more: it sits in
+   the right column and takes that column's width like every other panel there.
+   #contribView is a plain block, so there it is full width already. */
 #contribView>#notepadPanel{margin-top:20px}
 .np-points{display:flex;flex-direction:column;gap:8px}
 .np-row{display:flex;align-items:center;gap:10px}
@@ -518,12 +517,16 @@ button{font-family:var(--font-body);cursor:pointer}
    existed. A wider box overlapped the text by 4px and read as cramped. It
    cannot be nudged further left either -- the table sits in .tscroll, so
    anything at a negative offset is clipped by the scroller. */
-/* Anchored to the TICKER, not to the cell. A table cell is vertically centred
+/* -16px, not -10px: 10px of glyph plus the same 6px gap the quote arrow uses
+   (.qlink{margin-left:6px}), so the mark is spaced off the ticker exactly as
+   the arrow is on the other side. The extra 6px comes from the scroller's own
+   padding below rather than from the cell, so the TICKER does not move.
+   Anchored to the TICKER, not to the cell. A table cell is vertically centred
    by default, so its content does not sit at its padding edge -- offsetting
    from the cell put the mark 9px below the ticker as soon as another cell in
    the row was taller. -10px is the first cell's left padding, which puts the
    mark in the gutter and inside .tscroll, so the scroller never clips it. */
-.bk{position:absolute;left:-10px;top:0;
+.bk{position:absolute;left:-16px;top:0;
   width:10px;height:1.35em;padding:0;border:0;background:none;
   border-radius:5px;cursor:pointer;font-family:var(--font-body);font-size:11px;font-weight:800;
   letter-spacing:.02em;line-height:1.35em;text-align:center;color:var(--text-dim);
@@ -633,6 +636,11 @@ label{font-size:var(--fs-label);color:var(--text-faint);font-weight:var(--fw-lab
 .rm.sell{color:var(--text-faint);font-weight:700}
 .rm.sell:hover{color:var(--teal);background:rgba(94,234,212,.1)}
 .tscroll{overflow-x:auto}
+/* The broker mark hangs 16px to the left of the ticker, but the first cell only
+   has 10px of padding and .tscroll clips anything past its edge. Padding the
+   scroller and pulling it back by the same amount widens what it will show
+   without moving a single pixel of the table. */
+#holdingsCard .tscroll{padding-left:6px;margin-left:-6px}
 .empty{padding:30px 10px;text-align:center;color:var(--text-faint);font-size:13.5px}
 
 /* ---------- Add holding form ---------- */
@@ -3541,7 +3549,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-08</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-09</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -4981,92 +4989,51 @@ function snapshot(force){
   cloudSavePoint(entry);
 }
 
-/* ============ Dashboard layout: panels fill the gaps ============
-   The two columns are independent stacks, so whichever runs shorter leaves
-   dead space at the bottom rather than pulling the next panel up. Measured at
-   1024px before this existed: the left column held 881px of content inside a
-   1585px column -- 704px of nothing under Holdings -- while the right was full.
+/* ============ Dashboard layout: each panel keeps its side ============
+   A panel belongs to a column and stays there. It moves only up and down, as
+   whatever is above it grows or shrinks.
 
-   So: three panels are pinned to the left, and every other panel is appended
-   to whichever column is currently SHORTER. A panel's column is therefore not
-   fixed; that is the point, and it means Past sells may sit left one day and
-   right the next as the holdings list grows.
+   This REPLACES a version that assigned panels by measured height, putting each
+   one in whichever column was shorter. That filled the page edge to edge, but a
+   panel's column was not fixed -- Past sells could sit left one day and right
+   the next as the holdings list grew -- and predictability was worth more than
+   density. The cost is accepted and known: with Past sells on the right, the
+   right column runs about 950px past the bottom of the left at 1280px, so there
+   is an empty strip under Eye on Stocks. That is the trade, not a regression.
 
-   Below 900px the grid is already one column, so the distribution is skipped
-   and the declared order is used -- shuffling panels on a phone would move
-   things around for no reason. */
+   Because nothing depends on a panel's height any more, nothing watches for one
+   changing: the ResizeObserver and the resize listener that the balancing
+   needed are gone with it. */
 /* Put `list` in `col`, touching the DOM only where it is already wrong.
    This is not an optimisation -- moving a node REMOVES and re-inserts it, which
-   blurs anything focused inside. Re-appending unconditionally meant that adding
-   a note point stole the caret the moment the panel's own growth woke the
-   ResizeObserver, so the next keystroke went nowhere. */
+   blurs anything focused inside. With a fixed arrangement this is a no-op after
+   the first call, which is exactly what makes the panels feel nailed down. */
 function place(col,list){
   list.forEach((e,i)=>{ if(col.children[i]!==e) col.insertBefore(e, col.children[i]||null) });
 }
-const DASH_PINNED=['heroCard','holdingsCard','notepadPanel'];
-const DASH_FLOW=['statRow','cashCard','addCard','importCard','sellsPanel','eyePanel'];
+const DASH_LEFT =['heroCard','holdingsCard','eyePanel'];
+const DASH_RIGHT=['statRow','cashCard','addCard','sellsPanel','notepadPanel','importCard'];
 let dashLaying=false, dashRaf=0;
 
 function dashLayout(){
   const grid=$('dashView'); if(!grid || grid.style.display==='none') return;
   const cols=grid.querySelectorAll(':scope > .col');
   if(cols.length!==2) return;
-  if(dashLaying) return;                       // a reflow of ours must not re-enter
+  if(dashLaying) return;
   dashLaying=true;
-  /* Moving a node removes and re-inserts it, which blurs whatever is focused
-     inside. place() already avoids touching anything that is in the right
-     place, but a panel that GREW may genuinely have to change column -- which
-     is exactly when someone is typing in it. Typing a ticker into Eye on
-     Stocks grew the panel, moved it, and the next keystroke went nowhere.
-     So carry the caret across the move. */
+  /* One real move still happens: applyView() hands the notepad to #contribView
+     and back, which drops it at the end of #dashView. Moving it blurs whatever
+     is focused inside, so the caret is carried across. */
   const a=document.activeElement;
   const keep = a && a!==document.body && grid.contains(a) ? a : null;
   const sel = keep && typeof keep.selectionStart==='number'
     ? [keep.selectionStart, keep.selectionEnd] : null;
   try{
-    const [L,R]=cols;
     const el=id=>document.getElementById(id);
-    // one column: append everything in the order it is declared and stop
-    const single=window.matchMedia('(max-width:900px)').matches;
-    const pinned=DASH_PINNED.map(el).filter(Boolean);
-    if(single){ place(L,pinned); place(R,DASH_FLOW.map(el).filter(Boolean)); return }
-    /* Measure everything FIRST, then assign tallest-first.
-       Walking the declared order and putting each panel in the shorter column
-       does not work: the right column starts at zero, so the first few panels
-       all land there before their combined height is known, and it finished
-       598px out of balance. Longest-processing-time -- place the tallest
-       remaining panel in the shorter column -- is the standard fix and gets
-       within one panel of optimal.
-       The assignment decides the COLUMN; the declared order still decides the
-       order within it, so panels do not shuffle vertically. */
-    const flow=DASH_FLOW.map(id=>el(id)).filter(Boolean)
-      .map((e,i)=>({ e, i, h:e.offsetHeight+20 }));
-    /* The pinned stack only. Summing L.children here counted the flow panels
-       that the PREVIOUS run had already put in the left column, so their height
-       went in twice and the balancer could not see a one-panel move that would
-       have closed the gap -- it sat at 407px when 4px was reachable. */
-    const base=DASH_PINNED.reduce((a,id)=>{ const e=el(id); return a+(e?e.offsetHeight+20:0) },0);
-    const side=new Map();
-    let hl=base, hr=0;
-    [...flow].sort((a,b)=>b.h-a.h).forEach(p=>{
-      if(hl<=hr){ side.set(p,0); hl+=p.h } else { side.set(p,1); hr+=p.h }
-    });
-    /* LPT alone is not enough here, because the pinned stack is already heavy:
-       it left 407px out of balance where moving one panel across left 99px.
-       So: keep moving any single panel that reduces the gap, until none does.
-       Each pass must strictly improve, so this terminates; the cap is only a
-       guard against a float making 'strictly' untrue. */
-    for(let pass=0; pass<8; pass++){
-      let moved=false;
-      for(const p of flow){
-        const to=side.get(p)?0:1, gap=Math.abs(hl-hr);
-        const nl=hl+(to===0?p.h:-p.h), nr=hr+(to===0?-p.h:p.h);
-        if(Math.abs(nl-nr)<gap-0.5){ side.set(p,to); hl=nl; hr=nr; moved=true }
-      }
-      if(!moved) break;
-    }
-    place(L, pinned.concat(flow.filter(p=>!side.get(p)).map(p=>p.e)));
-    place(R, flow.filter(p=>side.get(p)).map(p=>p.e));
+    /* No breakpoint branch: at <=900px the grid collapses to one column and the
+       two lists simply stack in the order they are declared. */
+    place(cols[0], DASH_LEFT.map(el).filter(Boolean));
+    place(cols[1], DASH_RIGHT.map(el).filter(Boolean));
   } finally {
     if(keep && keep.isConnected && document.activeElement!==keep){
       keep.focus({preventScroll:true});
@@ -5075,20 +5042,11 @@ function dashLayout(){
     dashLaying=false;
   }
 }
-/* Coalesce: a resize, a render and a panel growing can all land in one frame. */
+/* render() can fire several times in a frame; one placement is enough. */
 function dashLayoutSoon(){
   if(dashRaf) return;
   dashRaf=requestAnimationFrame(()=>{ dashRaf=0; dashLayout() });
 }
-if(typeof ResizeObserver==='function'){
-  const ro=new ResizeObserver(()=>{ if(!dashLaying) dashLayoutSoon() });
-  // observe the panels rather than the columns: observing a column would see
-  // the height change this function itself causes and loop
-  addEventListener('load',()=>{
-    DASH_FLOW.concat(DASH_PINNED).forEach(id=>{ const e=document.getElementById(id); if(e) ro.observe(e) });
-  });
-}
-addEventListener('resize',dashLayoutSoon);
 
 /* ---------- Past sells ----------
    Rows and totals BOTH stay in the currency the trade happened in. The USD/CAD

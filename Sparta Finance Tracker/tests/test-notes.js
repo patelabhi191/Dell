@@ -36,11 +36,14 @@ const section = t => console.log(`\n── ${t} ──`);
     const p = document.getElementById('notepadPanel');
     return !!p.closest('#dashView') && p.parentElement.classList.contains('col');
   }), 'on Dashboard it lives inside #dashView, in a column');
+  /* It lives in the RIGHT column now, between Past sells and Import holdings.
+     It used to sit under Holdings on the left; that moved when the columns were
+     fixed and Eye on Stocks took the left-hand slot. */
   check(await page.evaluate(() => {
     const p = document.getElementById('notepadPanel');
-    const prev = p.previousElementSibling;
-    return !!prev && prev.id === 'holdingsCard';
-  }), 'and directly under the holdings list, as asked');
+    const prev = p.previousElementSibling, next = p.nextElementSibling;
+    return !!prev && prev.id === 'sellsPanel' && !!next && next.id === 'importCard';
+  }), 'in the right column, between Past sells and Import holdings');
   await go('contrib');
   check(await page.evaluate(() => document.getElementById('notepadPanel').parentElement.id) === 'contribView',
     'on Contributions it lives in #contribView');
@@ -61,8 +64,12 @@ const section = t => console.log(`\n── ${t} ──`);
   check(Math.abs(cW.w - cW.parent) < 4, 'on Contributions it is full width', JSON.stringify(cW));
   await go('dash');
   const dW = await npW();
-  check(dW.holdings && Math.abs(dW.w - dW.holdings) < 2,
-    'on Dashboard it is exactly the holdings width', JSON.stringify(dW));
+  /* On Dashboard it is the RIGHT column's width -- narrower than Holdings,
+     which is in the wider left column. The two tabs differ, and that is the
+     point of the check. */
+  check(Math.abs(dW.w - dW.parent) < 4 && dW.holdings && dW.w < dW.holdings,
+    'on Dashboard it fills the right column, which is narrower than Holdings',
+    JSON.stringify(dW));
 
   section('2. points: add, type, Enter, Backspace, delete');
   await go('dash');
@@ -271,8 +278,8 @@ const section = t => console.log(`\n── ${t} ──`);
       return { np: r(p), parent: r(p.parentElement), holdings: r(h),
                dash: !!p.closest('#dashView') };
     });
-    if (w.dash) check(Math.abs(w.np - w.holdings) < 2,
-      'dash: the notepad matches the holdings width', JSON.stringify(w));
+    if (w.dash) check(Math.abs(w.np - w.parent) < 4 && w.np < w.holdings,
+      'dash: the notepad fills the right column, narrower than Holdings', JSON.stringify(w));
     else check(Math.abs(w.np - w.parent) < 4,
       'contrib: the notepad is full width', JSON.stringify(w));
     for (const px of [560, 390]) {

@@ -566,35 +566,51 @@ Three things that mark had to get right, each found by measuring:
    offsetting from the cell dropped the mark 9px below the ticker as soon as another cell in
    the row was taller. It hangs off `.sym` at `left:-10px`.
 2. **Keep the padding at 10px on narrow screens.** The rest of the row tightens to 6px there;
-   the gutter cannot, or the glyph is clipped — and `.tscroll` means it cannot spill left instead.
+   the gutter cannot, or the glyph is clipped.
+   The mark also needs the **same 6px gap the quote arrow has** (`.qlink{margin-left:6px}`), so it
+   sits at `left:-16px` — 10px of glyph plus that gap. `.tscroll` would clip the extra 6px, so the
+   scroller is given `padding-left:6px` with a matching `margin-left:-6px`: it will now show 6px
+   further left while the table does not move a pixel. Measured: the ticker stays 33px from the
+   panel edge, and the gap reads 6px on both sides of it.
 3. **Grow the hit area, not the box.** 10px wide is unhittable, and widening it would push the
    ticker back out, so a `::before` with negative insets gives ~14x39 at no layout cost.
 
-### Panels fill the gaps
+### Each panel keeps its side
 
-The two columns were independent stacks, so the shorter one left dead space rather than pulling
-the next panel up — measured at 1024px, the left column held 881px of content in a 1585px
-column, 704px of nothing under Holdings, while the right was full.
+A panel belongs to a column and stays there, moving only up and down as its neighbours grow.
 
-`dashLayout()` pins hero, holdings and the notepad to the left (the notepad at the holdings
-width, as asked) and assigns every other panel to whichever column is **shorter**. Below 900px
-the grid is already one column and the distribution is skipped entirely. Slack is now ~25px at
-1440/1280 and ~102px at 1024.
+| left | right |
+|---|---|
+| Hero | Account stats |
+| Holdings | Available balance |
+| Eye on Stocks | Add a position |
+| | Past sells |
+| | Notes |
+| | Import holdings |
 
-Four things it has to get right, three of them learned by getting them wrong:
+**This replaced a version that placed panels by measured height**, putting each in whichever
+column was shorter. That filled the page edge to edge but left a panel's column unfixed — Past
+sells could sit left one day and right the next as the holdings list grew — and predictability
+was judged worth more than density.
 
-1. **Measure the pinned stack, not `L.children`.** Summing the column counted flow panels the
-   *previous* run had already put there, so their height went in twice and a one-panel move
-   that would have closed the gap was invisible. It sat at 407px where 4px was reachable.
-2. **Largest-first, then a swap pass.** Walking the declared order puts the first few panels in
-   the empty column before their combined height is known; it finished 598px out of balance.
-3. **Touch the DOM only where it is already wrong.** Moving a node removes and re-inserts it,
-   which blurs anything focused inside — re-appending unconditionally meant adding a note point
-   stole the caret the moment the panel's own growth woke the `ResizeObserver`.
-4. **Carry the caret across a move that does have to happen.** A panel that grew may genuinely
-   change column, which is exactly when someone is typing in it: adding tickers to Eye on Stocks
-   grew the panel on every Enter, and the keystroke after a move went nowhere. `dashLayout()`
-   saves `document.activeElement` and its selection and restores both.
+**The cost is known and accepted.** With Past sells on the right the right column runs about
+**950px past the bottom of the left** at 1280px (left 1012, right 1964), so there is an empty
+strip under Eye on Stocks. Moving Past sells — the largest panel at 491px — to the left would
+close it to 30px; that was offered and declined. The strip is the trade, not a regression, and
+the tests therefore do **not** check balance.
+
+Because nothing depends on a panel's height any more, the `ResizeObserver` and the `resize`
+listener the balancing needed are gone with it, along with the largest-first assignment and the
+swap pass. What is left is two static lists and `place()`, which touches the DOM only where it
+is already wrong — a no-op after the first call, which is what makes the panels feel nailed
+down. There is no breakpoint branch: at ≤900px the grid collapses to one column and the lists
+simply stack.
+
+Two things still earn their keep. `applyView()` hands the notepad to `#contribView` and back, so
+there is one real move left — hence the caret guard in `dashLayout()`, and the call from
+`applyView()` that puts the notepad back between Past sells and Import holdings. Notes takes the
+right column's width on Dashboard and is full width on Contributions, where `#contribView` is a
+plain block.
 
 ### What crosses from Yearly and Monthly into an archive, and what does not
 
