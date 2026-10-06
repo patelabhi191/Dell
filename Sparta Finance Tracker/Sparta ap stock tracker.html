@@ -440,17 +440,23 @@ button{font-family:var(--font-body);cursor:pointer}
 /* This table lives in the narrow column and carries five columns, so it is
    tightened to fit rather than left to scroll sideways -- a horizontal
    scrollbar under four short rows reads as something being cut off. */
-#sellsPanel .htable th,#sellsPanel .htable td{padding:9px 4px}
+/* 3px of side padding and a 12px row, not 4px/12.5px: the five columns need
+   397px at the larger size and the panel's content box is 384px at 1280, so
+   half a point is the difference between keeping the Profit column on a normal
+   desktop and folding it away. */
+#sellsPanel .htable th,#sellsPanel .htable td{padding:9px 3px;font-size:12px}
+/* What decides this layout is how wide the PANEL is, which is not a function of
+   the window: the same 1280px window gives this panel 382px in the right column
+   and 684px in the left. Keyed to the container, the old viewport bands -- one
+   for phones, one for the 901-1100px range where 1024 is the narrowest
+   two-column case -- collapse into the single question actually being asked. */
+#sellsPanel{container-type:inline-size}
 #sellTable{table-layout:fixed}
-#sellTable .c-dt{width:14%} #sellTable .c-tk{width:24%} #sellTable .c-pc{width:21%}
-#sellTable .c-mn{width:30%} #sellTable .c-ac{width:11%}
-/* 1024px is the TIGHTEST case: still two columns, so the panel is at its
-   narrowest, and a four-digit percentage next to a five-figure amount does not
-   fit at the full type size -- the percentage overflowed its column by 11px.
-   The figures step down here the same way they do on a phone. */
-@media(min-width:901px) and (max-width:1100px){
-  #sellsPanel .htable th,#sellsPanel .htable td{font-size:11.5px;padding:8px 3px}
-}
+/* Measured from the stated worst cases rather than chosen by eye: date 56,
+   ticker 100, Profit 81, amount 118, buttons 42 -- +999.99% and +C$999,999.99
+   at the real fonts and padding. */
+#sellTable .c-dt{width:15%} #sellTable .c-tk{width:26%} #sellTable .c-pc{width:21%}
+#sellTable .c-mn{width:27%} #sellTable .c-ac{width:11%}
 #sellsPanel .htable th{white-space:nowrap}        /* "% profit" on one line */
 #sellsPanel .htable td{font-size:12.5px}
 /* day and month over the year, so the column needs no more width than "06 Oct" */
@@ -472,28 +478,24 @@ button{font-family:var(--font-body);cursor:pointer}
 .sell-range .btn{padding:8px 14px;font-size:12px;white-space:nowrap;background:transparent}
 /* The percentage rides under the money as well, hidden until it is needed. */
 .sl-sub{display:none;font-size:10.5px;font-weight:600;opacity:.78}
+/* Five columns need 397px for the stated worst cases and the right column gives
+   382 -- so below this the percentage folds under the amount, which is what the
+   holdings table already does with its P / L. Four columns then need 316px.
+   Nothing is lost; the figure simply moves. */
+@container (max-width:370px){
+  #sellsPanel .pc{display:none}
+  /* The <col> goes with the cells. Hiding only the cells leaves the column in
+     the grid, so the remaining cells map onto the WRONG cols by position: the
+     amount inherited width:0 and the two buttons were handed 38%. */
+  #sellTable .c-pc{display:none}
+  #sellsPanel .sl-sub{display:block}
+  #sellsPanel .htable th,#sellsPanel .htable td{padding:8px 3px;font-size:11.5px}
+  #sellTable .c-dt{width:18%} #sellTable .c-tk{width:31%}
+  #sellTable .c-mn{width:36%} #sellTable .c-ac{width:15%}
+}
 @media(max-width:430px){
   .sell-range{grid-template-columns:1fr 1fr}
   .sell-range .btn{grid-column:1/-1}
-  /* Five columns cannot hold a four-figure amount AND a percentage at phone
-     width -- measured 328px of table in 248px of panel at 320px. So the
-     percentage column folds under the amount, which is exactly what the
-     holdings table does with its P/L. One column goes, nothing is lost. */
-  #sellsPanel .pc{display:none}
-  #sellsPanel .sl-sub{display:block}
-  #sellsPanel .htable th,#sellsPanel .htable td{padding:8px 3px;font-size:11.5px}
-  /* The <col> has to go as well as the cells. Hiding only the cells leaves the
-     column in place, so the remaining cells map onto the WRONG cols by
-     position: the amount inherited the percentage column's width:0 and the two
-     buttons were handed 38%. Removing the col removes the slot. */
-  #sellTable .c-pc{display:none}
-  #sellTable .c-dt{width:19%} #sellTable .c-tk{width:30%}
-  #sellTable .c-mn{width:38%} #sellTable .c-ac{width:13%}
-  /* A five-figure Canadian amount is ~95px and the column is ~94px at 320px --
-     exactly no slack. The figures drop a point here rather than wrapping or
-     losing the account beside the ticker. */
-  #sellsPanel .htable td.pl{font-size:11px}
-  #sellsPanel .sl-sub{font-size:10px}
 }
 .np-stocks{display:flex;flex-direction:column;gap:10px;margin-top:12px}
 .np-stock{border:1px solid var(--stroke);border-radius:var(--r-card);
@@ -3639,7 +3641,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-12</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-13</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -5169,6 +5171,17 @@ function sellRangeInit(){
   if($('sellFrom')) $('sellFrom').value=sellFrom;
   if($('sellTo'))   $('sellTo').value=sellTo;
 }
+/* A seven-figure profit does not fit the column at any desktop width, so past a
+   million the amount is shortened -- +C$1.23M -- exactly as Eye on Stocks
+   already shortens market cap and volume. Everything up to C$999,999.99 stays
+   exact, which is every sale that will realistically appear. The summary tiles
+   keep full precision: they have the room, and a headline total is worth
+   reading to the cent. */
+function sellAmt(v,ccy){
+  return Math.abs(v)>=1e6
+    ? (v>=0?'+':'\u2212')+npBig(Math.abs(v),ccy)
+    : signedNat(v,ccy);
+}
 function renderSells(){
   const tb=$('sellBody'); if(!tb) return;
   sellRangeInit();
@@ -5190,7 +5203,7 @@ function renderSells(){
         `</span><span class="sl-y">${d.getFullYear()}</span></td>`+
       `<td><span class="sym">${esc(s.sym)}<small>${esc(s.acct)} · ${s.qty}</small></span></td>`+
       `<td class="pc ${cls}" style="font-weight:600">${(pct>=0?'+':'−')+Math.abs(pct).toFixed(2)}%</td>`+
-      `<td class="pl ${cls}">${signedNat(pnl,s.ccy)}`+
+      `<td class="pl ${cls}">${sellAmt(pnl,s.ccy)}`+
         `<span class="sl-sub">${(pct>=0?"+":"\u2212")+Math.abs(pct).toFixed(2)}%</span></td>`+
       `<td><span class="sl-act"><button class="rm sell" data-edit="${s.id}" `+
         `title="Correct this sale" aria-label="Correct the ${esc(s.sym)} sale">✎</button>`+

@@ -1161,6 +1161,92 @@ const section = t => console.log(`\n── ${t} ──`);
         `${w}px: the percentage shows once, in its column or under the amount`,
         JSON.stringify({ col: r.pctShown, sub: r.subShown }));
     }
+    /* ── sized for figures that will actually occur ──────────────────────
+       The first attempt sized the columns for +1234.56% and a six-figure
+       amount, neither of which will appear, so the Profit column held slack and
+       the gap beside the ticker got worse. The stated worst cases are
+       +999.99% (three digits plus the sign) and seven digits of value. */
+    await W.page.setViewportSize({ width: 1280, height: 1100 });
+    await W.page.waitForTimeout(300);
+    await W.page.evaluate(() => {
+      state.sells = [{ id: 'w', t: Date.now() - 864e5, sym: 'ENB.TO', acct: 'FHSA',
+        qty: 8888, price: 200.5, avg: 18.23, ccy: 'CAD' }];     // +999.99%, seven figures
+      persist(); render();
+    });
+    await W.page.waitForTimeout(300);
+    const worst = await W.page.evaluate(() => {
+      const td = document.querySelector('#sellBody td.pc');
+      return { pct: td.textContent.trim(),
+        amt: document.querySelector('#sellBody td.pl').childNodes[0].textContent.trim() };
+    });
+    check(/^\+9\d\d\.\d\d%$/.test(worst.pct), 'the worst case really is a three-digit percentage', worst.pct);
+    /* Seven figures do not fit at any desktop width, so past a million the
+       amount is shortened the way Eye on Stocks shortens market cap. */
+    check(/^\+C\$\d\.\d\dM$/.test(worst.amt), 'and a seven-figure amount is shortened', worst.amt);
+
+    // the boundary, both sides — a test that only tries 5,000,000 would pass
+    // against a threshold set anywhere below it
+    const bound = await W.page.evaluate(() => {
+      const f = v => sellAmt(v, 'CAD');
+      return { under: f(999999.99), over: f(1000000), neg: f(-2500000) };
+    });
+    check(bound.under === '+C$999,999.99', 'just under a million is still exact', bound.under);
+    check(/^\+C\$1\.00M$/.test(bound.over), 'a million exactly is shortened', bound.over);
+    check(/^−C\$2\.50M$/.test(bound.neg), 'and a shortened loss keeps its sign', bound.neg);
+
+    /* Typical figures must not leave the Profit column holding slack -- that is
+       the complaint. +55.53% is about 50px wide. */
+    await W.page.evaluate(() => {
+      state.sells = [{ id: 't', t: Date.now() - 864e5, sym: 'AAOX', acct: 'FHSA',
+        qty: 60, price: 8.6, avg: 5.53, ccy: 'USD' }];
+      persist(); render();
+    });
+    await W.page.waitForTimeout(300);
+    const slack = await W.page.evaluate(() => {
+      const td = document.querySelector('#sellBody td.pc');
+      const probe = document.createElement('span');
+      probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap';
+      probe.style.font = getComputedStyle(td).font;
+      probe.textContent = '+999.99%';          // what the column is sized FOR
+      document.body.appendChild(probe);
+      const need = probe.getBoundingClientRect().width; probe.remove();
+      return { col: td.clientWidth, need: Math.ceil(need) };
+    });
+    check(slack.col - slack.need <= 20,
+      'the Profit column is sized to its worst case, not padded beyond it',
+      JSON.stringify(slack));
+
+    /* The fold follows the PANEL, not the window: a container query. Put the
+       panel in the wide column at one viewport width and then the narrow one --
+       a viewport-keyed rule cannot tell these apart. */
+    const pctAt = () => W.page.evaluate(() => {
+      const pc = document.querySelector('#sellBody td.pc');
+      return !!pc && getComputedStyle(pc).display !== 'none';
+    });
+    await W.page.setViewportSize({ width: 1280, height: 1100 });
+    await W.page.waitForTimeout(300);
+    const inRight = await pctAt();
+    await W.page.evaluate(() => {
+      document.querySelector('#dashView > .col').appendChild(document.getElementById('sellsPanel'));
+    });
+    await W.page.waitForTimeout(350);
+    const inLeft = await pctAt();
+    check(inLeft && inRight === true,
+      'Profit shows in both columns at 1280 — the wide one certainly',
+      JSON.stringify({ right: inRight, left: inLeft }));
+    await W.page.evaluate(() => {
+      // squeeze the panel itself without touching the window
+      document.getElementById('sellsPanel').style.maxWidth = '300px';
+    });
+    await W.page.waitForTimeout(350);
+    check(!(await pctAt()),
+      'and folds when the PANEL is narrowed, with the window unchanged');
+    await W.page.evaluate(() => {
+      document.getElementById('sellsPanel').style.maxWidth = '';
+      dashLayout();
+    });
+    await W.page.waitForTimeout(300);
+
     await W.page.setViewportSize({ width: 1360, height: 1000 });
     await W.page.waitForTimeout(250);
     /* Read both buttons rather than hardcoding the numbers, so the two cannot

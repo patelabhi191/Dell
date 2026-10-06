@@ -535,12 +535,32 @@ data.
 
 The Sells and Winners tiles were removed — a count of rows is readable from the rows.
 
-**The columns are fixed proportions** (`table-layout:fixed` with a `<colgroup>`): 14 / 24 / 21 /
-30 / 11, becoming 19 / 30 / — / 38 / 13 at ≤430px where the percentage column is hidden. Under
-auto layout the **header** drove the widths — `% profit` was wider than any value beneath it, so
-that column took 100px to show `+55.41%` and left a visible gap beside the ticker, and the
-proportions moved about as the data changed. The header is `Profit` now; the values all carry a
-`%`, so it was saying it twice.
+**The columns are fixed proportions** (`table-layout:fixed` with a `<colgroup>`): 15 / 26 / 21 /
+27 / 11, becoming 18 / 31 / — / 36 / 15 when the percentage folds. Under auto layout the
+**header** drove the widths — `% profit` was wider than any value beneath it, so that column
+took 100px to show `+55.41%` and left a visible gap beside the ticker. The header is `Profit`
+now; the values all carry a `%`, so it was saying it twice.
+
+**The widths come from the stated worst cases, measured at the real fonts**: `+999.99%` (three
+digits plus the sign) and seven digits of value. Needed: date 56, ticker 100, Profit 81,
+amount 118, buttons 42. A first attempt sized them for `+1234.56%` and a six-figure amount —
+neither of which will occur — which left the Profit column holding slack and made the gap worse
+than before. **Size to what will happen, not to what might.**
+
+Those five columns need **397px** and the right column's content box is **384px** at 1280, so
+two things give:
+
+- **Amounts over a million are shortened** — exact to `+C$999,999.99`, then `+C$1.23M` via
+  `sellAmt()`, which reuses `npBig()` from Eye on Stocks. The summary tiles keep full precision:
+  they have the room, and a headline total is worth reading to the cent.
+- **3px of side padding and a 12px row** rather than 4px/12.5px. Half a point is the difference
+  between keeping Profit on a normal desktop and folding it away.
+
+**The fold is a container query, not a media query.** What decides this layout is how wide the
+*panel* is, and that is not a function of the window: the same 1280px window gives this panel
+384px in the right column and 640px in the left. `#sellsPanel{container-type:inline-size}` with
+`@container (max-width:370px)` replaces two viewport bands — one for phones and one for the
+901–1100px range that existed only because 1024px is the narrowest two-column case.
 
 Two things that had to be measured rather than reasoned about:
 
@@ -548,9 +568,8 @@ Two things that had to be measured rather than reasoned about:
   hidden the remaining cells map onto the wrong columns by position: the amount inherited
   `width:0` and the two buttons were handed 38%. `#sellTable .c-pc{display:none}` removes the
   slot.
-- **1024px is the tightest case**, not the phone: still two columns, so the panel is at its
-  narrowest, and a four-digit percentage beside a five-figure amount overflowed by 11px at the
-  full type size. The figures step down there the same way they do at ≤430px.
+- **A container query measures the content box**, so the threshold is compared against the panel
+  minus its 22px padding either side — 384px at 1280, not 428px.
 
 **Fitting five columns into the narrow column.** Measured against the worst case it will really
 meet: a four-digit quantity, a four-figure amount and a percentage. The date is day and month
