@@ -2330,6 +2330,39 @@ select{color-scheme:dark}
   .pin-card{padding:8px 0}
 }
 
+/* ── DOUBLE-TAP ZOOM ───────────────────────────────────────────────────────
+   A six-digit PIN with a repeated digit -- 112233, or just 111111 -- is two
+   taps on the SAME key inside Safari's double-tap window, and Safari reads that
+   as "zoom in here". You land zoomed into #pinGate, which is position:fixed
+   inset:0, so there is nothing to pan and no way back out -- mid-unlock. The
+   keypad listens on `click`, so nothing in the JS ever sees the gesture and no
+   JS change can fix it.
+
+   `manipulation` is the narrow instrument: per spec it permits panning AND
+   continuous (pinch) zooming, and gives up only double-tap zoom plus the legacy
+   ~300ms tap delay -- so the keypad also stops feeling laggy, which is half of
+   why people tap it twice in the first place. It is deliberately NOT `none` and
+   NOT `pan-y`: either of those takes pinch with it, and pinch is the only way to
+   read .arc-svg at min-width:620px, .me-matrix at 840px, or the sideways-panning
+   body at <=560px on a phone. Measured: .tscroll still reaches its full scroll
+   extent under this rule.
+
+   touch-action does not inherit -- the UA intersects it down the hit-test chain
+   from the touched element to the viewport -- so the html rule alone already
+   covers a tap landing on card padding, a heading, or the 16px gutter between
+   two circular keypad buttons. The element list is restated for two reasons:
+   Safari has a history of not honouring touch-action declared only on the root,
+   and a declaration ON the element is the only thing getComputedStyle can see
+   (html's value reads back as `auto` on a button), which is what section 10 of
+   tests/test-mobile.js asserts.
+
+   The viewport meta is deliberately left alone. maximum-scale=1 would close
+   iOS's zoom-on-focus with no visual change at all, but Android Chrome honours
+   it for PINCH too and would silently kill zooming there, so the test asserts
+   the meta never gains it. iOS zoom-on-focus is a separate mechanism (a field
+   under 16px) and is not addressed here. */
+html{touch-action:manipulation}
+a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipulation}
 </style>
 </head>
 <body>
@@ -3652,7 +3685,7 @@ select{color-scheme:dark}
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-06A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-07</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">

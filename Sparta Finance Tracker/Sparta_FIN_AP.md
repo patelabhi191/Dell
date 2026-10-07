@@ -1584,6 +1584,54 @@ Full-screen gate (`#pinGate`), shown only if `sparta.pinOn === 'true'` and `spar
 - It's explicitly a **privacy screen, not encryption** — documented as such in Settings copy. Don't oversell it as security in any new UI copy.
 - Three animation phases cycle on the lock screen (rain → grow → store money, 10.5s loop) using the same color tokens as the Yearly Finance stat cards.
 
+### The keypad was the one place double-tap zoom bit
+
+Reported as *"entering the same number key fast zooms you in"*, and it was literal. `#pinKeys` is a
+grid of plain buttons and `#pinDots` holds **six** of them, so a repeated digit — `112233`, or just
+`111111` — is two taps on the **same** key inside Safari's double-tap window, which Safari reads as
+*zoom in here*. `#pinGate` is `position:fixed; inset:0; z-index:9999`, so you land zoomed into an
+overlay with nothing to pan and no way out, mid-unlock.
+
+**No JS change could have fixed it.** The keypad's only input path is a delegated `click`, so the
+gesture never reaches the app. The fix is one CSS rule:
+
+```css
+html{touch-action:manipulation}
+a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipulation}
+```
+
+`manipulation` is the narrow instrument: per spec it permits panning **and** continuous pinch
+zooming, and gives up only double-tap zoom plus the legacy ~300ms tap delay — so the keypad also
+stops feeling laggy, which is half of why people tap it twice. It is deliberately **not** `none` and
+**not** `pan-y`; either would take pinch with it, and pinch is the only way to read `.arc-svg`
+(`min-width:620px`), `.me-matrix` (`840px`) or the sideways-panning body at ≤560px on a phone.
+Verified: `.tscroll` still reaches its full 150px scroll extent under the rule.
+
+`touch-action` does not inherit — the UA intersects it down the hit-test chain — so the `html` rule
+alone already covers a tap landing in the 16px gutter between two circular keypad buttons. The
+element list is restated because Safari has a history of not honouring a root-only declaration, and
+because a declaration *on* the element is the only thing `getComputedStyle` can see (`html`'s value
+reads back as `auto` on a button), which is what the test asserts.
+
+**Three things deliberately not done, each with a test defending it:**
+
+- **The viewport meta is byte-identical.** `maximum-scale=1` would close iOS zoom-on-focus with no
+  visual change at all, but **Android Chrome honours it for pinch too** and would silently kill
+  zooming there. §10 of `test-mobile.js` asserts the meta never gains it.
+- **Pinch is not blocked.** Removing it fails WCAG 1.4.4, and the two charts above are already wider
+  than a phone.
+- **No JS.** The instinct is to `preventDefault()` a fast second `touchend` — but that suppresses the
+  synthesized `click`, and a PIN of `111111` would then register as `111`. A test taps the same key
+  five times and asserts five dots.
+
+**iOS zoom-on-focus is a separate mechanism and is NOT addressed here.** It fires when focus lands on
+a control under 16px. Measured at ≤560px: 71 controls, 28 under. But `<select>` and
+`input[type=date]` open picker wheels and never zoom, which removes 19 of those — including the six
+inline `font-size:13px` selects (so no `!important` is needed) and `#sellFrom`/`#sellTo` at 12.5px.
+Only 16 keyboard-raising fields genuinely qualify, and closing them costs 3–4px of height each. A
+blanket 16px was measured and rejected outright: it takes the From/To row from 13px of content past
+its card to **66px**.
+
 ---
 
 ## 8. Recurring Bug Classes — check for these before shipping any change

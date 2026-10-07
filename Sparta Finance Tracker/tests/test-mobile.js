@@ -309,6 +309,112 @@ const VIEWS = ['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan'];
   }
   await page.setViewportSize({ width: 390, height: 850 });
 
+
+  /* ── 10. ZOOM ────────────────────────────────────────────────────────────
+     The reported bug was literal: "entering the same number key fast zooms you
+     in". #pinKeys is a grid of plain buttons and the PIN is six digits, so a
+     repeated digit -- 112233, or just 111111 -- is two taps on the SAME key
+     inside Safari's double-tap window, which Safari reads as zoom. #pinGate is
+     position:fixed inset:0, so you end up zoomed into an overlay with nothing
+     to pan, mid-unlock. The keypad listens on `click`, so no JS change could
+     have fixed it; touch-action:manipulation is what closes it.
+
+     HONEST LIMIT, the same shape as section 9's: Chromium implements
+     touch-action and exposes it to getComputedStyle, so the assertions below
+     test the real property. But Chromium has NO double-tap zoom and no iOS
+     zoom-on-focus, so that the ZOOM itself stops is confirmable only on a real
+     device. What is tested here is the precondition and the decisions around it.
+
+     No go(v) navigation: touch-action and font-size both compute without
+     layout, so one pass sees every control on every tab. */
+  section('10. zoom: double-tap closed, pinch deliberately left alone');
+  await page.setViewportSize({ width: 390, height: 850 });
+  /* section 9 leaves the app on Yearly, and the holdings scroller measures 0
+     in a display:none view -- bug class 14, which cost two of these checks on
+     the first run. */
+  await go('dash');
+  await page.waitForTimeout(250);
+
+  const vp = await page.evaluate(() =>
+    document.querySelector('meta[name="viewport"]').getAttribute('content'));
+  check(/width=device-width/.test(vp) && /initial-scale=1/.test(vp),
+    'the viewport meta still sets device-width and initial-scale=1', vp);
+  /* The decision not to ban pinch, written down. maximum-scale=1 would close
+     iOS zoom-on-focus for free, but Android Chrome honours it for pinch too --
+     and pinch is the only way to read .arc-svg (min-width:620px) or .me-matrix
+     (840px) on a phone. This fails the moment someone "fixes zoom" that way. */
+  check(!/maximum-scale|user-scalable|minimum-scale/.test(vp),
+    'and does NOT ban zooming — pinch is the only way to read the wide charts', vp);
+
+  const ta = await page.evaluate(() => {
+    const SEL = 'a,button,label,summary,input,select,textarea,[role="button"]';
+    const els = [...document.querySelectorAll(SEL)];
+    const bad = els.filter(e => getComputedStyle(e).touchAction !== 'manipulation')
+      .slice(0, 6).map(e => e.tagName.toLowerCase() + (e.id ? '#' + e.id : ''));
+    return { html: getComputedStyle(document.documentElement).touchAction,
+      n: els.length, bad };
+  });
+  check(ta.html === 'manipulation', 'the root declares touch-action:manipulation', ta.html);
+  check(ta.bad.length === 0, 'and so does every interactive element', ta.bad.join(' '));
+  /* Non-vacuity: a typo'd selector list matches nothing and the check above
+     passes on an empty set. The real count is ~90; the floor is well under it
+     so the number is printed rather than pinned. */
+  check(ta.n >= 70, 'the selector list really matches the controls', `${ta.n} elements`);
+
+  const keypad = await page.evaluate(() => ({
+    keys: document.querySelectorAll('#pinKeys button[data-k]').length,
+    dots: document.getElementById('pinDots').children.length,
+    ta: getComputedStyle(document.querySelector('#pinKeys button')).touchAction,
+  }));
+  check(keypad.ta === 'manipulation', 'the PIN keypad specifically — the reported bug',
+    keypad.ta);
+  /* The counts stop a keypad refactor from making the check above vacuous, and
+     record WHY this bug exists: six dots means a repeated digit is near-certain. */
+  check(keypad.keys === 12 && keypad.dots === 6,
+    'twelve keys and six dots, which is why a digit repeats', JSON.stringify(keypad));
+
+  /* The trap. The instinct is to preventDefault() a fast second touchend -- but
+     that suppresses the synthesized click, and click is the keypad's ONLY input
+     path, so 111111 would register as 111. This is the assertion that fails if
+     anyone adds one. */
+  const taps = await page.evaluate(async () => {
+    pinOpen('setup');
+    await new Promise(r => setTimeout(r, 180));
+    const one = document.querySelector('#pinKeys button[data-k="1"]');
+    /* FIVE, not six: the sixth digit completes the entry and the dots reset for
+       the confirm step, so asserting six reads 0 and looks like a bug in the
+       app rather than in the test. Five repeats of the same key is already the
+       gesture being guarded against. */
+    for (let i = 0; i < 5; i++) one.click();
+    await new Promise(r => setTimeout(r, 120));
+    const five = document.querySelectorAll('#pinDots span.filled').length;
+    one.click();                                  // the sixth advances the step
+    await new Promise(r => setTimeout(r, 160));
+    const msg = document.getElementById('pinMsg').textContent;
+    document.getElementById('pinGate').style.display = 'none';
+    document.body.style.overflow = '';
+    return { five, msg };
+  });
+  check(taps.five === 5, 'five taps on the SAME key fill five dots — nothing eats them',
+    String(taps.five));
+  check(/again|confirm|re-?enter/i.test(taps.msg),
+    'and the sixth completes the PIN rather than being swallowed', taps.msg);
+
+  /* manipulation keeps panning; none and pan-y would not. If someone escalates
+     the rule, the sideways scrollers die and this is what notices. */
+  const scroller = await page.evaluate(() => {
+    const sc = document.querySelector('#holdingsCard .tscroll');
+    if (!sc) return null;
+    const range = sc.scrollWidth - sc.clientWidth;
+    sc.scrollLeft = range;
+    return { range, reached: sc.scrollLeft };
+  });
+  check(scroller && scroller.range > 0 && Math.abs(scroller.reached - scroller.range) <= 1,
+    'the sideways scrollers still pan — manipulation is not none', JSON.stringify(scroller));
+  await page.evaluate(() => {
+    const sc = document.querySelector('#holdingsCard .tscroll'); if (sc) sc.scrollLeft = 0;
+  });
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nMOBILE: ${pass} passed, ${fail} failed`);
