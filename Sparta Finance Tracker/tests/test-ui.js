@@ -1070,7 +1070,11 @@ const section = t => console.log(`\n── ${t} ──`);
       td.querySelectorAll('.sl-sub').forEach(x => x.remove());
       return td.textContent.trim();
     });
-    check(/^\+\$9,9\d\d\.\d\d$/.test(money), 'the worst case really is a four-figure amount', money);
+    /* Four figures used to print in full. Past 9,999 the amount is a K now, so
+       what this pins is that the cell holds the SHORT form and not a truncated
+       long one. */
+    check(/^\+\$9,9\d\d\.\d\d$|^\+\$\d+(\.\d)?K$/.test(money),
+      'a four-figure amount is exact, a five-figure one is a K', money);
 
     /* There used to be an assertion here that short and long content gave
        IDENTICAL column widths. It encoded the fixed-proportion layout, and under
@@ -1173,15 +1177,28 @@ const section = t => console.log(`\n── ${t} ──`);
        amount is shortened the way Eye on Stocks shortens market cap. */
     check(/^\+C\$\d\.\d\dM$/.test(worst.amt), 'and a seven-figure amount is shortened', worst.amt);
 
-    // the boundary, both sides — a test that only tries 5,000,000 would pass
-    // against a threshold set anywhere below it
+    /* The whole ladder, both sides of every boundary. A test that only tried
+       5,000,000 would pass against a threshold set anywhere below it. */
     const bound = await W.page.evaluate(() => {
-      const f = v => sellAmt(v, 'CAD');
-      return { under: f(999999.99), over: f(1000000), neg: f(-2500000) };
+      const f = (v, c) => sellAmt(v, c || 'USD');
+      return { u9999: f(9999.99), k10: f(10000), k104: f(10400), k1045: f(10450),
+               k100: f(99999), k116: f(116043), m1: f(999999), m1e6: f(1000000),
+               m162: f(1620000), neg: f(-10400, 'CAD'), negM: f(-2500000, 'CAD') };
     });
-    check(bound.under === '+C$999,999.99', 'just under a million is still exact', bound.under);
-    check(/^\+C\$1\.00M$/.test(bound.over), 'a million exactly is shortened', bound.over);
-    check(/^−C\$2\.50M$/.test(bound.neg), 'and a shortened loss keeps its sign', bound.neg);
+    check(bound.u9999 === '+$9,999.99', 'up to 9,999.99 stays exact to the cent', bound.u9999);
+    check(bound.k10 === '+$10K', '10,000 reads 10K — no trailing .0', bound.k10);
+    check(bound.k104 === '+$10.4K', '10,400 reads 10.4K', bound.k104);
+    check(bound.k1045 === '+$10.4K', 'and 10,450 still rounds to one decimal', bound.k1045);
+    check(bound.k100 === '+$100K' && bound.k116 === '+$116K',
+      'six figures lose the decimal when it rounds away', `${bound.k100} ${bound.k116}`);
+    /* 999,999 is the trap: (999999/1e3).toFixed(1) is "1000.0", so a naive K
+       ladder prints +$1000K one pound short of +$1.00M. The M branch starts at
+       999,950 for exactly that reason. */
+    check(bound.m1 === '+$1.00M', '999,999 reads 1.00M, not 1000K', bound.m1);
+    check(bound.m1e6 === '+$1.00M' && bound.m162 === '+$1.62M',
+      'and a million and up is an M', `${bound.m1e6} ${bound.m162}`);
+    check(bound.neg === '−C$10.4K' && bound.negM === '−C$2.50M',
+      'a shortened loss keeps its sign and its currency', `${bound.neg} ${bound.negM}`);
 
     /* Typical figures must not leave the Profit column holding slack -- that is
        the complaint. Under a content-sized table the column follows what is IN
@@ -1208,14 +1225,14 @@ const section = t => console.log(`\n── ${t} ──`);
       return { text: td.textContent.trim(), col: td.clientWidth,
                need: Math.ceil(ink + pad) };
     });
-    /* Not zero: the table is full width now, so every column takes a small
-       share of whatever the actions column does not absorb. The bound is what
-       separates "a few px of surplus" from the fault this started as -- the
-       header-driven build gave this column 100px to show a ~50px figure, which
-       is 32px of slack and still fails here. */
-    check(slack.col - slack.need <= 12,
-      'the Profit column is its content plus padding, give or take a few px',
-      JSON.stringify(slack));
+    /* This used to assert the Profit column was its content plus a few px. The
+       table is a FIXED five-slot grid now -- 20/20/25/25/10 -- so the column is
+       a quarter of the panel whatever is in it, and being wider than its content
+       is the point rather than a fault. What still has to hold is the other
+       direction: the slot must be big enough, i.e. the content must not be
+       clipped by it. */
+    check(slack.col >= slack.need,
+      'the Profit slot is at least as wide as what is in it', JSON.stringify(slack));
 
     /* ── FLUSH WITH THE PANEL, AND EVEN WHERE IT COUNTS ──────────────────
        Two properties, and the first is the one that was got wrong twice.
@@ -1252,6 +1269,10 @@ const section = t => console.log(`\n── ${t} ──`);
         .filter(c => getComputedStyle(c).display !== 'none').map(ink).filter(Boolean);
       const sp = c => c.slice(1).map((x, i) => Math.round(x.l - c[i].r));
       const R = e => e.getBoundingClientRect();
+      const panel = document.getElementById('sellsPanel');
+      const pcs = getComputedStyle(panel), prr = R(panel);
+      const pl = prr.left + parseFloat(pcs.paddingLeft);
+      const pw = (prr.right - parseFloat(pcs.paddingRight)) - pl;
       const tbl = R(document.getElementById('sellTable'));
       /* The panel's other full-width children are the yardstick -- comparing the
          table against the PANEL would pass on a table that merely happened to be
@@ -1268,6 +1289,12 @@ const section = t => console.log(`\n── ${t} ──`);
         /* the buttons must hug the right edge however wide that column gets:
            a block-level flex fills the cell and centres them instead */
         actGap: cell ? Math.round(R(cell).right - parseFloat(cs.paddingRight) - R(act).right) : null,
+        /* the five-slot grid: every column's text must START on its slot edge */
+        panelW: Math.round(pw),
+        starts: run('#sellTable thead th').map(i => Math.round(i.l - pl)),
+        actLeft: act ? Math.round(R(act).left - pl) : null,
+        actBox: act ? [Math.round(R(act.querySelector('.rm')).width),
+                       Math.round(R(act.querySelector('.rm')).height)] : null,
       };
     });
     const SEEDS = {
@@ -1292,32 +1319,110 @@ const section = t => console.log(`\n── ${t} ──`);
         check(Math.abs(g.noteL) <= 1 && Math.abs(g.noteR) <= 1,
           `${w}px (${name}): and lines up with the footnote below it`,
           JSON.stringify({ L: g.noteL, R: g.noteR }));
-        /* Widening that column must not float the buttons into the middle of
-           it, which is what display:flex did -- at 900px the panel is ~800px
-           wide and they sat 110px short of the edge. */
-        check(g.actGap !== null && g.actGap <= 2,
-          `${w}px (${name}): the row's buttons stay against the right edge`,
-          String(g.actGap));
+        /* The buttons start on the LAST slot edge, not against the panel's
+           right edge. That is the deliberate consequence of left-aligning the
+           whole grid: at a wide panel the 10% slot is far more than a glyph
+           needs, so they sit inside it. Asserted against the slot rather than
+           the panel so the number means something at every width. */
+        const lastEdge = Math.round(g.panelW * (g.starts.length >= 4 ? 0.90 : 0.867));
+        check(g.actLeft !== null && Math.abs(g.actLeft - lastEdge) <= 3,
+          `${w}px (${name}): the row's buttons start on the last slot edge`,
+          JSON.stringify({ at: g.actLeft, edge: lastEdge }));
+        /* ...and the tap target survives it. The <=560px block sets
+           min-width:28px on every .rm; min-width:0 in the slot rule is what
+           stops that re-introducing an offset, so the box must still be 28. */
+        check(g.actBox && g.actBox[0] >= 26 && g.actBox[1] >= 22,
+          `${w}px (${name}): and keep a 28px tap target`, JSON.stringify(g.actBox));
       }
     }
 
-    /* The gaps themselves, at the width this panel is actually built for: the
-       right-hand column of the two-column Dashboard. There the surplus is small
-       enough to be absorbed entirely by the actions column, so nothing is left
-       to pile up between two figures. Against the stretched fixed-proportion
-       build these read 19 / 83 / 58. */
+    /* ── THE FIVE SLOTS ──────────────────────────────────────────────────
+       20 / 20 / 25 / 25 / 10, chosen by hand. Every column's text starts on its
+       slot edge -- 0, 20%, 40%, 65% -- so the panel reads as one ruled grid.
+       Equal fifths were tried first and rejected by measurement: a fixed grid
+       lets no column borrow from its neighbour, and the widest real row
+       overflowed a fifth by 18px.
+
+       Only the unfolded state. Below the container query the percentages
+       renormalise over four columns (20/20/25/10 of 75%), which is correct but
+       lands on different edges, and pinning both here would just be restating
+       the arithmetic. The folded state is covered by the no-clip sweep. */
     for (const [name, rows] of Object.entries(SEEDS)) {
-      if (name === 'long') continue;      // no surplus to place; see below
       await W.page.evaluate(r => { state.sells = r; persist(); render() }, rows);
-      for (const w of [1440, 1280]) {
+      for (const w of [1440, 1280, 900, 560]) {
         await W.page.setViewportSize({ width: w, height: 1100 });
         await W.page.waitForTimeout(300);
         const g = await geom();
-        const spread = Math.max(...g.head) - Math.min(...g.head);
-        check(spread <= 12, `${w}px (${name}): the gaps between the figures are even`,
-          JSON.stringify(g.head));
+        if (g.starts.length < 4) continue;                 // folded; see above
+        const want = [0, 0.20, 0.40, 0.65].map(f => Math.round(g.panelW * f));
+        const off = g.starts.map((x, i) => Math.abs(x - want[i]));
+        check(Math.max(...off) <= 3,
+          `${w}px (${name}): every column starts on its slot edge`,
+          JSON.stringify({ at: g.starts, want }));
       }
     }
+
+    /* ── NOTHING CLIPS, NOTHING WRAPS, NOTHING SCROLLS ───────────────────
+       The thing actually asked for: "make sure everything is intact and does
+       not overlap or push other elements or go to another line." A fixed grid
+       is exactly where that can go wrong -- a slot cannot borrow from its
+       neighbour, so content that does not fit is clipped rather than
+       accommodated, silently. Five money shapes across the K and M boundaries,
+       every width, every visible cell. */
+    const SHAPES = {
+      small: { sym:'AAOX',  acct:'FHSA',  qty:75,    price:8.6,   avg:5.39,  ccy:'USD' },
+      k10:   { sym:'NVDA',  acct:'TFSA',  qty:100,   price:150,   avg:50,    ccy:'USD' },
+      k104:  { sym:'MSFT',  acct:'TFSA',  qty:100,   price:154,   avg:50,    ccy:'USD' },
+      big:   { sym:'BRK.B', acct:'Other', qty:12345, price:9.9,   avg:0.5,   ccy:'CAD' },
+      mil:   { sym:'ENB.TO',acct:'FHSA',  qty:8888,  price:200.5, avg:18.23, ccy:'CAD' },
+    };
+    for (const [sname, row] of Object.entries(SHAPES)) {
+      await W.page.evaluate(r => {
+        state.sells = [{ ...r, id: 'x', t: Date.now() - 864e5 }]; persist(); render();
+      }, row);
+      for (const w of [1440, 1280, 1024, 900, 560, 430, 390, 320]) {
+        await W.page.setViewportSize({ width: w, height: 1100 });
+        await W.page.waitForTimeout(260);
+        const f = await W.page.evaluate(() => {
+          const p = document.getElementById('sellsPanel');
+          const sc = p.querySelector('.tscroll');
+          const vis = el => getComputedStyle(el).display !== 'none';
+          const clip = [...p.querySelectorAll('tbody tr:first-child td, thead th')]
+            .filter(vis).filter(c => c.scrollWidth > c.clientWidth + 1)
+            .map(c => (c.className || 'cell') + '+' + (c.scrollWidth - c.clientWidth));
+          /* a Range over a text node reports one rect per LINE, so >1 is a wrap */
+          const wrap = [];
+          p.querySelectorAll('tbody tr:first-child td').forEach(td => {
+            if (!vis(td)) return;
+            td.childNodes.forEach(n => {
+              if (n.nodeType !== 3 || !n.nodeValue.trim()) return;
+              const r = document.createRange(); r.selectNodeContents(n);
+              if (r.getClientRects().length > 1) wrap.push((td.className || 'cell') + ':' + r.getClientRects().length);
+            });
+            td.querySelectorAll('small, .sl-sub, .sl-d, .sl-y').forEach(sub => {
+              if (!vis(sub)) return;
+              const r = document.createRange(); r.selectNodeContents(sub);
+              if (r.getClientRects().length > 1) wrap.push('sub:' + r.getClientRects().length);
+            });
+          });
+          const amt = p.querySelector('#sellBody td.pl');
+          return { clip, wrap, over: Math.round(sc.scrollWidth - sc.clientWidth),
+            txt: amt ? amt.childNodes[0].textContent.trim() : '' };
+        });
+        check(f.clip.length === 0, `${w}px (${sname} ${f.txt}): nothing is clipped by its slot`,
+          f.clip.join(' '));
+        check(f.wrap.length === 0, `${w}px (${sname}): and nothing wraps to a second line`,
+          f.wrap.join(' '));
+        check(f.over === 0, `${w}px (${sname}): no sideways scrollbar`, `${f.over}px`);
+      }
+    }
+
+    /* There was an even-GAPS assertion here. It is gone on purpose: a fixed
+       slot grid decides where text starts, so the distance between two texts is
+       whatever the slots and the content make it -- with the grid in place the
+       header gaps read 38 / 22 / 41 and that is correct, not a regression. The
+       slot-edge check above is the property that replaced it. Pinning both
+       would be contradictory. */
     /* With the widest content there IS no surplus -- the table is already at its
        natural width -- so the gaps are whatever the content makes them and no
        layout choice can even them out. Asserted so that is on the record rather

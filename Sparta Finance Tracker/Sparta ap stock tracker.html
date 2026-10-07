@@ -434,9 +434,6 @@ button{font-family:var(--font-body);cursor:pointer}
 /* a second currency sits under the first rather than beside it -- these tiles
    are narrow, and the two are never added together */
 #sellsPanel .st-sum .v+.v{font-size:13.5px;margin-top:3px;opacity:.92}
-/* .htable right-aligns everything after the first column, which is right for
-   figures and wrong for a date and a ticker */
-#sellsPanel th:nth-child(-n+2),#sellsPanel td:nth-child(-n+2){text-align:left}
 /* This table lives in the narrow column and carries five columns, so it is
    tightened to fit rather than left to scroll sideways -- a horizontal
    scrollbar under four short rows reads as something being cut off. */
@@ -463,12 +460,38 @@ button{font-family:var(--font-body);cursor:pointer}
    figures are right-aligned, so the slack from both sides piled into the one
    boundary between them: 83px against 19px and 58px either side.
 
-   The surplus goes to the trailing actions column instead. It is the only
-   column whose extra width is not a gap between two figures -- it is the margin
-   before the row's buttons, which the holdings table already carries at 56px.
-   26% puts it at 55px in the right-hand column, and the three gaps between the
-   figures come out 20 / 22 / 20 with nothing left over to pile up anywhere. */
-#sellTable th:last-child,#sellTable td:last-child{width:26%}
+   The surplus went to the trailing actions column for one build. It is now a
+   FIXED FIVE-SLOT GRID instead, chosen by hand: 20 / 20 / 25 / 25 / 10. Every
+   column's text starts exactly on its slot edge -- 0, 20%, 40%, 65%, 90% -- so
+   the eye reads one ruled grid rather than four columns that happen to have
+   landed somewhere. Measured at the 384px right column, the text starts at
+   1 / 77 / 154 / 249 against slot edges of 0 / 77 / 153 / 249.
+
+   Why those proportions and not five equal fifths: equal slots cannot hold the
+   money. A fixed grid lets no column borrow from its neighbour, and the widest
+   real row -- BRK.B, Other, 12345, a six-figure profit -- overflowed a fifth by
+   18px. The figures get 25% each and the two label columns 20%, which fits with
+   room to spare. The buttons need almost nothing, hence 10%.
+
+   padding-left goes to 0 on EVERY cell, not just the first: a 20% slot puts the
+   cell edge on the tick, but 9px of cell padding then puts the TEXT 9px past it.
+   padding-right stays at 9px as a collision gutter -- it does not move a
+   left-aligned column's text, and without it a column whose content fills its
+   slot would touch the next one's.
+
+   Everything is left-aligned, which is a deliberate departure from .htable and
+   from every other table here. Right-aligned money lines up on the decimal and
+   is easier to scan down; that was offered and declined in favour of the grid.
+   The cost is visible at a wide panel: at 900px, where the Dashboard is one
+   column, the row buttons sit ~68px inside the right edge because 10% of 798px
+   is far more than a glyph needs. */
+#sellsPanel .htable{table-layout:fixed;width:100%}
+#sellsPanel .htable th:nth-child(1),#sellsPanel .htable td:nth-child(1){width:20%}
+#sellsPanel .htable th:nth-child(2),#sellsPanel .htable td:nth-child(2){width:20%}
+#sellsPanel .htable th:nth-child(3),#sellsPanel .htable td:nth-child(3){width:25%}
+#sellsPanel .htable th:nth-child(4),#sellsPanel .htable td:nth-child(4){width:25%}
+#sellsPanel .htable th:nth-child(5),#sellsPanel .htable td:nth-child(5){width:10%}
+#sellsPanel .htable th,#sellsPanel .htable td{text-align:left}
 #sellsPanel .htable th{white-space:nowrap}        /* every heading on one line */
 #sellsPanel .htable td{font-size:12.5px}
 /* day and month over the year, so the column needs no more width than "06 Oct" */
@@ -479,12 +502,21 @@ button{font-family:var(--font-body);cursor:pointer}
 #sellsPanel .sym small{white-space:nowrap}
 /* the two row buttons stack, because side by side they cost width the figures
    need and the rows are tall enough to hold both */
-/* inline-flex, not flex: a block-level flex fills the cell and centres the
-   buttons in it, so widening the column floats them away from the edge. Shrunk
-   to its content, the cell's own text-align:right keeps them against the right
-   edge where the holdings table's buttons sit. */
-.sl-act{display:inline-flex;flex-direction:column;gap:4px;align-items:center}
-.sl-act .rm{width:26px;padding:3px 0;text-align:center}
+/* The buttons start on the 90% slot edge with everything else. Because the
+   whole table is left-aligned now, that needs nothing clever: text-align:left
+   puts the glyph at the box's left edge, which IS the slot edge once the cell's
+   padding-left is 0, so the box can stay a full 28px tap target and the mark
+   still lands on the tick. (A pseudo-element target was tried first, the way
+   .bk does it for the broker mark; it is the right answer when the box must
+   shrink to the glyph, but here it only added 3px of overflow at 320px by
+   hanging past the cell -- .tscroll is overflow-x:auto, so anything outside
+   the cell becomes a scrollbar rather than a bigger target.)
+
+   padding-right:0 on this cell specifically: it is the last column, so there is
+   nothing to its right to collide with, and at 320px the folded slot is 33px --
+   28 plus the usual 9px gutter would not fit. */
+.sl-act{display:inline-flex;flex-direction:column;gap:4px;align-items:flex-start}
+.sl-act .rm{width:28px;min-width:0;padding:3px 0;text-align:left}
 /* From / To / Search on one line, the dates sharing what the button leaves */
 .sell-range{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin:0 0 14px}
 .sell-range label{display:block;font-size:var(--fs-micro);letter-spacing:var(--ls-label);
@@ -505,6 +537,11 @@ button{font-family:var(--font-body);cursor:pointer}
      leaves the panel 248px, so the last 4px comes out of the padding. */
   #sellsPanel .htable th,#sellsPanel .htable td{padding:8px 5px;font-size:11.5px}
 }
+/* AFTER the container query on purpose. Both selectors are (1,1,1), so source
+   order decides -- declared above, this lost at <=370px and the first column
+   sat 5px inside the slot instead of on it. */
+#sellsPanel .htable th,#sellsPanel .htable td{padding-left:0}
+#sellsPanel .htable th:last-child,#sellsPanel .htable td:last-child{padding-right:0}
 @media(max-width:430px){
   .sell-range{grid-template-columns:1fr 1fr}
   .sell-range .btn{grid-column:1/-1}
@@ -3685,7 +3722,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-07</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-07A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -5215,16 +5252,28 @@ function sellRangeInit(){
   if($('sellFrom')) $('sellFrom').value=sellFrom;
   if($('sellTo'))   $('sellTo').value=sellTo;
 }
-/* A seven-figure profit does not fit the column at any desktop width, so past a
-   million the amount is shortened -- +C$1.23M -- exactly as Eye on Stocks
-   already shortens market cap and volume. Everything up to C$999,999.99 stays
-   exact, which is every sale that will realistically appear. The summary tiles
-   keep full precision: they have the room, and a headline total is worth
-   reading to the cent. */
+/* Five fixed slots give the amount a quarter of the panel, so anything past four
+   figures is shortened to fit: 10000 reads +$10K and 10400 reads +$10.4K. Under
+   10000 it stays exact to the cent, which is most sales. Past a million it hands
+   over to npBig for the M form -- +C$1.62M -- rather than printing 1620.0K.
+
+   npBig already does a K at >=1e3, but as "10.0K", and it is shared with Eye on
+   Stocks where market cap and volume are pinned to that format. Rather than
+   change a formatter three other call sites depend on, the K is done here, where
+   a trailing .0 can be dropped without touching anything else.
+
+   The summary tiles deliberately keep full precision -- they have the room, and
+   a headline total is worth reading to the cent. sellAmt is called from the row
+   and nowhere else. */
 function sellAmt(v,ccy){
-  return Math.abs(v)>=1e6
-    ? (v>=0?'+':'\u2212')+npBig(Math.abs(v),ccy)
-    : signedNat(v,ccy);
+  const a=Math.abs(v), sign=v>=0?'+':'\u2212', p=ccy==='CAD'?'C$':'$';
+  if(a>=1e9) return sign+npBig(a,ccy);              // B / T, if it ever happens
+  /* 999,950 and not 1e6: that is the exact point where the K form's one decimal
+     rounds to 1000.0, and "+$1000K" sitting a pound short of "+$1.00M" reads
+     like a bug. */
+  if(a>=999950) return sign+p+(a/1e6).toFixed(2)+'M';
+  if(a>=1e4) return sign+p+(a/1e3).toFixed(1).replace(/\.0$/,'')+'K';
+  return signedNat(v,ccy);
 }
 function renderSells(){
   const tb=$('sellBody'); if(!tb) return;

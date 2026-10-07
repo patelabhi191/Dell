@@ -535,56 +535,63 @@ data.
 
 The Sells and Winners tiles were removed — a count of rows is readable from the rows.
 
-**The table is full width, and the surplus goes to the trailing actions column.** There is no
-width rule at all — `.htable` already gives every table in the app `width:100%`, and this one
-takes it like the rest. The only rule is `#sellTable th:last-child,td:last-child{width:26%}`.
+**The table is a fixed five-slot grid: 20 / 20 / 25 / 25 / 10.** Chosen by hand after three
+previews. `table-layout:fixed; width:100%`, every column's text left-aligned and starting exactly
+on its slot edge — 0, 20%, 40%, 65%, 90%. Measured in the 384px right column, the text starts at
+**1 / 77 / 154 / 249** against slot edges of 0 / 77 / 153 / 249.
 
-That is the fourth answer to this question and the first that satisfies both halves of it, so
-the two failures before it are worth keeping:
-
-| attempt | gaps | why it was wrong |
+| attempt | what it did | why it went |
 |---|---|---|
-| fixed proportions, stretched | 19 / **83** / 58 | the slack piled into one boundary |
-| natural width, centred | 18 / 18 / 18 | even, but floating with 25–239px of margin either side while the tiles, the date row and the footnote all ran edge to edge — it read as a separate thing dropped into the panel |
-| **full width, surplus to the last column** | **20 / 22 / 20** | — |
+| fixed proportions, stretched | gaps 19 / **83** / 58 | the slack piled into one boundary |
+| natural width, centred | gaps 18 / 18 / 18 | even, but floating 25–239px inside the panel |
+| full width, surplus to the last column | gaps 20 / 22 / 20 | ink still 10px in, ✕ 17px short |
+| **five hand-picked slots** | starts on 0 / 20 / 40 / 65% | — |
 
-**The gap was never a width problem, it was a question of where the surplus goes.** Date and
-Ticker are left-aligned while Profit and `$ made` are right-aligned, so the slack from both sides
-piles into the single boundary between them — which is why centring fixed it (no slack at all)
-and why every attempt to retune the proportions only moved it somewhere else. Solving the
-stretched layout for even gaps gives **G = −2px**: there was no spare room to redistribute.
+**Why not five equal fifths.** That was previewed and rejected by measurement. A fixed grid lets no
+column borrow from its neighbour, so content that does not fit is *clipped* rather than
+accommodated — and the widest real row (`BRK.B · Other · 12345` with a six-figure profit) overflowed
+a fifth by 18px. The two figure columns get 25% each, the label columns 20%, the buttons 10%.
 
-The actions column is the one place the surplus can go without becoming a gap between two
-figures. Its extra width is the margin before the row's buttons, and **the holdings table already
-carries 56px there** — 26% puts this one at 55px in the right-hand column and leaves the three
-gaps between the figures at 20 / 22 / 20.
+**Three details that are each load-bearing:**
 
-**`.sl-act` is `inline-flex`, not `flex`.** A block-level flex fills the cell and centres the
-buttons in it, so widening that column floats them away from the edge — at 900px, where the
-Dashboard is one column and the panel is ~800px wide, they sat 110px short of it. Shrunk to its
-content, the cell's own `text-align:right` keeps them against the right edge where the holdings
-table's buttons sit.
+- **`padding-left:0` on every cell, not just the first.** A 20% slot puts the *cell edge* on the
+  tick; 9px of cell padding then puts the *text* 9px past it. `padding-right` stays at 9px as a
+  collision gutter — it cannot move a left-aligned column's text, and without it a column whose
+  content fills its slot would touch the next one's.
+- **That reset is declared AFTER the `@container` block.** Both selectors are `(1,1,1)`, so source
+  order decides. Declared above, it lost at ≤370px and the first column sat 5px inside its slot.
+- **The buttons need no pseudo-element.** With the grid left-aligned, `text-align:left` already puts
+  the glyph at the box's left edge, which *is* the slot edge once padding-left is 0 — so `.rm` keeps
+  a full 28px tap target and the mark still lands on the tick. A pseudo-element target was tried
+  first (the way `.bk` does it) and only added 3px of overflow at 320px by hanging past the cell.
+  `min-width:0` is still required: the ≤560px block sets `min-width:28px` on every `.rm`.
 
-**The side padding is the base gap.** `9px` each side gives the 18px the gaps start from, and it
-had been squeezed to `3px` only to make the stretched layout fit.
-`#sellsPanel .sym small{letter-spacing:.02em}` likewise: the sub-line carries `.06em` globally,
-which widened the ticker column ~6px for nothing here.
+**Everything is left-aligned, which departs from `.htable` and from every other table here.**
+Right-aligned money lines up on the decimal and is easier to scan down a column; that was offered
+and declined in favour of the grid. The cost is visible at a wide panel — at 900px, where the
+Dashboard collapses to one column, the row buttons sit ~68px inside the right edge because 10% of
+798px is far more than a glyph needs.
 
-The header is `Profit`, not `% profit` — the values all carry a `%`, so it was saying it twice,
-and it was the widest thing in its column. **Amounts over a million are shortened** — exact to
-`+C$999,999.99`, then `+C$1.23M` via `sellAmt()`, which reuses `npBig()` from Eye on Stocks. The
-summary tiles keep full precision: they have the room, and a headline total is worth reading to
-the cent.
+### Amounts past four figures are shortened
 
-**Two cases spread wider and neither is a fault.** With the widest content (`BRK.B`,
-`Other · 12345`, `+C$116,166.00`) the table is already at its natural width, so there is no
-surplus to place and the gaps are whatever the content makes them. And when the Dashboard
-collapses to one column the panel is ~800px for ~320px of content, so the columns spread —
-exactly as the holdings table does at that width, where its first gap measures 136px.
+`sellAmt()` is a three-step ladder, because a quarter of the panel will not hold a long figure:
 
-**The body gaps are looser than the header's and that is the content, not slack.** The ticker
-cell's sub-line (`FHSA · 60`) is wider than the ticker itself, so the ink under that heading stops
-short of its column's edge. Nothing can close that without narrowing the sub-line.
+| value | reads |
+|---|---|
+| ≤ 9,999.99 | `+$9,999.99` — exact to the cent |
+| 10,000 | `+$10K` — no trailing `.0` |
+| 10,400 / 10,450 | `+$10.4K` |
+| 99,999 / 116,043 | `+$100K` / `+$116K` |
+| ≥ 999,950 | `+$1.00M`, `+$1.62M` |
+
+**The M branch starts at 999,950, not 1,000,000.** That is the exact point where the K form's one
+decimal rounds to `1000.0`, and `+$1000K` sitting a pound short of `+$1.00M` reads like a bug.
+
+`npBig()` already does a K at ≥1e3, but as `10.0K`, and it is shared with Eye on Stocks where market
+cap and volume are pinned to that format — so the K is done in `sellAmt` rather than changing a
+formatter three other call sites depend on. **The summary tiles deliberately keep full precision**:
+they have the room, and a headline total is worth reading to the cent. `sellAmt` is called from the
+row and nowhere else.
 
 **The fold is a container query, not a media query.** What decides this layout is how wide the
 *panel* is, and that is not a function of the window: the same 1280px window gives this panel
