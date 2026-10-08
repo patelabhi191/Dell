@@ -464,6 +464,115 @@ const cards = page => page.evaluate(() =>
     await c2.close();
   }
 
+  /* ── 8d. the minus goes in FRONT of the dollar sign, everywhere ──────────
+     8c above pinned this for the totals Diff cell, which is where it was found
+     and fixed the first time. The fix lived in that one cell, so every other
+     figure on the tab kept the fault: yf$ and yf$2 left the sign wherever
+     toLocaleString put it, which for a currency is the wrong side.
+
+     None of the figures involved is exotic. A year that spends more than it
+     opened with plus everything it earned has a negative End, and Saved and
+     Off-paper follow it down -- so the stat row read "$-6,400" while the
+     ARCHIVES card for the same sealed year read "-$6,400" through arc$. One
+     number, two tabs, two spellings; that disagreement is the check that
+     matters most here, because it is the one a user would actually hit.
+
+     The formatters are asserted directly as well as through the DOM: they are
+     pure, the owner's standing instruction is unit tests, and a tile check
+     alone would not catch yf$2 (which no tile uses). */
+  const MINUS = '−';                                // U+2212, this tab's minus
+  {
+    const c3 = await browser.newContext();
+    const p3 = await c3.newPage();
+    await stub(p3);
+    const perr = [];
+    p3.on('pageerror', e => perr.push(e.message));
+    await p3.goto(url, { waitUntil: 'load' });
+    await p3.waitForTimeout(300);
+
+    // Start 2,000, earn 1,000, spend 9,400 -> End -6,400, Saved -8,400.
+    await p3.evaluate(y => {
+      state.yfYear = y;
+      state.yf.txns = [
+        { id: 'n1', type: 'income',  date: y + '-01-15', amt: 1000, desc: 'Pay',  cat: 'Paycheck',   who: 'ABI', tab: 'yf' },
+        { id: 'n2', type: 'expense', date: y + '-02-10', amt: 9000, desc: 'Roof', cat: 'Home',       who: 'ABI', tab: 'yf' },
+        { id: 'n3', type: 'expense', date: y + '-03-10', amt:  400, desc: 'WS',   cat: 'Investment', who: 'ABI', tab: 'yf' },
+      ];
+      state.yf.planned = { [y]: {} };
+      state.yf.start = { [y]: 2000 };
+      if (!state.yf.cats.exp.includes('Home')) state.yf.cats.exp.push('Home');
+      render(); renderYF();
+    }, YEAR);
+    await goYearly(p3);
+
+    const tiles = await p3.evaluate(() => {
+      const t = id => (document.getElementById(id).textContent || '').trim();
+      return { start: t('yfStartVal'), end: t('yfEndVal'), saved: t('yfSaved'),
+               off: t('yfOffPaper'), big: t('yfSavedBig'),
+               inv: t('yfInvested'), moved: t('yfMoved'),
+               avgI: t('yfAvgInc'), avgE: t('yfAvgExp') };
+    });
+    /* The whole stat row at once: no figure anywhere on it may carry a minus
+       AFTER the dollar sign. Stated over the collection rather than per tile,
+       so a tile added later is covered without anyone remembering to. */
+    check(Object.values(tiles).every(v => !/\$\s*[-−]/.test(v)),
+      '8d: no Yearly stat tile prints the minus after the $', JSON.stringify(tiles));
+    /* ...and the three that really are negative say so, rather than passing the
+       check above by having quietly lost their sign. */
+    check(tiles.end.startsWith(MINUS) && tiles.saved.startsWith(MINUS) && tiles.big.startsWith(MINUS),
+      '8d: End, Saved and the big Saved figure still read as negative',
+      JSON.stringify([tiles.end, tiles.saved, tiles.big]));
+    check(tiles.end === MINUS + '$6,400' && tiles.saved === MINUS + '$8,400',
+      '8d: and they are the right figures', JSON.stringify([tiles.end, tiles.saved]));
+    /* A figure that rounds away must not print "-$0". */
+    check(await p3.evaluate(() => yf$(-0.4)) === '$0',
+      '8d: a value that rounds to zero loses the sign, not gains one',
+      await p3.evaluate(() => yf$(-0.4)));
+
+    const fmts = await p3.evaluate(() => ({
+      neg: yf$(-6400), pos: yf$(6400), zero: yf$(0),
+      neg2: yf$2(-45.25), pos2: yf$2(45.25),
+      sign: yfSign$(-249), signPos: yfSign$(249),
+    }));
+    check(fmts.neg === MINUS + '$6,400' && fmts.pos === '$6,400' && fmts.zero === '$0',
+      '8d: yf$ places the sign itself', JSON.stringify(fmts));
+    /* yf$2 reaches no tile -- it is the transaction amount cell and the delete
+       confirm -- and a Yearly refund row, or a Bill Payment (stored negative),
+       is exactly what lands in it. */
+    check(fmts.neg2 === MINUS + '$45.25' && fmts.pos2 === '$45.25',
+      '8d: and so does yf$2, which a refund row reaches', JSON.stringify(fmts));
+    check(fmts.sign === MINUS + '$249' && fmts.signPos === '$249',
+      '8d: yfSign$ agrees with them', JSON.stringify(fmts));
+
+    /* THE RECONCILIATION. Seal this very year and read the card: Archives has
+       always printed these six through arc$, so before the fix the two tabs
+       showed the same number spelled two different ways. Compared as text, in
+       both directions, because that is the whole complaint. */
+    await p3.evaluate(() => { arcAddYear(); });
+    await p3.click('#viewSeg button[data-view="archive"]');
+    await p3.waitForTimeout(300);
+    await p3.evaluate(() => {
+      const c = document.querySelector('#arcList .arc-card');
+      if (c) c.click();
+    });
+    await p3.waitForTimeout(350);
+    const card = await p3.evaluate(() => {
+      const g = cls => {
+        const el = document.querySelector('#archiveView b.' + cls);
+        return el ? el.textContent.trim() : null;
+      };
+      return { start: g('sta'), end: g('end'), saved: g('sav'), off: g('off') };
+    });
+    check(card.end !== null,
+      '8d: the sealed card is on screen to be compared against', JSON.stringify(card));
+    check(card.end === tiles.end && card.saved === tiles.saved && card.start === tiles.start,
+      '8d: the Archives card and the Yearly tiles spell the same year identically',
+      JSON.stringify({ card, tiles: { start: tiles.start, end: tiles.end, saved: tiles.saved } }));
+
+    check(perr.length === 0, '8d: no page errors', perr.join(' | '));
+    await c3.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nYF HIGHLIGHTS: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

@@ -6963,10 +6963,30 @@ normalizeYF();
 
 state.yfYear = new Date().getFullYear();
 let yfEditId=null, yfFilter='all', yfChartMode='both', yfTxMonth='all', yfWhoFilter='ALL', yfTxCat='all';
-const yf$=v=>'$'+Math.round(v).toLocaleString('en-CA');
-// the minus goes in FRONT of the sign, not after it: -$249, never $-249
-const yfSign$=v=>(v<0?'-':'')+yf$(Math.abs(v));
-const yf$2=v=>'$'+(v||0).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
+/* THE MINUS GOES IN FRONT OF THE DOLLAR SIGN: −$249, never $-249.
+   toLocaleString puts it where a mathematician would, which is the wrong side
+   of a currency symbol, so both of these have to place it themselves. They did
+   not, and the figures that can go negative are not rare ones: a year that
+   spends more than it opened with plus everything it earned has a negative End,
+   and Saved and Off-paper follow it down -- so the Yearly stat row read
+   "$-6,400" while the Archives card for the SAME year read "−$6,400"
+   through arc$, the two tabs disagreeing about one number. A category whose
+   refunds outweigh its charges, and a Bill Payment row (stored negative), reach
+   yf$2 the same way.
+   The totals Diff cell was already fixed for exactly this once -- it is why
+   diffCell() exists and why it hands these an absolute value -- but the fix
+   lived in that one cell rather than in the formatters, so every other figure
+   kept the fault.
+   U+2212 rather than an ASCII hyphen because that is what this tab already
+   spells a minus with, in diffCell and in the growth percentage beside these
+   very tiles. Monthly's meMoney uses a hyphen and is deliberately left alone.
+   `Math.round(v)||0` collapses the negative zero that -0.4 would otherwise
+   round to, so a figure that rounds away prints $0 and not −$0. */
+const yf$=v=>{ const r=Math.round(v)||0;
+  return (r<0?'\u2212':'')+'$'+Math.abs(r).toLocaleString('en-CA'); };
+const yfSign$=v=>(v<0?'\u2212':'')+yf$(Math.abs(v));
+const yf$2=v=>{ const n=(v||0)<0?-(v||0):(v||0);
+  return ((v||0)<0?'\u2212':'')+'$'+n.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}); };
 function yfPersist(){ store.set('sparta.yf.data', state.yf); touchUpdatedAt();
   if(typeof cloudSaveDebounced==='function') cloudSaveDebounced(); }
 /* THE ONE LINK BETWEEN THE TABS. A Monthly line's `allot` is the ID of the
