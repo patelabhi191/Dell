@@ -1209,6 +1209,27 @@ var fbBooting = true;   // var, not let — read across the whole app before its
 ```
 `persist()` only calls `markUserEdit()` (which unlocks writes) if `!fbBooting && !fbApplying`. `fbBooting` flips to `false` only after the initial connect attempt resolves (or after an 8s failsafe timeout). **This means page loads, price refreshes, and startup migrations can never write to Firebase — only genuine user actions can.** This was the fix for a critical bug where opening the app in a fresh/incognito browser would silently overwrite real cloud data with an empty local state.
 
+### A local-only clear parks this tab's cloud writes
+
+`Clear → this browser only` sets `fbLocalOnly` for the duration of the clear, and that was not
+enough. `lastCoreJSON` still held the **pre-clear** payload, so the next ordinary `persist()` in
+that tab — one holding, one cash move, one sell — saw a payload that differed from it and did
+`fbDB.child('core').set(...)` with the emptied `holdings`, `cash` and `sells`. The confirm the user
+agreed to says the opposite:
+
+> This clears them in this browser only — the cloud copy is left alone, so a reconnect will pull
+> them back.
+
+That held only if they reloaded before touching anything. Worse, the result was a cloud state no
+code path intends: `history/` is only wiped by `cloudPushAll()`, which runs on the `alsoCloud`
+branch, so the cloud ended up with empty holdings and intact history.
+
+**The guard now stays up for the life of the tab**, and the sync status says so rather than going
+quiet — a tab that has silently stopped syncing is worse than one that has been cleared. Parking
+also stops `fbRecheckOnWake()` pulling the copy back and undoing the clear the moment the tab
+regains focus, so it protects the clear in both directions. **Settings → Pull from cloud is not
+gated by it** and is the way back without a reload.
+
 ### `sparta.updatedAt` decides who wins a reconnect
 
 `fbConnect` picks a winner with `remoteStamp(remote) >= localStamp`, where `localStamp` is

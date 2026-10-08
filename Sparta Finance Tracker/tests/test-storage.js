@@ -330,14 +330,50 @@ const YEAR = 2026;
     window.cloudPushAll = () => { seen.push('push'); return Promise.resolve() };
     const flag = [];
     spartaReset(['plan'], false);
-    flag.push(fbLocalOnly);                       // must be back down afterwards
+    flag.push(fbLocalOnly);                       // STAYS up: see the check below
     window.cloudSaveDebounced = realSave; window.cloudPushAll = realPush;
     return { seen, flagAfter: flag[0] };
   });
   check(travel.seen.indexOf('push') < 0, 'nothing is pushed on a local-only clear',
     JSON.stringify(travel.seen));
-  check(travel.flagAfter === false, 'and the guard is lowered again afterwards',
+  /* This check used to read `=== false`, and that was the bug, not the contract.
+     Suppressing the saves inside the clear loop is not enough on its own:
+     lastCoreJSON still holds the PRE-clear payload, so the next ordinary edit in
+     this tab sees a payload that differs from it and pushes the EMPTIED core --
+     against a confirm that promises the cloud copy is left alone and a reconnect
+     will pull it back. The guard therefore stays up for the life of the tab, and
+     the sync status says so. It also stops fbRecheckOnWake pulling the copy back
+     and undoing the clear, so it protects it in both directions. */
+  check(travel.flagAfter === true,
+    'and the guard STAYS up — this tab is no longer an authority on the cloud',
     String(travel.flagAfter));
+  /* The half that actually matters, and the one that fails against the old
+     build: an ordinary edit AFTER a local-only clear must not travel either. */
+  const afterClear = await page.evaluate(async () => {
+    const wrote = [];
+    const real = fbDB, realEdited = fbUserEdited, realLocal = fbLocalOnly;
+    fbDB = { child: () => ({ set: () => { wrote.push('core'); return Promise.resolve() } }) };
+    fbUserEdited = true; fbLocalOnly = false; lastCoreJSON = '';
+    spartaReset(['plan'], false);                 // the clear under test
+    state.cash.TFSA = 999;                        // ...then an ordinary edit
+    persist();
+    await new Promise(r => setTimeout(r, 1500));  // past the 1200ms debounce
+    const leaked = wrote.length;
+    // a reload is what lifts the park; Settings -> Pull from cloud is the other route
+    fbLocalOnly = false;
+    state.cash.TFSA = 1001;
+    persist();
+    await new Promise(r => setTimeout(r, 1500));
+    const after = wrote.length;
+    fbDB = real; fbUserEdited = realEdited; fbLocalOnly = realLocal;
+    return { leaked, after };
+  });
+  check(afterClear.leaked === 0,
+    'an edit made AFTER a local-only clear does not push the emptied ledger',
+    JSON.stringify(afterClear));
+  check(afterClear.after > 0,
+    '...and the same edit does push once the park is lifted — so it is not vacuous',
+    JSON.stringify(afterClear));
   const guarded = await page.evaluate(async () => {
     const wrote = [];
     const real = fbDB, realEdited = fbUserEdited;
