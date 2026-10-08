@@ -4030,10 +4030,39 @@ function histPts(a){
   });
   return out;
 }
+/* A MONEY FIGURE THAT IS NOT A FINITE NUMBER DOES NOT THROW -- IT PRINTS.
+   That is what makes it worse than a bad shape. `s + undefined` is NaN, NaN
+   propagates through every sum it touches, and the result is "$NaN" sitting in
+   the one figure the user is reading, with nothing in the console and no
+   try/catch triggered. One expense row with no `amt` took out End, Saved,
+   Off-paper, both monthly averages and the chart axis at once -- the chart then
+   emitted y1="NaN" nine times, which is the only visible sign of it.
+
+   It also corrupts quietly and permanently: JSON.stringify writes NaN as null,
+   so the bad figure survives a save, and arcSnapshot seals it into an archive
+   where it reads as $0 forever -- a snapshot of a year that is simply wrong,
+   and archives are the one thing here meant never to change.
+
+   Half-written cloud records and hand-edited JSON are both real: the PIN is
+   documented as something to read and reset in the Firebase console, so rows
+   get edited by hand there.
+
+   Coerced on the way IN, next to histPts and for the same stated reason -- one
+   choke point rather than a guard in every reader. A numeric STRING is kept
+   rather than zeroed, because "12.50" is the user's money and reading it is
+   strictly better than throwing it away; only something with no number in it
+   at all becomes 0, where it is at least visible and editable. */
+const fin=v=>{ const n = typeof v==='number' ? v : (v==null||v==='' ? NaN : +v);
+  return isFinite(n) ? n : 0; };
+/* Cash is the three account buckets and nothing else, so the shape is fixed and
+   the figures are coerced with it -- cashInScope() adds all three, so one bad
+   bucket is enough to make the Dashboard hero total NaN. */
+const cash3=o=>{ const c=Object.assign({TFSA:0,FHSA:0,Other:0},o||{});
+  c.TFSA=fin(c.TFSA); c.FHSA=fin(c.FHSA); c.Other=fin(c.Other); return c; };
 let sortBy='sym';   // 'sym' = A→Z (default) | 'pl' = highest P/L % first
 let state = {
   holdings: loadNS('sparta.dash.holdings','sparta.holdings', []),   // {id,sym,acct,qty,avg,price,manual}
-  cash: Object.assign({TFSA:0, FHSA:0, Other:0}, loadNS('sparta.dash.cash','sparta.cash',{})),
+  cash: cash3(loadNS('sparta.dash.cash','sparta.cash',{})),
   history: histPts(loadNS('sparta.dash.history','sparta.history', [])),  // {t, v:{ALL,TFSA,FHSA,Other}, k}
   /* Closed positions. Each row keeps the NATIVE price and average cost plus the
      currency they were in -- never a converted total, because a record that
@@ -4268,14 +4297,23 @@ function limitFor(acct,y){
 // default any deposit logged before contributor-tracking existed to ABI. ABI/POO
 // are hardcoded (not Settings-configurable) directly in each <select> in markup,
 // matching every other short account-style select in this file.
-state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t).getFullYear(); if(!c.who) c.who='ABI'; });
+/* `amt` is coerced here rather than in contributed(), which is one of four
+   readers. A year is derived from the timestamp, so a row with neither lands
+   under NaN, where no selector offers it and no total counts it -- the money
+   would simply be gone from the tab. The current year at least shows it. */
+state.contribs.forEach(c=>{ if(!c.id) c.id=uid();
+  if(c.y==null) c.y=new Date(c.t).getFullYear();
+  if(!isFinite(c.y)) c.y=new Date().getFullYear();
+  c.amt=fin(c.amt); if(!c.who) c.who='ABI'; });
 // Contributions used to be stored in USD base and re-converted at the live rate on
 // every render, so recorded CAD amounts drifted whenever FX moved. They are now
 // stored as plain CAD. Convert existing rows once, at the current rate.
 (function migrateContribCAD(){
   if(store.get('sparta.contrib.cadFixed',false)) return;
   const fx=state.fx||1.37;
-  state.contribs.forEach(c=>{ if(!c.cad){ c.amt=+(c.amt*fx).toFixed(2); c.cad=true } });
+  // fin() first: this sets cad:true and writes back, so a non-finite figure
+  // multiplied here was locked in permanently rather than just rendered badly.
+  state.contribs.forEach(c=>{ if(!c.cad){ c.amt=+(fin(c.amt)*fx).toFixed(2); c.cad=true } });
   store.set('sparta.contrib.cadFixed',true);
   store.set('sparta.contrib.entries',state.contribs);
 })();
@@ -4283,6 +4321,15 @@ state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t
 (function migrateNative(){
   let changed=false;
   state.holdings.forEach(h=>{
+    /* Before the early return, and for EVERY row rather than only the ones this
+       migration still has work to do: a qty or avg that is not a finite number
+       makes invested() and marketVal() NaN, and the Dashboard hero then reads
+       "C$NaN unrealized". A price is allowed to be ABSENT -- `h.price ?? h.avg`
+       is the "no live quote yet" path -- but ?? does not catch NaN, so a
+       non-finite one is turned back into the absence it was standing for. */
+    const q=fin(h.qty), a=fin(h.avg);
+    if(q!==h.qty||a!==h.avg){ h.qty=q; h.avg=a; changed=true }
+    if(h.price!=null && !isFinite(h.price)){ h.price=null; changed=true }
     if(h.nat) return;
     const c=h.ccy||'USD';
     if(c==='CAD'){ h.avg=h.avg*state.fx; if(h.price!=null) h.price=h.price*state.fx }
@@ -4348,7 +4395,7 @@ function renderContribs(){
     if(cur) tr.style.background='rgba(255,255,255,.035)';
     tr.innerHTML=`<td style="text-align:left"><span class="sym" style="font-size:13px">${c.y}</span></td>
       <td>${c.backfill?'yearly entry':dte.toLocaleDateString('en-CA')}</td>
-      <td><span class="acct-tag ${c.acct==='TFSA'?'tag-tfsa':c.acct==='FHSA'?'tag-fhsa':'tag-other'}" style="margin:0">${c.acct}</span></td>
+      <td><span class="acct-tag ${c.acct==='TFSA'?'tag-tfsa':c.acct==='FHSA'?'tag-fhsa':'tag-other'}" style="margin:0">${c.acct||'\u2014'}</span></td>
       <td><span class="acct-tag ${c.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${c.who||'ABI'}</span></td>
       <td>${fmtCADterm(c.amt)}</td>
       <td style="white-space:nowrap"><button class="yf-edit" title="Edit entry" data-cedit="${c.id}">\u270e</button><button class="rm" title="Remove entry" data-cid="${c.id}">\u2715</button></td>`;
@@ -4538,10 +4585,51 @@ function arcBury(year){
 function arcUnbury(year){
   store.set('sparta.arcDeleted',arcBuried().filter(y=>y!==+year)); touchUpdatedAt();
 }
+/* A record only has to carry a `year` to be kept, which is deliberate -- a
+   truncated cloud write or a hand-edited record should not be thrown away. But
+   the CARD reads six figures straight out of `stats`, and arc$(undefined) is
+   "$NaN", so such a record painted $NaN six times across its own header. The
+   rollover already guards `prev.stats` for its own deref; this is the other
+   reader of the same missing object, and it is the one on screen.
+   Filled with zeros rather than hidden, which is the same trade the growth
+   percentage already makes when `start <= 0`: a guarded figure the pencil can
+   correct beats a figure that reads as broken and cannot be. */
+const ARC_STATS=['start','end','invested','moved','saved','offPaper','growth'];
+const ARC_CONTRIB=['abiT','abiF','pooT','pooF'];
+// Twelve finite numbers, whatever arrived. arcBars SPREADS these, and spreading
+// undefined throws rather than returning nothing, so the length matters as much
+// as the type: a short array would silently shorten the bar row.
+const arc12=v=>Array.from({length:12},(_,i)=>{
+  const n=Array.isArray(v)?v[i]:undefined;
+  return (typeof n==='number'&&isFinite(n))?n:0;
+});
 function normalizeArchives(){
   if(!Array.isArray(state.archives)) state.archives=[];
   state.archives=state.archives.filter(a=>a&&typeof a==='object'&&a.year);
-  state.archives.forEach(a=>{ if(!a.id) a.id=uid() });
+  state.archives.forEach(a=>{ if(!a.id) a.id=uid();
+    if(!a.stats || typeof a.stats!=='object') a.stats={};
+    ARC_STATS.forEach(k=>{ if(typeof a.stats[k]!=='number' || !isFinite(a.stats[k])) a.stats[k]=0 });
+    /* The card BODY is the part that throws rather than merely misprinting:
+       arcBars does `Math.max(...a.mInc,...a.mExp,1)`, and a record with no
+       mInc took the whole expand with it -- "undefined is not iterable",
+       straight into the window error handler, so the user got the generic
+       "Something failed to load" toast and a card that would not open.
+       Guaranteed here rather than guarded in arcBars, because arcTrend,
+       arcMatrix, arcTable and arcMeIncLine all read their own array off the
+       same record and would each need a guard of their own. */
+    a.mInc=arc12(a.mInc); a.mExp=arc12(a.mExp); a.meInc=arc12(a.meInc);
+    if(!Array.isArray(a.exp)) a.exp=[];
+    if(!Array.isArray(a.inc)) a.inc=[];
+    if(!Array.isArray(a.highlights)) a.highlights=[];
+    /* arcMatrix and arcTrend both sort the categories by reducing each row, so
+       a value that is not an array throws there the same way. */
+    if(!a.byCat || typeof a.byCat!=='object') a.byCat={};
+    Object.keys(a.byCat).forEach(k=>{ a.byCat[k]=arc12(a.byCat[k]) });
+    if(!a.contrib || typeof a.contrib!=='object') a.contrib={};
+    ARC_CONTRIB.forEach(k=>{ if(typeof a.contrib[k]!=='number' || !isFinite(a.contrib[k])) a.contrib[k]=0 });
+    ['entries','entriesYf','entriesMe'].forEach(k=>{
+      if(typeof a[k]!=='number' || !isFinite(a[k])) a[k]=0 });
+  });
   // newest first, the way a list of years is read
   state.archives.sort((a,b)=>b.year-a.year);
 }
@@ -6207,11 +6295,26 @@ const BOOT_HAD_LOCAL_DATA = (function(){
 })();
 
 /* ============ Firebase cloud sync ============ */
-let fbDB=null, fbSaveTimer=null, fbApplying=false, fbReconnecting=false;
+let fbDB=null, fbSaveTimer=null, fbReconnecting=false;
+/* HOISTED, for the same reason fbBooting below is, and it took a real console
+   error to notice: cloudSaveDebounced() opens with `if(fbApplying||fbLocalOnly)
+   return` and `if(!fbUserEdited) return`, persist() ends by calling it, and
+   migrateNative() calls persist() while `state` is still being built -- roughly
+   two thousand lines above this one. As `let` that is a temporal dead zone, so
+   any browser holding a holding written before the native-currency migration
+   threw "Cannot access 'fbApplying' before initialization" on every single
+   load. It survived this long because cloudSaveDebounced is `async`: the throw
+   became an unhandled REJECTION rather than an exception, so it never reached
+   the window error handler that would have shown the user a toast, and the rest
+   of init carried on as if nothing had happened. A console error on a clean
+   load is exactly the thing that is invisible until someone looks.
+   Undefined is falsy, so the guards still read correctly during boot, and the
+   !fbUserEdited test then returns before anything can reach the cloud. */
+var fbApplying=false;
 /* Nothing is written to the cloud until a real user edit happens. Page loads,
    price refreshes and migrations are read-only, so simply opening the app on a
    new device can never overwrite what's already stored. */
-let fbUserEdited=false;
+var fbUserEdited=false;
 var fbBooting=true;                    // hoisted: persist() may run before this line
 function markUserEdit(){ fbUserEdited=true }
 var legacyFbFound;   // hoisted (undefined=false); set earlier by offerLegacyConfig, so no initialiser here
@@ -6249,7 +6352,7 @@ function loadFirebaseSDK(){
 function applyPayload(p){
   if(!p) return;
   fbApplying=true;
-  state.holdings=p.holdings||[]; state.cash=Object.assign({TFSA:0,FHSA:0,Other:0},p.cash||{});
+  state.holdings=p.holdings||[]; state.cash=cash3(p.cash);
   if(Array.isArray(p.sells)) state.sells=p.sells;   // absent in payloads written before sells existed
   state.history=histPts(p.history);          // also fills in a missing `k`
   state.contribs=p.contribs||[];
@@ -6278,11 +6381,27 @@ state.yearly.forEach(r=>{
   if(typeof normalizeArchives==='function'){ normalizeArchives(); store.set('sparta.archives',state.archives);
     if(typeof renderArchives==='function') renderArchives() }
   state.updatedAt=p.updatedAt||Date.now();
-  state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t).getFullYear(); if(!c.who) c.who='ABI'; });
+  /* `amt` is coerced here rather than in contributed(), which is one of four
+   readers. A year is derived from the timestamp, so a row with neither lands
+   under NaN, where no selector offers it and no total counts it -- the money
+   would simply be gone from the tab. The current year at least shows it. */
+state.contribs.forEach(c=>{ if(!c.id) c.id=uid();
+  if(c.y==null) c.y=new Date(c.t).getFullYear();
+  if(!isFinite(c.y)) c.y=new Date().getFullYear();
+  c.amt=fin(c.amt); if(!c.who) c.who='ABI'; });
 // migrate holdings saved under the old "everything in base USD" model to native values
 (function migrateNative(){
   let changed=false;
   state.holdings.forEach(h=>{
+    /* Before the early return, and for EVERY row rather than only the ones this
+       migration still has work to do: a qty or avg that is not a finite number
+       makes invested() and marketVal() NaN, and the Dashboard hero then reads
+       "C$NaN unrealized". A price is allowed to be ABSENT -- `h.price ?? h.avg`
+       is the "no live quote yet" path -- but ?? does not catch NaN, so a
+       non-finite one is turned back into the absence it was standing for. */
+    const q=fin(h.qty), a=fin(h.avg);
+    if(q!==h.qty||a!==h.avg){ h.qty=q; h.avg=a; changed=true }
+    if(h.price!=null && !isFinite(h.price)){ h.price=null; changed=true }
     if(h.nat) return;
     const c=h.ccy||'USD';
     if(c==='CAD'){ h.avg=h.avg*state.fx; if(h.price!=null) h.price=h.price*state.fx }
@@ -6914,6 +7033,12 @@ function normalizeYF(){
   if(!Array.isArray(y.cats.exp)) y.cats.exp=YF_EXP.slice();
   if(!Array.isArray(y.cats.inc)) y.cats.inc=YF_INC.slice();
   y.txns=y.txns.filter(t=>t && typeof t==='object' && t.date);   // drop corrupt rows
+  /* A row with no usable `amt` is NOT dropped, unlike one with no date: it
+     still carries a date, a description and a category, so it is a record the
+     user can correct, and deleting their row to tidy a total would be the worse
+     trade. Zeroed, it shows as $0 in the list where it can be seen and fixed;
+     left alone, one of them made every figure on two tabs read $NaN. */
+  y.txns.forEach(t=>{ t.amt=fin(t.amt); });
   // default any transaction logged before contributor-tracking existed to ABI;
   // ABI/POO are hardcoded directly in each <select>, matching the Contributions tab.
   y.txns.forEach(t=>{ if(!t.who) t.who='ABI'; });

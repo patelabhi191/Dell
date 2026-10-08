@@ -672,6 +672,231 @@ const YEAR = 2026;
     'and leaves the Yearly ledger and the notes standing, so the tick is still scoped');
 
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
+
+  /* ── 10. a figure that is not a finite number ────────────────────────────
+     Section 8 covers a record arriving with the wrong SHAPE. This one covers
+     the same record arriving with the right shape and a missing NUMBER, which
+     is worse in one specific way: it does not throw, so no try/catch fires and
+     nothing reaches the console. `s + undefined` is NaN, NaN propagates through
+     every sum it meets, and the result is "$NaN" sitting in the figure the user
+     is reading.
+
+     It also corrupts rather than merely displaying: JSON.stringify writes NaN
+     as null, so the bad figure survives a save, and arcSnapshot seals it into an
+     archive where it reads as $0 forever -- and an archive is the one thing in
+     this app that is meant never to change.
+
+     Both sources are real. A Firebase write can be truncated, and the PIN is
+     documented as something to read and reset in the Firebase console, so rows
+     do get edited by hand there.
+
+     Each case is a SEPARATE browser context: these are boot-time coercions, so
+     the storage has to be in place before the app reads it, and reusing one
+     page would prove nothing about load. */
+  const bootWith = async seed => {
+    const c = await browser.newContext();
+    const p = await c.newPage();
+    await stub(p);
+    const pe = [];
+    p.on('pageerror', e => pe.push(e.message));
+    p.on('console', m => { if (m.type() === 'error' && !/404|net::ERR/.test(m.text())) pe.push(m.text()); });
+    await p.addInitScript(sd => {
+      try { localStorage.clear(); for (const [k, v] of Object.entries(sd)) localStorage.setItem(k, v); } catch (e) { }
+    }, seed);
+    await p.goto(url, { waitUntil: 'load' });
+    await p.waitForTimeout(400);
+    return { c, p, pe };
+  };
+  // Rendered money anywhere on a tab that is actually on screen.
+  const badCells = (p, view) => p.evaluate(v => {
+    const out = [];
+    document.querySelectorAll('#' + v + 'View *').forEach(el => {
+      if (el.children.length) return;
+      const t = (el.textContent || '').trim();
+      if (/NaN|undefined/.test(t)) out.push(t.slice(0, 70));
+    });
+    return [...new Set(out)];
+  }, view);
+
+  section('10. a figure that is not a finite number');
+
+  /* 10a. ONE expense row with no `amt` used to take out End, Saved, Off-paper,
+     both monthly averages and the chart axis together -- and the chart then
+     emitted y1="NaN" nine times, which was the only visible sign of it. */
+  {
+    const { c, p, pe } = await bootWith({
+      'sparta.yf.data': JSON.stringify({
+        txns: [
+          { id: 'g1', type: 'expense', date: `${YEAR}-03-01`, cat: 'Rent', tab: 'yf', who: 'ABI' },
+          { id: 'g2', type: 'expense', date: `${YEAR}-04-01`, amt: 250, cat: 'Rent', tab: 'yf', who: 'ABI' },
+        ],
+        planned: {}, start: { [YEAR]: 1000 }, cats: { exp: ['Rent'], inc: ['Paycheck'] },
+      }),
+    });
+    await p.click('#viewSeg button[data-view="yearly"]');
+    await p.waitForTimeout(350);
+    const t = await p.evaluate(() => ({
+      end: document.getElementById('yfEndVal').textContent.trim(),
+      saved: document.getElementById('yfSaved').textContent.trim(),
+      spend: yfActual('expense', null),
+      amt: state.yf.txns.find(x => x.id === 'g1').amt,
+    }));
+    check(t.amt === 0, '10a: a row with no amt is zeroed, not left undefined', String(t.amt));
+    /* ...and NOT dropped. It still has a date, a category and a description, so
+       it is a record the user can correct; deleting their row to tidy a total
+       would be the worse trade. */
+    check(await p.evaluate(() => state.yf.txns.length) === 2,
+      '10a: and the row is kept, so it can be corrected rather than lost');
+    check(Number.isFinite(t.spend) && t.spend === 250,
+      '10a: the year total counts the row it can read', String(t.spend));
+    check(t.end === '$750' && !/NaN/.test(t.saved),
+      '10a: End and Saved are real figures', JSON.stringify([t.end, t.saved]));
+    check((await badCells(p, 'yearly')).length === 0,
+      '10a: nothing on the Yearly tab renders NaN', JSON.stringify(await badCells(p, 'yearly')));
+    /* The nine SVG attribute errors are the half that was visible in a console. */
+    check(pe.length === 0, '10a: and the chart emits no NaN coordinates', pe.slice(0, 3).join(' | '));
+    await c.close();
+  }
+
+  /* 10b. The same, one tab over: a deposit with no amount, and one with no
+     account at all -- which no total can count, so it must at least stay
+     visible and legible rather than printing the word "undefined". */
+  {
+    const { c, p, pe } = await bootWith({
+      'sparta.contrib.cadFixed': 'true',
+      'sparta.contrib.entries': JSON.stringify([
+        { id: 'k1', acct: 'TFSA', amt: 3000, y: YEAR, who: 'ABI', cad: true },
+        { id: 'k2', acct: 'TFSA', y: YEAR, who: 'ABI', cad: true },
+        { id: 'k3', y: YEAR, who: 'ABI', cad: true, amt: 50 },
+      ]),
+    });
+    await p.click('#viewSeg button[data-view="contrib"]');
+    await p.waitForTimeout(350);
+    check(await p.evaluate(y => contributed('TFSA', y), YEAR) === 3000,
+      '10b: a deposit with no amount counts as nothing, not as NaN',
+      String(await p.evaluate(y => contributed('TFSA', y), YEAR)));
+    check((await badCells(p, 'contrib')).length === 0,
+      '10b: and nothing on the Contributions tab renders NaN or "undefined"',
+      JSON.stringify(await badCells(p, 'contrib')));
+    check(pe.length === 0, '10b: no page errors', pe.slice(0, 3).join(' | '));
+    await c.close();
+  }
+
+  /* 10c. migrateContribCAD multiplies by the rate and then sets cad:true and
+     WRITES BACK, so a non-finite amount passing through it was locked in
+     permanently rather than merely rendered badly. */
+  {
+    const { c, p } = await bootWith({
+      'sparta.fx': '1.37',
+      'sparta.contrib.entries': JSON.stringify([
+        { id: 'm1', acct: 'TFSA', amt: 100, y: YEAR, who: 'ABI' },
+        { id: 'm2', acct: 'TFSA', y: YEAR, who: 'ABI' },
+      ]),
+    });
+    const amts = await p.evaluate(() => state.contribs.map(x => x.amt));
+    check(amts.every(Number.isFinite), '10c: the one-time CAD migration cannot lock in a NaN',
+      JSON.stringify(amts));
+    await c.close();
+  }
+
+  /* 10d. A holding with no average cost makes invested() and marketVal() NaN,
+     and the Dashboard hero then reads "C$NaN unrealized". A price is allowed to
+     be ABSENT -- `h.price ?? h.avg` is the "no live quote yet" path -- but ??
+     does not catch NaN, so a non-finite one has to be turned back into the
+     absence it was standing in for. Cash is checked here too: cashInScope()
+     adds all three buckets, so one bad bucket is the whole hero total. */
+  {
+    const { c, p, pe } = await bootWith({
+      'sparta.dash.holdings': JSON.stringify([
+        { id: 'd1', sym: 'NOAVG', acct: 'TFSA', qty: 5, ccy: 'USD', nat: true },
+        { id: 'd2', sym: 'OK', acct: 'TFSA', qty: 2, avg: 10, price: 12, ccy: 'USD', nat: true },
+      ]),
+      'sparta.dash.cash': JSON.stringify({ TFSA: 'not a number', FHSA: 100, Other: 0 }),
+    });
+    const d = await p.evaluate(() => ({
+      inv: invested(state.holdings), mkt: marketVal(state.holdings),
+      cash: cashInScope(), avg: state.holdings.find(h => h.sym === 'NOAVG').avg,
+      hero: (document.getElementById('totalVal') || {}).textContent || '',
+    }));
+    check(d.avg === 0, '10d: a holding with no average cost is zeroed', String(d.avg));
+    check(Number.isFinite(d.inv) && Number.isFinite(d.mkt),
+      '10d: invested() and marketVal() stay finite', JSON.stringify([d.inv, d.mkt]));
+    check(d.cash === 100, '10d: a junk cash bucket counts as zero, not as NaN', String(d.cash));
+    check((await badCells(p, 'dash')).length === 0,
+      '10d: nothing on the Dashboard renders NaN', JSON.stringify(await badCells(p, 'dash')));
+    check(pe.length === 0, '10d: no page errors', pe.slice(0, 3).join(' | '));
+    await c.close();
+  }
+
+  /* 10e. A holding written before the native-currency migration has no `nat`,
+     so migrateNative() repairs it and calls persist() -- while `state` is still
+     being built, about two thousand lines above where the sync flags are
+     declared. cloudSaveDebounced() reads fbApplying and fbUserEdited, both of
+     which were `let`, so that was a temporal dead zone and every load threw
+     "Cannot access 'fbApplying' before initialization".
+     It stayed hidden because cloudSaveDebounced is `async`: the throw became an
+     unhandled REJECTION rather than an exception, so the window error handler
+     never fired, no toast appeared, and init carried on regardless. */
+  {
+    const { c, p, pe } = await bootWith({
+      'sparta.dash.holdings': JSON.stringify([
+        { id: 'L1', sym: 'AAPL', acct: 'TFSA', qty: 10, avg: 180.5, price: 212.4 },
+      ]),
+    });
+    check(pe.length === 0,
+      '10e: a holding predating the native-currency migration boots clean',
+      pe.slice(0, 2).join(' | '));
+    /* The migration must still have DONE its work -- a check that only looked
+       for silence would pass against a build where it had been deleted. */
+    const h = await p.evaluate(() => state.holdings[0]);
+    check(h.nat === true && h.ccy === 'USD',
+      '10e: and the migration it was running still ran', JSON.stringify(h));
+    await c.close();
+  }
+
+  /* 10f. An Archives record only needs a `year` to be kept, which is
+     deliberate. But the card reads six figures out of `stats`, and
+     arc$(undefined) is "$NaN", so a truncated record painted $NaN six times
+     across its own header. The rollover already guarded its own deref of
+     prev.stats; this is the other reader of the same missing object, and it is
+     the one on screen. */
+  {
+    const { c, p, pe } = await bootWith({
+      'sparta.archives': JSON.stringify([{ year: YEAR - 1 }, { year: YEAR - 2, stats: {} }]),
+    });
+    await p.click('#viewSeg button[data-view="archive"]');
+    await p.waitForTimeout(350);
+    /* The card root is `.ay` -- `.arc-card` matches nothing here, and a click
+       loop over an empty list would leave every card collapsed while the
+       assertions below still passed (bug class 7). The six figures live in the
+       card HEADER, so they render collapsed too; the card is expanded anyway so
+       the body's figures are covered as well. */
+    check(await p.evaluate(() => document.querySelectorAll('#arcList .ay').length) === 2,
+      '10f: both truncated records are still kept and shown',
+      String(await p.evaluate(() => document.querySelectorAll('#arcList .ay').length)));
+    /* One at a time, re-querying in between: renderArchives() rebuilds the
+       whole list on every toggle, so a forEach over one NodeList clicks a node
+       that has already been replaced and only the first card ever opens. */
+    for (const i of [0, 1]) {
+      await p.evaluate(n => {
+        const h = document.querySelectorAll('#arcList .ay .ay-head')[n];
+        if (h) h.click();
+      }, i);
+      await p.waitForTimeout(350);
+    }
+    check(await p.evaluate(() => document.querySelectorAll('#arcList .ay.open').length) === 2,
+      '10f: and both actually expanded, so the body is covered too',
+      String(await p.evaluate(() => document.querySelectorAll('#arcList .ay.open').length)));
+    check((await badCells(p, 'archive')).length === 0,
+      '10f: and neither paints a NaN figure', JSON.stringify(await badCells(p, 'archive')));
+    check(await p.evaluate(() => state.archives.every(a =>
+      a.stats && ['start', 'end', 'invested', 'moved', 'saved', 'offPaper', 'growth']
+        .every(k => Number.isFinite(a.stats[k])))),
+      '10f: every stats field is a real number afterwards');
+    check(pe.length === 0, '10f: no page errors', pe.slice(0, 3).join(' | '));
+    await c.close();
+  }
+
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nSTORAGE: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
