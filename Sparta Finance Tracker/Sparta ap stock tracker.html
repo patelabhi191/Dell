@@ -4198,6 +4198,14 @@ function render(){
   $('sortSym').classList.toggle('on',sortBy==='sym');
   $('sortSym').classList.toggle('asc',sortBy==='sym');
   $('sortPL').classList.toggle('on',sortBy==='pl');
+  /* A ticker reaches four attributes and one cell below, and the quote link's
+     BASE is a value the user pasted into Settings. Both are user text in an
+     innerHTML: a ticker holding a quote closed `title="` and hung an event
+     handler off the row, and a saved quote URL holding one did the same to the
+     anchor. Escaping here rather than at the input, because this is where the
+     markup is built and there are two such render sites. */
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const tb=$('hbody');tb.innerHTML='';
   rows.forEach(h=>{
     const c=hCcy(h);
@@ -4210,9 +4218,9 @@ function render(){
     tr.innerHTML=`
       <td><span class="sym"><button class="bk" data-bk="${h.id}" type="button"
         title="${h.broker==='Q'?'QuestTrade — click to clear':'Mark as QuestTrade'}"
-        aria-label="${h.broker==='Q'?h.sym+' is at QuestTrade':'Mark '+h.sym+' as QuestTrade'}"
-        aria-pressed="${h.broker==='Q'}">${h.broker==='Q'?'Q':''}</button>${h.sym}<a class="qlink" href="${quoteHref(h.sym)}" target="_blank"
-        rel="noopener noreferrer" title="Open ${h.sym} in a new tab" aria-label="Open ${h.sym} on the quote site"
+        aria-label="${h.broker==='Q'?esc(h.sym)+' is at QuestTrade':'Mark '+esc(h.sym)+' as QuestTrade'}"
+        aria-pressed="${h.broker==='Q'}">${h.broker==='Q'?'Q':''}</button>${esc(h.sym)}<a class="qlink" href="${esc(quoteHref(h.sym))}" target="_blank"
+        rel="noopener noreferrer" title="Open ${esc(h.sym)} in a new tab" aria-label="Open ${esc(h.sym)} on the quote site"
         ><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
           ><path d="M14 4h6v6"/><path d="M20 4l-8.6 8.6"/><path d="M18 13.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5.5"/></svg
@@ -6761,6 +6769,13 @@ function handleCSV(text){
   renderImportPreview();
 }
 function renderImportPreview(){
+  /* The ticker is a CSV cell. It is upper-cased and has its whitespace stripped,
+     which looks like sanitising and is not: attributes can be separated by a
+     closing quote instead of a space, and an HTML entity is all digits so
+     upper-casing leaves it intact -- so a crafted Symbol column ran script in
+     this preview before a single row had been imported. */
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const tb=$('impBody'); tb.innerHTML='';
   let nNew=0,nUpd=0;
   impRows.forEach((r,i)=>{
@@ -6769,7 +6784,7 @@ function renderImportPreview(){
     if(ex) nUpd++; else nNew++;
     const tr=document.createElement('tr');
     tr.innerHTML=`<td style="text-align:left"><input type="checkbox" data-imp="${i}" ${r.include?'checked':''} style="width:auto;margin:0"></td>
-      <td style="text-align:left"><span class="sym" style="font-size:12.5px">${r.sym}</span></td>
+      <td style="text-align:left"><span class="sym" style="font-size:12.5px">${esc(r.sym)}</span></td>
       <td><span class="acct-tag ${r.acct==='TFSA'?'tag-tfsa':r.acct==='FHSA'?'tag-fhsa':'tag-other'}" style="margin:0">${r.acct}</span></td>
       <td>${r.qty}</td>
       <td>${fmtNat(r.avg,r.ccy)}<br><span style="font-size:10px;opacity:.7">${r.ccy}</span></td>
@@ -7340,7 +7355,14 @@ function renderYF(){
 
   // ----- category tables -----
   const nowM=(yr===new Date().getFullYear())?(new Date().getMonth()+1):12;
-  const esc=c=>c.replace(/"/g,'&quot;');
+  /* A category name is typed by hand and lands in a cell's TEXT as well as in
+     three data- attributes, so escaping the quote alone was never enough: a
+     category called `<img src=x onerror=...>` ran as markup in the Category
+     column, and the name travels in corePayload, so every synced device ran it
+     too. The entities decode back to the original string when `dataset` is read,
+     so rename and delete still carry the real name. */
+  const esc=c=>String(c).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   /* Totals used to build their own Diff cell, which is how the income total came
      out "$-7,200" the moment its sign could go negative. One renderer for both. */
   const diffCell=d=>`<td class="${d<0?'yf-neg':d>0?'yf-pos':''}">`+
@@ -7353,7 +7375,7 @@ function renderYF(){
     // Numbers only, the same as every other row. What Monthly itemised into a
     // bill is reported on the bill's own line in TRANSACTIONS, not here.
     return `<tr>
-      <td style="text-align:left">${cat}</td>
+      <td style="text-align:left">${esc(cat)}</td>
       <td>${yf$(act)}</td>
       <td><input class="yf-plan-in" data-cat="${esc(cat)}" type="number" step="1" min="0" value="${plan||''}" placeholder="0"></td>
       ${diffCell(diff)}
@@ -7478,7 +7500,14 @@ function yfFillCats(){
   const t=$('yfType').value;
   const cur=$('yfCat').value;
   const cats=yfCats(t==='income'?'income':'expense');
-  $('yfCat').innerHTML=cats.map(c=>`<option>${c}</option>`).join('');
+  /* The option's text IS its value here (no value attribute), and a category
+     name is user text. The `in select` parser drops an injected tag rather than
+     running it, so this was a correctness fault rather than the category
+     table's security one -- a name holding `<` lost everything after it, and
+     the picker then disagreed with the table. Entities decode, so .value is
+     still the real name. */
+  const esc=c=>String(c).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  $('yfCat').innerHTML=cats.map(c=>`<option>${esc(c)}</option>`).join('');
   if(cats.includes(cur)) $('yfCat').value=cur;
 }
 function yfSaveTx(){
@@ -8444,7 +8473,11 @@ function meHandleCSV(text){
   if(cDate<0||(cAmt<0&&cDeb<0)){ toast('Could not find date and amount columns — send me this file and I will add its layout'); return }
 
   const found=[];
-  const show=(lbl,i)=>{ if(i>-1) found.push(`<span>${lbl}: <b>${headers[i]}</b></span>`) };
+  /* A header cell is whatever the bank wrote in the file, echoed back so the
+     column mapping can be checked by eye -- untrusted text going into an
+     innerHTML. A statement whose header row carried markup ran it here, which
+     is the one place in this app where a FILE from outside reaches the DOM. */
+  const show=(lbl,i)=>{ if(i>-1) found.push(`<span>${lbl}: <b>${tagEsc(headers[i])}</b></span>`) };
   show('date',cDate); show('description',cDesc); show('amount',cAmt);
   show('debit',cDeb); show('credit',cCred); show('category',cCat);
   $('meDetectBody').innerHTML=found.join('');
@@ -8846,7 +8879,7 @@ function npBody(sym,d){
         `<span class="v${c?' '+c:''}">${esc(v)}</span></div>`).join('')}</div>`
     : '<p class="np-stmsg">No company figures published for this symbol.</p>';
   return range+grid+
-    `<p class="np-stmsg"><a class="qlink" href="${quoteHref(sym)}" target="_blank"`+
+    `<p class="np-stmsg"><a class="qlink" href="${esc(quoteHref(sym))}" target="_blank"`+
     ` rel="noopener noreferrer">Open ${esc(sym)} on the quote site ↗</a>`+
     (d.ccy?` · figures in ${esc(d.ccy)}, never converted`:'')+`</p>`;
 }
