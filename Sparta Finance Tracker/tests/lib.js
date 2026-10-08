@@ -37,10 +37,14 @@ const SEED = {
     { id: 'h3', sym: 'NVDA', acct: 'FHSA', qty: 4, avg: 900.0, ccy: 'USD', nat: true, price: 845.25, manual: true },
     { id: 'h4', sym: 'ENB', acct: 'Other', qty: 60, avg: 48.2, ccy: 'CAD', nat: true, price: 52.75, manual: true },
   ]),
+  /* v is an OBJECT, one figure per scope filter -- which is what snapshot()
+     writes. This fixture carried a bare number for a long time: the app dropped
+     every point of it silently, so no suite but test-ui's own chart section ever
+     had a drawn chart, and clicking ALL on this seed used to throw. */
   'sparta.dash.history': JSON.stringify([
-    { t: Date.UTC(2026, 0, 2), v: 10000, k: '2026-01-02' },
-    { t: Date.UTC(2026, 1, 2), v: 11250, k: '2026-02-02' },
-    { t: Date.UTC(2026, 2, 2), v: 10980, k: '2026-03-02' },
+    { t: Date.UTC(2026, 0, 2), v: { ALL: 10000, TFSA: 6000, FHSA: 3000, Other: 1000 }, k: '2026-01-02' },
+    { t: Date.UTC(2026, 1, 2), v: { ALL: 11250, TFSA: 6800, FHSA: 3300, Other: 1150 }, k: '2026-02-02' },
+    { t: Date.UTC(2026, 2, 2), v: { ALL: 10980, TFSA: 6500, FHSA: 3280, Other: 1200 }, k: '2026-03-02' },
   ]),
   // cad:true + the cadFixed flag mark these as already-CAD, so the one-time
   // migrateContribCAD() pass leaves them alone (it is exercised separately).

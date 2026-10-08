@@ -823,6 +823,173 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     await X.ctx.close();
   }
 
+  /* ======================================================================
+     Section 11. The rollover's two doors into the real ledger, the tombstone,
+     and the three places a card contradicted itself.
+
+     Every check here is written to FAIL against the build before it: each one
+     names the figure the old code produced, so none of them can pass by
+     measuring nothing. */
+  section('11. the rollover writes nothing invented, and a delete sticks');
+  {
+    const R = await open(browser, url, SEED);
+    const page = R.page;
+    await page.click('#viewSeg button[data-view="archive"]');
+    await page.waitForTimeout(300);
+
+    // ---- 11a. a dummy year must not become this year's opening balance ----
+    const dum = await page.evaluate(() => {
+      const now = new Date().getFullYear();
+      state.archives = [arcDummyRec(now - 1)];
+      delete state.yf.start[now];
+      const carried = arcCarryStart();
+      return { carried, seeded: now in state.yf.start, end: state.archives[0].stats.end };
+    });
+    /* The old code read prev.stats.end unconditionally. arcDummyRec builds end
+       from 12 x ~6,400 income less 12 x ~3,650 expenses on a $6k-$30k start, so
+       this is a five-figure number appearing in the Yearly Start tile from
+       nowhere -- and persisted. */
+    check(dum.end > 20000, 'a dummy year does carry a large fabricated End',
+      String(dum.end));
+    check(dum.carried === false && dum.seeded === false,
+      'and it is NOT written into state.yf.start — invented money stays invented',
+      JSON.stringify(dum));
+
+    // ---- 11b. ...while a real prior year still carries, which is the feature ----
+    const real = await page.evaluate(() => {
+      const now = new Date().getFullYear();
+      state.archives = [{ id: 'r1', year: now - 1, sealed: true, stats: { start: 1000, end: 4321.5 } }];
+      delete state.yf.start[now];
+      return { carried: arcCarryStart(), start: state.yf.start[now] };
+    });
+    check(real.carried === true && near(real.start, 4321.5),
+      'a real sealed year still carries its End forward', JSON.stringify(real));
+
+    // ---- 11c. a record with no stats must not throw ----
+    /* normalizeArchives only requires a `year`, so a truncated cloud write or a
+       hand-edited record can arrive without stats. The throw was swallowed by the
+       try/catch around the whole rollover, which silently skipped the SEAL too. */
+    const nostats = await page.evaluate(() => {
+      const now = new Date().getFullYear();
+      state.archives = [{ id: 'r2', year: now - 1 }];
+      delete state.yf.start[now];
+      try { return { carried: arcCarryStart(), seeded: now in state.yf.start } }
+      catch (e) { return { threw: e.message } }
+    });
+    check(!nostats.threw && nostats.carried === false && nostats.seeded === false,
+      'a record with no stats is skipped rather than thrown on', JSON.stringify(nostats));
+
+    // ---- 11d. the rollover keeps the persistence contract ----
+    /* Without touchUpdatedAt the stamp stays stale, so fbRecheckOnWake compares it
+       against the remote, the cloud wins, and the year that was just sealed
+       disappears again mid-session. Asserting the STAMP MOVED is the only
+       observable half of that from here. */
+    const stamped = await page.evaluate(() => {
+      const y = new Date().getFullYear() - 1;
+      state.archives = [];
+      store.set('sparta.arcDeleted', []);
+      state.yf.start[y] = 5000;
+      state.yf.txns = [{ id: 'z1', date: y + '-03-04', type: 'income', cat: 'Paycheck', amt: 1234, who: 'ABI', tab: 'yf' }];
+      yfPersist();
+      const before = state.updatedAt;
+      state.updatedAt = 1;                      // a stale stamp, as the old path left it
+      const n = arcAutoSeal();
+      return { n, before, after: state.updatedAt, years: state.archives.map(a => a.year) };
+    });
+    check(stamped.n === 1 && stamped.years.length === 1,
+      'a past year with ledger rows is auto-sealed', JSON.stringify(stamped.years));
+    check(stamped.after > 1,
+      'and the seal bumps updatedAt, so the cloud cannot win and undo it',
+      String(stamped.after));
+
+    // ---- 11e. a deleted archive stays deleted across a reload ----
+    const del = await page.evaluate(() => {
+      const y = new Date().getFullYear() - 1;
+      state.archives = state.archives.filter(a => a.year !== y);
+      arcBury(y); arcPersist(); renderArchives();
+      return { years: state.archives.map(a => a.year), buried: arcBuried() };
+    });
+    check(del.years.length === 0 && del.buried.length === 1,
+      'deleting a year removes it and leaves a tombstone', JSON.stringify(del));
+    const resealed = await page.evaluate(() => {
+      // the exact call the boot block makes, with the ledger rows still in place
+      const n = arcAutoSeal();
+      return { n, years: state.archives.map(a => a.year) };
+    });
+    check(resealed.n === 0 && resealed.years.length === 0,
+      'and the rollover does NOT rebuild it — the confirm said it cannot be undone',
+      JSON.stringify(resealed));
+    const lifted = await page.evaluate(() => {
+      const y = new Date().getFullYear() - 1;
+      arcUnbury(y);
+      return { buried: arcBuried(), n: arcAutoSeal(), years: state.archives.map(a => a.year) };
+    });
+    check(lifted.buried.length === 0 && lifted.years.length === 1,
+      '...but asking for it back lifts the stone, so delete is respected not permanent',
+      JSON.stringify(lifted));
+
+    // ---- 11f. a dummy card does not contradict itself ----
+    const d = await page.evaluate(() => {
+      const rec = arcDummyRec(2019);
+      const row = n => (rec.exp || []).find(x => x.c === n);
+      return { entries: rec.entries, yf: rec.entriesYf, me: rec.entriesMe,
+        invTile: rec.stats.invested, invRow: row('Investment') && row('Investment').v,
+        movTile: rec.stats.moved, movRow: row('Other Bank') && row('Other Bank').v,
+        sorted: (rec.exp || []).every((x, i, a) => !i || a[i - 1].v >= x.v) };
+    });
+    check(d.entries === d.yf + d.me,
+      'entries === entriesYf + entriesMe, the way a real record partitions them',
+      JSON.stringify([d.entries, d.yf, d.me]));
+    check(d.invTile === d.invRow && d.movTile === d.movRow,
+      'and the Invested / Moved-else tiles equal their own Expenses rows',
+      JSON.stringify([d.invTile, d.invRow, d.movTile, d.movRow]));
+    check(d.sorted, 'the Expenses rows are still ordered biggest first');
+
+    // ---- 11g. no all-zero Contributions pane ----
+    const cl = await page.evaluate(() => ({
+      zero: arcContribLine({ abiT: 0, abiF: 0, pooT: 0, pooF: 0 }),
+      one: arcContribLine({ abiT: 0, abiF: 500, pooT: 0, pooF: 0 }),
+      none: arcContribLine(null) }));
+    check(cl.zero === '' && cl.none === '',
+      'a year with no registered contributions renders no Contributions pane',
+      JSON.stringify(cl.zero));
+    check(/ABI put/.test(cl.one),
+      '...while one non-zero figure still renders the whole pane');
+
+    // ---- 11h. the trend axis keeps a floor ----
+    const ax = await page.evaluate(() => {
+      const neg = Array(12).fill(0).map((_, i) => (i < 3 ? -200 : 0));
+      const html = arcTrend({ id: 't1', year: 2025, byCat: { Refunds: neg }, stats: {} }, 'x').html;
+      return [...html.matchAll(/<text[^>]*>\$([\d.k]+)<\/text>/g)].map(m => m[1]);
+    });
+    /* peak===0 gave step=1 and top=1: an axis reading $0 / $0.5 / $1. The floor is
+       500, the figure Monthly's own chart starts from. (A negative month still
+       plots below the x-axis and clips -- renderMEChart clips it at the same
+       place, so that is parity, not a bug, and is not asserted here.) */
+    check(ax.includes('500') && !ax.includes('0.5'),
+      'a net-negative category gets a $500 axis, not $0 / $0.5 / $1',
+      JSON.stringify(ax));
+
+    // ---- 11i. the section headings win their own specificity tie ----
+    const sz = await page.evaluate(() => {
+      state.archives = [arcDummyRec(2018)];
+      normalizeArchives(); arcOpen.add(state.archives[0].id); renderArchives();
+      const px = s => parseFloat(getComputedStyle(document.documentElement).getPropertyValue(s));
+      const bh = [...document.querySelectorAll('#archiveView .ay-bh')]
+        .map(e => parseFloat(getComputedStyle(e).fontSize));
+      return { label: px('--fs-label'), bh, n: bh.length };
+    });
+    /* #archiveView p is (1,0,1) and .ay-bh is a bare class, so the id won whatever
+       the source order: all six headings drew at 12.5px with line-height 1.65. */
+    check(sz.n >= 6, 'an open card shows its six section headings', String(sz.n));
+    check(sz.bh.every(v => near(v, sz.label, 0.05)),
+      'and every one of them is --fs-label, not the 12.5px prose size',
+      JSON.stringify([sz.label, [...new Set(sz.bh)]]));
+
+    check(R.errs.length === 0, 'no page errors across section 11', R.errs.join(' | '));
+    await R.ctx.close();
+  }
+
   console.log(`\nARCHIVES: ${pass} passed, ${fail} failed`);
   await browser.close(); srv.close();
   process.exit(fail ? 1 : 0);

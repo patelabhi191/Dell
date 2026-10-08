@@ -214,6 +214,43 @@ state.yf = {...}      // Yearly Finance — see below (set ~line 3724, separatel
 state.me = {...}      // Monthly Expense — see below (set ~line 4125)
 ```
 
+#### `state.history` — normalise on the way IN, never test the shape on the way out
+
+A point is `{t, v:{ALL,TFSA,FHSA,Other}, k}`: one figure per account filter, so switching the
+Dashboard's scope redraws the chart from the same array. Builds from before that filter existed
+wrote a **single number** instead — as `v`, or as `total` — and the comment on the loader still
+described that older shape long after it stopped being written.
+
+Four readers each assumed the current shape, and three of the five shapes they could actually be
+handed **threw**:
+
+| what is in storage | before |
+|---|---|
+| `{t, v:{ALL,…}}` | draws |
+| `{t, v: 10000}` | dropped silently — the chart just looked empty |
+| `{t, total: 10000}` | **`TypeError: Cannot read properties of undefined (reading 'ALL')`** |
+| `{t, v: null}` | **throws** |
+| `{t}` | **throws** |
+
+It threw as an *uncaught startup error* at `drawChart`, so the chart was dead for the session and
+clicking a range threw again. The default `1D` span filter hid it from a first look — legacy points
+dated months back are removed before the map — but any such point inside the span, or one click on
+**ALL**, reaches it.
+
+**The fix is one choke point, not five guards.** `histPts()` normalises at the three places history
+enters the app — the loader, `applyPayload`, and `decodeHistory` — so nothing downstream carries a
+shape test. It also drops a non-finite figure, which would otherwise take the whole axis with it,
+and fills a missing `k`.
+
+**A legacy number becomes `{ALL: n}` and nothing else.** It knew the total; it never knew the split.
+So it draws on **ALL** and the three account scopes show the honest empty state rather than a line
+diving to a zero nobody recorded. `encPoint` therefore writes a **one-slot** array for such a point
+and `decPoint` no longer coerces a missing slot to `0` — otherwise a cloud round trip would
+manufacture exactly the three zeros the normaliser was careful not to invent.
+
+`tests/lib.js`'s `SEED` carried `v: 10000` for a long time, so every suite but `test-ui`'s own chart
+section loaded a history the app then dropped entirely. It is the real shape now.
+
 ### Four independent data domains — **currency rules differ by domain**
 | Domain | Storage keys (localStorage) | Currency |
 |---|---|---|
@@ -392,13 +429,25 @@ here.
 ```js
 { id, year, sealedAt, sealed,                 // sealed === year < this year
   stats:{ start, end, invested, moved, saved, offPaper, growth },
-  entries,                                    // how many Yearly rows the year held
+  entries,                                    // every row in the year, BOTH tabs
+  entriesYf, entriesMe,                       // ...and the split, so the card can say which
   exp:[{c,v}], inc:[{c,v}],                   // category tables, biggest first
   mInc:[12], mExp:[12],                       // the month-by-month bars
+  meInc:[12],                                 // Monthly income, counted in no total
   contrib:{ abiT, abiF, pooT, pooF },         // stored, NOT re-derived on render
-  highlights:[{title,line,tone}],             // Yearly's cards, frozen
-  byCat:{ cat:[12] } }                        // Monthly's category grid
+  highlights:[{key,title,line,tone}],         // Yearly's cards, frozen
+  byCat:{ cat:[12] },                         // Monthly's category grid
+  dummy, edited }                             // both absent-means-false
 ```
+
+`entries === entriesYf + entriesMe` always: `arcSnapshot` partitions the year's rows into
+the two tabs exactly, and the meta line prints all three. A record that breaks the identity
+reads "93 entries · 18 yearly · 22 monthly" on its own card, which is how the dummy
+generator's drift was found.
+
+`sealedAt` is **write-only** — stored by both `arcSnapshot` and `arcDummyRec`, read nowhere.
+Nothing on a card says when the year was sealed. Left in because removing a stored field
+from existing records buys nothing.
 
 **Everything is computed by the functions the live tabs use** — `yfTxns`, `yfActual`,
 `yfCats`, `yfHighlights`, `meMonthlyByCat`, `contributedBy`. `arcSnapshot()` swaps
@@ -441,10 +490,37 @@ Three guards, each of which has a test that fails without it:
 - Only an **unedited preview** of a year that has since ended is re-taken and upgraded to
   sealed, because a preview never claimed to be the last word.
 
+- **A deleted year stays deleted.** `arcAutoSeal` decides what to seal from the ABSENCE of a
+  record, so without a tombstone a year the user deleted was rebuilt from today's ledger on
+  the very next load — and rebuilt from scratch, losing the hand corrections that were the
+  usual reason for deleting it. `sparta.arcDeleted` is a plain list of years
+  (`arcBuried` / `arcBury` / `arcUnbury`); **+ Add year** lifts the stone, so deleting is
+  respected without being irreversible. `Clear → Archives` buries every year it removes,
+  because its confirm says "It cannot be undone" and one reload used to undo it.
+
 `arcCarryStart()` then seeds the new year's opening balance from last year's closing one,
 **only when this year has no figure of its own** — `now in state.yf.start`, not a falsy
 test, so a deliberately typed `0` survives. It stays editable on the Yearly tab like any
 other year's.
+
+Two things it must refuse, and both are doors into the REAL ledger:
+
+- **A dummy year is never carried.** `arcDummyRec`'s own contract is that no ledger row is
+  read or written, but its `stats.end` is a deterministic five-figure number — 12 × ~6,400
+  income less 12 × ~3,650 expenses on a $6k–$30k start. Pressing **+ Dummy year** twice and
+  reloading used to write ~$50,000 of invented money straight into `state.yf.start[now]`,
+  where it is the Yearly **Start** tile and the base of End, Saved and Growth. `arcAutoSeal`
+  already skipped dummies; this is the other door to the same place.
+- **`prev.stats` is guarded.** `normalizeArchives` only requires a `year`, so a truncated
+  cloud write or a hand-edited record can arrive without `stats`. The deref threw, and the
+  `try/catch` around the whole rollover swallowed it — silently skipping the SEAL as well as
+  the carry.
+
+**Both write through the real persistence path**, `automated(() => arcPersist())` and
+`automated(() => yfPersist())`, not a bare `store.set`. A bare write left `state.updatedAt`
+stale, so `fbRecheckOnWake()` compared it against the remote, the cloud won, and the year
+that had just been sealed vanished again mid-session. `automated()` keeps the seal from
+counting as a user edit, which is the distinction `persist()` already makes.
 
 ## Dashboard
 
@@ -589,9 +665,44 @@ decimal rounds to `1000.0`, and `+$1000K` sitting a pound short of `+$1.00M` rea
 
 `npBig()` already does a K at ≥1e3, but as `10.0K`, and it is shared with Eye on Stocks where market
 cap and volume are pinned to that format — so the K is done in `sellAmt` rather than changing a
-formatter three other call sites depend on. **The summary tiles deliberately keep full precision**:
+formatter three other call sites depend on. The M form is computed inline too; `npBig` is reached
+only past a billion, for the B and T forms. **The summary tiles deliberately keep full precision**:
 they have the room, and a headline total is worth reading to the cent. `sellAmt` is called from the
 row and nowhere else.
+
+### The ticker's grey sub-line has the same problem, and needed the same answer
+
+`sellAmt` solved slot 4. Slot 2 holds the ticker *and* `ACCT · qty`, and got nothing — so a
+quantity printed raw drew straight over the Profit % cell beside it. Measured in the 384px right
+column, where slot 2 is **76px** and the account name alone is ~38px of it:
+
+| sub-line | wanted | over the slot |
+|---|---|---|
+| `TFSA · 10` | fits | — |
+| `Other · 12345` | fits | — |
+| `FHSA · 1234.56` | 77px | **10.3px** |
+| `FHSA · 0.12345678` | 95px | **28.5px** |
+
+Fractional quantities are ordinary: `confirmSell` stores a `parseFloat` verbatim and `sellReverse`
+writes `+(h.qty+dq).toFixed(8)`.
+
+**Two parts, and both are needed.** `sellQty()` shortens the figure so real quantities fit — a whole
+lot prints as itself to five digits then goes to K (`987654.321` → `987.7K`), a fraction keeps four
+decimals (`0.12345678` → `0.1235`). `overflow:hidden; text-overflow:ellipsis` is the guarantee for
+what still does not: at 76px even six characters can be a few pixels long, and a fixed grid clips
+silently rather than growing. The exact figure is never lost — it is what the ✎ modal loads and what
+every reversal arithmetic uses.
+
+**Clip, not wrap.** A second line per sale is exactly what the `white-space:nowrap` on that element
+was added to stop, and it is what *"does not go to another line"* rules out. The tests assert all
+five rows stay the same height at nine widths, that nothing is painted outside its slot, and that
+where the ellipsis fires it hides at most 16px — a tail, not a figure.
+
+**Measure painted boxes, not `Range` ink, for this.** An element with `overflow:hidden` has a rect
+equal to its own box, which is what can land on a neighbour; `Range.getClientRects()` ignores
+ancestor clipping and reports an overlap that is not on screen. The same instrument also broke the
+*wrap* detector, which counted rects — a clip produces several rects on **one** line, so the fixed
+check counts distinct line **tops** instead.
 
 **The fold is a container query, not a media query.** What decides this layout is how wide the
 *panel* is, and that is not a function of the window: the same 1280px window gives this panel
@@ -650,6 +761,22 @@ Three things that needed care:
 
 `.np-row` aligns to `flex-start` so the bullet and the bin sit beside the first line rather than
 floating in the middle of a grown row.
+
+### An overdraft is announced, so the sentence has to be right
+
+Reversing a credit can overdraw an account and that is allowed — refusing would make a real
+correction impossible the moment the money had moved on. It is said out loud instead, by
+`sellCashNote()`, in the toast from `confirmSellEdit` and `deleteSell`.
+
+That note must use **`fmt`, not `money`**. `money()` strips the sign by design: it exists to be
+wrapped by `signed()`. Called bare on a figure it has just proven negative, the one sentence whose
+whole job is to announce an overdraft announced a credit — `TFSA cash is now C$412.00` in the same
+toast that had just correctly said `−C$1,200.00`, while `#cashT` two inches away read
+`C$-412.00` because it uses `fmt`. The same slip was in the Settings → Dashboard-shortcuts
+`Set … available balance` confirm, on the figure its own `Math.abs(cur)>0.005` guard admits as
+possibly negative, in a dialog that calls itself irreversible. Both now use `fmt`, so the note is
+the **same string** the Available-balance panel shows, to the character — which is what the test
+asserts.
 
 ### Correcting a past sell
 
@@ -1767,6 +1894,42 @@ change, so it is kept green rather than skipped.
 - **Plan tab** exists and is built out (segments, dated items, running balance, lowest
   point) — see `tests/test-plan.js` for the behaviour it guarantees.
 - No live Firebase listener (§4) — acceptable per user, don't add without asking.
+- **A past archive, once deleted, has no UI route back.** The tombstone is what stops the
+  rollover rebuilding it (and clobbering hand corrections doing so), but **+ Add year** only
+  ever seals the CURRENT year, so it can only lift the current year's stone. Getting 2025
+  back means clearing `sparta.arcDeleted` by hand. Before the tombstone the "undo" was
+  accidental and destructive, so this is the better of the two, but a "restore deleted year"
+  route is the obvious follow-up.
+- **A negative month is drawn below the x-axis and clips off the bottom of the viewBox**, on
+  the Archives 12-month trend and on Monthly's own chart alike — `renderMEChart` clips it at
+  exactly the same place. The axis floor was fixed (a net-negative category used to produce
+  an axis reading `$0 / $0.5 / $1`); making the line itself visible means giving both charts a
+  negative axis, which is a change to two tabs and is **not** done. Left as parity rather than
+  diverging for one tab.
+- **`growth` reads `+0.0%` when `start <= 0`**, on an Archives card and on the Yearly tab, which
+  share the expression. A year that went from `$0` to `$57,400` shows `+0.0%` in the one figure
+  the card's layout exists to surface. Division by zero is guarded; the fallback is a wrong
+  figure rather than a blank. Both would have to change together.
+- **Two currencies, unlabelled, in the sell confirm and toast.** `fmtNat(r.avg, r.ccy)` is the
+  trade's native currency while `money(back)` is the display currency, adjacent in one
+  sentence — `Sold 10 AAPL at $200.00 — C$2,740.00 to TFSA cash`. Each figure is correct for
+  what it describes, and the `C` does distinguish them, but it is the only place in Past sells
+  where the never-converted rule is crossed.
+- **`#statRow` is a 2+1 orphan in the default state.** `#otherCard` is hidden until Other holds
+  something, while `#pooCard` — the deliberate placeholder — is always shown, so a new ledger
+  gets TFSA + FHSA on row 1 and a hard-zero card alone on row 2.
+- **Eye on Stocks survives a Dashboard clear.** It is a Dashboard-ONLY panel whose data lives in
+  `state.notes.stocks`, and nothing in `state.notes` is cleared by a tab tick. The comment now
+  states that rule rather than only the notepad's half of it; whether the watchlist *should* go
+  with a Dashboard clear is a product call, so the behaviour is unchanged.
+- **A cross-year Monthly allocation is counted in one year and spent in another.** `entries`
+  filters on the row's own date; `byCat` goes through `meMonthOf`, which prefers `allotM`. A row
+  dated `2025-12-30` allotted to a January 2026 bill is in 2025's `entriesMe` and 2026's grid.
+- **`.htable td:first-child{max-width:96px}` in the ≤560px block is unscoped**, so it also
+  matches `#sellsPanel`, `#monthlyView` and `#yearlyView`. It is inert where it was measured —
+  `table-layout:fixed` takes the slot from the declared width — and scoping it to
+  `#holdingsCard` would change three tables' phone layout, so it is documented rather than
+  moved.
 - No xlsx import support (CSV only, by design — avoids bundling SheetJS in a single-file app).
 - `spapp.png` is not committed next to the HTML, so the header logo, the PIN screen orb
   and the favicon 404 until you drop it in this folder. The old `file:///C:/Users/...`

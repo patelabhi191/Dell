@@ -423,8 +423,9 @@ button{font-family:var(--font-body);cursor:pointer}
 .np-del:hover{color:var(--rose);border-color:var(--rose)}
 .np-empty{color:var(--text-faint);font-size:12.5px}
 .np-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-/* ---------- Eye on Stocks: one row per stock, expanding to its figures ----- */
 /* ---------- Past sells ---------- */
+/* (Eye on Stocks keeps its own header further down, where its rules actually
+   start -- this block was inserted into the middle of that section.) */
 #sellsPanel .st-sum{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}
 #sellsPanel .st-sum>div{flex:1 1 130px;background:rgba(255,255,255,.028);
   border:1px solid var(--stroke);border-radius:var(--r-ctl);padding:11px 13px}
@@ -450,7 +451,8 @@ button{font-family:var(--font-body);cursor:pointer}
    two-column case -- collapse into the single question actually being asked. */
 #sellsPanel{container-type:inline-size}
 /* The table is full width, which is what .htable gives every other table in the
-   app -- so there is no width rule here at all. A content-sized table centred in
+   app -- declared here only because table-layout:fixed needs a width to divide
+   into slots. A content-sized table centred in
    the panel did even out the gaps, but it floated with margin either side while
    the tiles, the date row and the footnote all ran edge to edge, and it read as
    a separate thing rather than part of the panel.
@@ -494,12 +496,20 @@ button{font-family:var(--font-body);cursor:pointer}
 #sellsPanel .htable th,#sellsPanel .htable td{text-align:left}
 #sellsPanel .htable th{white-space:nowrap}        /* every heading on one line */
 #sellsPanel .htable td{font-size:12.5px}
+#sellsPanel .sym{display:block;overflow:hidden}
+#sellsPanel .sl-d,#sellsPanel .sl-y{overflow:hidden;text-overflow:ellipsis}
 /* day and month over the year, so the column needs no more width than "06 Oct" */
 .sl-d{display:block;font-weight:600;white-space:nowrap}
 .sl-y{display:block;font-size:10px;color:var(--text-faint);letter-spacing:.04em}
-/* the account and quantity stay on ONE line: "FHSA - 8888" was wrapping under
-   the ticker and taking a third row per sale */
-#sellsPanel .sym small{white-space:nowrap}
+/* The account and quantity stay on ONE line -- "FHSA - 8888" was wrapping under
+   the ticker and taking a third row per sale -- and inside ONE slot. Measured in
+   the right-hand column, where slot 2 is 76px: "FHSA · 0.12345678" wanted 28.5px
+   more than it had, and under table-layout:fixed a column cannot borrow from its
+   neighbour, so nowrap alone drew the overflow straight over the Profit % cell.
+   sellQty() shortens the figure so that real quantities fit; the ellipsis is the
+   guarantee for the ones that still do not. Clip rather than wrap, because a
+   second line per sale is the thing the nowrap was added to stop. */
+#sellsPanel .sym small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* the two row buttons stack, because side by side they cost width the figures
    need and the rows are tall enough to hold both */
 /* The buttons start on the 90% slot edge with everything else. Because the
@@ -1594,9 +1604,14 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 #archiveView .btn:hover,#archiveView button:hover{background:rgba(139,147,248,.26)}
 #archiveView .btn.primary{background:linear-gradient(180deg,var(--arc),#6E76E8);color:#0B1020;
   border-color:transparent}
-#archiveView .htable th{color:var(--text-dim);font-size:var(--fs-label);letter-spacing:var(--ls-label);
-  border-bottom:1px solid rgba(255,255,255,.10)}
-#archiveView .htable td{border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px}
+/* `#archiveView p` above is (1,0,1), so it beats a bare class whatever the
+   source order. .ay-bh and .arc-none are both rendered on <p>, and both lost:
+   every section heading on an open card drew at 12.5px/1.65 instead of
+   --fs-label 10.5px, and both empty states at 12.5px instead of 11.5px.
+   Re-declared through the id so the two classes win the tie they were written
+   to win. Everything else on the tab stays on the one prose spec on purpose. */
+#archiveView .ay-bh{font-size:var(--fs-label);line-height:1.3}
+#archiveView .arc-none{font-size:11.5px;line-height:1.65}
 #archiveView input,#archiveView select{background:rgba(255,255,255,.04);
   border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--text);box-shadow:none}
 #archiveView .empty{color:var(--text-dim)}
@@ -3198,12 +3213,15 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
         </div>
         <div class="tscroll">
           <table class="htable" id="sellTable">
-            <!-- No colgroup: the columns follow their content and the surplus
-                 goes to the last one. Dropping the column definitions also
-                 dropped the trap that came with them -- hiding a cell without
-                 hiding its column shifted every remaining cell onto the wrong
-                 one. The last header is empty on purpose; it is the actions
-                 column, which carries no label in any table here. -->
+            <!-- No colgroup, but the columns ARE declared: five fixed slots,
+                 20/20/25/25/10, as nth-child width rules in the stylesheet
+                 (see #sellsPanel .htable). Under table-layout:fixed those
+                 widths are read off THIS header row, so a cell may only ever
+                 be hidden together with its th -- #sellsPanel .pc{display:none}
+                 hides both, and hiding one alone would shift every remaining
+                 cell onto the wrong slot. The last header is empty on purpose;
+                 it is the actions column, which carries no label in any table
+                 here. -->
             <thead><tr><th>Date</th><th>Ticker</th><th class="pc">Profit</th><th>$ made</th><th></th></tr></thead>
             <tbody id="sellBody"></tbody>
           </table>
@@ -3722,7 +3740,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-07A</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-08</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -3914,7 +3932,7 @@ const nsKey = k => (typeof k!=='string' || k.indexOf('sparta.')!==0 || STORE_DEV
    and a regex broad enough to catch them all would also catch the namespaced
    copies it just wrote. Legacy spellings included so a ledger written before the
    dash./contrib. rename is carried over too. */
-const STORE_DATA = ['sparta.archives','sparta.dash.holdings','sparta.dash.cash','sparta.dash.history',
+const STORE_DATA = ['sparta.archives','sparta.arcDeleted','sparta.dash.holdings','sparta.dash.cash','sparta.dash.history',
   'sparta.contrib.entries','sparta.contrib.limitsY','sparta.contrib.yearly','sparta.contrib.cadFixed',
   'sparta.yf.data','sparta.me','sparta.plan','sparta.notes','sparta.updatedAt','sparta.limits',
   'sparta.holdings','sparta.cash','sparta.history','sparta.contribs','sparta.limitsY'];
@@ -3980,11 +3998,43 @@ function loadNS(newKey, oldKey, fallback){
   const old=store.get(oldKey,null);
   return old===null?fallback:old;
 }
+/* A history point is {t, v:{ALL,TFSA,FHSA,Other}, k} -- one figure per scope
+   filter. Builds from before the filter existed wrote a single number instead,
+   as `v` or as `total`, and a half-written cloud record can arrive with no `v`
+   at all. All of those are normalised HERE, on the way in, so that no reader
+   downstream has to carry a shape test: drawChart, encodeHistory, compactHistory
+   and the tooltip each used to assume the current shape and threw on the others.
+   A legacy number was the all-accounts total, so it becomes ALL alone and the
+   three account scopes stay ABSENT -- a point that never recorded the split must
+   not go on to claim the split was zero. A non-finite figure is dropped for the
+   same reason it would be fatal to keep: one NaN takes the whole axis with it. */
+const HIST_SCOPES = ['ALL','TFSA','FHSA','Other'];
+function histV(e){
+  const v=e.v;
+  if(v && typeof v==='object'){
+    const o={}; let any=false;
+    HIST_SCOPES.forEach(k=>{ if(typeof v[k]==='number' && isFinite(v[k])){ o[k]=v[k]; any=true } });
+    return any?o:null;
+  }
+  const n = typeof v==='number' ? v : (typeof e.total==='number' ? e.total : null);
+  return (n===null || !isFinite(n)) ? null : {ALL:n};
+}
+function histPts(a){
+  const out=[];
+  (Array.isArray(a)?a:[]).forEach(e=>{
+    if(!e || typeof e!=='object') return;
+    const t = typeof e.t==='number' ? e.t : (typeof e.t==='string' && /^\d+$/.test(e.t) ? +e.t : null);
+    if(t===null || !isFinite(t)) return;
+    const v = histV(e);
+    if(v) out.push({t:t, k:e.k||String(t), v:v});
+  });
+  return out;
+}
 let sortBy='sym';   // 'sym' = A→Z (default) | 'pl' = highest P/L % first
 let state = {
   holdings: loadNS('sparta.dash.holdings','sparta.holdings', []),   // {id,sym,acct,qty,avg,price,manual}
   cash: Object.assign({TFSA:0, FHSA:0, Other:0}, loadNS('sparta.dash.cash','sparta.cash',{})),
-  history: loadNS('sparta.dash.history','sparta.history', []),      // {t, total}
+  history: histPts(loadNS('sparta.dash.history','sparta.history', [])),  // {t, v:{ALL,TFSA,FHSA,Other}, k}
   /* Closed positions. Each row keeps the NATIVE price and average cost plus the
      currency they were in -- never a converted total, because a record that
      bakes in today's exchange rate is wrong tomorrow. {id,t,sym,acct,qty,price,avg,ccy} */
@@ -4463,6 +4513,23 @@ function arcPersist(){
   if(typeof fbBooting!=='undefined' && !fbBooting && !fbApplying && !fbAutomated) markUserEdit();
   cloudSaveDebounced();
 }
+/* Years the user deleted on purpose. arcAutoSeal() decides what to seal from
+   the ABSENCE of a record, so without this a deleted year is rebuilt from
+   today's ledger on the very next load -- and rebuilt from scratch, losing the
+   hand corrections that were the usual reason for deleting it. A tombstone is
+   the only thing that can tell "never sealed" from "sealed and thrown away".
+   + Add year clears the stone, so deleting is not permanent, just respected. */
+function arcBuried(){
+  const v=store.get('sparta.arcDeleted',[]);
+  return Array.isArray(v) ? v.map(Number).filter(y=>isFinite(y)) : [];
+}
+function arcBury(year){
+  const b=arcBuried(); if(b.indexOf(+year)<0) b.push(+year);
+  store.set('sparta.arcDeleted',b); touchUpdatedAt();
+}
+function arcUnbury(year){
+  store.set('sparta.arcDeleted',arcBuried().filter(y=>y!==+year)); touchUpdatedAt();
+}
 function normalizeArchives(){
   if(!Array.isArray(state.archives)) state.archives=[];
   state.archives=state.archives.filter(a=>a&&typeof a==='object'&&a.year);
@@ -4561,6 +4628,12 @@ function arcDummyRec(year){
   const saved=end-start;
   const mk=(names,base)=>names.map((c,i)=>({c,v:Math.round(r(base+i,900,19000)/10)*10}))
     .sort((a,b)=>b.v-a.v);
+  /* On a real record the Invested and Moved-else TILES and the Expenses ROWS of
+     the same name are the same yfActual() call, so they agree by construction.
+     Generating them from separate random draws put "Invested $7,050" above a row
+     reading "Investment $12,340" on every dummy card. */
+  const fixRow=(rows,name,v)=>{ const row=rows.find(x=>x.c===name); if(row) row.v=v;
+    return rows.sort((a,b)=>b.v-a.v) };
   const byCat={};
   ['Groceries','Dining Out','Transit','Shopping','Health/medical','TV/Phone/Internet']
     .forEach((c,k)=>{ byCat[c]=Array.from({length:12},(_,i)=>Math.round(r(k*13+i,80,520))) });
@@ -4568,9 +4641,14 @@ function arcDummyRec(year){
   return { id:uid(), year, sealedAt:Date.now(), sealed:true, dummy:true,
     stats:{start,end,invested,moved,saved,offPaper:saved+invested+moved,
            growth: start>0?(end/start-1)*100:0},
-    entries: 40+Math.round(r(3,0,80)), entriesYf: 18, entriesMe: 22,
+    /* entries === entriesYf + entriesMe, because on a real record the two halves
+       partition the year's rows exactly and the meta line prints all three.
+       A dummy reading "93 entries - 18 yearly - 22 monthly" is the first thing
+       anyone opening a dummy card to check the layout notices. */
+    entries: 40, entriesYf: 18, entriesMe: 22,
     meInc: Array(12).fill(0),
-    exp: mk(['Rent','Investment','Other Bank','Credit Bill','Travel','Personal'],30),
+    exp: fixRow(fixRow(mk(['Rent','Investment','Other Bank','Credit Bill','Travel','Personal'],30),
+      'Investment',invested), 'Other Bank',moved),
     inc: mk(['Paycheck','Bonus','Gift/Stocks'],60),
     mInc, mExp,
     contrib:{ abiT:Math.round(r(11,0,7000)/50)*50, abiF:Math.round(r(12,0,8000)/50)*50,
@@ -4596,6 +4674,7 @@ function arcAddYear(){
   const year=new Date().getFullYear();
   const prior=state.archives.find(a=>a.year===year);
   if(prior && !confirm(year+' is already archived.\n\nReplace it with the current figures?')) return;
+  arcUnbury(year);                   // asking for it back lifts the tombstone
   const rec=arcSnapshot(year);
   if(prior) state.archives[state.archives.indexOf(prior)]=rec;
   else state.archives.push(rec);
@@ -4621,6 +4700,7 @@ function arcYearsWithData(){
 }
 function arcAutoSeal(){
   const now=new Date().getFullYear();
+  const buried=arcBuried();
   let changed=0;
   arcYearsWithData().filter(y=>y<now).forEach(y=>{
     const prior=state.archives.find(a=>a.year===y);
@@ -4630,13 +4710,20 @@ function arcAutoSeal(){
     // a dummy occupies its year on purpose; sealing over it would replace test
     // data with real figures the moment the app was opened
     if(prior && (prior.sealed || prior.edited || prior.dummy)) return;
+    if(buried.indexOf(y)>-1) return;                   // deleted on purpose; see arcBuried
     const rec=arcSnapshot(y);
     if(!rec.entries && !rec.stats.start) return;       // an empty year is not an archive
     if(prior) state.archives[state.archives.indexOf(prior)]=rec;
     else state.archives.push(rec);
     changed++;
   });
-  if(changed){ normalizeArchives(); store.set('sparta.archives',state.archives) }
+  /* arcPersist, not a bare store.set: the stamp and the cloud push are the two
+     halves of the contract every other writer in the file keeps. Without the
+     stamp, fbRecheckOnWake() compares a stale updatedAt against the remote and
+     the cloud wins -- the year that was just sealed vanishes again mid-session.
+     Wrapped in automated() so the seal is not counted as a user edit, which is
+     the same distinction persist() already makes. */
+  if(changed){ normalizeArchives(); automated(()=>arcPersist()) }
   return changed;
 }
 /* The opening balance of a new year is the closing balance of the one before
@@ -4648,11 +4735,19 @@ function arcCarryStart(){
   if(!state.yf.start) state.yf.start={};
   if(now in state.yf.start) return false;
   const prev=state.archives.find(a=>a.year===now-1);
-  const end = prev ? prev.stats.end : (arcYearsWithData().includes(now-1)
-    ? arcSnapshot(now-1).stats.end : null);
+  /* A dummy is invented data -- arcDummyRec's own contract is "no ledger rows are
+     read or written" -- so its five-figure stats.end must never become this
+     year's real opening balance. arcAutoSeal already skips dummies; this is the
+     other door into the same ledger. `prev.stats` is guarded too: normalizeArchives
+     only requires a `year`, so a truncated cloud write or a hand-edited record
+     can arrive without stats, and the throw would be swallowed by the try/catch
+     around the whole rollover -- silently skipping the seal as well. */
+  const usable = prev && !prev.dummy && prev.stats && typeof prev.stats.end==='number';
+  const end = usable ? prev.stats.end
+    : (!prev && arcYearsWithData().includes(now-1) ? arcSnapshot(now-1).stats.end : null);
   if(end==null || !isFinite(end)) return false;
   state.yf.start[now]=Math.round(end*100)/100;
-  store.set('sparta.yf.data',state.yf);
+  automated(()=>yfPersist());        // the stamp and the push, exactly as arcAutoSeal
   return true;
 }
 /* Which of the five colours a highlight wears. Keyed on what the card actually
@@ -4679,7 +4774,11 @@ function arcPct(n){
 /* One line each. Two contributors on one wrapped paragraph meant finding where
    ABI stopped and POO started mid-sentence; a line apiece is read at a glance. */
 function arcContribLine(c){
-  if(!c) return '';
+  /* arcSnapshot always writes all four keys, so `c` is always truthy and a year
+     with no registered-account contributions rendered a full pane reading "ABI
+     put $0 into TFSA and $0 into FHSA." arcMeIncLine, ten lines down, already
+     suppresses its own section the same way. */
+  if(!c || !(c.abiT||c.abiF||c.pooT||c.pooF)) return '';
   return '<span>ABI put '+arc$(c.abiT)+' into TFSA and '+arc$(c.abiF)+' into FHSA.</span>'+
          '<span>POO added '+arc$(c.pooT)+' TFSA, '+arc$(c.pooF)+' FHSA.</span>';
 }
@@ -4726,8 +4825,10 @@ function arcBars(a,uidSuffix){
 }
 /* Which categories the trend draws. This is a VIEW PREFERENCE, not part of the
    archive: ticking a box must not rewrite a sealed year, and must not push a new
-   copy of it to the cloud. So it lives in its own device key beside the currency
-   and the tab order, exactly like the quote-link base.
+   copy of it to the cloud. So it lives in its own key, outside the archive.
+   Note it is NOT in STORE_DEVICE, so nsKey namespaces it per database and the
+   choice resets when you point the app at a different one -- unlike the currency
+   and the tab order, which are exempt and follow the browser.
    With nothing saved it falls back to this archive's four biggest categories,
    so a card is never blank the first time it is opened. */
 /* ONE category at a time. Four overlapping lines turned the year into a tangle
@@ -4757,8 +4858,17 @@ function arcTrend(a){
      was drawn against $1,000 and used half the height it had. This rounds up to
      a clean step just above the peak, so the line fills the panel whatever the
      category -- the same fix Yearly's monthly chart already got. */
+  /* Floored at 500, the figure Monthly's own chart starts from. Monthly amounts
+     are signed, and meMonthlyByCat only drops a category when every month is
+     ~0 -- so a category that is net-negative in every month it appears survives
+     with peak===0, which gave step=1 and top=1: an axis reading $0/$0.5/$1, and
+     a line drawn some 39,000 units below a 250-tall viewBox.
+     The floor fixes the axis. It does NOT make a negative month visible: py()
+     puts it below the x-axis and the viewBox ends 34px further down, so it still
+     clips -- and renderMEChart clips it at exactly the same place, which is why
+     this is left alone rather than diverging from Monthly for one tab. */
   const step=Math.pow(10,Math.max(0,String(Math.round(peak)).length-2));
-  const top=Math.max(Math.ceil(peak/step)*step, step);
+  const top=Math.max(Math.ceil(peak/step)*step, step, 500);
   const px=i=>L+i*(W-L-R)/11;
   const py=v=>H-B-(v/top)*(H-T-B);
   let grid='',ylab='';
@@ -4988,6 +5098,7 @@ function arcBind(){
       if(!confirm('Delete the '+rec.year+' archive?\n\nThis removes the sealed record. '+
                   'Your Yearly and Monthly rows are not touched.')) return;
       state.archives=state.archives.filter(a=>a.id!==id);
+      arcBury(rec.year);                    // or the rollover re-seals it on the next load
       arcOpen.delete(id); arcPersist(); renderArchives();
       toast(rec.year+' archive deleted'); return;
     }
@@ -5099,7 +5210,8 @@ function drawChart(){
   let pts=state.history.filter(p=>now-p.t<=spans[state.range]);
   // scope: history stores totals per scope key
   const key=state.filter;
-  pts=pts.map(p=>({t:p.t,v:p.v[key]})).filter(p=>typeof p.v==='number');
+  // p.v is normalised by histPts; the guard is for a scope this point never had
+  pts=pts.map(p=>({t:p.t,v:p.v&&p.v[key]})).filter(p=>typeof p.v==='number' && isFinite(p.v));
   svg.innerHTML='';
   /* A tooltip left over from the previous range would be a plainly wrong number
      sitting on screen, so every redraw clears it before anything else. */
@@ -5254,8 +5366,9 @@ function sellRangeInit(){
 }
 /* Five fixed slots give the amount a quarter of the panel, so anything past four
    figures is shortened to fit: 10000 reads +$10K and 10400 reads +$10.4K. Under
-   10000 it stays exact to the cent, which is most sales. Past a million it hands
-   over to npBig for the M form -- +C$1.62M -- rather than printing 1620.0K.
+   10000 it stays exact to the cent, which is most sales. Past a million it does
+   the M form inline -- +C$1.62M -- rather than printing 1620.0K; npBig is reached
+   only past a billion, for the B and T forms.
 
    npBig already does a K at >=1e3, but as "10.0K", and it is shared with Eye on
    Stocks where market cap and volume are pinned to that format. Rather than
@@ -5265,6 +5378,20 @@ function sellRangeInit(){
    The summary tiles deliberately keep full precision -- they have the room, and
    a headline total is worth reading to the cent. sellAmt is called from the row
    and nowhere else. */
+/* The quantity shares slot 2 with the ticker, so it gets the same treatment the
+   money got in slot 4. A whole lot prints as itself up to five digits, then goes
+   to K -- 12345 fits, 123456 does not. A fractional lot is a broker's fractional
+   share: four decimals identify it, and the eight it is stored with are 28px of
+   overflow. The exact figure is never lost -- it is what the ✎ modal loads, and
+   what every reversal arithmetic uses. Only this one grey sub-line is shortened. */
+function sellQty(q){
+  const n=Math.abs(+q);
+  if(!isFinite(n)) return '0';
+  if(n>=1e5) return (n/1e3).toFixed(n>=1e6?0:1).replace(/\.0$/,'')+'K';
+  if(Number.isInteger(n)) return String(n);
+  // toFixed(4) then back through Number, so 0.1200 prints as 0.12 rather than padded
+  return String(+n.toFixed(4));
+}
 function sellAmt(v,ccy){
   const a=Math.abs(v), sign=v>=0?'+':'\u2212', p=ccy==='CAD'?'C$':'$';
   if(a>=1e9) return sign+npBig(a,ccy);              // B / T, if it ever happens
@@ -5294,7 +5421,7 @@ function renderSells(){
     const mon=d.toLocaleDateString('en-CA',{month:'short'});
     return `<tr><td><span class="sl-d">${dd} ${mon}`+
         `</span><span class="sl-y">${d.getFullYear()}</span></td>`+
-      `<td><span class="sym">${esc(s.sym)}<small>${esc(s.acct)} · ${s.qty}</small></span></td>`+
+      `<td><span class="sym">${esc(s.sym)}<small>${esc(s.acct)} · ${sellQty(s.qty)}</small></span></td>`+
       `<td class="pc ${cls}" style="font-weight:600">${(pct>=0?'+':'−')+Math.abs(pct).toFixed(2)}%</td>`+
       `<td class="pl ${cls}">${sellAmt(pnl,s.ccy)}`+
         `<span class="sl-sub">${(pct>=0?"+":"\u2212")+Math.abs(pct).toFixed(2)}%</span></td>`+
@@ -5315,9 +5442,11 @@ function renderSells(){
 
   // one bucket per currency, never merged
   const by={};
-  rows.forEach(s=>{ const b=by[s.ccy]||(by[s.ccy]={pnl:0,cost:0,n:0,win:0});
+  // pnl and cost only: #sellSum renders those two. A count and a win rate were
+  // accumulated here for a tile that was cut before it shipped.
+  rows.forEach(s=>{ const b=by[s.ccy]||(by[s.ccy]={pnl:0,cost:0});
     const proceeds=s.qty*s.price, cost=s.qty*s.avg;
-    b.pnl+=proceeds-cost; b.cost+=cost; b.n++; if(proceeds>cost) b.win++; });
+    b.pnl+=proceeds-cost; b.cost+=cost; });
   const ccys=Object.keys(by).sort();
   const lines=(f)=>ccys.map(c=>f(by[c],c)).join('');
   $('sellSum').innerHTML = !rows.length ? '' :
@@ -5464,9 +5593,6 @@ function sellReverse(rec,q2,p2){
   return {ok:true, delta, dq, cash:state.cash[acct]};
 }
 
-/* Reversing a credit can overdraw an account, and that is allowed: refusing
-   would make a real correction impossible the moment the money had moved on.
-   It is said out loud instead. */
 if($('sellSearch')) $('sellSearch').onclick=()=>{
   sellFrom=$('sellFrom').value||sellFrom;
   sellTo=$('sellTo').value||sellTo;
@@ -5475,8 +5601,15 @@ if($('sellSearch')) $('sellSearch').onclick=()=>{
     $('sellFrom').value=sellFrom; $('sellTo').value=sellTo; }
   renderSells();
 };
+/* Reversing a credit can overdraw an account, and that is allowed: refusing
+   would make a real correction impossible the moment the money had moved on.
+   It is said out loud instead -- which means fmt, not money. money() strips the
+   sign by design, because it exists to be wrapped by signed(); called bare on a
+   figure already proven negative, the one sentence whose whole job is to announce
+   an overdraft announced a credit, while the Available panel two inches away read
+   the same number with its minus. fmt is what that panel uses. */
 function sellCashNote(acct){
-  return state.cash[acct]<-1e-9 ? ` — ${acct} cash is now ${money(state.cash[acct])}` : '';
+  return state.cash[acct]<-1e-9 ? ` — ${acct} cash is now ${fmt(state.cash[acct])}` : '';
 }
 
 function confirmSellEdit(){
@@ -5667,10 +5800,13 @@ $('settingsBtn').onclick=()=>{const d=$('drawer');d.classList.toggle('open');$('
    NOTHING here touches the PIN, the Firebase config, the tab order or the
    currency settings. Those are credentials and preferences, not your rows, and
    wiping them would lock you out or disconnect your sync. */
-/* One tick per TAB, in tab-bar order, so the list reads as the app does. The
-   notepad has no tick of its own: it is a panel on Dashboard and Contributions
-   rather than a tab, and folding it into either would be arbitrary. Clear it
-   from the panel itself, or by hand. */
+/* One tick per TAB, in tab-bar order, so the list reads as the app does.
+   NOTHING in state.notes is cleared by a tab tick. The notepad is the obvious
+   case -- it is a panel on Dashboard and Contributions rather than a tab, and
+   folding it into either would be arbitrary -- but Eye on Stocks rides in the
+   same store while being Dashboard-ONLY, so it survives a Dashboard clear too.
+   That is the rule as written: the store is the unit, not the panel. Clear
+   either from the panel itself, or by hand. */
 const RESET_ROWS=[
   {id:'dash',    label:'Dashboard'},
   {id:'contrib', label:'Contributions'},
@@ -5711,17 +5847,33 @@ const RESET_CLEAR={
   /* The sealed year records. Clearing them does NOT touch the Yearly or Monthly
      rows they were taken from -- an archive is a copy, so losing it loses the
      snapshot and nothing else. */
-  archive(){ state.archives=[]; arcPersist(); if(typeof renderArchives==='function') renderArchives() }
+  /* Each year is buried as well as removed. The confirm says "It cannot be
+     undone", and without the tombstones one reload undid it: arcAutoSeal would
+     rebuild every past year that still has ledger rows. */
+  archive(){ state.archives.forEach(a=>arcBury(a.year)); state.archives=[];
+    arcPersist(); if(typeof renderArchives==='function') renderArchives() }
 };
 function spartaReset(ids, alsoCloud){
   const picked=RESET_ROWS.filter(r=>ids.indexOf(r.id)>-1);
   if(!picked.length) return 0;
   markUserEdit();
-  // a local-only clear must not travel: every persist below ends in a cloud save
+  /* A local-only clear must not travel. Suppressing the saves inside the loop is
+     not enough on its own: lastCoreJSON still held the PRE-clear payload, so the
+     next ordinary edit in this tab -- one holding, one cash move -- saw a payload
+     that differed from it and pushed the emptied core to the cloud. The confirm
+     the user agreed to says the cloud copy is left alone and a reconnect will
+     pull it back, so this tab stops being an authority on the cloud until it
+     does reload. Parked, and SAID OUT LOUD in the sync status: a tab that has
+     silently stopped syncing is worse than one that has been cleared. Parking
+     also stops fbRecheckOnWake pulling the copy back and undoing the clear the
+     moment the tab regains focus -- so it protects the clear in both directions.
+     Settings -> Pull from cloud is not gated by this and is the way back. */
   fbLocalOnly=!alsoCloud;
   try{ picked.forEach(r=>RESET_CLEAR[r.id]()) }
-  finally{ fbLocalOnly=false }
+  finally{ if(alsoCloud) fbLocalOnly=false }
   if(alsoCloud && typeof cloudPushAll==='function' && fbDB) cloudPushAll().catch(()=>{});
+  if(!alsoCloud && state.fbOn && typeof fbSetStatus==='function')
+    fbSetStatus('cleared here only \u2014 cloud untouched; Pull from cloud or reload to get it back');
   render();
   if(typeof renderYF==='function') renderYF();
   if(typeof renderME==='function') renderME();
@@ -6091,7 +6243,7 @@ function applyPayload(p){
   fbApplying=true;
   state.holdings=p.holdings||[]; state.cash=Object.assign({TFSA:0,FHSA:0,Other:0},p.cash||{});
   if(Array.isArray(p.sells)) state.sells=p.sells;   // absent in payloads written before sells existed
-  state.history=(p.history||[]).map(e=>e.k?e:Object.assign({},e,{k:String(e.t)}));
+  state.history=histPts(p.history);          // also fills in a missing `k`
   state.contribs=p.contribs||[];
   state.limits=p.limits||{TFSA:7000,FHSA:8000}; state.limitsY=p.limitsY||{}; state.yearly=p.yearly||[];
 state.yearly.forEach(r=>{
@@ -6211,10 +6363,18 @@ function nextKey(t){                            // collision-safe, still time-so
   return _kSeq ? t+'-'+_kSeq : String(t);
 }
 const r2=n=>Math.round((n||0)*100)/100;
-const encPoint=v=>[r2(v.ALL),r2(v.TFSA),r2(v.FHSA),r2(v.Other)];
-const decPoint=a=>Array.isArray(a)
-  ? {ALL:a[0]||0,TFSA:a[1]||0,FHSA:a[2]||0,Other:a[3]||0}
-  : {ALL:a.ALL||0,TFSA:a.TFSA||0,FHSA:a.FHSA||0,Other:a.Other||0};
+/* Four slots, ALL first. A normalised legacy point knows only the total, so it
+   encodes to a ONE-slot array and decodes back with the account scopes still
+   absent -- writing r2(undefined)=0 into them would turn "never recorded" into
+   a line that dives to zero, which is a wrong number rather than a missing one.
+   histPts does the undefined-stripping, so decPoint only has to not invent. */
+const encPoint=v=>(v && (v.TFSA!==undefined || v.FHSA!==undefined || v.Other!==undefined))
+  ? [r2(v.ALL),r2(v.TFSA),r2(v.FHSA),r2(v.Other)]
+  : [r2(v&&v.ALL)];
+const decPoint=a=>a==null ? null
+  : typeof a==='number' ? {ALL:a}
+  : Array.isArray(a) ? {ALL:a[0],TFSA:a[1],FHSA:a[2],Other:a[3]}
+  : {ALL:a.ALL,TFSA:a.TFSA,FHSA:a.FHSA,Other:a.Other};
 
 // Live prices are re-fetched on load, so syncing them would make `core` change
 // every minute for no reason. Manual overrides are user data and are kept.
@@ -6246,7 +6406,7 @@ function decodeHistory(h){
     Object.keys(pts).forEach(k=>{ out.push({t:keyTs(k), k:k, v:decPoint(pts[k])}) });
     void day;
   });
-  return out.sort((a,b)=>a.t-b.t);
+  return histPts(out).sort((a,b)=>a.t-b.t);
 }
 
 
@@ -6702,7 +6862,10 @@ function setBase(acct){
   if(isNaN(typed)||typed<0){ toast('Enter an amount for '+acct); return }
   const amt=toBase(typed);                       // read in the currency shown at the top
   const cur=state.cash[acct];
-  if(Math.abs(cur)>0.005 && !confirm(`Set ${acct} available balance to ${money(amt)}?\n\nIt is currently ${money(cur)}. This replaces the balance rather than adding to it, and cannot be undone.`)) return;
+  // fmt, not money: `cur` is exactly the figure the Math.abs guard admits as
+  // possibly negative, and money() would show an overdraft as a credit in a
+  // dialog the same sentence calls irreversible.
+  if(Math.abs(cur)>0.005 && !confirm(`Set ${acct} available balance to ${fmt(amt)}?\n\nIt is currently ${fmt(cur)}. This replaces the balance rather than adding to it, and cannot be undone.`)) return;
   state.cash[acct]=amt;
   el.value='';
   snapshot(true); persist(); render();

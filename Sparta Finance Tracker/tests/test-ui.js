@@ -1390,27 +1390,47 @@ const section = t => console.log(`\n── ${t} ──`);
           const clip = [...p.querySelectorAll('tbody tr:first-child td, thead th')]
             .filter(vis).filter(c => c.scrollWidth > c.clientWidth + 1)
             .map(c => (c.className || 'cell') + '+' + (c.scrollWidth - c.clientWidth));
-          /* a Range over a text node reports one rect per LINE, so >1 is a wrap */
-          const wrap = [];
+          /* A Range over a text node reports one rect per LINE -- but also one per
+             FRAGMENT when an ancestor clips it, and `#sellsPanel .sym small` now
+             clips on purpose. Rect count alone cannot tell the two apart and read a
+             deliberate ellipsis as a wrap. Distinct line TOPS can: a wrap opens a
+             new line box, a clip stays on the one it had. */
+          const lines = n => {
+            const r = document.createRange(); r.selectNodeContents(n);
+            return new Set([...r.getClientRects()].filter(q => q.width)
+              .map(q => Math.round(q.top))).size;
+          };
+          const wrap = [], ell = [];
           p.querySelectorAll('tbody tr:first-child td').forEach(td => {
             if (!vis(td)) return;
             td.childNodes.forEach(n => {
               if (n.nodeType !== 3 || !n.nodeValue.trim()) return;
-              const r = document.createRange(); r.selectNodeContents(n);
-              if (r.getClientRects().length > 1) wrap.push((td.className || 'cell') + ':' + r.getClientRects().length);
+              const L = lines(n);
+              if (L > 1) wrap.push((td.className || 'cell') + ':' + L);
             });
             td.querySelectorAll('small, .sl-sub, .sl-d, .sl-y').forEach(sub => {
               if (!vis(sub)) return;
-              const r = document.createRange(); r.selectNodeContents(sub);
-              if (r.getClientRects().length > 1) wrap.push('sub:' + r.getClientRects().length);
+              const L = lines(sub);
+              if (L > 1) wrap.push('sub:' + L);
+              // and record how much the ellipsis is hiding, so it stays a trim
+              if (sub.scrollWidth - sub.clientWidth > 1)
+                ell.push((sub.tagName.toLowerCase()) + '-' + (sub.scrollWidth - sub.clientWidth));
             });
           });
           const amt = p.querySelector('#sellBody td.pl');
-          return { clip, wrap, over: Math.round(sc.scrollWidth - sc.clientWidth),
+          return { clip, wrap, ell, over: Math.round(sc.scrollWidth - sc.clientWidth),
             txt: amt ? amt.childNodes[0].textContent.trim() : '' };
         });
         check(f.clip.length === 0, `${w}px (${sname} ${f.txt}): nothing is clipped by its slot`,
           f.clip.join(' '));
+        /* Where the ellipsis does fire it must be trimming, not swallowing: a
+           20% slot is 66px at 320px and the account name alone is ~38px of it, so
+           anything past ~16px hidden would be eating the figure rather than its
+           tail. Only the grey sub-line may clip at all -- .sl-d, .sl-y and
+           .sl-sub carry figures that must read whole. */
+        check(f.ell.every(e => e.startsWith('small-') && +e.split('-')[1] <= 16),
+          `${w}px (${sname}): only the grey sub-line clips, and only its tail`,
+          f.ell.join(' '));
         check(f.wrap.length === 0, `${w}px (${sname}): and nothing wraps to a second line`,
           f.wrap.join(' '));
         check(f.over === 0, `${w}px (${sname}): no sideways scrollbar`, `${f.over}px`);
@@ -1608,6 +1628,186 @@ const section = t => console.log(`\n── ${t} ──`);
     await L.ctx.close();
   }
 
+
+  /* ======================================================================
+     A history point is {t, v:{ALL,TFSA,FHSA,Other}, k}. Builds before the
+     per-account filter existed wrote a single number instead -- as `v`, or as
+     `total` -- and a half-written cloud record can arrive with no `v` at all.
+     Three of those five shapes used to throw at drawChart's `p.v[key]`, as a
+     startup error that killed the chart for the rest of the session, and the
+     other two were dropped silently.
+
+     Every case asserts a DRAWN or an EMPTY chart plus a clean error log, so
+     neither a throw nor a quietly blank panel can pass. */
+  section('dashboard chart: every history shape the app can be handed');
+  {
+    const H = 3600e3, now = Date.now();
+    // dated INSIDE the default 1D span -- otherwise the span filter removes the
+    // point before the map and no shape is exercised at all
+    const mk = f => [0, 1, 2, 3, 4].map(i => f(now - (5 - i) * H, i));
+    const SHAPES = [
+      ['current {v:{ALL..}}', mk((t, i) => ({ t, k: 'k' + i, v: { ALL: 20000 + i * 900, TFSA: 5000 + i * 100, FHSA: 3000, Other: 1000 } })), true, true],
+      ['legacy number v', mk((t, i) => ({ t, k: 'k' + i, v: 20000 + i * 900 })), true, false],
+      ['legacy {t,total}', mk((t, i) => ({ t, k: 'k' + i, total: 20000 + i * 900 })), true, false],
+      ['v is null', mk((t, i) => ({ t, k: 'k' + i, v: null })), false, false],
+      ['v missing', mk((t, i) => ({ t, k: 'k' + i })), false, false],
+      ['v NaN / junk', mk((t, i) => ({ t, k: 'k' + i, v: { ALL: NaN, TFSA: 'x', FHSA: null } })), false, false],
+      ['garbage rows', [null, 7, { t: 'nope' }, { t: now - H, k: 'a', v: { ALL: 100 } }, { t: now, k: 'b', v: { ALL: 200 } }], true, false],
+    ];
+    for (const [name, hist, drawsAll, drawsTFSA] of SHAPES) {
+      const S = await open(browser, url,
+        Object.assign({}, SEED, { 'sparta.dash.history': JSON.stringify(hist) }));
+      const q = async () => S.page.evaluate(() => ({
+        paths: document.querySelectorAll('#chart path').length,
+        empty: getComputedStyle(document.getElementById('chartEmpty')).display !== 'none',
+      }));
+      const onAll = await q();
+      await S.page.click('#acctSeg button[data-acct="TFSA"]');
+      await S.page.waitForTimeout(150);
+      const onTFSA = await q();
+      // the cloud round trip, which threw on a legacy point at encPoint(v.ALL)
+      const rt = await S.page.evaluate(() => {
+        try { const back = decodeHistory(encodeHistory());
+          return { ok: true, n: back.length,
+            shapes: [...new Set(back.map(e => Object.keys(e.v || {}).sort().join('/')))].join(' + ') } }
+        catch (e) { return { ok: false, err: e.message } }
+      });
+      check(S.errs.length === 0, `${name}: no page error`, S.errs.join(' | '));
+      check(onAll.paths > 0 === drawsAll && onAll.empty === !drawsAll,
+        `${name}: the ALL scope ${drawsAll ? 'draws' : 'shows the empty state'}`,
+        JSON.stringify(onAll));
+      /* The point of normalising a legacy total onto ALL alone: it knew the
+         total, it never knew the split, so TFSA must read EMPTY rather than
+         draw a line that dives to a zero nobody recorded. */
+      check(onTFSA.paths > 0 === drawsTFSA && onTFSA.empty === !drawsTFSA,
+        `${name}: the TFSA scope ${drawsTFSA ? 'draws' : 'shows the empty state'}`,
+        JSON.stringify(onTFSA));
+      check(rt.ok && !/TFSA/.test(drawsTFSA ? '' : rt.shapes),
+        `${name}: survives a cloud round trip without inventing account figures`,
+        JSON.stringify(rt));
+      await S.ctx.close();
+    }
+    // one mixed history: the old points keep ALL, the new ones keep all four
+    const MX = await open(browser, url, Object.assign({}, SEED, {
+      'sparta.dash.history': JSON.stringify(mk((t, i) => i < 2
+        ? { t, k: 'k' + i, total: 20000 + i * 900 }
+        : { t, k: 'k' + i, v: { ALL: 20000 + i * 900, TFSA: 5000, FHSA: 3000, Other: 1000 } })) }));
+    const mixed = await MX.page.evaluate(async () => {
+      const n = () => dashPts.length;
+      const out = { all: n() };
+      document.querySelector('#acctSeg button[data-acct="TFSA"]').click();
+      await new Promise(r => setTimeout(r, 150));
+      out.tfsa = n();
+      out.shapes = [...new Set(state.history.map(e => Object.keys(e.v).sort().join('/')))];
+      return out;
+    });
+    check(mixed.all === 5 && mixed.tfsa === 3,
+      'a mixed history plots all five on ALL and only the three that knew TFSA on TFSA',
+      JSON.stringify(mixed));
+    check(MX.errs.length === 0, 'and no page errors from the mixed history', MX.errs.join(' | '));
+    await MX.ctx.close();
+  }
+
+  /* ======================================================================
+     Five fixed slots mean a column cannot borrow width from its neighbour, so
+     anything that does not fit is simply drawn over the cell beside it. The
+     money got sellAmt; the ticker's grey sub-line shares slot 2 and had nothing,
+     so "FHSA · 0.12345678" drew 28.5px into the Profit % cell at 1440px.
+
+     The assertion is on PAINTED boxes, not on Range ink: an element with
+     overflow:hidden has a rect equal to its own box, and that is what can land on
+     a neighbour. Range rects ignore ancestor clipping and would report an overlap
+     that is not on screen. */
+  section('past sells: nothing is drawn outside its slot, at any width');
+  {
+    const D = Date.now() - 3 * 86400e3;
+    const SELLS = [
+      { id: 's1', t: D, sym: 'AAPL', acct: 'TFSA', qty: 10, price: 212.4, avg: 180.5, ccy: 'USD' },
+      { id: 's2', t: D, sym: 'BRK.B', acct: 'Other', qty: 12345, price: 412.9, avg: 395.1, ccy: 'USD' },
+      { id: 's3', t: D, sym: 'VFV', acct: 'FHSA', qty: 0.12345678, price: 148.9, avg: 132.1, ccy: 'CAD' },
+      { id: 's4', t: D, sym: 'ENB', acct: 'FHSA', qty: 1234.56, price: 52.75, avg: 48.2, ccy: 'CAD' },
+      { id: 's5', t: D, sym: 'TD', acct: 'TFSA', qty: 987654.321, price: 88.1, avg: 70, ccy: 'CAD' },
+    ];
+    const F = await open(browser, url, SEED);
+    await F.page.click('#viewSeg button[data-view="dash"]');
+    await F.page.waitForTimeout(300);
+    await F.page.evaluate(rows => { state.sells = rows; render() }, SELLS);
+    await F.page.waitForTimeout(200);
+
+    const qtys = await F.page.evaluate(() => [10, 12345, 0.12345678, 1234.56, 987654.321, 1e6, 99999]
+      .map(q => sellQty(q)));
+    check(JSON.stringify(qtys) === JSON.stringify(
+      ['10', '12345', '0.1235', '1234.56', '987.7K', '1000K', '99999']),
+      'sellQty keeps whole lots exact, trims a fraction to 4dp and sends six figures to K',
+      JSON.stringify(qtys));
+
+    let worst = 0, rowSpread = [];
+    for (const w of [1440, 1280, 1100, 900, 700, 560, 414, 375, 320]) {
+      await F.page.setViewportSize({ width: w, height: 1000 });
+      await F.page.evaluate(() => renderSells());
+      await F.page.waitForTimeout(140);
+      const r = await F.page.evaluate(() => {
+        const t = document.getElementById('sellTable');
+        const over = [];
+        const heights = [];
+        t.querySelectorAll('tbody tr').forEach((tr, ri) => {
+          heights.push(Math.round(tr.getBoundingClientRect().height));
+          [...tr.children].forEach((td, ci) => {
+            if (getComputedStyle(td).display === 'none') return;   // the folded .pc column
+            const inner = td.getBoundingClientRect().right - parseFloat(getComputedStyle(td).paddingRight);
+            td.querySelectorAll('*').forEach(el => {
+              const q = el.getBoundingClientRect();
+              if (q.width && q.right - inner > 0.5) over.push(`r${ri}c${ci}+${(q.right - inner).toFixed(1)}`);
+            });
+          });
+        });
+        const sc = t.closest('.tscroll');
+        return { over, heights: [...new Set(heights)],
+          side: sc ? sc.scrollWidth - sc.clientWidth : 0,
+          page: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+      });
+      check(r.over.length === 0, `${w}px: no element is painted outside its slot`, r.over.join(' '));
+      check(r.side <= 0, `${w}px: and the table needs no sideways scroll`, String(r.side));
+      if (r.page > 0) worst = Math.max(worst, r.page);
+      rowSpread.push(r.heights.length);
+    }
+    check(worst === 0, 'and the page itself never scrolls sideways at any width', String(worst));
+    /* All five rows the same height at every width is what "does not go to
+       another line" means: a wrapped sub-line would make one row taller. */
+    check(rowSpread.every(n => n === 1),
+      'every sell row is the same height — nothing wrapped to a second line',
+      JSON.stringify(rowSpread));
+    await F.page.setViewportSize({ width: 1360, height: 1000 });
+    check(F.errs.length === 0, 'no page errors from the slot sweep', F.errs.join(' | '));
+    await F.ctx.close();
+  }
+
+  /* An overdraft is allowed on purpose -- refusing would make a real correction
+     impossible once the money had moved on -- so the one sentence that announces
+     it has to be right. money() strips the sign by design (it exists to be
+     wrapped by signed()), and called bare it turned -412 into C$412.00 in the
+     same toast that had just said -C$1,200.00. */
+  section('past sells: an overdraft is announced as a debit');
+  {
+    const O = await open(browser, url, SEED);
+    await O.page.click('#viewSeg button[data-view="dash"]');
+    await O.page.waitForTimeout(300);
+    const note = await O.page.evaluate(() => {
+      state.cash.TFSA = -412; state.ccy = 'CAD'; state.fx = 1;
+      const n = sellCashNote('TFSA');
+      render();
+      return { note: n, panel: document.getElementById('cashT').textContent,
+        positive: (state.cash.TFSA = 500, sellCashNote('TFSA')) };
+    });
+    check(/[-\u2212]/.test(note.note), 'the overdraft note carries a minus sign', note.note);
+    check(note.note.indexOf(note.panel) > -1,
+      'and it is the SAME string the Available-balance panel shows, to the character',
+      JSON.stringify([note.note, note.panel]));
+    check(note.positive === '',
+      'a healthy balance adds no note at all', JSON.stringify(note.positive));
+    check(O.errs.length === 0, 'no page errors', O.errs.join(' | '));
+    await O.ctx.close();
+  }
 
   await browser.close(); srv.close();
   console.log(`\nUI: ${pass} passed, ${fail} failed`);
