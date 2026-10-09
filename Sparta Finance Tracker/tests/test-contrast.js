@@ -171,9 +171,9 @@ const CONTRAST = () => {
        [JS]  an inline style inside a render function's template literal.
              Not editable from the stylesheet; written up for the reviewer who
              owns the JS, with the exact replacement.
-       [TAB] Plan's neutral ramp. Thirteen hardcoded rgba(255,255,255,a) inks
-             at seven alphas -- .3 .45 .46 .48 .5 .55 .6 -- none of them on the
-             scale, over surfaces that stack three translucent whites and so
+       [TAB] Plan's neutral ramp. Fourteen hardcoded rgba(255,255,255,a) inks
+             at NINE alphas -- .3 .45 .46 .48 .5 .55 .6 .68 .7 -- none of them
+             on the scale, over surfaces that stack three translucent whites and so
              sit lighter than any other tab (rgb(51,75,84) and rgb(60,83,92)
              against the usual rgb(21,34,44)). Even --text-faint at its new
              .58 only reaches 3.59 there, so this is not reachable by pointing
