@@ -1809,6 +1809,195 @@ const section = t => console.log(`\n── ${t} ──`);
     await O.ctx.close();
   }
 
+  /* ...and the minus goes in FRONT of the currency symbol, which is the half
+     the section above does not pin: it asserts the note CARRIES a minus and
+     that it matches the panel character for character, so both could be wrong
+     together and it would still pass. They were -- fmt() left the sign where
+     toLocaleString puts it, inside the symbol, so an overdraft read
+     "C$-412.00" while Archives' arc$ and Monthly's meMoney both put it first.
+     signed() and signedNat() always placed their own sign, which is why only
+     the bare-negative path was affected and it went unnoticed this long.
+
+     An overdraft is a supported state, not an edge case: sellReverse may
+     overdraw an account on purpose, because refusing would make a real
+     correction impossible once the money had moved on. */
+  section('past sells: and the minus sits outside the currency symbol');
+  {
+    const O = await open(browser, url, SEED);
+    await O.page.click('#viewSeg button[data-view="dash"]');
+    await O.page.waitForTimeout(300);
+    const f = await O.page.evaluate(() => {
+      state.ccy = 'CAD'; state.fx = 1;
+      state.cash.TFSA = -412;
+      /* A negative quantity reaches fmtNat through a holding's value cell, and
+         a negative EPS reaches it through Eye on Stocks -- ordinary for any
+         company losing money. */
+      state.holdings.push({ id: 'shrt', sym: 'SHORT', acct: 'Other', qty: -3,
+        avg: 10, price: 4, ccy: 'CAD', nat: true });
+      render();
+      return {
+        panel: document.getElementById('cashT').textContent.trim(),
+        card: document.getElementById('tfsaCash').textContent.trim(),
+        note: sellCashNote('TFSA'),
+        negEps: fmtNat(-1.23, 'USD'),
+        // the positive side, which must not have moved by a single byte
+        posFmt: fmt(1234.5), posNat: fmtNat(1234.5, 'CAD'), zero: fmt(0),
+        // signed() wraps money(), which strips the sign on purpose
+        signedNeg: signed(-50), signedNatNeg: signedNat(-50, 'USD'),
+      };
+    });
+    const M = '−';
+    check(f.panel === M + 'C$412.00',
+      'the Available-balance panel reads −C$412.00, not C$-412.00', f.panel);
+    check(f.card === 'Cash ' + M + 'C$412.00',
+      'and so does the account card sub-line', f.card);
+    check(!/C\$-/.test(f.note) && f.note.indexOf(f.panel) > -1,
+      'the overdraft note follows it and still matches the panel exactly', f.note);
+    check(f.negEps === M + '$1.23',
+      'fmtNat does the same, so a negative EPS is not "$-1.23"', f.negEps);
+    /* The claim that makes this safe to land: nothing POSITIVE moved. */
+    check(f.posFmt === 'C$1,234.50' && f.posNat === 'C$1,234.50' && f.zero === 'C$0.00',
+      'a positive or zero figure is byte-identical to before',
+      JSON.stringify([f.posFmt, f.posNat, f.zero]));
+    check(f.signedNeg === M + 'C$50.00' && f.signedNatNeg === M + '$50.00',
+      'and signed()/signedNat() are unchanged -- money() still strips the sign',
+      JSON.stringify([f.signedNeg, f.signedNatNeg]));
+    /* No figure anywhere on the tab may carry a minus INSIDE the symbol. Stated
+       over the whole view so a formatter added later is covered too. */
+    const inside = await O.page.evaluate(() => [...new Set(
+      [...document.querySelectorAll('#dashView *')]
+        .filter(e => !e.children.length)
+        .map(e => (e.textContent || '').trim())
+        .filter(t => /C?\$\s*-/.test(t)))]);
+    check(inside.length === 0,
+      'and nothing on the Dashboard prints a minus inside the symbol',
+      JSON.stringify(inside));
+    check(O.errs.length === 0, 'no page errors', O.errs.join(' | '));
+    await O.ctx.close();
+  }
+
+  /* ── the holdings sub-lines are readable when the position is DOWN ───────
+     Both sub-lines in a holdings row carry an inline opacity, and `opacity`
+     composites the whole element over what is behind it -- so the ratio that
+     matters is the COMPOSITED colour. getComputedStyle().color still reports
+     the full-strength value, which is exactly why this reads as fine and is
+     not: declared, the loss colour is 6.86:1.
+
+     At the .75 the P/L percentage used to carry it composited to 4.28:1,
+     against a 4.5 requirement -- 11px is nowhere near the large-text exemption.
+     The GAIN colour is far brighter and passed either way, so the failure only
+     ever appeared on a position that was losing money, which is the number most
+     worth being able to read.
+
+     Computed rather than asserted against a remembered pixel value (bug class
+     12): the claim is "this clears AA", not "this is 4.73". */
+  section('holdings: the sub-lines clear AA once composited, losses included');
+  {
+    const O = await open(browser, url, SEED);
+    await O.page.click('#viewSeg button[data-view="dash"]');
+    await O.page.waitForTimeout(600);     // past the panel transition (bug class 11)
+    const m = await O.page.evaluate(() => {
+      const rgb = s => { const x = String(s).match(/[\d.]+/g) || [0, 0, 0]; return x.slice(0, 3).map(Number); };
+      const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+      const L = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+      const ratio = (a, b) => { const l1 = L(a), l2 = L(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
+      const bgOf = el => { let n = el;
+        while (n && n !== document.documentElement) {
+          const q = String(getComputedStyle(n).backgroundColor).match(/[\d.]+/g);
+          if (q && (q.length < 4 || Number(q[3]) > 0.9)) return rgb(getComputedStyle(n).backgroundColor);
+          n = n.parentElement; }
+        return [11, 15, 25]; };
+      const out = [];
+      document.querySelectorAll('#hbody span[style*="opacity"]').forEach(el => {
+        const cs = getComputedStyle(el), op = Number(cs.opacity);
+        const fg = rgb(cs.color), bg = bgOf(el);
+        out.push({ text: (el.textContent || '').trim(), op,
+          eff: +ratio(fg.map((v, i) => v * op + bg[i] * (1 - op)), bg).toFixed(2),
+          down: !!el.closest('.down') });
+      });
+      return out;
+    });
+    /* The fixture has to CONTAIN a losing position, or the only check that
+       could fail is not exercised at all (bug class 7). SEED's NVDA is held
+       at 900 and marked at 845.25. */
+    check(m.some(r => r.down), 'the fixture holds a position that is down, so the loss colour is on screen',
+      JSON.stringify(m.map(r => r.down)));
+    check(m.length > 0 && m.every(r => r.eff >= 4.5),
+      'every holdings sub-line composites to at least 4.5:1',
+      JSON.stringify(m.filter(r => r.eff < 4.5)));
+    /* The two sub-lines are the same kind of thing and should not disagree --
+       one of them having been .75 is how the failure got in. */
+    check(new Set(m.map(r => r.op)).size === 1,
+      'and the two sub-lines share one opacity rather than two invented values',
+      JSON.stringify([...new Set(m.map(r => r.op))]));
+    check(O.errs.length === 0, 'no page errors', O.errs.join(' | '));
+    await O.ctx.close();
+  }
+
+  /* ── closing a modal puts the keyboard back where it was ────────────────
+     Both dialogs move focus into themselves on open, which is right, and
+     neither put it back -- so pressing Escape on the sell dialog opened from a
+     holdings row left focus on <body>, and the way back to that row was to Tab
+     from the top of the page.
+
+     The cancel and Escape paths are what this covers, and they are the common
+     ones. A CONFIRMED sale re-renders the table that held the button, so there
+     is genuinely nothing to go back to; that is asserted too, so the fallback
+     is pinned as deliberate rather than looking like the same bug half-fixed. */
+  section('modals: focus returns to the control that opened them');
+  {
+    const O = await open(browser, url, SEED);
+    await O.page.click('#viewSeg button[data-view="dash"]');
+    await O.page.waitForTimeout(350);
+
+    // focus the $ button on the first holdings row the way a keyboard would
+    await O.page.evaluate(() => document.querySelector('#hbody .rm.sell').focus());
+    const before = await O.page.evaluate(() => ({
+      tag: document.activeElement.tagName,
+      id: document.activeElement.dataset.id,
+    }));
+    check(before.tag === 'BUTTON' && !!before.id,
+      'a holdings sell button has focus to begin with', JSON.stringify(before));
+
+    await O.page.evaluate(() => document.querySelector('#hbody .rm.sell').click());
+    await O.page.waitForTimeout(200);
+    check(await O.page.evaluate(() => document.activeElement.id) === 'sellQty',
+      'opening the dialog moves focus into it');
+
+    // Escape, the path a user takes when they change their mind
+    await O.page.keyboard.press('Escape');
+    await O.page.waitForTimeout(200);
+    const after = await O.page.evaluate(() => ({
+      open: document.getElementById('sellModal').classList.contains('open'),
+      tag: document.activeElement.tagName,
+      id: document.activeElement.dataset.id,
+      isBody: document.activeElement === document.body,
+    }));
+    check(!after.open, 'Escape closes it');
+    check(!after.isBody && after.id === before.id,
+      'and focus is back on the very button that opened it', JSON.stringify(after));
+
+    /* The confirm path: the row is replaced by the render, so the remembered
+       button is detached and focusing it would do nothing silently. Asserted so
+       the limitation is on the record. */
+    await O.page.evaluate(() => {
+      state.cash.TFSA = 10000;
+      document.querySelector('#hbody .rm.sell').focus();
+      document.querySelector('#hbody .rm.sell').click();
+    });
+    await O.page.waitForTimeout(200);
+    await O.page.evaluate(() => { $('sellQty').value = '1'; $('sellPrice').value = '10'; });
+    await O.page.evaluate(() => confirmSell());
+    await O.page.waitForTimeout(300);
+    check(await O.page.evaluate(() => !document.getElementById('sellModal').classList.contains('open')),
+      'a confirmed sale closes the dialog');
+    check(await O.page.evaluate(() => document.activeElement === document.body),
+      'and leaves focus at the document, because the row it came from is gone');
+
+    check(O.errs.length === 0, 'no page errors', O.errs.join(' | '));
+    await O.ctx.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nUI: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

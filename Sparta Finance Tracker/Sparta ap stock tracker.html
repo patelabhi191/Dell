@@ -4113,10 +4113,39 @@ function histPts(a){
   });
   return out;
 }
+/* A MONEY FIGURE THAT IS NOT A FINITE NUMBER DOES NOT THROW -- IT PRINTS.
+   That is what makes it worse than a bad shape. `s + undefined` is NaN, NaN
+   propagates through every sum it touches, and the result is "$NaN" sitting in
+   the one figure the user is reading, with nothing in the console and no
+   try/catch triggered. One expense row with no `amt` took out End, Saved,
+   Off-paper, both monthly averages and the chart axis at once -- the chart then
+   emitted y1="NaN" nine times, which is the only visible sign of it.
+
+   It also corrupts quietly and permanently: JSON.stringify writes NaN as null,
+   so the bad figure survives a save, and arcSnapshot seals it into an archive
+   where it reads as $0 forever -- a snapshot of a year that is simply wrong,
+   and archives are the one thing here meant never to change.
+
+   Half-written cloud records and hand-edited JSON are both real: the PIN is
+   documented as something to read and reset in the Firebase console, so rows
+   get edited by hand there.
+
+   Coerced on the way IN, next to histPts and for the same stated reason -- one
+   choke point rather than a guard in every reader. A numeric STRING is kept
+   rather than zeroed, because "12.50" is the user's money and reading it is
+   strictly better than throwing it away; only something with no number in it
+   at all becomes 0, where it is at least visible and editable. */
+const fin=v=>{ const n = typeof v==='number' ? v : (v==null||v==='' ? NaN : +v);
+  return isFinite(n) ? n : 0; };
+/* Cash is the three account buckets and nothing else, so the shape is fixed and
+   the figures are coerced with it -- cashInScope() adds all three, so one bad
+   bucket is enough to make the Dashboard hero total NaN. */
+const cash3=o=>{ const c=Object.assign({TFSA:0,FHSA:0,Other:0},o||{});
+  c.TFSA=fin(c.TFSA); c.FHSA=fin(c.FHSA); c.Other=fin(c.Other); return c; };
 let sortBy='sym';   // 'sym' = A→Z (default) | 'pl' = highest P/L % first
 let state = {
   holdings: loadNS('sparta.dash.holdings','sparta.holdings', []),   // {id,sym,acct,qty,avg,price,manual}
-  cash: Object.assign({TFSA:0, FHSA:0, Other:0}, loadNS('sparta.dash.cash','sparta.cash',{})),
+  cash: cash3(loadNS('sparta.dash.cash','sparta.cash',{})),
   history: histPts(loadNS('sparta.dash.history','sparta.history', [])),  // {t, v:{ALL,TFSA,FHSA,Other}, k}
   /* Closed positions. Each row keeps the NATIVE price and average cost plus the
      currency they were in -- never a converted total, because a record that
@@ -4208,11 +4237,42 @@ const $=id=>document.getElementById(id);
 const rate=()=>state.ccy==='CAD'?state.fx:1;          // display rate from USD base
 const toBase=n=>n/rate();                             // input in display ccy -> USD base
 const sym=()=>state.ccy==='CAD'?'C$':'$';
-const fmt=n=>sym()+((n||0)*rate()).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
+/* THE SIGN GOES IN FRONT OF THE SYMBOL: −C$12.00, never C$-12.00.
+   signed() and signedNat() two lines down already place it themselves, with
+   U+2212, which is why this was easy to miss -- the figures that go through
+   THEM were always right. fmt is the one that prints a bare negative, and it
+   left the minus where toLocaleString puts it, inside the currency.
+   An overdraft is a supported state here, not an edge case: sellReverse is
+   allowed to overdraw an account because refusing would make a real correction
+   impossible once the money had moved on, and sellCashNote exists to announce
+   it. So "Available balance: C$-412.00" was the ordinary reading of that
+   feature, with Archives' arc$ and Monthly's meMoney both printing the minus
+   first on the same kind of figure.
+   money() is deliberately NOT changed: it strips the sign with Math.abs on
+   purpose, because it exists to be wrapped by signed(). */
+const fmt=n=>{ const v=(n||0)*rate();
+  return (v<0?'\u2212':'')+sym()+Math.abs(v).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}); };
 function money(n){return sym()+Math.abs(n*rate()).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function signed(n){return (n>0?'+':n<0?'−':'')+money(n)}
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
 const uid=()=>Math.random().toString(36).slice(2,9);
+/* WHERE THE KEYBOARD GOES BACK TO WHEN A MODAL CLOSES.
+   Both dialogs move focus into themselves when they open, which is right, and
+   neither put it back when they closed -- so after pressing Escape on the sell
+   dialog opened from row forty of the holdings table, focus was on <body> and
+   the way back was to Tab from the top of the page.
+   Kept per modal rather than in one slot: the two are independent, and the sell
+   dialog can be opened from either the holdings table or the Past sells panel.
+   Restored only if the trigger is STILL IN THE DOCUMENT -- focusing a detached
+   node silently does nothing, and a confirmed sale re-renders the table that
+   held the button, so that path legitimately has nothing to go back to. The
+   cancel and Escape paths, which are the common ones, do. */
+const modalReturn=Object.create(null);
+function modalRemember(id){ modalReturn[id]=document.activeElement }
+function modalRestore(id){
+  const el=modalReturn[id]; modalReturn[id]=null;
+  if(el && el.isConnected && typeof el.focus==='function' && el!==document.body) el.focus();
+}
 // Local calendar date as YYYY-MM-DD. Deliberately NOT toISOString(), which is
 // UTC: west of Greenwich it reads a day ahead for the last hours of every
 // evening (7pm+ in Toronto), so prefilling from it files records under the
@@ -4231,7 +4291,11 @@ const hCcy=h=>h.ccy||'USD';
 function invested(list){ return list.reduce((s,h)=>s+natToBase(h.qty*h.avg,hCcy(h)),0) }
 function marketVal(list){ return list.reduce((s,h)=>s+natToBase(h.qty*(h.price??h.avg),hCcy(h)),0) }
 // format a native-currency figure with its own symbol (never converted)
-function fmtNat(v,ccy){ return (ccy==='CAD'?'C$':'$')+(v||0).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}) }
+/* Same rule for a native-currency figure. Reached by a genuinely negative
+   number in two ordinary places: a holding's value if a quantity is negative,
+   and Eye on Stocks' EPS, which is negative for any company losing money. */
+function fmtNat(v,ccy){ const n=v||0;
+  return (n<0?'\u2212':'')+(ccy==='CAD'?'C$':'$')+Math.abs(n).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}) }
 function signedNat(v,ccy){ return (v>0?'+':v<0?'\u2212':'')+fmtNat(Math.abs(v),ccy) }
 function cashInScope(){
   if(state.filter==='ALL') return state.cash.TFSA+state.cash.FHSA+state.cash.Other;
@@ -4281,6 +4345,25 @@ function render(){
   $('sortSym').classList.toggle('on',sortBy==='sym');
   $('sortSym').classList.toggle('asc',sortBy==='sym');
   $('sortPL').classList.toggle('on',sortBy==='pl');
+  /* BOTH SUB-LINES CARRY opacity:.8, and the figure is 4.73:1 against the
+     panel. `opacity` composites the whole element over what is behind it, so
+     the ratio to judge is the COMPOSITED colour -- getComputedStyle().color
+     still reports the full-strength value, which is why this reads as fine and
+     is not. The P/L percentage was at .75, where the LOSS colour lands on
+     4.28:1 against a 4.5 requirement (11px is nowhere near the large-text
+     exemption). The gain colour is far brighter and passed either way, so the
+     failure only ever showed on a position that was DOWN -- the number most
+     worth being able to read. The two sub-lines are the same kind of thing and
+     now share one value, which is also one fewer figure invented by accident.
+     Measured, not guessed: test-ui.js composites the colour and asserts it. */
+  /* A ticker reaches four attributes and one cell below, and the quote link's
+     BASE is a value the user pasted into Settings. Both are user text in an
+     innerHTML: a ticker holding a quote closed `title="` and hung an event
+     handler off the row, and a saved quote URL holding one did the same to the
+     anchor. Escaping here rather than at the input, because this is where the
+     markup is built and there are two such render sites. */
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const tb=$('hbody');tb.innerHTML='';
   rows.forEach(h=>{
     const c=hCcy(h);
@@ -4293,9 +4376,9 @@ function render(){
     tr.innerHTML=`
       <td><span class="sym"><button class="bk" data-bk="${h.id}" type="button"
         title="${h.broker==='Q'?'QuestTrade — click to clear':'Mark as QuestTrade'}"
-        aria-label="${h.broker==='Q'?h.sym+' is at QuestTrade':'Mark '+h.sym+' as QuestTrade'}"
-        aria-pressed="${h.broker==='Q'}">${h.broker==='Q'?'Q':''}</button>${h.sym}<a class="qlink" href="${quoteHref(h.sym)}" target="_blank"
-        rel="noopener noreferrer" title="Open ${h.sym} in a new tab" aria-label="Open ${h.sym} on the quote site"
+        aria-label="${h.broker==='Q'?esc(h.sym)+' is at QuestTrade':'Mark '+esc(h.sym)+' as QuestTrade'}"
+        aria-pressed="${h.broker==='Q'}">${h.broker==='Q'?'Q':''}</button>${esc(h.sym)}<a class="qlink" href="${esc(quoteHref(h.sym))}" target="_blank"
+        rel="noopener noreferrer" title="Open ${esc(h.sym)} in a new tab" aria-label="Open ${esc(h.sym)} on the quote site"
         ><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
           ><path d="M14 4h6v6"/><path d="M20 4l-8.6 8.6"/><path d="M18 13.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5.5"/></svg
@@ -4304,7 +4387,7 @@ function render(){
       <td>${fmtNat(h.avg,c)}</td>
       <td class="${pxCls}" style="font-weight:600">${fmtNat(price,c)}<br><span style="font-size:10.5px;opacity:.8">${arrow} ${(pxDiff>=0?'+':'')+pxDiff.toFixed(2)}%</span></td>
       <td>${fmtNat(val,c)}</td>
-      <td class="pl ${pnl>0?'up':pnl<0?'down':'flat'}">${signedNat(pnl,c)}<br><span style="font-size:11px;opacity:.75">${(pnl>=0?'+':'')+pct.toFixed(2)}%</span></td>
+      <td class="pl ${pnl>0?'up':pnl<0?'down':'flat'}">${signedNat(pnl,c)}<br><span style="font-size:11px;opacity:.8">${(pnl>=0?'+':'')+pct.toFixed(2)}%</span></td>
       <td style="white-space:nowrap"><button class="rm sell" title="Sell to cash" data-id="${h.id}">$</button><button class="rm" title="Remove from portfolio" data-id="${h.id}">✕</button></td>`;
     tb.appendChild(tr);
   });
@@ -4343,14 +4426,23 @@ function limitFor(acct,y){
 // default any deposit logged before contributor-tracking existed to ABI. ABI/POO
 // are hardcoded (not Settings-configurable) directly in each <select> in markup,
 // matching every other short account-style select in this file.
-state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t).getFullYear(); if(!c.who) c.who='ABI'; });
+/* `amt` is coerced here rather than in contributed(), which is one of four
+   readers. A year is derived from the timestamp, so a row with neither lands
+   under NaN, where no selector offers it and no total counts it -- the money
+   would simply be gone from the tab. The current year at least shows it. */
+state.contribs.forEach(c=>{ if(!c.id) c.id=uid();
+  if(c.y==null) c.y=new Date(c.t).getFullYear();
+  if(!isFinite(c.y)) c.y=new Date().getFullYear();
+  c.amt=fin(c.amt); if(!c.who) c.who='ABI'; });
 // Contributions used to be stored in USD base and re-converted at the live rate on
 // every render, so recorded CAD amounts drifted whenever FX moved. They are now
 // stored as plain CAD. Convert existing rows once, at the current rate.
 (function migrateContribCAD(){
   if(store.get('sparta.contrib.cadFixed',false)) return;
   const fx=state.fx||1.37;
-  state.contribs.forEach(c=>{ if(!c.cad){ c.amt=+(c.amt*fx).toFixed(2); c.cad=true } });
+  // fin() first: this sets cad:true and writes back, so a non-finite figure
+  // multiplied here was locked in permanently rather than just rendered badly.
+  state.contribs.forEach(c=>{ if(!c.cad){ c.amt=+(fin(c.amt)*fx).toFixed(2); c.cad=true } });
   store.set('sparta.contrib.cadFixed',true);
   store.set('sparta.contrib.entries',state.contribs);
 })();
@@ -4358,6 +4450,15 @@ state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t
 (function migrateNative(){
   let changed=false;
   state.holdings.forEach(h=>{
+    /* Before the early return, and for EVERY row rather than only the ones this
+       migration still has work to do: a qty or avg that is not a finite number
+       makes invested() and marketVal() NaN, and the Dashboard hero then reads
+       "C$NaN unrealized". A price is allowed to be ABSENT -- `h.price ?? h.avg`
+       is the "no live quote yet" path -- but ?? does not catch NaN, so a
+       non-finite one is turned back into the absence it was standing for. */
+    const q=fin(h.qty), a=fin(h.avg);
+    if(q!==h.qty||a!==h.avg){ h.qty=q; h.avg=a; changed=true }
+    if(h.price!=null && !isFinite(h.price)){ h.price=null; changed=true }
     if(h.nat) return;
     const c=h.ccy||'USD';
     if(c==='CAD'){ h.avg=h.avg*state.fx; if(h.price!=null) h.price=h.price*state.fx }
@@ -4423,7 +4524,7 @@ function renderContribs(){
     if(cur) tr.style.background='rgba(255,255,255,.035)';
     tr.innerHTML=`<td style="text-align:left"><span class="sym" style="font-size:13px">${c.y}</span></td>
       <td>${c.backfill?'yearly entry':dte.toLocaleDateString('en-CA')}</td>
-      <td><span class="acct-tag ${c.acct==='TFSA'?'tag-tfsa':c.acct==='FHSA'?'tag-fhsa':'tag-other'}" style="margin:0">${c.acct}</span></td>
+      <td><span class="acct-tag ${c.acct==='TFSA'?'tag-tfsa':c.acct==='FHSA'?'tag-fhsa':'tag-other'}" style="margin:0">${c.acct||'\u2014'}</span></td>
       <td><span class="acct-tag ${c.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${c.who||'ABI'}</span></td>
       <td>${fmtCADterm(c.amt)}</td>
       <td style="white-space:nowrap"><button class="yf-edit" title="Edit entry" data-cedit="${c.id}">\u270e</button><button class="rm" title="Remove entry" data-cid="${c.id}">\u2715</button></td>`;
@@ -4542,6 +4643,7 @@ function editContrib(id){
   $('cedAcct').value=c.acct;
   $('cedWho').value=c.who||'ABI';
   $('cedTitle').textContent=`Edit ${c.acct} deposit`;
+  modalRemember('cedModal');
   $('cedModal').classList.add('open');
   setTimeout(()=>$('cedAmt').focus(),40);
 }
@@ -4566,7 +4668,8 @@ function saveContribEdit(){
   persist(); render();
   toast(`Updated \u2014 ${was} \u2192 ${fmtCADterm(c.amt)} ${c.acct} ${c.y}`);
 }
-function closeContribEdit(){ $('cedModal').classList.remove('open'); contribEditId=null }
+function closeContribEdit(){ $('cedModal').classList.remove('open'); contribEditId=null;
+  modalRestore('cedModal') }
 function removeContrib(id){
   markUserEdit();
   const c=state.contribs.find(x=>x.id===id); if(!c) return;
@@ -4613,10 +4716,62 @@ function arcBury(year){
 function arcUnbury(year){
   store.set('sparta.arcDeleted',arcBuried().filter(y=>y!==+year)); touchUpdatedAt();
 }
+/* A record only has to carry a `year` to be kept, which is deliberate -- a
+   truncated cloud write or a hand-edited record should not be thrown away. But
+   the CARD reads six figures straight out of `stats`, and arc$(undefined) is
+   "$NaN", so such a record painted $NaN six times across its own header. The
+   rollover already guards `prev.stats` for its own deref; this is the other
+   reader of the same missing object, and it is the one on screen.
+   Filled with zeros rather than hidden, which is the same trade the growth
+   percentage already makes when `start <= 0`: a guarded figure the pencil can
+   correct beats a figure that reads as broken and cannot be. */
+const ARC_STATS=['start','end','invested','moved','saved','offPaper','growth'];
+const ARC_CONTRIB=['abiT','abiF','pooT','pooF'];
+// Twelve finite numbers, whatever arrived. arcBars SPREADS these, and spreading
+// undefined throws rather than returning nothing, so the length matters as much
+// as the type: a short array would silently shorten the bar row.
+const arc12=v=>Array.from({length:12},(_,i)=>{
+  const n=Array.isArray(v)?v[i]:undefined;
+  return (typeof n==='number'&&isFinite(n))?n:0;
+});
 function normalizeArchives(){
   if(!Array.isArray(state.archives)) state.archives=[];
-  state.archives=state.archives.filter(a=>a&&typeof a==='object'&&a.year);
-  state.archives.forEach(a=>{ if(!a.id) a.id=uid() });
+  /* THE YEAR HAS TO BE A NUMBER, and nothing guaranteed it was. Three places
+     look a record up with `a.year===year` against a figure off the clock, so a
+     record carrying the STRING "2026" matched none of them: + Add year found no
+     prior record and pushed a second one, giving two cards for one year, and
+     arcCarryStart missed last year's closing balance entirely. It is also
+     printed straight into the card without an escaper, so a hand-edited record
+     could put markup there -- coercing fixes the lookup and removes that at the
+     same time, which is better than escaping a field that was never text.
+     Coerced BEFORE the filter, so a record with an unusable year is dropped by
+     the same test that has always dropped one with no year at all. */
+  state.archives.forEach(a=>{ if(a&&typeof a==='object') a.year=+a.year });
+  state.archives=state.archives.filter(a=>a&&typeof a==='object'&&isFinite(a.year)&&a.year);
+  state.archives.forEach(a=>{ if(!a.id) a.id=uid();
+    if(!a.stats || typeof a.stats!=='object') a.stats={};
+    ARC_STATS.forEach(k=>{ if(typeof a.stats[k]!=='number' || !isFinite(a.stats[k])) a.stats[k]=0 });
+    /* The card BODY is the part that throws rather than merely misprinting:
+       arcBars does `Math.max(...a.mInc,...a.mExp,1)`, and a record with no
+       mInc took the whole expand with it -- "undefined is not iterable",
+       straight into the window error handler, so the user got the generic
+       "Something failed to load" toast and a card that would not open.
+       Guaranteed here rather than guarded in arcBars, because arcTrend,
+       arcMatrix, arcTable and arcMeIncLine all read their own array off the
+       same record and would each need a guard of their own. */
+    a.mInc=arc12(a.mInc); a.mExp=arc12(a.mExp); a.meInc=arc12(a.meInc);
+    if(!Array.isArray(a.exp)) a.exp=[];
+    if(!Array.isArray(a.inc)) a.inc=[];
+    if(!Array.isArray(a.highlights)) a.highlights=[];
+    /* arcMatrix and arcTrend both sort the categories by reducing each row, so
+       a value that is not an array throws there the same way. */
+    if(!a.byCat || typeof a.byCat!=='object') a.byCat={};
+    Object.keys(a.byCat).forEach(k=>{ a.byCat[k]=arc12(a.byCat[k]) });
+    if(!a.contrib || typeof a.contrib!=='object') a.contrib={};
+    ARC_CONTRIB.forEach(k=>{ if(typeof a.contrib[k]!=='number' || !isFinite(a.contrib[k])) a.contrib[k]=0 });
+    ['entries','entriesYf','entriesMe'].forEach(k=>{
+      if(typeof a[k]!=='number' || !isFinite(a[k])) a[k]=0 });
+  });
   // newest first, the way a list of years is read
   state.archives.sort((a,b)=>b.year-a.year);
 }
@@ -4977,7 +5132,8 @@ function arcTrend(a){
   /* radios, not checkboxes: the control has to say "one of these", and a row of
      ticks that silently un-ticks the last one is the usual way that goes wrong */
   const gear='<span class="arc-gearwrap">'+
-    '<button class="arc-gear" type="button" data-act="gear" title="Choose a category">⚙</button>'+
+    '<button class="arc-gear" type="button" data-act="gear" aria-expanded="false" '+
+      'title="Choose a category">⚙</button>'+
     '<div class="skeu-pop arc-pop">'+
       '<div class="skeu-label" style="margin-bottom:8px">SHOW CATEGORY</div>'+
       '<div class="me-poplist arc-poplist">'+ (cats.length?cats.map(c=>
@@ -5076,7 +5232,13 @@ function arcCardHTML(a){
   const dn=(st.growth||0)<0;
   return '<div class="ay'+(open?' open':'')+'" data-id="'+a.id+'">'+
     '<div class="ay-top">'+
-      '<button class="ay-head" type="button" data-act="toggle">'+
+      /* The whole point of this button is that it opens the card, and it is
+         the primary control on the tab -- but it announced nothing, so a screen
+         reader could not tell an open card from a closed one. `open` is already
+         in hand two dozen lines up. The Settings drawer's `i` buttons already
+         toggle hidden and aria-expanded together; these four were the ones
+         that did not follow it. */
+      '<button class="ay-head" type="button" data-act="toggle" aria-expanded="'+open+'">'+
         '<span class="ay-id"><span class="ay-yr">'+a.year+'</span>'+
           '<span class="ay-meta">'+meta+'</span></span>'+
         '<span class="ay-nums">'+
@@ -5162,6 +5324,7 @@ function arcBind(){
   document.addEventListener('click',e=>{
     if(e.target.closest('.arc-gearwrap')) return;
     box.querySelectorAll('.arc-pop.open').forEach(p=>p.classList.remove('open'));
+    box.querySelectorAll('.arc-gear').forEach(g=>g.setAttribute('aria-expanded','false'));
   });
   box.addEventListener('click',e=>{
     const btn=e.target.closest('[data-act]'); if(!btn) return;
@@ -5174,6 +5337,10 @@ function arcBind(){
       const was=pop.classList.contains('open');
       box.querySelectorAll('.arc-pop.open').forEach(p=>p.classList.remove('open'));
       if(!was) pop.classList.add('open');
+      /* Every gear, not just this one: opening one closes the others, so their
+         buttons are all now reporting a popover that is shut. */
+      box.querySelectorAll('.arc-gear').forEach(g=>g.setAttribute('aria-expanded','false'));
+      if(!was) btn.setAttribute('aria-expanded','true');
       return;
     }
     if(act==='toggle'){ arcOpen.has(id)?arcOpen.delete(id):arcOpen.add(id); renderArchives(); return }
@@ -5604,6 +5771,7 @@ function addHolding(){
 let sellId=null, sellMode='new', sellRecId=null;
 function sellHolding(id){                       // opens the dialog rather than dumping everything
   const h=state.holdings.find(x=>x.id===id); if(!h) return;
+  modalRemember('sellModal');
   sellId=id; sellMode='new'; sellRecId=null;
   $('sellConfirm').textContent='Sell';
   $('sellEffectRow').style.display='none';
@@ -5630,6 +5798,7 @@ function sellRec(id){ return (state.sells||[]).find(x=>x.id===id) }
 
 function editSell(id){
   const r=sellRec(id); if(!r) return;
+  modalRemember('sellModal');
   sellMode='edit'; sellRecId=id; sellId=null;
   $('sellTitle').textContent='Correct the '+r.sym+' sale';
   $('sellSub').textContent=`Recorded as ${r.qty} at ${fmtNat(r.price,r.ccy)} from ${r.acct}, `+
@@ -5789,7 +5958,7 @@ function confirmSell(){
   toast(`Sold ${q} ${h.sym} at ${fmtNat(p,c)} — ${money(proceeds)} to ${h.acct} cash (${signedNat(pnl,c)})`);
 }
 function closeSell(){ $('sellModal').classList.remove('open');
-  sellId=null; sellMode='new'; sellRecId=null }
+  sellId=null; sellMode='new'; sellRecId=null; modalRestore('sellModal') }
 /* Two brokers, both holding a TFSA and an FHSA, so the account alone cannot say
    where a position lives. This is a LABEL and nothing else: it changes no total,
    no filter and no figure -- adding a position under TFSA/FHSA works exactly as
@@ -6282,11 +6451,26 @@ const BOOT_HAD_LOCAL_DATA = (function(){
 })();
 
 /* ============ Firebase cloud sync ============ */
-let fbDB=null, fbSaveTimer=null, fbApplying=false, fbReconnecting=false;
+let fbDB=null, fbSaveTimer=null, fbReconnecting=false;
+/* HOISTED, for the same reason fbBooting below is, and it took a real console
+   error to notice: cloudSaveDebounced() opens with `if(fbApplying||fbLocalOnly)
+   return` and `if(!fbUserEdited) return`, persist() ends by calling it, and
+   migrateNative() calls persist() while `state` is still being built -- roughly
+   two thousand lines above this one. As `let` that is a temporal dead zone, so
+   any browser holding a holding written before the native-currency migration
+   threw "Cannot access 'fbApplying' before initialization" on every single
+   load. It survived this long because cloudSaveDebounced is `async`: the throw
+   became an unhandled REJECTION rather than an exception, so it never reached
+   the window error handler that would have shown the user a toast, and the rest
+   of init carried on as if nothing had happened. A console error on a clean
+   load is exactly the thing that is invisible until someone looks.
+   Undefined is falsy, so the guards still read correctly during boot, and the
+   !fbUserEdited test then returns before anything can reach the cloud. */
+var fbApplying=false;
 /* Nothing is written to the cloud until a real user edit happens. Page loads,
    price refreshes and migrations are read-only, so simply opening the app on a
    new device can never overwrite what's already stored. */
-let fbUserEdited=false;
+var fbUserEdited=false;
 var fbBooting=true;                    // hoisted: persist() may run before this line
 function markUserEdit(){ fbUserEdited=true }
 var legacyFbFound;   // hoisted (undefined=false); set earlier by offerLegacyConfig, so no initialiser here
@@ -6324,7 +6508,7 @@ function loadFirebaseSDK(){
 function applyPayload(p){
   if(!p) return;
   fbApplying=true;
-  state.holdings=p.holdings||[]; state.cash=Object.assign({TFSA:0,FHSA:0,Other:0},p.cash||{});
+  state.holdings=p.holdings||[]; state.cash=cash3(p.cash);
   if(Array.isArray(p.sells)) state.sells=p.sells;   // absent in payloads written before sells existed
   state.history=histPts(p.history);          // also fills in a missing `k`
   state.contribs=p.contribs||[];
@@ -6353,11 +6537,27 @@ state.yearly.forEach(r=>{
   if(typeof normalizeArchives==='function'){ normalizeArchives(); store.set('sparta.archives',state.archives);
     if(typeof renderArchives==='function') renderArchives() }
   state.updatedAt=p.updatedAt||Date.now();
-  state.contribs.forEach(c=>{ if(!c.id) c.id=uid(); if(c.y==null) c.y=new Date(c.t).getFullYear(); if(!c.who) c.who='ABI'; });
+  /* `amt` is coerced here rather than in contributed(), which is one of four
+   readers. A year is derived from the timestamp, so a row with neither lands
+   under NaN, where no selector offers it and no total counts it -- the money
+   would simply be gone from the tab. The current year at least shows it. */
+state.contribs.forEach(c=>{ if(!c.id) c.id=uid();
+  if(c.y==null) c.y=new Date(c.t).getFullYear();
+  if(!isFinite(c.y)) c.y=new Date().getFullYear();
+  c.amt=fin(c.amt); if(!c.who) c.who='ABI'; });
 // migrate holdings saved under the old "everything in base USD" model to native values
 (function migrateNative(){
   let changed=false;
   state.holdings.forEach(h=>{
+    /* Before the early return, and for EVERY row rather than only the ones this
+       migration still has work to do: a qty or avg that is not a finite number
+       makes invested() and marketVal() NaN, and the Dashboard hero then reads
+       "C$NaN unrealized". A price is allowed to be ABSENT -- `h.price ?? h.avg`
+       is the "no live quote yet" path -- but ?? does not catch NaN, so a
+       non-finite one is turned back into the absence it was standing for. */
+    const q=fin(h.qty), a=fin(h.avg);
+    if(q!==h.qty||a!==h.avg){ h.qty=q; h.avg=a; changed=true }
+    if(h.price!=null && !isFinite(h.price)){ h.price=null; changed=true }
     if(h.nat) return;
     const c=h.ccy||'USD';
     if(c==='CAD'){ h.avg=h.avg*state.fx; if(h.price!=null) h.price=h.price*state.fx }
@@ -6707,7 +6907,10 @@ function renderContribChart(){
       const bx=+b.getAttribute('x')+ +b.getAttribute('width')/2, by=+b.getAttribute('y');
       const sx=r.left+(bx/W)*r.width, sy=r.top+(by/H)*r.height;
       const wrap=tip.parentElement.getBoundingClientRect();
-      const fmt=n=>'C$'+(+n).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
+      // Shadows the global fmt with a CAD-only copy, so it needed the same
+      // treatment independently rather than inheriting it.
+      const fmt=n=>{ const v=+n||0;
+        return (v<0?'\u2212':'')+'C$'+Math.abs(v).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}); };
       tip.innerHTML=state.cWho==='ALL'
         ? `<b style="color:${b.dataset.col}">${b.dataset.acct}</b> ${b.dataset.year}<br>${b.dataset.who} ${fmt(b.dataset.val)} · ${b.dataset.otherwho} ${fmt(b.dataset.other)}<br><b>Total ${fmt(b.dataset.total)}</b>`
         : `<b style="color:${b.dataset.col}">${b.dataset.acct}</b> ${b.dataset.year}<br>${state.cWho} ${fmt(b.dataset.val)}`;
@@ -6844,6 +7047,13 @@ function handleCSV(text){
   renderImportPreview();
 }
 function renderImportPreview(){
+  /* The ticker is a CSV cell. It is upper-cased and has its whitespace stripped,
+     which looks like sanitising and is not: attributes can be separated by a
+     closing quote instead of a space, and an HTML entity is all digits so
+     upper-casing leaves it intact -- so a crafted Symbol column ran script in
+     this preview before a single row had been imported. */
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const tb=$('impBody'); tb.innerHTML='';
   let nNew=0,nUpd=0;
   impRows.forEach((r,i)=>{
@@ -6852,7 +7062,7 @@ function renderImportPreview(){
     if(ex) nUpd++; else nNew++;
     const tr=document.createElement('tr');
     tr.innerHTML=`<td style="text-align:left"><input type="checkbox" data-imp="${i}" ${r.include?'checked':''} style="width:auto;margin:0"></td>
-      <td style="text-align:left"><span class="sym" style="font-size:12.5px">${r.sym}</span></td>
+      <td style="text-align:left"><span class="sym" style="font-size:12.5px">${esc(r.sym)}</span></td>
       <td><span class="acct-tag ${r.acct==='TFSA'?'tag-tfsa':r.acct==='FHSA'?'tag-fhsa':'tag-other'}" style="margin:0">${r.acct}</span></td>
       <td>${r.qty}</td>
       <td>${fmtNat(r.avg,r.ccy)}<br><span style="font-size:10px;opacity:.7">${r.ccy}</span></td>
@@ -6982,6 +7192,12 @@ function normalizeYF(){
   if(!Array.isArray(y.cats.exp)) y.cats.exp=YF_EXP.slice();
   if(!Array.isArray(y.cats.inc)) y.cats.inc=YF_INC.slice();
   y.txns=y.txns.filter(t=>t && typeof t==='object' && t.date);   // drop corrupt rows
+  /* A row with no usable `amt` is NOT dropped, unlike one with no date: it
+     still carries a date, a description and a category, so it is a record the
+     user can correct, and deleting their row to tidy a total would be the worse
+     trade. Zeroed, it shows as $0 in the list where it can be seen and fixed;
+     left alone, one of them made every figure on two tabs read $NaN. */
+  y.txns.forEach(t=>{ t.amt=fin(t.amt); });
   // default any transaction logged before contributor-tracking existed to ABI;
   // ABI/POO are hardcoded directly in each <select>, matching the Contributions tab.
   y.txns.forEach(t=>{ if(!t.who) t.who='ABI'; });
@@ -7031,10 +7247,30 @@ normalizeYF();
 
 state.yfYear = new Date().getFullYear();
 let yfEditId=null, yfFilter='all', yfChartMode='both', yfTxMonth='all', yfWhoFilter='ALL', yfTxCat='all';
-const yf$=v=>'$'+Math.round(v).toLocaleString('en-CA');
-// the minus goes in FRONT of the sign, not after it: -$249, never $-249
-const yfSign$=v=>(v<0?'-':'')+yf$(Math.abs(v));
-const yf$2=v=>'$'+(v||0).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
+/* THE MINUS GOES IN FRONT OF THE DOLLAR SIGN: −$249, never $-249.
+   toLocaleString puts it where a mathematician would, which is the wrong side
+   of a currency symbol, so both of these have to place it themselves. They did
+   not, and the figures that can go negative are not rare ones: a year that
+   spends more than it opened with plus everything it earned has a negative End,
+   and Saved and Off-paper follow it down -- so the Yearly stat row read
+   "$-6,400" while the Archives card for the SAME year read "−$6,400"
+   through arc$, the two tabs disagreeing about one number. A category whose
+   refunds outweigh its charges, and a Bill Payment row (stored negative), reach
+   yf$2 the same way.
+   The totals Diff cell was already fixed for exactly this once -- it is why
+   diffCell() exists and why it hands these an absolute value -- but the fix
+   lived in that one cell rather than in the formatters, so every other figure
+   kept the fault.
+   U+2212 rather than an ASCII hyphen because that is what this tab already
+   spells a minus with, in diffCell and in the growth percentage beside these
+   very tiles. Monthly's meMoney uses a hyphen and is deliberately left alone.
+   `Math.round(v)||0` collapses the negative zero that -0.4 would otherwise
+   round to, so a figure that rounds away prints $0 and not −$0. */
+const yf$=v=>{ const r=Math.round(v)||0;
+  return (r<0?'\u2212':'')+'$'+Math.abs(r).toLocaleString('en-CA'); };
+const yfSign$=v=>(v<0?'\u2212':'')+yf$(Math.abs(v));
+const yf$2=v=>{ const n=(v||0)<0?-(v||0):(v||0);
+  return ((v||0)<0?'\u2212':'')+'$'+n.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}); };
 function yfPersist(){ store.set('sparta.yf.data', state.yf); touchUpdatedAt();
   if(typeof cloudSaveDebounced==='function') cloudSaveDebounced(); }
 /* THE ONE LINK BETWEEN THE TABS. A Monthly line's `allot` is the ID of the
@@ -7423,7 +7659,14 @@ function renderYF(){
 
   // ----- category tables -----
   const nowM=(yr===new Date().getFullYear())?(new Date().getMonth()+1):12;
-  const esc=c=>c.replace(/"/g,'&quot;');
+  /* A category name is typed by hand and lands in a cell's TEXT as well as in
+     three data- attributes, so escaping the quote alone was never enough: a
+     category called `<img src=x onerror=...>` ran as markup in the Category
+     column, and the name travels in corePayload, so every synced device ran it
+     too. The entities decode back to the original string when `dataset` is read,
+     so rename and delete still carry the real name. */
+  const esc=c=>String(c).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   /* Totals used to build their own Diff cell, which is how the income total came
      out "$-7,200" the moment its sign could go negative. One renderer for both. */
   const diffCell=d=>`<td class="${d<0?'yf-neg':d>0?'yf-pos':''}">`+
@@ -7436,7 +7679,7 @@ function renderYF(){
     // Numbers only, the same as every other row. What Monthly itemised into a
     // bill is reported on the bill's own line in TRANSACTIONS, not here.
     return `<tr>
-      <td style="text-align:left">${cat}</td>
+      <td style="text-align:left">${esc(cat)}</td>
       <td>${yf$(act)}</td>
       <td><input class="yf-plan-in" data-cat="${esc(cat)}" type="number" step="1" min="0" value="${plan||''}" placeholder="0"></td>
       ${diffCell(diff)}
@@ -7561,7 +7804,14 @@ function yfFillCats(){
   const t=$('yfType').value;
   const cur=$('yfCat').value;
   const cats=yfCats(t==='income'?'income':'expense');
-  $('yfCat').innerHTML=cats.map(c=>`<option>${c}</option>`).join('');
+  /* The option's text IS its value here (no value attribute), and a category
+     name is user text. The `in select` parser drops an injected tag rather than
+     running it, so this was a correctness fault rather than the category
+     table's security one -- a name holding `<` lost everything after it, and
+     the picker then disagreed with the table. Entities decode, so .value is
+     still the real name. */
+  const esc=c=>String(c).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  $('yfCat').innerHTML=cats.map(c=>`<option>${esc(c)}</option>`).join('');
   if(cats.includes(cur)) $('yfCat').value=cur;
 }
 function yfSaveTx(){
@@ -8028,8 +8278,17 @@ function meFillCatSelect(){
   const cur=sel.value;
   // the row being edited keeps its own category on the list even if hidden
   const editing=meEditId&&(state.yf.txns||[]).find(t=>t.id===meEditId);
+  /* ME_CATS is a constant list, but `keep` is the edited row's OWN category,
+     and a Monthly row may legitimately carry a Yearly category name -- which is
+     user-editable free text. The option's TEXT is its value here, so a name
+     holding `<` lost everything after it and the picker then offered a value
+     that no longer matched the row: saving the row would quietly rewrite its
+     category. Same fault, same fix as yfFillCats. The parser suppresses an
+     injected tag inside a select, so this is a correctness bug rather than the
+     category table's security one, and the entities decode back for .value. */
+  const esc=c=>String(c).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   sel.innerHTML='<option value="">\u2014 none \u2014</option>'+
-    meAllCats(editing&&editing.cat).map(c=>`<option>${c}</option>`).join('');
+    meAllCats(editing&&editing.cat).map(c=>`<option>${esc(c)}</option>`).join('');
   sel.value=(cur&&[...sel.options].some(o=>o.value===cur))?cur:'';
 }
 // kept as the one entry point the month picker and the tests call: the bills on
@@ -8367,6 +8626,7 @@ function meRenderPayRow(tb,e){
       ? '<span class="acct-tag tag-other" style="margin:0 0 0 6px">\u2192 '+tagEsc(yfBillLabel(e.bill))+'</span>' : ''}</td>
     <td style="text-align:left"><span class="acct-tag ${who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${who}</span></td>
     <td style="white-space:nowrap"><button class="yf-edit" data-mepay="${tagEsc(e.billId)}"
+      aria-expanded="${open}"
       title="${open?'Hide':'Show'} the ${n} payment${n===1?'':'s'} behind this">${open?'\u25b4':'\u25be'}</button></td>`;
   tb.appendChild(tr);
   if(!open) return;
@@ -8527,7 +8787,11 @@ function meHandleCSV(text){
   if(cDate<0||(cAmt<0&&cDeb<0)){ toast('Could not find date and amount columns — send me this file and I will add its layout'); return }
 
   const found=[];
-  const show=(lbl,i)=>{ if(i>-1) found.push(`<span>${lbl}: <b>${headers[i]}</b></span>`) };
+  /* A header cell is whatever the bank wrote in the file, echoed back so the
+     column mapping can be checked by eye -- untrusted text going into an
+     innerHTML. A statement whose header row carried markup ran it here, which
+     is the one place in this app where a FILE from outside reaches the DOM. */
+  const show=(lbl,i)=>{ if(i>-1) found.push(`<span>${lbl}: <b>${tagEsc(headers[i])}</b></span>`) };
   show('date',cDate); show('description',cDesc); show('amount',cAmt);
   show('debit',cDeb); show('credit',cCred); show('category',cCat);
   $('meDetectBody').innerHTML=found.join('');
@@ -8740,10 +9004,16 @@ if($('meFile')){
     $('meFile').value=''; $('meFileName').textContent='or click to choose a file' };
   $('meSave').onclick=meSaveTx;
   $('meCancelEdit').onclick=meCancelEdit;
-  $('meGear').onclick=e=>{ e.stopPropagation(); $('mePop').classList.toggle('open') };
+  /* The gear lives in the markup, so its state is set from here rather than
+     written into an attribute: one place that both toggles the popover and
+     says so, instead of a default in the HTML that drifts from the handler. */
+  const meGearAria=()=>$('meGear').setAttribute('aria-expanded',
+    String(!!($('mePop')&&$('mePop').classList.contains('open'))));
+  $('meGear').onclick=e=>{ e.stopPropagation(); $('mePop').classList.toggle('open'); meGearAria() };
+  meGearAria();
   document.addEventListener('click',e=>{
     const pop=$('mePop'); if(!pop||!pop.classList.contains('open')) return;
-    if(!pop.contains(e.target) && e.target!==$('meGear')) pop.classList.remove('open');
+    if(!pop.contains(e.target) && e.target!==$('meGear')){ pop.classList.remove('open'); meGearAria() }
   });
   $('mePopAll').onclick=()=>{ state.me.chartCats=meChartableCats(meYear()); mePersist(); renderMEChart(); renderMEGear() };
   $('mePopNone').onclick=()=>{ state.me.chartCats=[]; mePersist(); renderMEChart(); renderMEGear() };
@@ -8929,7 +9199,7 @@ function npBody(sym,d){
         `<span class="v${c?' '+c:''}">${esc(v)}</span></div>`).join('')}</div>`
     : '<p class="np-stmsg">No company figures published for this symbol.</p>';
   return range+grid+
-    `<p class="np-stmsg"><a class="qlink" href="${quoteHref(sym)}" target="_blank"`+
+    `<p class="np-stmsg"><a class="qlink" href="${esc(quoteHref(sym))}" target="_blank"`+
     ` rel="noopener noreferrer">Open ${esc(sym)} on the quote site ↗</a>`+
     (d.ccy?` · figures in ${esc(d.ccy)}, never converted`:'')+`</p>`;
 }
