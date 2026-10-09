@@ -61,6 +61,46 @@ const VIEWS = ['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan'];
     }
   };
 
+  /* ── 3. the carousel dots ─────────────────────────────────────────────── */
+  section('3. the Highlights dots are reachable, and do not overlap each other');
+  for (const w of [1440, 375, 320]) {
+    await page.setViewportSize({ width: w, height: 1000 });
+    await go('yearly');
+    const d = await page.evaluate(() => {
+      const dots = [...document.querySelectorAll('.yf-hi-dot')];
+      if (dots.length < 2) return null;
+      // hit area read back off the hit-test chain, not off the declaration
+      const hit = el => {
+        const b = el.getBoundingClientRect();
+        const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+        let l = cx, r = cx, t = cy, bo = cy;
+        for (let x = cx; x > cx - 40; x -= 0.5) { if (!el.contains(document.elementFromPoint(x, cy))) break; l = x; }
+        for (let x = cx; x < cx + 40; x += 0.5) { if (!el.contains(document.elementFromPoint(x, cy))) break; r = x; }
+        for (let y = cy; y > cy - 40; y -= 0.5) { if (!el.contains(document.elementFromPoint(cx, y))) break; t = y; }
+        for (let y = cy; y < cy + 40; y += 0.5) { if (!el.contains(document.elementFromPoint(cx, y))) break; bo = y; }
+        return { x: l, y: t, w: r - l, h: bo - t };
+      };
+      const hits = dots.map(hit);
+      let overlap = 0;
+      for (let i = 0; i < hits.length; i++) for (let j = i + 1; j < hits.length; j++) {
+        const a = hits[i], b = hits[j];
+        const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+        const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+        if (ox > 0.5 && oy > 0.5) overlap = Math.max(overlap, ox);
+      }
+      return {
+        minW: Math.min(...hits.map(h => h.w)), minH: Math.min(...hits.map(h => h.h)),
+        overlap, paintedW: Math.min(...dots.map(d => d.getBoundingClientRect().width)),
+      };
+    });
+    check(d && d.minW >= 11.5, `${w}px: every dot's hit area is at least 12px wide`, d && `${d.minW.toFixed(1)}px`);
+    check(d && d.minH >= 23.5, `${w}px: every dot's hit area is at least 24px tall`, d && `${d.minH.toFixed(1)}px`);
+    check(d && d.overlap === 0, `${w}px: no dot's hit area overlaps its neighbour`, d && `${d.overlap}px`);
+    check(d && Math.abs(d.paintedW - 7) < 0.6, `${w}px: the PAINTED dot is still 7px — only the target grew`,
+      d && `${d.paintedW.toFixed(2)}px`);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
   /* ── 4. heading and first column share the panel's edge ───────────────── */
   section('4. every table\'s first column declares the panel edge with its ink');
   /* Glyph position comes from Range, but a TRANSFORMED glyph is skipped: the

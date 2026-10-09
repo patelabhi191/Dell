@@ -1228,8 +1228,25 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .yf-hi-t{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;font-weight:var(--fw-label);margin-bottom:9px}
 .yf-hi-l{font-size:15px;line-height:1.5;font-family:var(--font-display);font-weight:600}
 .yf-hi-dots{display:flex;gap:7px;margin-top:16px}
+/* The dots are the only way to reach a slide, and the painted dot is 7x7 --
+   measured 7x7 of actual hit area too, at every width down to 320px, because
+   unlike .bk this one never grew one. That is not hittable with a thumb, and
+   the Highlights carousel has no other control.
+
+   Same answer as .bk: the BOX stays 7px so the row of dots looks identical,
+   and the hit area is grown with a pseudo-element, which costs no layout.
+   The width is what the pitch allows rather than what WCAG would like. The
+   dots sit on a 14px pitch (7 wide + 7 gap), and .on scales the whole button
+   -- pseudo-element included -- by 1.25, so a hit area of w must satisfy
+   1.25*w/2 + w/2 <= 14 to keep an active dot from swallowing its neighbour:
+   w <= 12.4. 12px leaves half a pixel in hand. Height has no neighbour to
+   collide with, so it takes the full 24px.
+   Reaching a true 24x24 needs the GAP widened, which moves pixels the owner
+   has not asked to move -- written up instead. */
 .yf-hi-dot{width:7px;height:7px;padding:0;border-radius:50%;border:none;cursor:pointer;
+  position:relative;
   background:rgba(234,240,250,.25);transition:background .2s,transform .2s}
+.yf-hi-dot::before{content:"";position:absolute;inset:-8.5px -2.5px}
 .yf-hi-dot.on{background:var(--text);transform:scale(1.25)}
 @media (prefers-reduced-motion:reduce){.yf-hi-slide{transition:none}}
 /* under a bill's name in the category table: what was billed vs itemised out */
