@@ -61,6 +61,17 @@ const VIEWS = ['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan'];
     }
   };
 
+  /* ── 2c. the statement-source hint ────────────────────────────────────── */
+  section('2c. the "(optional)" hint is not dimmed a second time');
+  await go('monthly');
+  const optOp = await page.evaluate(() => {
+    const l = document.querySelector('label[for="meImpSrc"] span');
+    return l ? parseFloat(getComputedStyle(l).opacity) : null;
+  });
+  // Monthly's labels are already #93A2B8; .55 on top of that measured 2.88:1
+  check(optOp !== null && optOp >= 0.8,
+    'the hint inherits enough of its label to stay readable', `opacity ${optOp}`);
+
   /* ── 3. the carousel dots ─────────────────────────────────────────────── */
   section('3. the Highlights dots are reachable, and do not overlap each other');
   for (const w of [1440, 375, 320]) {
