@@ -109,8 +109,32 @@
   --stroke:rgba(255,255,255,0.12);
   --stroke-top:rgba(255,255,255,0.28);
   --text:#EAF0FA;
-  --text-dim:rgba(234,240,250,0.55);
-  --text-faint:rgba(234,240,250,0.35);
+  /* The two dim inks are alphas, so what they actually measure depends on the
+     glass under them. At .35, --text-faint came out between 2.71:1 and 2.97:1
+     against the real composited backgrounds of the six tabs -- under the 4.5:1
+     body bar, and under even the 3:1 UI bar on the lighter panels. It is not a
+     decorative token: it carries every form label, every .htable th, and the
+     whole of .empty / .np-empty / .chart-empty, so on a tab with no data the
+     only sentence on screen was the least readable thing on it.
+
+     The app already contained the evidence that the value, not the usage, was
+     wrong: Monthly had quietly escaped the token by hardcoding #93A2B8 and
+     #8695AB for its own labels, th and empty states -- which are #EAF0FA at
+     roughly alpha .64 and .58, and measure 5.4:1 to 7.1:1. Five tabs were
+     failing a bar the sixth had already met by hand. These alphas bring the
+     other five up to Monthly rather than inventing a level.
+
+     Both had to move. --text-faint needs .555 to clear 4.5:1 on the lightest
+     background it lands on (the deposit-log row), and --text-dim has to stay
+     clear of it or the two tokens invert and "dim" paints fainter than
+     "faint". .74 also lifts the Other account tag, which measured 4.44:1.
+
+     Rejected: repointing the ~30 failing rules at --text-dim one by one. That
+     leaves --text-faint naming nothing, is thirty chances to miss one, and
+     still forces --text-dim up for the tag. One value each is the smaller
+     change and the one that cannot drift apart later. */
+  --text-dim:rgba(234,240,250,0.74);
+  --text-faint:rgba(234,240,250,0.58);
   --teal:#5EEAD4;      /* TFSA + gains */
   --violet:#A78BFA;    /* FHSA */
   --rose:#FB7185;      /* losses */
