@@ -4623,7 +4623,18 @@ const arc12=v=>Array.from({length:12},(_,i)=>{
 });
 function normalizeArchives(){
   if(!Array.isArray(state.archives)) state.archives=[];
-  state.archives=state.archives.filter(a=>a&&typeof a==='object'&&a.year);
+  /* THE YEAR HAS TO BE A NUMBER, and nothing guaranteed it was. Three places
+     look a record up with `a.year===year` against a figure off the clock, so a
+     record carrying the STRING "2026" matched none of them: + Add year found no
+     prior record and pushed a second one, giving two cards for one year, and
+     arcCarryStart missed last year's closing balance entirely. It is also
+     printed straight into the card without an escaper, so a hand-edited record
+     could put markup there -- coercing fixes the lookup and removes that at the
+     same time, which is better than escaping a field that was never text.
+     Coerced BEFORE the filter, so a record with an unusable year is dropped by
+     the same test that has always dropped one with no year at all. */
+  state.archives.forEach(a=>{ if(a&&typeof a==='object') a.year=+a.year });
+  state.archives=state.archives.filter(a=>a&&typeof a==='object'&&isFinite(a.year)&&a.year);
   state.archives.forEach(a=>{ if(!a.id) a.id=uid();
     if(!a.stats || typeof a.stats!=='object') a.stats={};
     ARC_STATS.forEach(k=>{ if(typeof a.stats[k]!=='number' || !isFinite(a.stats[k])) a.stats[k]=0 });
@@ -8140,8 +8151,17 @@ function meFillCatSelect(){
   const cur=sel.value;
   // the row being edited keeps its own category on the list even if hidden
   const editing=meEditId&&(state.yf.txns||[]).find(t=>t.id===meEditId);
+  /* ME_CATS is a constant list, but `keep` is the edited row's OWN category,
+     and a Monthly row may legitimately carry a Yearly category name -- which is
+     user-editable free text. The option's TEXT is its value here, so a name
+     holding `<` lost everything after it and the picker then offered a value
+     that no longer matched the row: saving the row would quietly rewrite its
+     category. Same fault, same fix as yfFillCats. The parser suppresses an
+     injected tag inside a select, so this is a correctness bug rather than the
+     category table's security one, and the entities decode back for .value. */
+  const esc=c=>String(c).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   sel.innerHTML='<option value="">\u2014 none \u2014</option>'+
-    meAllCats(editing&&editing.cat).map(c=>`<option>${c}</option>`).join('');
+    meAllCats(editing&&editing.cat).map(c=>`<option>${esc(c)}</option>`).join('');
   sel.value=(cur&&[...sel.options].some(o=>o.value===cur))?cur:'';
 }
 // kept as the one entry point the month picker and the tests call: the bills on

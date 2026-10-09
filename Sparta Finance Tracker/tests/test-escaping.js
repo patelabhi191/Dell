@@ -191,6 +191,34 @@ const ent = s => [...s].map(c => '&#' + c.charCodeAt(0) + ';').join('');
   await page.evaluate(() => { store.del('sparta.quoteUrl'); render(); });
 
   // ─────────────────────────────────────────────────────────────────────────
+  section('6. Monthly’s category picker keeps the edited row’s own name');
+  /* ME_CATS is a constant list, so this picker looks safe and mostly is. The
+     exception is `keep`: meAllCats(keep) keeps the edited row's OWN category on
+     the list even when it is not one of Monthly's thirteen, and a Monthly row
+     may legitimately carry a YEARLY category name -- user-editable free text.
+     The option's text IS its value here, so the damage is not a script but a
+     silent rewrite: the picker offers a truncated string, and saving the row
+     files it under that instead of the category it had. */
+  await go('monthly');
+  const MECAT = 'Reno&Fix<b>';
+  await page.evaluate(c => {
+    state.yf.txns.push({ id: 'mex1', type: 'expense', date: '2026-01-09', amt: 42,
+      desc: 'TILE SHOP', cat: c, tab: 'me', who: 'ABI' });
+    state.yf.cats.exp.push(c);
+    meEditId = 'mex1';
+    meFillCatSelect();
+  }, MECAT);
+  await page.waitForTimeout(300);
+  check(await page.evaluate(() => document.querySelectorAll('#meCat b').length) === 0,
+    'no element was created in the picker');
+  check(await page.evaluate(c => [...document.getElementById('meCat').options]
+    .some(o => o.value === c && o.textContent === c), MECAT),
+    'the row’s own category round-trips with .value intact, so saving cannot rewrite it',
+    JSON.stringify(await page.evaluate(() =>
+      [...document.getElementById('meCat').options].map(o => o.value).slice(-3))));
+  await page.evaluate(() => { meEditId = null; });
+
+  // ─────────────────────────────────────────────────────────────────────────
   check(fired.length === 0, 'nothing executed anywhere in this run', fired.join(','));
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();

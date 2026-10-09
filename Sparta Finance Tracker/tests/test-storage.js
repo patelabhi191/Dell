@@ -897,6 +897,41 @@ const YEAR = 2026;
     await c.close();
   }
 
+  /* 10g. The year was never guaranteed to be a NUMBER, and three lookups use
+     `a.year===year` against a figure off the clock. A record carrying the
+     string "2026" matched none of them, so + Add year believed there was no
+     prior record for this year and pushed a second one -- one year, two cards,
+     and the older of them is the one holding any hand corrections. */
+  {
+    const Y = new Date().getFullYear();
+    const { c, p, pe } = await bootWith({
+      'sparta.archives': JSON.stringify([
+        { id: 'strYear', year: String(Y), sealed: false,
+          stats: { start: 10, end: 20, invested: 0, moved: 0, saved: 10, offPaper: 10, growth: 100 },
+          entries: 1, entriesYf: 1, entriesMe: 0 },
+      ]),
+    });
+    check(await p.evaluate(() => typeof state.archives[0].year) === 'number',
+      '10g: a string year is coerced to a number',
+      await p.evaluate(() => typeof state.archives[0].year));
+    await p.click('#viewSeg button[data-view="archive"]');
+    await p.waitForTimeout(300);
+    await p.evaluate(() => arcAddYear());
+    await p.waitForTimeout(300);
+    /* Compared with +a.year, NOT a.year===y. Strict equality counts only the
+       NUMERIC-year records, so against the unfixed build it saw just the newly
+       pushed one, reported 1, and passed while two records sat in the store --
+       the duplicate it exists to catch was invisible to it. */
+    const forY = await p.evaluate(y => state.archives.filter(a => +a.year === y).length, Y);
+    check(forY === 1,
+      '10g: + Add year REPLACES it rather than adding a second card for one year',
+      'records for ' + Y + ': ' + forY);
+    check(await p.evaluate(() => document.querySelectorAll('#arcList .ay').length) === 1,
+      '10g: and only one card is on screen');
+    check(pe.length === 0, '10g: no page errors', pe.slice(0, 3).join(' | '));
+    await c.close();
+  }
+
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nSTORAGE: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
