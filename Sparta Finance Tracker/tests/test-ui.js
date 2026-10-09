@@ -1876,6 +1876,64 @@ const section = t => console.log(`\n── ${t} ──`);
     await O.ctx.close();
   }
 
+  /* ── the holdings sub-lines are readable when the position is DOWN ───────
+     Both sub-lines in a holdings row carry an inline opacity, and `opacity`
+     composites the whole element over what is behind it -- so the ratio that
+     matters is the COMPOSITED colour. getComputedStyle().color still reports
+     the full-strength value, which is exactly why this reads as fine and is
+     not: declared, the loss colour is 6.86:1.
+
+     At the .75 the P/L percentage used to carry it composited to 4.28:1,
+     against a 4.5 requirement -- 11px is nowhere near the large-text exemption.
+     The GAIN colour is far brighter and passed either way, so the failure only
+     ever appeared on a position that was losing money, which is the number most
+     worth being able to read.
+
+     Computed rather than asserted against a remembered pixel value (bug class
+     12): the claim is "this clears AA", not "this is 4.73". */
+  section('holdings: the sub-lines clear AA once composited, losses included');
+  {
+    const O = await open(browser, url, SEED);
+    await O.page.click('#viewSeg button[data-view="dash"]');
+    await O.page.waitForTimeout(600);     // past the panel transition (bug class 11)
+    const m = await O.page.evaluate(() => {
+      const rgb = s => { const x = String(s).match(/[\d.]+/g) || [0, 0, 0]; return x.slice(0, 3).map(Number); };
+      const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+      const L = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+      const ratio = (a, b) => { const l1 = L(a), l2 = L(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
+      const bgOf = el => { let n = el;
+        while (n && n !== document.documentElement) {
+          const q = String(getComputedStyle(n).backgroundColor).match(/[\d.]+/g);
+          if (q && (q.length < 4 || Number(q[3]) > 0.9)) return rgb(getComputedStyle(n).backgroundColor);
+          n = n.parentElement; }
+        return [11, 15, 25]; };
+      const out = [];
+      document.querySelectorAll('#hbody span[style*="opacity"]').forEach(el => {
+        const cs = getComputedStyle(el), op = Number(cs.opacity);
+        const fg = rgb(cs.color), bg = bgOf(el);
+        out.push({ text: (el.textContent || '').trim(), op,
+          eff: +ratio(fg.map((v, i) => v * op + bg[i] * (1 - op)), bg).toFixed(2),
+          down: !!el.closest('.down') });
+      });
+      return out;
+    });
+    /* The fixture has to CONTAIN a losing position, or the only check that
+       could fail is not exercised at all (bug class 7). SEED's NVDA is held
+       at 900 and marked at 845.25. */
+    check(m.some(r => r.down), 'the fixture holds a position that is down, so the loss colour is on screen',
+      JSON.stringify(m.map(r => r.down)));
+    check(m.length > 0 && m.every(r => r.eff >= 4.5),
+      'every holdings sub-line composites to at least 4.5:1',
+      JSON.stringify(m.filter(r => r.eff < 4.5)));
+    /* The two sub-lines are the same kind of thing and should not disagree --
+       one of them having been .75 is how the failure got in. */
+    check(new Set(m.map(r => r.op)).size === 1,
+      'and the two sub-lines share one opacity rather than two invented values',
+      JSON.stringify([...new Set(m.map(r => r.op))]));
+    check(O.errs.length === 0, 'no page errors', O.errs.join(' | '));
+    await O.ctx.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nUI: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

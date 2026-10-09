@@ -4245,6 +4245,17 @@ function render(){
   $('sortSym').classList.toggle('on',sortBy==='sym');
   $('sortSym').classList.toggle('asc',sortBy==='sym');
   $('sortPL').classList.toggle('on',sortBy==='pl');
+  /* BOTH SUB-LINES CARRY opacity:.8, and the figure is 4.73:1 against the
+     panel. `opacity` composites the whole element over what is behind it, so
+     the ratio to judge is the COMPOSITED colour -- getComputedStyle().color
+     still reports the full-strength value, which is why this reads as fine and
+     is not. The P/L percentage was at .75, where the LOSS colour lands on
+     4.28:1 against a 4.5 requirement (11px is nowhere near the large-text
+     exemption). The gain colour is far brighter and passed either way, so the
+     failure only ever showed on a position that was DOWN -- the number most
+     worth being able to read. The two sub-lines are the same kind of thing and
+     now share one value, which is also one fewer figure invented by accident.
+     Measured, not guessed: test-ui.js composites the colour and asserts it. */
   /* A ticker reaches four attributes and one cell below, and the quote link's
      BASE is a value the user pasted into Settings. Both are user text in an
      innerHTML: a ticker holding a quote closed `title="` and hung an event
@@ -4276,7 +4287,7 @@ function render(){
       <td>${fmtNat(h.avg,c)}</td>
       <td class="${pxCls}" style="font-weight:600">${fmtNat(price,c)}<br><span style="font-size:10.5px;opacity:.8">${arrow} ${(pxDiff>=0?'+':'')+pxDiff.toFixed(2)}%</span></td>
       <td>${fmtNat(val,c)}</td>
-      <td class="pl ${pnl>0?'up':pnl<0?'down':'flat'}">${signedNat(pnl,c)}<br><span style="font-size:11px;opacity:.75">${(pnl>=0?'+':'')+pct.toFixed(2)}%</span></td>
+      <td class="pl ${pnl>0?'up':pnl<0?'down':'flat'}">${signedNat(pnl,c)}<br><span style="font-size:11px;opacity:.8">${(pnl>=0?'+':'')+pct.toFixed(2)}%</span></td>
       <td style="white-space:nowrap"><button class="rm sell" title="Sell to cash" data-id="${h.id}">$</button><button class="rm" title="Remove from portfolio" data-id="${h.id}">✕</button></td>`;
     tb.appendChild(tr);
   });
