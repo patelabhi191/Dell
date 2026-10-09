@@ -5030,7 +5030,8 @@ function arcTrend(a){
   /* radios, not checkboxes: the control has to say "one of these", and a row of
      ticks that silently un-ticks the last one is the usual way that goes wrong */
   const gear='<span class="arc-gearwrap">'+
-    '<button class="arc-gear" type="button" data-act="gear" title="Choose a category">⚙</button>'+
+    '<button class="arc-gear" type="button" data-act="gear" aria-expanded="false" '+
+      'title="Choose a category">⚙</button>'+
     '<div class="skeu-pop arc-pop">'+
       '<div class="skeu-label" style="margin-bottom:8px">SHOW CATEGORY</div>'+
       '<div class="me-poplist arc-poplist">'+ (cats.length?cats.map(c=>
@@ -5129,7 +5130,13 @@ function arcCardHTML(a){
   const dn=(st.growth||0)<0;
   return '<div class="ay'+(open?' open':'')+'" data-id="'+a.id+'">'+
     '<div class="ay-top">'+
-      '<button class="ay-head" type="button" data-act="toggle">'+
+      /* The whole point of this button is that it opens the card, and it is
+         the primary control on the tab -- but it announced nothing, so a screen
+         reader could not tell an open card from a closed one. `open` is already
+         in hand two dozen lines up. The Settings drawer's `i` buttons already
+         toggle hidden and aria-expanded together; these four were the ones
+         that did not follow it. */
+      '<button class="ay-head" type="button" data-act="toggle" aria-expanded="'+open+'">'+
         '<span class="ay-id"><span class="ay-yr">'+a.year+'</span>'+
           '<span class="ay-meta">'+meta+'</span></span>'+
         '<span class="ay-nums">'+
@@ -5215,6 +5222,7 @@ function arcBind(){
   document.addEventListener('click',e=>{
     if(e.target.closest('.arc-gearwrap')) return;
     box.querySelectorAll('.arc-pop.open').forEach(p=>p.classList.remove('open'));
+    box.querySelectorAll('.arc-gear').forEach(g=>g.setAttribute('aria-expanded','false'));
   });
   box.addEventListener('click',e=>{
     const btn=e.target.closest('[data-act]'); if(!btn) return;
@@ -5227,6 +5235,10 @@ function arcBind(){
       const was=pop.classList.contains('open');
       box.querySelectorAll('.arc-pop.open').forEach(p=>p.classList.remove('open'));
       if(!was) pop.classList.add('open');
+      /* Every gear, not just this one: opening one closes the others, so their
+         buttons are all now reporting a popover that is shut. */
+      box.querySelectorAll('.arc-gear').forEach(g=>g.setAttribute('aria-expanded','false'));
+      if(!was) btn.setAttribute('aria-expanded','true');
       return;
     }
     if(act==='toggle'){ arcOpen.has(id)?arcOpen.delete(id):arcOpen.add(id); renderArchives(); return }
@@ -8510,6 +8522,7 @@ function meRenderPayRow(tb,e){
       ? '<span class="acct-tag tag-other" style="margin:0 0 0 6px">\u2192 '+tagEsc(yfBillLabel(e.bill))+'</span>' : ''}</td>
     <td style="text-align:left"><span class="acct-tag ${who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${who}</span></td>
     <td style="white-space:nowrap"><button class="yf-edit" data-mepay="${tagEsc(e.billId)}"
+      aria-expanded="${open}"
       title="${open?'Hide':'Show'} the ${n} payment${n===1?'':'s'} behind this">${open?'\u25b4':'\u25be'}</button></td>`;
   tb.appendChild(tr);
   if(!open) return;
@@ -8887,10 +8900,16 @@ if($('meFile')){
     $('meFile').value=''; $('meFileName').textContent='or click to choose a file' };
   $('meSave').onclick=meSaveTx;
   $('meCancelEdit').onclick=meCancelEdit;
-  $('meGear').onclick=e=>{ e.stopPropagation(); $('mePop').classList.toggle('open') };
+  /* The gear lives in the markup, so its state is set from here rather than
+     written into an attribute: one place that both toggles the popover and
+     says so, instead of a default in the HTML that drifts from the handler. */
+  const meGearAria=()=>$('meGear').setAttribute('aria-expanded',
+    String(!!($('mePop')&&$('mePop').classList.contains('open'))));
+  $('meGear').onclick=e=>{ e.stopPropagation(); $('mePop').classList.toggle('open'); meGearAria() };
+  meGearAria();
   document.addEventListener('click',e=>{
     const pop=$('mePop'); if(!pop||!pop.classList.contains('open')) return;
-    if(!pop.contains(e.target) && e.target!==$('meGear')) pop.classList.remove('open');
+    if(!pop.contains(e.target) && e.target!==$('meGear')){ pop.classList.remove('open'); meGearAria() }
   });
   $('mePopAll').onclick=()=>{ state.me.chartCats=meChartableCats(meYear()); mePersist(); renderMEChart(); renderMEGear() };
   $('mePopNone').onclick=()=>{ state.me.chartCats=[]; mePersist(); renderMEChart(); renderMEGear() };

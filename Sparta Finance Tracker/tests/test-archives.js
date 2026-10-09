@@ -990,6 +990,67 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     await R.ctx.close();
   }
 
+  /* ── 12. a disclosure button has to say whether it is open ──────────────
+     The card expander is the primary control on this tab, and the gear beside
+     the trend opens a popover. Both are real <button>s and both are reachable
+     by keyboard -- but neither reported its own state, so nothing announced to
+     a screen reader whether a card was open or shut. The glyph changes (and on
+     the payment line a title does), which is a visual cue only.
+
+     The Settings drawer's `i` buttons already toggle `hidden` and
+     `aria-expanded` together, so this is the file's own established pattern
+     rather than a new idea; these were the places that had not followed it.
+
+     The state is asserted BEFORE and AFTER a click, because an attribute that
+     is merely present and never updated is the subtler half of this bug -- and
+     `aria-expanded="false"` on a card that is open is worse than no attribute
+     at all, since it actively misreports. */
+  section('12. aria-expanded on the card expander and the trend gear');
+  {
+    const R = await open(browser, url, SEED);
+    await R.page.evaluate(([t, y]) => {
+      state.yf.txns = t; state.yfYear = y; normalizeYF(); yfPersist();
+      state.archives = []; arcAddYear(); renderArchives();
+    }, [ledger(), Y]);
+    await R.page.click('#viewSeg button[data-view="archive"]');
+    await R.page.waitForTimeout(350);
+
+    const head = '#arcList .ay .ay-head';
+    check(await R.page.$eval(head, e => e.getAttribute('aria-expanded')) === 'false',
+      '12: a collapsed card reports aria-expanded=false',
+      String(await R.page.$eval(head, e => e.getAttribute('aria-expanded'))));
+    await R.page.click(head);
+    await R.page.waitForTimeout(350);
+    check(await R.page.$eval(head, e => e.getAttribute('aria-expanded')) === 'true',
+      '12: and reports true once it is open',
+      String(await R.page.$eval(head, e => e.getAttribute('aria-expanded'))));
+    /* It really is open -- otherwise the attribute could be right by accident
+       about a card that never expanded (bug class 7). */
+    check(await R.page.$eval('#arcList .ay', e => e.classList.contains('open')),
+      '12: and the card genuinely expanded, so the attribute is about something');
+
+    /* The gear only exists on an OPEN card, which is why it is checked here. */
+    const gear = '#arcList .ay .arc-gear';
+    check(await R.page.$eval(gear, e => e.getAttribute('aria-expanded')) === 'false',
+      '12: the trend gear starts closed and says so',
+      String(await R.page.$eval(gear, e => e.getAttribute('aria-expanded'))));
+    await R.page.click(gear);
+    await R.page.waitForTimeout(250);
+    check(await R.page.$eval(gear, e => e.getAttribute('aria-expanded')) === 'true'
+       && await R.page.$eval('#arcList .ay .arc-pop', e => e.classList.contains('open')),
+      '12: and both the popover and its button open together');
+    /* An outside click closes the popover; the button must follow it down, or
+       it is left claiming to be open with nothing on screen. */
+    await R.page.click('#archiveView');
+    await R.page.waitForTimeout(250);
+    check(await R.page.$eval(gear, e => e.getAttribute('aria-expanded')) === 'false'
+       && !await R.page.$eval('#arcList .ay .arc-pop', e => e.classList.contains('open')),
+      '12: an outside click closes both, not just the popover');
+
+    check(R.errs.length === 0, '12: no page errors', R.errs.join(' | '));
+    await R.ctx.close();
+  }
+
   console.log(`\nARCHIVES: ${pass} passed, ${fail} failed`);
   await browser.close(); srv.close();
   process.exit(fail ? 1 : 0);
