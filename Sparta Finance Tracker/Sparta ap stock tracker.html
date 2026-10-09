@@ -552,6 +552,43 @@ button{font-family:var(--font-body);cursor:pointer}
    sat 5px inside the slot instead of on it. */
 #sellsPanel .htable th,#sellsPanel .htable td{padding-left:0}
 #sellsPanel .htable th:last-child,#sellsPanel .htable td:last-child{padding-right:0}
+
+/* The same rule, for the tables that had never had it applied.
+
+   A panel heading sits on the panel's content edge. Every table under one was
+   starting its first column's text somewhere inside that edge, by whatever its
+   own cell padding happened to be -- measured at 1440px and 900px:
+
+       Contributions  #ctable      heading 172, "Year"     182   10px in
+       Contributions  #ytable      heading 172, "Year"     182   10px in
+       Yearly         #yfExpTable  heading 172, "Category" 179    7px in
+       Yearly         #yfIncTable  heading 742, "Category" 749    7px in
+       Yearly         #yfTxTable   heading 172, "Date"     180    8px in
+       Past sells     #sellsPanel                                  0  (fixed)
+
+   Four different answers to one relationship, none of them the panel edge. The
+   first column is bare text on an unbordered child, so by the rule it has to
+   declare the edge with its ink; only padding-left goes, and padding-right
+   stays as the collision gutter exactly as it does in Past sells.
+
+   Two tables are deliberately NOT in this list, because each already declares
+   the edge some other way:
+     #holdingsCard  its 10px first-cell padding IS the gutter .bk hangs the
+                    broker mark in, and the mark lands flush with the "H" of
+                    Holdings. Zeroing it would move the mark off the panel edge.
+     .me-matrix /   the first cell is sticky and carries its own gradient
+     .yf-mtable     background, so it declares the edge with chrome and is
+                    entitled to inset its text.
+
+   These are (1,1,1), which beats `.htable th` (0,1,1), `#yfExpTable th`
+   (1,0,1) and the (0,2,1) `.htable td:first-child` in the <=560px block, so
+   unlike the Past sells rule above this one does not depend on source order.
+   It is kept here beside that rule anyway, so the two are read together. */
+#ctable th:first-child,#ctable td:first-child,
+#ytable th:first-child,#ytable td:first-child,
+#yfExpTable th:first-child,#yfExpTable td:first-child,
+#yfIncTable th:first-child,#yfIncTable td:first-child,
+#yfTxTable th:first-child,#yfTxTable td:first-child{padding-left:0}
 @media(max-width:430px){
   .sell-range{grid-template-columns:1fr 1fr}
   .sell-range .btn{grid-column:1/-1}
