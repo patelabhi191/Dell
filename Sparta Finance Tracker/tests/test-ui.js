@@ -1934,6 +1934,70 @@ const section = t => console.log(`\n── ${t} ──`);
     await O.ctx.close();
   }
 
+  /* ── closing a modal puts the keyboard back where it was ────────────────
+     Both dialogs move focus into themselves on open, which is right, and
+     neither put it back -- so pressing Escape on the sell dialog opened from a
+     holdings row left focus on <body>, and the way back to that row was to Tab
+     from the top of the page.
+
+     The cancel and Escape paths are what this covers, and they are the common
+     ones. A CONFIRMED sale re-renders the table that held the button, so there
+     is genuinely nothing to go back to; that is asserted too, so the fallback
+     is pinned as deliberate rather than looking like the same bug half-fixed. */
+  section('modals: focus returns to the control that opened them');
+  {
+    const O = await open(browser, url, SEED);
+    await O.page.click('#viewSeg button[data-view="dash"]');
+    await O.page.waitForTimeout(350);
+
+    // focus the $ button on the first holdings row the way a keyboard would
+    await O.page.evaluate(() => document.querySelector('#hbody .rm.sell').focus());
+    const before = await O.page.evaluate(() => ({
+      tag: document.activeElement.tagName,
+      id: document.activeElement.dataset.id,
+    }));
+    check(before.tag === 'BUTTON' && !!before.id,
+      'a holdings sell button has focus to begin with', JSON.stringify(before));
+
+    await O.page.evaluate(() => document.querySelector('#hbody .rm.sell').click());
+    await O.page.waitForTimeout(200);
+    check(await O.page.evaluate(() => document.activeElement.id) === 'sellQty',
+      'opening the dialog moves focus into it');
+
+    // Escape, the path a user takes when they change their mind
+    await O.page.keyboard.press('Escape');
+    await O.page.waitForTimeout(200);
+    const after = await O.page.evaluate(() => ({
+      open: document.getElementById('sellModal').classList.contains('open'),
+      tag: document.activeElement.tagName,
+      id: document.activeElement.dataset.id,
+      isBody: document.activeElement === document.body,
+    }));
+    check(!after.open, 'Escape closes it');
+    check(!after.isBody && after.id === before.id,
+      'and focus is back on the very button that opened it', JSON.stringify(after));
+
+    /* The confirm path: the row is replaced by the render, so the remembered
+       button is detached and focusing it would do nothing silently. Asserted so
+       the limitation is on the record. */
+    await O.page.evaluate(() => {
+      state.cash.TFSA = 10000;
+      document.querySelector('#hbody .rm.sell').focus();
+      document.querySelector('#hbody .rm.sell').click();
+    });
+    await O.page.waitForTimeout(200);
+    await O.page.evaluate(() => { $('sellQty').value = '1'; $('sellPrice').value = '10'; });
+    await O.page.evaluate(() => confirmSell());
+    await O.page.waitForTimeout(300);
+    check(await O.page.evaluate(() => !document.getElementById('sellModal').classList.contains('open')),
+      'a confirmed sale closes the dialog');
+    check(await O.page.evaluate(() => document.activeElement === document.body),
+      'and leaves focus at the document, because the row it came from is gone');
+
+    check(O.errs.length === 0, 'no page errors', O.errs.join(' | '));
+    await O.ctx.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nUI: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

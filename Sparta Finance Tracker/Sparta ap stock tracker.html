@@ -4173,6 +4173,23 @@ function money(n){return sym()+Math.abs(n*rate()).toLocaleString('en-CA',{minimu
 function signed(n){return (n>0?'+':n<0?'−':'')+money(n)}
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
 const uid=()=>Math.random().toString(36).slice(2,9);
+/* WHERE THE KEYBOARD GOES BACK TO WHEN A MODAL CLOSES.
+   Both dialogs move focus into themselves when they open, which is right, and
+   neither put it back when they closed -- so after pressing Escape on the sell
+   dialog opened from row forty of the holdings table, focus was on <body> and
+   the way back was to Tab from the top of the page.
+   Kept per modal rather than in one slot: the two are independent, and the sell
+   dialog can be opened from either the holdings table or the Past sells panel.
+   Restored only if the trigger is STILL IN THE DOCUMENT -- focusing a detached
+   node silently does nothing, and a confirmed sale re-renders the table that
+   held the button, so that path legitimately has nothing to go back to. The
+   cancel and Escape paths, which are the common ones, do. */
+const modalReturn=Object.create(null);
+function modalRemember(id){ modalReturn[id]=document.activeElement }
+function modalRestore(id){
+  const el=modalReturn[id]; modalReturn[id]=null;
+  if(el && el.isConnected && typeof el.focus==='function' && el!==document.body) el.focus();
+}
 // Local calendar date as YYYY-MM-DD. Deliberately NOT toISOString(), which is
 // UTC: west of Greenwich it reads a day ahead for the last hours of every
 // evening (7pm+ in Toronto), so prefilling from it files records under the
@@ -4543,6 +4560,7 @@ function editContrib(id){
   $('cedAcct').value=c.acct;
   $('cedWho').value=c.who||'ABI';
   $('cedTitle').textContent=`Edit ${c.acct} deposit`;
+  modalRemember('cedModal');
   $('cedModal').classList.add('open');
   setTimeout(()=>$('cedAmt').focus(),40);
 }
@@ -4567,7 +4585,8 @@ function saveContribEdit(){
   persist(); render();
   toast(`Updated \u2014 ${was} \u2192 ${fmtCADterm(c.amt)} ${c.acct} ${c.y}`);
 }
-function closeContribEdit(){ $('cedModal').classList.remove('open'); contribEditId=null }
+function closeContribEdit(){ $('cedModal').classList.remove('open'); contribEditId=null;
+  modalRestore('cedModal') }
 function removeContrib(id){
   markUserEdit();
   const c=state.contribs.find(x=>x.id===id); if(!c) return;
@@ -5669,6 +5688,7 @@ function addHolding(){
 let sellId=null, sellMode='new', sellRecId=null;
 function sellHolding(id){                       // opens the dialog rather than dumping everything
   const h=state.holdings.find(x=>x.id===id); if(!h) return;
+  modalRemember('sellModal');
   sellId=id; sellMode='new'; sellRecId=null;
   $('sellConfirm').textContent='Sell';
   $('sellEffectRow').style.display='none';
@@ -5695,6 +5715,7 @@ function sellRec(id){ return (state.sells||[]).find(x=>x.id===id) }
 
 function editSell(id){
   const r=sellRec(id); if(!r) return;
+  modalRemember('sellModal');
   sellMode='edit'; sellRecId=id; sellId=null;
   $('sellTitle').textContent='Correct the '+r.sym+' sale';
   $('sellSub').textContent=`Recorded as ${r.qty} at ${fmtNat(r.price,r.ccy)} from ${r.acct}, `+
@@ -5854,7 +5875,7 @@ function confirmSell(){
   toast(`Sold ${q} ${h.sym} at ${fmtNat(p,c)} — ${money(proceeds)} to ${h.acct} cash (${signedNat(pnl,c)})`);
 }
 function closeSell(){ $('sellModal').classList.remove('open');
-  sellId=null; sellMode='new'; sellRecId=null }
+  sellId=null; sellMode='new'; sellRecId=null; modalRestore('sellModal') }
 /* Two brokers, both holding a TFSA and an FHSA, so the account alone cannot say
    where a position lives. This is a LABEL and nothing else: it changes no total,
    no filter and no figure -- adding a position under TFSA/FHSA works exactly as
