@@ -2317,7 +2317,12 @@ select{color-scheme:dark}
 /* the shimmer sweep itself */
 .pin-keys button::after{
   content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-  background:linear-gradient(115deg,transparent 35%,var(--text-faint) 50%,transparent 65%);
+  /* This is the travelling sheen on a keypad button -- a gradient stop, not
+     ink -- so it is deliberately NOT written in terms of --text-faint. The
+     two values happen to be equal today; the point is that they are not the
+     same decision, and raising the ink token for legibility must not come
+     out the other side as a brighter sweep across the PIN pad. */
+  background:linear-gradient(115deg,transparent 35%,rgba(234,240,250,0.35) 50%,transparent 65%);
   background-size:280% 100%; background-position:120% 0;
   animation:pinSheen 10.5s ease-in-out infinite;
   animation-delay:.5s;                      /* sweeps just behind the title */
