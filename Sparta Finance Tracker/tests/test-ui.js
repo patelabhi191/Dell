@@ -1809,6 +1809,73 @@ const section = t => console.log(`\n── ${t} ──`);
     await O.ctx.close();
   }
 
+  /* ...and the minus goes in FRONT of the currency symbol, which is the half
+     the section above does not pin: it asserts the note CARRIES a minus and
+     that it matches the panel character for character, so both could be wrong
+     together and it would still pass. They were -- fmt() left the sign where
+     toLocaleString puts it, inside the symbol, so an overdraft read
+     "C$-412.00" while Archives' arc$ and Monthly's meMoney both put it first.
+     signed() and signedNat() always placed their own sign, which is why only
+     the bare-negative path was affected and it went unnoticed this long.
+
+     An overdraft is a supported state, not an edge case: sellReverse may
+     overdraw an account on purpose, because refusing would make a real
+     correction impossible once the money had moved on. */
+  section('past sells: and the minus sits outside the currency symbol');
+  {
+    const O = await open(browser, url, SEED);
+    await O.page.click('#viewSeg button[data-view="dash"]');
+    await O.page.waitForTimeout(300);
+    const f = await O.page.evaluate(() => {
+      state.ccy = 'CAD'; state.fx = 1;
+      state.cash.TFSA = -412;
+      /* A negative quantity reaches fmtNat through a holding's value cell, and
+         a negative EPS reaches it through Eye on Stocks -- ordinary for any
+         company losing money. */
+      state.holdings.push({ id: 'shrt', sym: 'SHORT', acct: 'Other', qty: -3,
+        avg: 10, price: 4, ccy: 'CAD', nat: true });
+      render();
+      return {
+        panel: document.getElementById('cashT').textContent.trim(),
+        card: document.getElementById('tfsaCash').textContent.trim(),
+        note: sellCashNote('TFSA'),
+        negEps: fmtNat(-1.23, 'USD'),
+        // the positive side, which must not have moved by a single byte
+        posFmt: fmt(1234.5), posNat: fmtNat(1234.5, 'CAD'), zero: fmt(0),
+        // signed() wraps money(), which strips the sign on purpose
+        signedNeg: signed(-50), signedNatNeg: signedNat(-50, 'USD'),
+      };
+    });
+    const M = '−';
+    check(f.panel === M + 'C$412.00',
+      'the Available-balance panel reads −C$412.00, not C$-412.00', f.panel);
+    check(f.card === 'Cash ' + M + 'C$412.00',
+      'and so does the account card sub-line', f.card);
+    check(!/C\$-/.test(f.note) && f.note.indexOf(f.panel) > -1,
+      'the overdraft note follows it and still matches the panel exactly', f.note);
+    check(f.negEps === M + '$1.23',
+      'fmtNat does the same, so a negative EPS is not "$-1.23"', f.negEps);
+    /* The claim that makes this safe to land: nothing POSITIVE moved. */
+    check(f.posFmt === 'C$1,234.50' && f.posNat === 'C$1,234.50' && f.zero === 'C$0.00',
+      'a positive or zero figure is byte-identical to before',
+      JSON.stringify([f.posFmt, f.posNat, f.zero]));
+    check(f.signedNeg === M + 'C$50.00' && f.signedNatNeg === M + '$50.00',
+      'and signed()/signedNat() are unchanged -- money() still strips the sign',
+      JSON.stringify([f.signedNeg, f.signedNatNeg]));
+    /* No figure anywhere on the tab may carry a minus INSIDE the symbol. Stated
+       over the whole view so a formatter added later is covered too. */
+    const inside = await O.page.evaluate(() => [...new Set(
+      [...document.querySelectorAll('#dashView *')]
+        .filter(e => !e.children.length)
+        .map(e => (e.textContent || '').trim())
+        .filter(t => /C?\$\s*-/.test(t)))]);
+    check(inside.length === 0,
+      'and nothing on the Dashboard prints a minus inside the symbol',
+      JSON.stringify(inside));
+    check(O.errs.length === 0, 'no page errors', O.errs.join(' | '));
+    await O.ctx.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nUI: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

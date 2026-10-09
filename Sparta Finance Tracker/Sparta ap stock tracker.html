@@ -4154,7 +4154,21 @@ const $=id=>document.getElementById(id);
 const rate=()=>state.ccy==='CAD'?state.fx:1;          // display rate from USD base
 const toBase=n=>n/rate();                             // input in display ccy -> USD base
 const sym=()=>state.ccy==='CAD'?'C$':'$';
-const fmt=n=>sym()+((n||0)*rate()).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
+/* THE SIGN GOES IN FRONT OF THE SYMBOL: −C$12.00, never C$-12.00.
+   signed() and signedNat() two lines down already place it themselves, with
+   U+2212, which is why this was easy to miss -- the figures that go through
+   THEM were always right. fmt is the one that prints a bare negative, and it
+   left the minus where toLocaleString puts it, inside the currency.
+   An overdraft is a supported state here, not an edge case: sellReverse is
+   allowed to overdraw an account because refusing would make a real correction
+   impossible once the money had moved on, and sellCashNote exists to announce
+   it. So "Available balance: C$-412.00" was the ordinary reading of that
+   feature, with Archives' arc$ and Monthly's meMoney both printing the minus
+   first on the same kind of figure.
+   money() is deliberately NOT changed: it strips the sign with Math.abs on
+   purpose, because it exists to be wrapped by signed(). */
+const fmt=n=>{ const v=(n||0)*rate();
+  return (v<0?'\u2212':'')+sym()+Math.abs(v).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}); };
 function money(n){return sym()+Math.abs(n*rate()).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function signed(n){return (n>0?'+':n<0?'−':'')+money(n)}
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
@@ -4177,7 +4191,11 @@ const hCcy=h=>h.ccy||'USD';
 function invested(list){ return list.reduce((s,h)=>s+natToBase(h.qty*h.avg,hCcy(h)),0) }
 function marketVal(list){ return list.reduce((s,h)=>s+natToBase(h.qty*(h.price??h.avg),hCcy(h)),0) }
 // format a native-currency figure with its own symbol (never converted)
-function fmtNat(v,ccy){ return (ccy==='CAD'?'C$':'$')+(v||0).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}) }
+/* Same rule for a native-currency figure. Reached by a genuinely negative
+   number in two ordinary places: a holding's value if a quantity is negative,
+   and Eye on Stocks' EPS, which is negative for any company losing money. */
+function fmtNat(v,ccy){ const n=v||0;
+  return (n<0?'\u2212':'')+(ccy==='CAD'?'C$':'$')+Math.abs(n).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}) }
 function signedNat(v,ccy){ return (v>0?'+':v<0?'\u2212':'')+fmtNat(Math.abs(v),ccy) }
 function cashInScope(){
   if(state.filter==='ALL') return state.cash.TFSA+state.cash.FHSA+state.cash.Other;
@@ -6751,7 +6769,10 @@ function renderContribChart(){
       const bx=+b.getAttribute('x')+ +b.getAttribute('width')/2, by=+b.getAttribute('y');
       const sx=r.left+(bx/W)*r.width, sy=r.top+(by/H)*r.height;
       const wrap=tip.parentElement.getBoundingClientRect();
-      const fmt=n=>'C$'+(+n).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
+      // Shadows the global fmt with a CAD-only copy, so it needed the same
+      // treatment independently rather than inheriting it.
+      const fmt=n=>{ const v=+n||0;
+        return (v<0?'\u2212':'')+'C$'+Math.abs(v).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}); };
       tip.innerHTML=state.cWho==='ALL'
         ? `<b style="color:${b.dataset.col}">${b.dataset.acct}</b> ${b.dataset.year}<br>${b.dataset.who} ${fmt(b.dataset.val)} · ${b.dataset.otherwho} ${fmt(b.dataset.other)}<br><b>Total ${fmt(b.dataset.total)}</b>`
         : `<b style="color:${b.dataset.col}">${b.dataset.acct}</b> ${b.dataset.year}<br>${state.cWho} ${fmt(b.dataset.val)}`;
