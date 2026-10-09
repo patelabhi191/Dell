@@ -9474,7 +9474,18 @@ function plSegHTML(seg){
   void low; void lowDate;
   return '<div class="pl-seg'+(seg.open?' open':'')+'" data-id="'+seg.id+'">'+
     '<div class="pl-seghead">'+
-      '<span class="pl-caret">▸</span>'+
+      /* THE ONLY PART OF THIS HEADER THAT IS NOT A FIELD. The header toggles
+         on click, and everything else in it -- the name, the balance, the
+         delete button -- does something else, so the caret is where the
+         keyboard route has to live. Without it a segment opened with a mouse
+         and by no other means: Tab reaches the two inputs and the delete
+         button, none of which expands anything.
+         Left as a <span> with role="button" rather than made a real <button>:
+         it has no interactive descendants, so the role is valid, and a span
+         carries no default button styling, so nothing on screen moves. */
+      '<span class="pl-caret" role="button" tabindex="0"'+
+        ' aria-expanded="'+(!!seg.open)+'"'+
+        ' aria-label="'+(seg.open?'Collapse':'Expand')+' this segment">▸</span>'+
       '<input class="pl-segname" type="text" value="'+plEsc(seg.name)+'" placeholder="Name this segment" aria-label="Segment name">'+
       '<span class="pl-startwrap"><span>Start</span>'+
         '<input class="pl-start" type="text" inputmode="decimal" value="'+plMoney(seg.start)+'" aria-label="Starting balance"></span>'+
@@ -9604,6 +9615,21 @@ if($('planSegs')){
     if(e.target.closest('.pl-seghead') && !e.target.closest('input')){
       seg.open=!seg.open; planPersist(); renderPlan();
     }
+  });
+
+  segsBox.addEventListener('keydown',e=>{
+    if(!e.target.classList||!e.target.classList.contains('pl-caret')) return;
+    if(e.key!=='Enter' && e.key!==' ' && e.key!=='Spacebar') return;
+    e.preventDefault();                       // Space would scroll the page instead
+    const segEl=e.target.closest('.pl-seg'); if(!segEl) return;
+    const id=segEl.dataset.id, seg=plSeg(id); if(!seg) return;
+    seg.open=!seg.open; planPersist(); renderPlan();
+    /* renderPlan() rebuilds every segment, so the element that was focused no
+       longer exists -- without putting focus back on the same segment's caret
+       the keyboard is dropped at the top of the page on every single toggle,
+       which is the same fault the modals had. */
+    const again=segsBox.querySelector('.pl-seg[data-id="'+id+'"] .pl-caret');
+    if(again) again.focus();
   });
 
   // Name and starting balance edit in place: state + numbers update, no rebuild.

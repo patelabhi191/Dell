@@ -361,6 +361,63 @@ const section = t => console.log(`\n── ${t} ──`);
   }
   await page.setViewportSize({ width: 1280, height: 900 });
 
+  /* ── a segment opens by keyboard, not only by mouse ─────────────────────
+     The segment header toggles on click, and everything else inside it does
+     something else: the name and the starting balance are fields, the trash is
+     a delete. So the caret is the only part of the header that can carry a
+     keyboard route -- and it had none. Tab reached the two inputs and the
+     delete button, none of which expands anything, which meant a Plan segment
+     could be opened with a mouse and by no other means.
+
+     Kept as a <span role="button" tabindex="0"> rather than made a real
+     <button>: it has no interactive descendants so the role is valid, and a
+     span carries no default button styling so nothing on screen moves. */
+  section('a segment opens from the keyboard');
+  await go('plan');
+  await page.evaluate(() => {
+    state.plan = { segments: [{ id: 'kb1', name: 'Keyboard', start: 1000, open: false,
+      items: [{ id: 'k1', name: 'Rent', date: '2026-12-01', amt: 50, type: 'expense' }] }] };
+    normalizePlan(); renderPlan();
+  });
+  await page.waitForTimeout(250);
+
+  const caret = '.pl-seg[data-id="kb1"] .pl-caret';
+  const st = await page.evaluate(sel => {
+    const c = document.querySelector(sel);
+    return c ? { role: c.getAttribute('role'), tab: c.getAttribute('tabindex'),
+                 exp: c.getAttribute('aria-expanded'), label: c.getAttribute('aria-label') } : null;
+  }, caret);
+  check(!!st && st.role === 'button' && st.tab === '0',
+    'the caret is focusable and announced as a button', JSON.stringify(st));
+  check(!!st && st.exp === 'false', 'and reports the segment closed', JSON.stringify(st && st.exp));
+
+  /* Focus it the way Tab would, then press Enter. */
+  await page.focus(caret);
+  check(await page.evaluate(sel => document.activeElement === document.querySelector(sel), caret),
+    'the caret can actually take focus');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(300);
+  check(await page.evaluate(() => !!state.plan.segments[0].open),
+    'Enter opens the segment');
+  check(await page.evaluate(() => !!document.querySelector('.pl-seg[data-id="kb1"] .pl-rows')),
+    'and the body is actually drawn, so it really expanded');
+  check(await page.evaluate(sel => {
+    const c = document.querySelector(sel);
+    return !!c && c.getAttribute('aria-expanded') === 'true';
+  }, caret), 'and the caret now reports it open');
+  /* renderPlan() rebuilds every segment, so focus has to be put back or the
+     keyboard is dropped at the top of the page on every toggle. */
+  check(await page.evaluate(sel => document.activeElement === document.querySelector(sel), caret),
+    'focus stays on the caret across the rebuild, not reset to the document');
+
+  // Space closes it again, and must not scroll the page
+  const yBefore = await page.evaluate(() => window.scrollY);
+  await page.keyboard.press(' ');
+  await page.waitForTimeout(300);
+  check(await page.evaluate(() => !state.plan.segments[0].open), 'Space closes it again');
+  check(await page.evaluate(() => window.scrollY) === yBefore,
+    'and Space does not scroll the page instead');
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nPLAN: ${pass} passed, ${fail} failed`);
