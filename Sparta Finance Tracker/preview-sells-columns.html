@@ -1,0 +1,2692 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Past sells — column positions</title>
+<!-- The image file is lowercase on purpose. Netlify's servers are case-sensitive
+     where Windows and macOS are not, which is exactly how this broke: the local
+     filesystem happily matched SpAPP.png against a file named Spapp.png, and the
+     deployed site did not. Lowercase is the one spelling that cannot be got wrong
+     on any of the three. "./" rather than "/" so the same HTML works both
+     double-clicked and served -- a leading slash means the drive root locally.
+
+     There was also an SVG favicon here that wrapped this PNG in a brightness
+     filter. It is gone: an SVG loaded AS an image is sandboxed and cannot fetch
+     an external file, so its <image href> never resolved -- and being declared
+     second, it beat the working PNG above it and rendered nothing. -->
+<link rel="icon" type="image/png" href="./spapp.png">
+<link rel="apple-touch-icon" href="spapp.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" media="all" onload="this.media='all';this.onload=null" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@500;700;800&amp;display=swap">
+<noscript><link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap"></noscript>
+<style>
+:root{
+  --yf-inc:#38BDF8; --yf-exp:#F97316;   /* income blue / expense orange, used across Yearly */
+  --yf-start:#A085F3;                            /* amethyst - opening balance */
+  --yf-end:#ADCB66;                              /* olive - closing balance */
+  --yf-c-inv:#4ADE80;  --yf-c-mov:#E55959;       /* green / red */
+  --yf-growth:#80D95C;                           /* savings growth */
+  --yf-c-sav:#06B6D4;  --yf-c-off:#D98D4C;       /* cyan / bronze */
+  --bg:#071520;
+  --glass:rgba(255,255,255,0.055);
+  --glass-strong:rgba(255,255,255,0.09);
+  /* ── the type and shape scale ──────────────────────────────────────────
+     An audit across all six tabs found ONE role -- the small uppercase label --
+     implemented twenty-odd times at six sizes with letter-spacing anywhere from
+     .04em to .26em, five corner radii, and five panel paddings. None of that was
+     a decision; it accumulated. These are the values everything snaps to, and
+     anything new belongs on the scale rather than beside it.
+
+     Three label sizes, because there are genuinely three densities: a micro
+     label inside a packed card, the standard one, and the lede above a hero
+     figure. Two letter-spacings: normal caps, and wide for the lede. */
+  --fs-micro:9.5px;  --fs-label:10.5px; --fs-lede:11.5px;
+  /* two heading roles, and only two: the panel title in sentence case, and the
+     uppercase eyebrow. Monthly, Archives and Settings each had their own size
+     and spacing for the SAME role -- 13/.13em, 13/.14em and 11.5/.13em. */
+  --fs-title:15px;   --fs-eyebrow:12.5px;
+  /* four body steps, each with a job. --fs-dense exists because a thirteen
+     column table cannot carry reading-size type without wrapping; it is a
+     deliberate step, not the drift that --fs-body was competing with. */
+  --fs-fine:11px;    --fs-dense:12px;  --fs-body:12.5px;  --fs-input:13.5px;
+  /* and the three display steps. A figure is not body text, but it still has to
+     come off a scale -- Archives had 14.5 / 30 / 62 sitting beside no system. */
+  --fs-figure:15px;  --fs-display:30px; --fs-year:62px;
+  --ls-label:.14em;  --ls-lede:.17em;
+  --fw-label:700;
+  /* panel, card, control. 22/24/26 and 14/16 were the same two shapes drawn
+     slightly differently on each tab. */
+  --r-panel:var(--radius); --r-card:14px; --r-ctl:10px;
+  --pad-panel:22px;
+  /* ══════ ARCHIVES — the things worth tuning by hand ════════════════════
+     Put here, on :root, so they show up when you inspect <html> in DevTools and
+     can be edited live. Everything else about the Archives card is derived from
+     these, so changing one of them changes every place it is used.
+
+       --arc-bar-in     the income bar      (default: Yearly's blue)
+       --arc-bar-out    the expense bar     (default: Yearly's orange)
+       --arc-card-a/b/c the expanded card's background, three gradient stops
+       --arc-card-sat   how much the card saturates whatever is behind it
+       --arc-yr-col     the year numerals' colour
+       --arc-yr-hi      the GRADIENT LEVEL at its lit peaks   (how solid)
+       --arc-yr-lo      the GRADIENT LEVEL at its troughs     (how sheer)
+       --arc-yr-hi/lo-row  the same two for a card that is merely LISTED
+       --arc-yr-edge    the hairline outline around the glyphs
+       --arc-yr-angle   which way the sheen runs across them
+
+     The bar's lit top, translucent body and rim are all mixed FROM the two bar
+     colours with color-mix(), so you only ever change the one value.
+     --arc-card-a/b/c are rgba: a value written WITHOUT an alpha is opaque, and
+     the card stops being glass wherever that stop dominates. */
+  --arc-bar-in:#800020;
+  --arc-bar-out:#F77E2D;
+  --arc-card-a:rgb(32 88 175 / 10%);
+  --arc-card-b:rgb(46 64 121 / 10%);
+  --arc-card-c:rgb(36 65 119);
+  --arc-card-sat:105%;
+  /* The year numerals are a gradient CLIPPED TO THE TEXT, so what reads as
+     "glass" is the gradient's level -- hi where it catches the light, lo where
+     the card shows through. Raise both and it goes solid white; lower both and
+     it dissolves into the card; widen the gap and the sheen gets harder.
+     Keep the COLOUR white unless you want a tinted year -- the alphas are the
+     glass, and cool greys (#CBD4E1 and the like) read muddy, not sheer. */
+  --arc-yr-col:#fff;
+  --arc-yr-hi:87%;
+  --arc-yr-lo:41%;
+  /* A LISTED card is brighter than an open one, and on purpose. Open, the year
+     sits on glass with a blue card behind it, so a sheer troughs reads as glass.
+     Shut, there is no glass behind it at all -- only the page -- so the same
+     alphas read as grey rather than sheer. W1: barely transparent, the blue
+     showing only in the gradient's dips. */
+  --arc-yr-hi-row:95%;
+  --arc-yr-lo-row:52%;
+  --arc-yr-edge:34%;
+  --arc-yr-angle:168deg;
+  --stroke:rgba(255,255,255,0.12);
+  --stroke-top:rgba(255,255,255,0.28);
+  --text:#EAF0FA;
+  --text-dim:rgba(234,240,250,0.55);
+  --text-faint:rgba(234,240,250,0.35);
+  --teal:#5EEAD4;      /* TFSA + gains */
+  --violet:#A78BFA;    /* FHSA */
+  --rose:#FB7185;      /* losses */
+  --amber:#FCD34D;
+  --radius:22px;
+  --font-display:'Space Grotesk',sans-serif;
+  --font-body:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scrollbar-gutter:stable;overflow-y:scroll}
+/* Scrollbars. overflow-y:scroll above keeps the page bar permanently on screen,
+   and the browser default paints it as a hard white stripe down the side of a
+   dark app. Glass instead: no track at all, a translucent thumb inset from the
+   edge so it floats rather than butting against it. scrollbar-color covers
+   Firefox, the ::-webkit rules cover Chrome and Safari. The `*` selector has
+   zero specificity, so the few places that hide their bar outright
+   (.duo.bscroll, the tab strip) still win. */
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.20) transparent}
+::-webkit-scrollbar{width:11px;height:11px;background:transparent}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:999px;
+  border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.28);
+  border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-corner{background:transparent}
+body{
+  background:var(--bg);
+  transition:background-color .45s ease;
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+/* ---------- Aurora ambient background ---------- */
+.aurora{position:fixed;inset:0;z-index:0;pointer-events:none;filter:blur(70px);opacity:.55;transition:filter .5s ease,opacity .5s ease}
+
+/* ---------- Symbol backdrops (Dashboard = tickers, Contributions = currency) ---------- */
+.tickerfield,.cashfield,.financefield,.archivefield{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .7s ease;user-select:none}
+body.dash-view .tickerfield{opacity:1}
+body.contrib-view .cashfield{opacity:1}
+.tk,.cu{
+  position:absolute;left:var(--x);top:var(--y);
+  font-family:var(--font-display),system-ui,sans-serif;font-weight:700;letter-spacing:.05em;
+  font-size:calc(var(--s) * 34px);
+  transform:translate(-50%,-50%) rotate(var(--r));
+  color:#EAF0FA;white-space:nowrap;
+  animation:tkfloat 26s ease-in-out infinite alternate;animation-delay:var(--dl);
+}
+/* depth layers */
+.tk.d2,.cu.d2{opacity:.085;filter:blur(2.5px)}
+.tk.d1,.cu.d1{opacity:.13;filter:blur(1px)}
+.tk.d0,.cu.d0{opacity:.26;filter:none;background:linear-gradient(120deg,var(--teal),var(--violet));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.cu.d0{background-image:linear-gradient(120deg,var(--teal),var(--violet))}
+.cu.d2{opacity:.1}
+.cu.d1{opacity:.15}
+/* supporting motifs */
+.tkchart{position:absolute;width:32vw;height:auto;opacity:.11;color:var(--teal);animation:tkdrift 34s ease-in-out infinite alternate}
+.c1{left:2vw;top:56vh}
+.c2{right:3vw;top:18vh;color:var(--rose);opacity:.085;animation-delay:-8s}
+.tkcandle{position:absolute;width:21vw;height:auto;left:57vw;top:72vh;opacity:.1;color:var(--violet);animation:tkdrift 30s ease-in-out infinite alternate-reverse}
+.curing{position:absolute;width:26vw;height:auto;color:#9FF0C4;opacity:.09;animation:tkdrift 32s ease-in-out infinite alternate}
+.r1{left:4vw;top:16vh}
+.r2{right:5vw;top:62vh;animation-delay:-9s;opacity:.075}
+.cubar{position:absolute;width:26vw;height:auto;left:60vw;top:12vh;color:#8FE8B8;opacity:.1;animation:tkdrift 28s ease-in-out infinite alternate-reverse}
+@keyframes tkfloat{
+  from{transform:translate(-50%,-50%) rotate(var(--r,0deg))}
+  to{transform:translate(calc(-50% + 1.4vw),calc(-50% - 1.9vh)) rotate(var(--r,0deg))}
+}
+@keyframes tkdrift{from{transform:translate3d(0,0,0)}to{transform:translate3d(1.2vw,-1.6vh,0)}}
+@media (prefers-reduced-motion: reduce){.tickerfield *,.cashfield *{animation:none!important}}
+
+/* ---------- Yearly Finance backdrop ---------- */
+.financefield,.archivefield,.monthlyfield,.planfield{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .7s ease;user-select:none}
+body.yearly-view .financefield{opacity:1}
+body.archive-view .archivefield{opacity:1}
+body.monthly-view .monthlyfield{opacity:1}
+body.plan-view .planfield{opacity:1}
+.fin{position:absolute;height:auto;color:var(--teal);animation:tkdrift 30s ease-in-out infinite alternate}
+/* left cluster: 3 items */
+.fin-calc{left:3vw;top:16vh;width:12vw;min-width:120px;color:var(--teal);opacity:.20}
+.fin-coins{left:8vw;top:56vh;width:11vw;min-width:110px;color:var(--amber);opacity:.18;animation-delay:-6s}
+.fin-growth{left:20vw;top:74vh;width:14vw;min-width:140px;color:var(--teal);opacity:.17;animation-delay:-11s}
+/* right: one big */
+.fin-bill{right:3vw;top:34vh;width:26vw;min-width:240px;color:var(--violet);opacity:.19;animation:tkdrift 36s ease-in-out infinite alternate-reverse}
+
+/* Monthly Expense background: receipt, wallet, category bars, card swipe */
+.mo{position:absolute;height:auto;animation:tkdrift 32s ease-in-out infinite alternate}
+.mo-receipt{left:4vw;top:14vh;width:11vw;min-width:110px;color:#5EEAD4;opacity:.17}
+.mo-wallet{left:6vw;top:60vh;width:13vw;min-width:130px;color:#E8B15C;opacity:.17;animation-delay:-7s}
+.mo-bars{left:22vw;top:76vh;width:12vw;min-width:120px;color:#5EEAD4;opacity:.16;animation-delay:-13s}
+.mo-card{right:4vw;top:20vh;width:22vw;min-width:200px;color:#7FB6D9;opacity:.17;animation:tkdrift 38s ease-in-out infinite alternate-reverse}
+.mo-wifi{right:22vw;top:66vh;width:9vw;min-width:92px;color:#7FB6D9;opacity:.16;animation-delay:-4s}
+.mo-hydro{left:15vw;top:36vh;width:8vw;min-width:82px;color:#FBBF24;opacity:.16;animation-delay:-17s}
+.mo-phone{right:9vw;top:76vh;width:7.5vw;min-width:78px;color:#A78BFA;opacity:.16;animation-delay:-9s}
+.mo-cart{left:32vw;top:20vh;width:10vw;min-width:100px;color:#4ADE80;opacity:.16;animation-delay:-21s}
+.mo-bag{right:30vw;top:12vh;width:8.5vw;min-width:88px;color:#E55959;opacity:.16;animation-delay:-3s}
+.mo-utility{left:2vw;top:86vh;width:9.5vw;min-width:96px;color:#06B6D4;opacity:.17;animation-delay:-25s}
+@media (max-width:720px){.mo-cart,.mo-bag,.mo-utility,.mo-hydro{display:none}}
+
+@media (prefers-reduced-motion: reduce){.mo{animation:none!important}}
+.fin text{font-family:var(--font-display),sans-serif}
+
+/* ---------- Fluid wave art behind Yearly / Monthly / Archives ----------
+   One layer per field, inserted ahead of that field's motif icons so it paints
+   underneath them. The motifs are pinned to z-index:1 and their opacities are
+   lifted a little, so the calculator, vault, clock and receipt still read over
+   the brighter ground. */
+.wv{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.fin,.mo,.arc{z-index:1}
+.wv-arc{animation:wvDrift1 74s ease-in-out infinite alternate}
+.wv-yf{animation:wvDrift2 66s ease-in-out infinite alternate}
+.wv-me{animation:wvDrift1 80s ease-in-out infinite alternate-reverse}
+@keyframes wvDrift1{from{transform:translate3d(-2%,0,0) scale(1.04)}
+                    to{transform:translate3d(2%,-2%,0) scale(1.1)}}
+@keyframes wvDrift2{from{transform:translate3d(2%,1%,0) scale(1.06)}
+                    to{transform:translate3d(-2%,-1%,0) scale(1.02)}}
+@media (prefers-reduced-motion:reduce){.wv{animation:none!important}}
+
+/* ---------- Plan backdrop: layered flowing waves + planning motifs ----------
+   The waves are wider than the viewport and drift sideways at different speeds,
+   so the bands slide past one another the way stacked ribbons do. Everything is
+   kept low-contrast and mostly to the lower half, so the Plan tile stays the
+   brightest thing on screen. */
+/* Each band is stretched vertically (preserveAspectRatio="none") and they are
+   stacked up the lower two thirds, so the ribbons overlap the way they do in
+   layered-wave artwork rather than hugging the very bottom. */
+.pw{position:absolute;left:-25%;width:150%;height:44vh;will-change:transform}
+.pw-1{bottom:-8%;color:#2E6E8E;opacity:.26;animation:pwDrift1 46s ease-in-out infinite alternate}
+.pw-2{bottom:4%;color:#3E86A6;opacity:.21;animation:pwDrift2 58s ease-in-out infinite alternate}
+.pw-3{bottom:16%;color:#5EA9C4;opacity:.17;animation:pwDrift1 68s ease-in-out infinite alternate-reverse}
+.pw-4{bottom:29%;color:#7FC6D9;opacity:.13;animation:pwDrift2 80s ease-in-out infinite alternate-reverse}
+.pw-5{bottom:43%;color:#A8DCE8;opacity:.09;animation:pwDrift1 94s ease-in-out infinite alternate}
+@keyframes pwDrift1{from{transform:translate3d(-4%,0,0) scaleY(1)}
+                    to{transform:translate3d(4%,-1.6vh,0) scaleY(1.09)}}
+@keyframes pwDrift2{from{transform:translate3d(3%,0,0) scaleY(1.06)}
+                    to{transform:translate3d(-5%,-1vh,0) scaleY(1)}}
+/* planning motifs, same treatment as .fin / .mo / .arc on the other tabs */
+.plm{position:absolute;height:auto;animation:tkdrift 34s ease-in-out infinite alternate}
+.plm-cal{left:3vw;top:14vh;width:13vw;min-width:130px;color:#7FC6D9;opacity:.13}
+.plm-flag{left:8vw;top:58vh;width:10vw;min-width:100px;color:#5EEAD4;opacity:.12;animation-delay:-8s}
+.plm-check{left:22vw;top:26vh;width:9vw;min-width:92px;color:#A8DCE8;opacity:.10;animation-delay:-15s}
+.plm-hour{right:22vw;top:64vh;width:8vw;min-width:82px;color:#E8B15C;opacity:.11;animation-delay:-5s}
+.plm-path{right:3vw;top:22vh;width:24vw;min-width:230px;color:#7FC6D9;opacity:.12;
+  animation:tkdrift 42s ease-in-out infinite alternate-reverse}
+@media (max-width:720px){.plm-check,.plm-hour{display:none}.plm-path{opacity:.09}}
+@media (prefers-reduced-motion:reduce){.pw,.plm{animation:none!important}}
+
+/* ---------- Finance Archives backdrop (modern layered/bento) ---------- */
+.arc{position:absolute;height:auto;animation:tkdrift 32s ease-in-out infinite alternate}
+.arc-docs{left:3vw;top:12vh;width:17vw;min-width:170px;color:#7DD3FC;opacity:.19}
+.arc-folder{left:6vw;top:66vh;width:15vw;min-width:150px;color:var(--amber);opacity:.18;animation-delay:-7s}
+.arc-vault{right:2vw;top:26vh;width:22vw;min-width:220px;color:var(--violet);opacity:.19;animation:tkdrift 38s ease-in-out infinite alternate-reverse}
+.arc-clock{left:44vw;top:70vh;width:10vw;min-width:100px;color:var(--teal);opacity:.16;animation-delay:-13s}
+/* .arc-mesh is background texture, not an icon, and was always the faintest
+   thing on the page. With the ribbons behind it now, lifting it would put two
+   mesh textures in competition, so it stays low deliberately. */
+.arc-mesh{right:30vw;top:8vh;width:24vw;min-width:220px;color:var(--teal);opacity:.08;animation-delay:-4s}
+@media (prefers-reduced-motion: reduce){.financefield *,.archivefield *,.monthlyfield *{animation:none!important}}
+
+/* Backdrop fields stay in the DOM for the cross-fade, but only the ACTIVE tab's
+   field animates. opacity:0 hides an element without stopping its animation, so
+   without this the engine ticks every hidden field's transforms on every frame. */
+.tk,.cu,.fin,.mo,.arc,.pw,.plm,.wv,.tkchart,.tkcandle,.curing,.cubar{animation-play-state:paused}
+body.dash-view    .tk,body.dash-view .tkchart,body.dash-view .tkcandle,
+body.contrib-view .cu,body.contrib-view .curing,body.contrib-view .cubar,
+body.yearly-view  .fin,body.yearly-view .wv-yf,
+body.archive-view .arc,body.archive-view .wv-arc,
+body.monthly-view .mo,body.monthly-view .wv-me,
+body.plan-view    .pw,body.plan-view .plm{animation-play-state:running}
+@media (max-width:720px){
+  .fin-growth,.arc-clock,.arc-mesh{display:none}
+  .fin-bill,.arc-vault{opacity:.1}
+}
+
+@media (max-width:720px){.tk,.cu{font-size:calc(var(--s) * 21px)}.tkcandle,.cubar{display:none}}
+
+/* ---------- Contributions: green theme ---------- */
+body.contrib-view{background:#091925}
+body.contrib-view .backdrop{background:#091925}
+body.contrib-view .aurora{filter:blur(72px);opacity:.5}
+body.contrib-view .stars{opacity:.35}
+body.contrib-view .panel{background:rgba(255,255,255,.085);border-color:rgba(255,255,255,.19);border-top-color:rgba(255,255,255,.35);box-shadow:0 18px 50px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.08)}
+body.contrib-view input,body.contrib-view select,body.contrib-view textarea{background:rgba(0,0,0,.26);border-color:rgba(255,255,255,.2)}
+body.contrib-view .htable th{border-bottom-color:rgba(255,255,255,.17)}
+body.contrib-view .htable td{border-bottom-color:rgba(255,255,255,.1)}
+body.contrib-view .cbar{background:rgba(0,0,0,.4)}
+/* accents lifted for legibility on green */
+.backdrop{position:fixed;inset:0;z-index:-1;background:var(--bg);transition:background-color .45s ease}
+.aurora span{position:absolute;border-radius:50%;mix-blend-mode:screen}
+.aurora .a1{width:60vw;height:38vh;left:-10vw;top:-8vh;background:radial-gradient(ellipse,rgba(94,234,212,.35),transparent 65%);animation:drift1 26s ease-in-out infinite alternate}
+.aurora .a2{width:50vw;height:40vh;right:-12vw;top:6vh;background:radial-gradient(ellipse,rgba(167,139,250,.32),transparent 65%);animation:drift2 32s ease-in-out infinite alternate}
+.aurora .a3{width:45vw;height:30vh;left:22vw;bottom:-14vh;background:radial-gradient(ellipse,rgba(56,189,248,.22),transparent 65%);animation:drift1 38s ease-in-out infinite alternate-reverse}
+@keyframes drift1{from{transform:translate(0,0) rotate(0deg)}to{transform:translate(6vw,4vh) rotate(8deg)}}
+@keyframes drift2{from{transform:translate(0,0)}to{transform:translate(-5vw,5vh)}}
+@media (prefers-reduced-motion: reduce){.aurora span{animation:none}}
+
+/* faint starfield */
+.stars{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:
+ radial-gradient(1px 1px at 12% 22%,rgba(255,255,255,.5),transparent),
+ radial-gradient(1px 1px at 68% 12%,rgba(255,255,255,.4),transparent),
+ radial-gradient(1.5px 1.5px at 84% 44%,rgba(255,255,255,.35),transparent),
+ radial-gradient(1px 1px at 32% 74%,rgba(255,255,255,.3),transparent),
+ radial-gradient(1px 1px at 52% 38%,rgba(255,255,255,.35),transparent),
+ radial-gradient(1.5px 1.5px at 90% 82%,rgba(255,255,255,.3),transparent),
+ radial-gradient(1px 1px at 6% 60%,rgba(255,255,255,.3),transparent);
+}
+
+.shell{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:28px 24px 80px;min-height:100vh}
+
+/* ---------- Glass panel primitive ---------- */
+.panel{
+  background:var(--glass);
+  backdrop-filter:blur(24px) saturate(140%);
+  -webkit-backdrop-filter:blur(24px) saturate(140%);
+  border:1px solid var(--stroke);
+  border-top-color:var(--stroke-top);
+  border-radius:var(--radius);
+  box-shadow:0 18px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+  transition:transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s;
+}
+.panel:hover{transform:translateY(-3px);box-shadow:0 26px 64px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08)}
+@media (prefers-reduced-motion: reduce){.panel,.panel:hover{transform:none;transition:none}}
+
+/* ---------- Top bar ---------- */
+header{display:flex;align-items:center;justify-content:space-between;gap:0px;margin-bottom:0px;flex-wrap:wrap}
+.tabbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.tabbar .seg{-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+.tabbar .seg button{padding:9px 22px;font-size:13.5px;white-space:nowrap}
+.yearbar{display:none;align-items:center;gap:10px}
+.yearbar.show{display:flex}
+.yearbar label{margin:0;font-size:var(--fs-label);letter-spacing:var(--ls-label)}
+.yearbar select{width:auto;min-width:132px;padding:9px 34px 9px 14px;font-size:13.5px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .orb { width: 70px; height: 100px;
+  flex: none;
+  /* spapp.png sits beside this HTML file, lowercase (see the <head>). A URL that
+     fails to load simply isn't painted, so the header degrades to text-only. */
+  background-image: url('spapp.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  /* Removed border-radius so the spearhead logo isn't clipped into a circle */
+  filter: drop-shadow(0 2px 6px rgba(0, 242, 254, 0.6));
+}
+.brand h1{font-family:var(--font-display);font-size:clamp(28px,3.4vw,36px);font-weight:700;letter-spacing:.01em;line-height:1.05}
+.brand small{display:block;color:var(--text-faint);font-size:var(--fs-lede);letter-spacing:var(--ls-lede);text-transform:uppercase;font-weight:600;margin-top:3px}
+.topctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pill{
+  background:var(--glass);border:1px solid var(--stroke);border-radius:999px;
+  padding:9px 16px;color:var(--text-dim);font-size:13px;display:flex;align-items:center;gap:8px;
+  backdrop-filter:blur(18px);
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px var(--teal)}
+.dot.stale{background:var(--amber);box-shadow:0 0 10px var(--amber)}
+.dot.off{background:var(--text-faint);box-shadow:none}
+button{font-family:var(--font-body);cursor:pointer}
+.btn{
+  border:1px solid var(--stroke);border-top-color:var(--stroke-top);
+  background:var(--glass-strong);color:var(--text);
+  border-radius:999px;padding:10px 18px;font-size:13px;font-weight:600;
+  backdrop-filter:blur(18px);transition:background .2s, transform .15s;
+}
+.btn:hover{background:rgba(255,255,255,.14)}
+.btn:active{transform:scale(.97)}
+.btn:focus-visible,.seg button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.btn.primary{background:linear-gradient(135deg,rgba(94,234,212,.25),rgba(167,139,250,.25));border-color:rgba(94,234,212,.4)}
+.btn.ghost{background:transparent}
+
+/* ---------- Account segments ---------- */
+.seg{display:inline-flex;background:var(--glass);border:1px solid var(--stroke);border-radius:999px;padding:4px;backdrop-filter:blur(18px)}
+.seg button{
+  border:none;background:transparent;color:var(--text-dim);
+  padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;transition:all .2s;
+}
+.seg button.active{color:#06121a;background:linear-gradient(135deg,var(--teal),#7DD3FC)}
+.seg button.active.fhsa{background:linear-gradient(135deg,var(--violet),#F0ABFC);color:#140a24}
+.seg button.active.poo{background:linear-gradient(135deg,var(--violet),#F0ABFC);color:#140a24}
+  .seg button.active.all{background:rgba(255,255,255,.9);color:#0a0f1c}
+.seg.locked{opacity:.4;pointer-events:none;filter:grayscale(.6)}
+.seg.locked button{cursor:not-allowed}
+
+/* ---------- Grid ---------- */
+/* minmax(0,...) rather than a bare fr. `1fr` means `minmax(auto,1fr)`, and that
+   auto floor is the content's MIN-CONTENT width -- so one long company name in
+   Eye on Stocks dragged the whole page out of shape: watching a stock whose name
+   did not fit took the columns from 684/428 to 572/561, the left losing 112px.
+   The name was already ellipsised; an ellipsis caps the drawn text but not the
+   min-content floor the grid measures. */
+.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:20px}
+
+/* ---------- Notepad, shared by Dashboard + Contributions ---------- */
+/* Nothing to say about the notepad's width on Dashboard any more: it sits in
+   the right column and takes that column's width like every other panel there.
+   #contribView is a plain block, so there it is full width already. */
+#contribView>#notepadPanel{margin-top:20px}
+.np-points{display:flex;flex-direction:column;gap:8px}
+/* flex-start, not center: once a point wraps onto a second line the bullet and
+   the bin belong beside the FIRST line, not floating in the middle of the row */
+.np-row{display:flex;align-items:flex-start;gap:10px}
+.np-row textarea{flex:1;min-width:0;resize:none;overflow:hidden;line-height:1.45;
+  min-height:0;height:auto;font-family:var(--font-body)}
+.np-bullet,.np-del{margin-top:5px}
+.np-bullet{flex:none;color:var(--teal);font-size:16px;line-height:1}
+.np-del{flex:none;width:32px;height:32px;border-radius:9px;border:1px solid var(--stroke);
+  background:transparent;color:var(--text-faint);cursor:pointer;font-size:15px;line-height:1;
+  font-family:var(--font-body);transition:color .2s,border-color .2s}
+.np-del:hover{color:var(--rose);border-color:var(--rose)}
+.np-empty{color:var(--text-faint);font-size:12.5px}
+.np-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+/* ---------- Eye on Stocks: one row per stock, expanding to its figures ----- */
+/* ---------- Past sells ---------- */
+#sellsPanel .st-sum{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}
+#sellsPanel .st-sum>div{flex:1 1 130px;background:rgba(255,255,255,.028);
+  border:1px solid var(--stroke);border-radius:var(--r-ctl);padding:11px 13px}
+#sellsPanel .st-sum .k{font-size:var(--fs-micro);letter-spacing:var(--ls-label);
+  text-transform:uppercase;color:var(--text-faint);font-weight:700;display:block;margin-bottom:5px}
+#sellsPanel .st-sum .v{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;display:block}
+/* a second currency sits under the first rather than beside it -- these tiles
+   are narrow, and the two are never added together */
+#sellsPanel .st-sum .v+.v{font-size:13.5px;margin-top:3px;opacity:.92}
+/* .htable right-aligns everything after the first column, which is right for
+   figures and wrong for a date and a ticker */
+#sellsPanel th:nth-child(-n+2),#sellsPanel td:nth-child(-n+2){text-align:left}
+/* This table lives in the narrow column and carries five columns, so it is
+   tightened to fit rather than left to scroll sideways -- a horizontal
+   scrollbar under four short rows reads as something being cut off. */
+/* The side padding IS the base gap between columns, so 9px each side gives the
+   even 18px that the rest of this is tuned around. */
+#sellsPanel .htable th,#sellsPanel .htable td{padding:9px 9px;font-size:12px}
+/* The sub-line carries .06em globally, which widened the ticker column by ~6px
+   for nothing here and showed up as a wider gap beside it. */
+#sellsPanel .sym small{letter-spacing:.02em}
+/* What decides this layout is how wide the PANEL is, which is not a function of
+   the window: the same 1280px window gives this panel 382px in the right column
+   and 684px in the left. Keyed to the container, the old viewport bands -- one
+   for phones, one for the 901-1100px range where 1024 is the narrowest
+   two-column case -- collapse into the single question actually being asked. */
+#sellsPanel{container-type:inline-size}
+/* The table is full width, which is what .htable gives every other table in the
+   app -- so there is no width rule here at all. A content-sized table centred in
+   the panel did even out the gaps, but it floated with margin either side while
+   the tiles, the date row and the footnote all ran edge to edge, and it read as
+   a separate thing rather than part of the panel.
+
+   What made the gap uneven was never the width, it was WHERE the surplus went.
+   Stretched with fixed proportions, Date and Ticker are left-aligned while the
+   figures are right-aligned, so the slack from both sides piled into the one
+   boundary between them: 83px against 19px and 58px either side.
+
+   The surplus goes to the trailing actions column instead. It is the only
+   column whose extra width is not a gap between two figures -- it is the margin
+   before the row's buttons, which the holdings table already carries at 56px.
+   26% puts it at 55px in the right-hand column, and the three gaps between the
+   figures come out 20 / 22 / 20 with nothing left over to pile up anywhere. */
+#sellTable th:last-child,#sellTable td:last-child{width:26%}
+#sellsPanel .htable th{white-space:nowrap}        /* every heading on one line */
+#sellsPanel .htable td{font-size:12.5px}
+/* day and month over the year, so the column needs no more width than "06 Oct" */
+.sl-d{display:block;font-weight:600;white-space:nowrap}
+.sl-y{display:block;font-size:10px;color:var(--text-faint);letter-spacing:.04em}
+/* the account and quantity stay on ONE line: "FHSA - 8888" was wrapping under
+   the ticker and taking a third row per sale */
+#sellsPanel .sym small{white-space:nowrap}
+/* the two row buttons stack, because side by side they cost width the figures
+   need and the rows are tall enough to hold both */
+/* inline-flex, not flex: a block-level flex fills the cell and centres the
+   buttons in it, so widening the column floats them away from the edge. Shrunk
+   to its content, the cell's own text-align:right keeps them against the right
+   edge where the holdings table's buttons sit. */
+.sl-act{display:inline-flex;flex-direction:column;gap:4px;align-items:center}
+.sl-act .rm{width:26px;padding:3px 0;text-align:center}
+/* From / To / Search on one line, the dates sharing what the button leaves */
+.sell-range{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin:0 0 14px}
+.sell-range label{display:block;font-size:var(--fs-micro);letter-spacing:var(--ls-label);
+  text-transform:uppercase;color:var(--text-faint);font-weight:700;margin-bottom:5px}
+.sell-range input{width:100%;min-width:0;padding:8px 9px;font-size:12.5px}
+/* the same shape as the "+ Add point" button in Notes just below it */
+.sell-range .btn{padding:8px 14px;font-size:12px;white-space:nowrap;background:transparent}
+/* The percentage rides under the money as well, hidden until it is needed. */
+.sl-sub{display:none;font-size:10.5px;font-weight:600;opacity:.78}
+/* Five columns need 397px for the stated worst cases and the right column gives
+   382 -- so below this the percentage folds under the amount, which is what the
+   holdings table already does with its P / L. Four columns then need 316px.
+   Nothing is lost; the figure simply moves. */
+@container (max-width:370px){
+  #sellsPanel .pc{display:none}
+  #sellsPanel .sl-sub{display:block}
+  /* 5px, not the 9px above: four columns at 9px need 252px and a 320px phone
+     leaves the panel 248px, so the last 4px comes out of the padding. */
+  #sellsPanel .htable th,#sellsPanel .htable td{padding:8px 5px;font-size:11.5px}
+}
+@media(max-width:430px){
+  .sell-range{grid-template-columns:1fr 1fr}
+  .sell-range .btn{grid-column:1/-1}
+}
+.np-stocks{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.np-stock{border:1px solid var(--stroke);border-radius:var(--r-card);
+  background:rgba(255,255,255,.022);overflow:hidden}
+.np-sthead{display:flex;align-items:center;gap:12px;width:100%;padding:13px 15px;
+  background:none;border:0;cursor:pointer;text-align:left;color:var(--text);font:inherit}
+.np-sthead:hover{background:rgba(255,255,255,.03)}
+.np-sttick{font-weight:800;font-size:15px;letter-spacing:-.01em;display:flex;align-items:center;gap:6px;flex:none}
+.np-stname{color:var(--text-dim);font-size:12.5px;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.np-stpx{margin-left:auto;display:flex;align-items:baseline;gap:9px;flex:none;
+  font-variant-numeric:tabular-nums}
+.np-stpx b{font-size:15px;font-weight:700}
+.np-stpx span{font-size:12px;font-weight:600}
+.np-stdrop{flex:none;color:var(--text-faint);transition:transform .2s}
+.np-stock.open .np-stdrop{transform:rotate(180deg)}
+.np-stkill{flex:none;width:28px;height:28px;border-radius:8px;border:1px solid var(--stroke);
+  background:transparent;color:var(--text-faint);cursor:pointer;font-size:14px;line-height:1;
+  font-family:var(--font-body);margin-left:4px}
+.np-stkill:hover{color:var(--rose);border-color:var(--rose)}
+.np-strow{display:flex;align-items:center;padding-right:11px}
+.np-strow .np-sthead{flex:1;min-width:0}
+.np-stbody{padding:0 15px 15px;border-top:1px solid rgba(255,255,255,.07)}
+.np-stgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+  gap:1px;background:rgba(255,255,255,.07);border-radius:10px;overflow:hidden;margin-top:14px}
+.np-stcell{background:rgba(14,20,38,.5);padding:10px 12px}
+.np-stcell .k{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
+  color:var(--text-faint);font-weight:700;display:block;margin-bottom:5px}
+.np-stcell .v{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums}
+/* where today's price sits inside the year's range */
+.np-range{margin-top:14px}
+.np-rbar{position:relative;height:6px;border-radius:3px;margin:9px 0 7px;
+  background:linear-gradient(90deg,rgba(255,255,255,.10),rgba(255,255,255,.22))}
+.np-rdot{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;
+  transform:translate(-50%,-50%);background:var(--teal);box-shadow:0 0 0 3px rgba(94,234,212,.22)}
+.np-rends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-dim);
+  font-variant-numeric:tabular-nums}
+.np-stmsg{font-size:12.5px;color:var(--text-faint);line-height:1.6;margin:12px 0 0}
+@media(max-width:560px){
+  .np-sthead{flex-wrap:wrap;gap:8px}
+  .np-stname{width:100%;order:3}
+  .np-stpx{margin-left:0}
+}
+.np-chip{display:inline-flex;align-items:center;gap:7px;padding:5px 8px 5px 12px;
+  border-radius:999px;font-size:12px;font-weight:600;letter-spacing:.04em;
+  background:rgba(94,234,212,.13);color:var(--teal);border:1px solid rgba(94,234,212,.32)}
+.np-chip button{background:none;border:none;color:inherit;opacity:.6;cursor:pointer;
+  font-size:14px;line-height:1;padding:0;font-family:var(--font-body)}
+.np-chip button:hover{opacity:1;color:var(--rose)}
+
+/* ---------- Hero value panel ---------- */
+.hero{padding:26px 28px 18px;position:relative;overflow:hidden}
+.hero .eyebrow{font-size:var(--fs-lede);letter-spacing:var(--ls-lede);text-transform:uppercase;color:var(--text-faint);font-weight:600;margin-bottom:8px}
+.hero .value{font-family:var(--font-display);font-size:clamp(38px,5.5vw,54px);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1}
+.hero .delta{margin-top:10px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;display:flex;gap:14px;flex-wrap:wrap}
+.up{color:var(--teal)} .down{color:var(--rose)} .flat{color:var(--text-dim)}
+.hero .sub{color:var(--text-faint);font-weight:500}
+.chartwrap{margin-top:18px;position:relative}
+.chartwrap svg{width:100%;height:190px;display:block}
+.range{display:flex;gap:6px;margin-top:10px}
+.range button{border:none;background:transparent;color:var(--text-faint);font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px}
+.range button.active{background:var(--glass-strong);color:var(--text)}
+.chart-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:13px;text-align:center;padding:0 30px}
+
+/* ---------- Stat / balance cards ---------- */
+.stat{padding:var(--pad-panel)}
+.stat .label{font-size:var(--fs-lede);letter-spacing:var(--ls-lede);text-transform:uppercase;color:var(--text-faint);font-weight:600}
+.stat .num{font-family:var(--font-display);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:6px}
+.stat .foot{font-size:12px;color:var(--text-dim);margin-top:4px;font-variant-numeric:tabular-nums}
+.statrow{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:520px){.statrow{grid-template-columns:1fr}}
+.acct-tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;padding:3px 9px;border-radius:999px;margin-left:8px;vertical-align:middle}
+.tag-tfsa{background:rgba(94,234,212,.15);color:var(--teal);border:1px solid rgba(94,234,212,.35)}
+.tag-fhsa{background:rgba(167,139,250,.15);color:var(--violet);border:1px solid rgba(167,139,250,.35)}
+.tag-other{background:rgba(234,240,250,.1);color:var(--text-dim);border:1px solid rgba(234,240,250,.22)}
+/* Which broker a holding sits with. Blank is the default and means Wealthsimple
+   -- the common case stays unmarked, so only the exception carries a letter.
+   It is blank but NOT invisible: the box keeps its width so the tickers stay in
+   one line whether or not a row is marked, and it is a real button so it can be
+   tabbed to. The grey is the same --text-dim the "Other" account tag uses. */
+/* 10px wide because that is exactly the first cell's left padding: the mark
+   fills the gutter and the ticker keeps the position it had before the mark
+   existed. A wider box overlapped the text by 4px and read as cramped. It
+   cannot be nudged further left either -- the table sits in .tscroll, so
+   anything at a negative offset is clipped by the scroller. */
+/* -16px, not -10px: 10px of glyph plus the same 6px gap the quote arrow uses
+   (.qlink{margin-left:6px}), so the mark is spaced off the ticker exactly as
+   the arrow is on the other side. The extra 6px comes from the scroller's own
+   padding below rather than from the cell, so the TICKER does not move.
+   Anchored to the TICKER, not to the cell. A table cell is vertically centred
+   by default, so its content does not sit at its padding edge -- offsetting
+   from the cell put the mark 9px below the ticker as soon as another cell in
+   the row was taller. -10px is the first cell's left padding, which puts the
+   mark in the gutter and inside .tscroll, so the scroller never clips it. */
+.bk{position:absolute;left:-16px;top:0;
+  width:10px;height:1.35em;padding:0;border:0;background:none;
+  border-radius:5px;cursor:pointer;font-family:var(--font-body);font-size:11px;font-weight:800;
+  letter-spacing:.02em;line-height:1.35em;text-align:center;color:var(--text-dim);
+  transition:background .15s,color .15s}
+/* The visible mark is only 10px wide -- the width of the gutter it lives in --
+   which is far too small to hit, and widening it would push the ticker back
+   out. So the BOX stays 10px and the hit area is grown with a pseudo-element,
+   which costs no layout: ~38px tall by 14px, still clear of the quote link. */
+.bk::before{content:"";position:absolute;inset:-12px -2px}
+.bk:hover{background:rgba(234,240,250,.09);color:var(--text)}
+.bk:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+/* Other used to span both columns, which made it read as a different KIND of
+   thing rather than simply the third account. With a fourth card alongside it
+   the row is a plain 2x2 and every account is the same shape. */
+.statrow .stat{min-width:0}
+
+/* ---------- Cash panel ---------- */
+.cash{padding:22px}
+.cash h3, .holdings h3, .formcard h3{font-family:var(--font-display);font-size:var(--fs-title);font-weight:600;letter-spacing:.02em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.cashrow{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.cashrow:last-of-type{border-bottom:none}
+.cashrow .n{font-family:var(--font-display);font-variant-numeric:tabular-nums;font-size:17px;font-weight:600}
+.cashform{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.cashform .full{grid-column:1/-1}
+input,select,textarea{
+  width:100%;background:rgba(0,0,0,.28);border:1px solid var(--stroke);
+  border-radius:12px;padding:11px 13px;color:var(--text);font-size:14px;font-family:var(--font-body);
+  font-variant-numeric:tabular-nums;
+  /* Stated rather than left at `normal`: the default resolves from the font's
+     own metrics and differs between a text input, a select and iOS's native
+     date control, which is why those three came out three different heights
+     sitting side by side in the same grid. */
+  line-height:1.25;
+}
+/* iOS Safari renders input[type=date] as a NATIVE control, not a text box. It
+   ignores most of the padding above, sizes itself to its own idea of the
+   content, and centres the value -- so next to the Type select on Yearly it came
+   out shorter, wider than its grid column (spilling past the card's right edge)
+   and differently aligned. Opting out of the native appearance puts it back
+   under the same box rules as every other field. `min-width:0` has to be on the
+   INPUT as well as its grid cell: the cell rule below stops the column being
+   pushed wide, but the control's own min-content still overflowed it. */
+input[type="date"]{
+  -webkit-appearance:none;appearance:none;
+  min-width:0;text-align:left;
+  /* Even with the native appearance off, the control keeps ~2px of intrinsic
+     content height that no pseudo-element rule reaches (all four candidates
+     were measured; none moved it). So state the height instead of fighting it:
+     one line box plus the shared vertical padding and border. The `em` tracks
+     whichever font-size regime applies, so this holds at 14px, 13.5px and the
+     16px the <=560px block uses to stop iOS zooming on focus -- only the
+     constant needs restating there. Change it with the padding above. */
+  height:calc(1.25em + 24px);
+}
+input[type="date"]::-webkit-date-and-time-value{
+  text-align:left;margin:0;line-height:inherit;
+}
+input[type="date"]::-webkit-calendar-picker-indicator{opacity:.55;margin-left:0}
+input::placeholder,textarea::placeholder{color:var(--text-faint)}
+textarea{resize:vertical;min-height:120px;line-height:1.6;font-variant-numeric:normal}
+select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='rgba(234,240,250,0.5)'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
+label{font-size:var(--fs-label);color:var(--text-faint);font-weight:var(--fw-label);letter-spacing:var(--ls-label);text-transform:uppercase;display:block;margin-bottom:6px}
+.duo{display:flex;gap:10px}
+.duo .btn{flex:1}
+/* Button rows with more actions than a phone can fit (the 5 cloud-sync buttons):
+   each button keeps its natural one-line pill shape and the row scrolls
+   sideways instead of squeezing into uneven wrapped blocks with the last
+   button cropped off-screen. (The tab bar used to fade the same way; it now
+   wraps instead, so this is the only place left using the hint.) */
+@media (max-width:560px){
+  .duo.bscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);
+    mask-image:linear-gradient(90deg,#000 88%,transparent);
+    padding-right:24px}
+  .duo.bscroll::-webkit-scrollbar{display:none}
+  .duo.bscroll .btn{flex:0 0 auto;white-space:nowrap}
+}
+
+/* ---------- Holdings ---------- */
+.holdings{padding:22px}
+.htable{width:100%;border-collapse:collapse}
+.htable th{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-faint);font-weight:var(--fw-label);text-align:right;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.htable th:first-child{text-align:left}
+.htable td{padding:13px 10px;text-align:right;font-size:13.5px;font-variant-numeric:tabular-nums;border-bottom:1px solid rgba(255,255,255,.05)}
+.htable td:first-child{text-align:left;position:relative}
+.htable tr:last-child td{border-bottom:none}
+.htable tbody tr{transition:background .15s}
+.htable tbody tr:hover{background:rgba(255,255,255,.03)}
+/* The ticker and its arrow are one thing and must stay on one line. The arrow
+   used to drop to a line of its own in a narrow column -- the first cell is 93px
+   at 560px and 73px at 390px -- which read as a broken row. The holdings table
+   already sits in .tscroll, so a cell that needs more room scrolls the table
+   sideways instead, which is what every other wide table here does. The sub-line
+   underneath is free to wrap as before. */
+.sym{font-family:var(--font-display);font-weight:600;font-size:14px;white-space:nowrap;position:relative}
+.sym small{white-space:normal}
+.sym small{display:block;font-family:var(--font-body);font-weight:500;color:var(--text-faint);font-size:10.5px;letter-spacing:.06em;margin-top:2px}
+/* the open-in-a-new-tab arrow beside a ticker */
+.qlink{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;
+  color:var(--text-faint);opacity:.7;vertical-align:baseline;
+  transition:color .15s,opacity .15s}
+.qlink:hover,.qlink:focus-visible{color:var(--teal);opacity:1}
+/* input + its button on one line, the button at its own width rather than half */
+.urlrow{display:flex;gap:8px;align-items:center}
+.urlrow input{flex:1 1 auto;min-width:0}
+.urlrow .btn{flex:0 0 auto;white-space:nowrap}
+.pl{font-weight:600}
+.rm{border:none;background:transparent;color:var(--text-faint);font-size:15px;padding:4px 8px;border-radius:8px}
+.rm:hover{color:var(--rose);background:rgba(251,113,133,.1)}
+.rm.sell{color:var(--text-faint);font-weight:700}
+.rm.sell:hover{color:var(--teal);background:rgba(94,234,212,.1)}
+.tscroll{overflow-x:auto}
+/* The broker mark hangs 16px to the left of the ticker, but the first cell only
+   has 10px of padding and .tscroll clips anything past its edge. Padding the
+   scroller and pulling it back by the same amount widens what it will show
+   without moving a single pixel of the table. */
+#holdingsCard .tscroll{padding-left:6px;margin-left:-6px}
+.empty{padding:30px 10px;text-align:center;color:var(--text-faint);font-size:13.5px}
+
+/* ---------- Add holding form ---------- */
+.formcard{padding:22px}
+.hform{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hform .full{grid-column:1/-1}
+/* A grid item defaults to min-width:auto, so its min-content can push a 1fr
+   column wider than its share. A date input's min-content is wide enough to do
+   that: at 320px the two columns computed to 248px inside a 243px box and the
+   right-hand fields spilled off-screen with nothing to scroll. */
+.hform>*,.cashform>*{min-width:0}
+.hform input,.hform select,.cashform input,.cashform select{max-width:100%;min-width:0}
+.note{font-size:var(--fs-body);color:var(--text-faint);line-height:1.55;margin-top:12px}
+.note a{color:var(--teal);text-decoration:none}
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+  background:rgba(15,22,38,.9);border:1px solid var(--stroke-top);border-radius:14px;
+  padding:12px 20px;font-size:13.5px;backdrop-filter:blur(20px);opacity:0;pointer-events:none;
+  transition:all .3s cubic-bezier(.2,.8,.2,1);z-index:50;box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- Settings drawer ----------
+   A TWO-COLUMN GRID OF CARDS, capped at 75% of the viewport and scrolled
+   internally.
+
+   It used to be one tall column of seven sections divided by <hr> rules, and it
+   read as congested. The cause was structural rather than spacing: seven sections
+   ran five different layout systems -- label-left/control-right, two kinds of pill
+   row, stacked-label fields, a four-column grid -- so there was no repeating
+   rhythm to settle into, and every section carried identical weight, so nothing
+   led and nothing receded.
+
+   Density and composure normally trade against each other. Two columns resolve
+   it instead: pairing the small cards halves their height, which buys back the
+   room that padding and a real type scale need. The rules are gone -- a card
+   separates better than a line does.
+
+   Source order sets the layout deliberately rather than leaving it to `dense`
+   packing, which is hard to predict when spans are mixed in:
+
+       App lock              | Yearly starting balance
+       Tab order ...........................(wide)
+       Dashboard shortcuts .................(wide)
+       Cloud sync ..........................(wide)
+       Clear data ..........................(wide)
+
+   Clear data sits last, where a destructive control belongs. Live prices is no
+   longer a card of its own: it is one fact, so it reads as Yes / No on the
+   right of the Cloud sync heading, with its setup notes folded into that
+   card's help.                                              */
+.drawer{padding:18px;display:none;position:relative}
+.drawer.open{display:block}
+/* The grid scrolls; the panel around it does not. That separation is what keeps
+   the rim light on the visible frame -- an absolutely positioned ring inside a
+   scroll container scrolls away with the content. The cap subtracts the panel's
+   own padding so the whole block still lands inside 75% of the screen. */
+.drawer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
+  align-content:start;max-height:calc(75vh - 36px);overflow-y:auto;
+  overscroll-behavior:contain}
+.set-card{background:rgba(255,255,255,.025);border:1px solid var(--stroke);
+  border-radius:var(--r-card);padding:14px 16px 15px;min-width:0;
+  display:flex;flex-direction:column}
+/* App lock carries one row where its neighbour carries two, so it used to end
+   in dead space. Pinning the PIN buttons to the floor fills the card and lines
+   its bottom edge up with Yearly starting balance beside it. */
+.pin-actions{margin-top:auto;padding-top:9px}
+/* Two label-left / control-right rows spread over whatever height the card is
+   given, so it ends level with App lock beside it instead of trailing off into
+   empty space. */
+.hrows{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
+.rowctl{flex:none;width:184px;max-width:54%;margin:0}
+.set-card.wide{grid-column:1/-1}
+@media(max-width:760px){
+  .drawer-grid{grid-template-columns:1fr}
+  .set-card.wide{grid-column:auto}
+}
+/* One height for every control in here. Pills sat at ~34px, buttons ~38 and
+   inputs ~40, and that ragged edge was a real part of the untidiness. */
+.drawer .btn{padding:9px 14px;min-height:36px}
+.drawer input,.drawer select{padding:9px 12px;min-height:36px}
+.drawer .reset-row,.drawer .taborder-row,.drawer .keepdata{min-height:36px}
+.drawer .hform label{font-size:9.5px;margin-bottom:3px}
+/* Inside a card the row does not need a frame of its own -- the card is the
+   frame, and a box drawn inside a box reads as clutter rather than structure.
+   Flattening it also gives back the padding, which is most of what the cards
+   cost in height. */
+.drawer .set-card .fbrow{border:none;background:transparent;padding:0}
+/* The buttons are fixed-size; the label is the part that can give. Without this
+   the label held its width, the actions wrapped underneath, and a half-width
+   card ended up with its two buttons stacked over a column of dead space. */
+.drawer .set-card .fbrow>div:first-child{flex:1 1 auto;min-width:0}
+.drawer .set-card .row-actions{flex:0 0 auto}
+.drawer .basegrid{gap:8px;margin-top:0}
+.drawer .sec-help{margin-bottom:11px}
+.drawer .basegrid+.sec-help{margin-top:13px;margin-bottom:0}
+.drawer .taborder-line,.drawer .reset-line{margin-top:0}
+footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5px;letter-spacing:.04em}
+
+/* ---------- Contribution bars ---------- */
+.cbar{height:10px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid var(--stroke);overflow:hidden}
+.cfill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.2,.8,.2,1);min-width:0}
+.tfill{background:linear-gradient(90deg,var(--teal),#7DD3FC);box-shadow:0 0 14px rgba(94,234,212,.5)}
+.ffill{background:linear-gradient(90deg,var(--violet),#F0ABFC);box-shadow:0 0 14px rgba(167,139,250,.5)}
+.cfill.over{background:linear-gradient(90deg,var(--rose),#FCA5A5);box-shadow:0 0 14px rgba(251,113,133,.5)}
+
+/* ===================== Mobile (iPhone) refinements ===================== */
+@media (max-width:560px){
+  /* The Dashboard column is wider than a phone screen (the holdings table's
+     min-content width sets the floor), and the page-level overflow-x:hidden
+     above clips it with no way to reach what's cut off. Keep the layout as
+     it is and let the page itself be swiped sideways instead. Tabs that
+     already fit stay put — there is nothing to scroll to. */
+  body{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .shell{padding:18px 14px 70px}
+  /* header: keep it compact, don't let it eat the first screen */
+  header{margin-bottom:12px;gap:10px}
+  .brand h1{font-size:26px}
+  .brand .orb{width:42px;height:42px}
+  .brand small{font-size:10px;letter-spacing:.12em}
+  .topctl{gap:8px;width:100%}
+  /* currency + account filters share one scrollable row */
+  header .seg{overflow-x:auto;max-width:100%}
+  .pill{padding:8px 12px;font-size:12px}
+  .btn{padding:9px 14px;font-size:12.5px}
+
+  /* TAB BAR: horizontal scroll with clear affordance so no tab is hidden */
+  /* The bar itself no longer scrolls as one piece: it wraps, so the tab list
+     gets a row of its own and the open tab's controls get the row beneath.
+     Scrolling the whole bar buried those controls off to the right -- at 390px
+     Yearly's Income/Expense filter sat 607px past the edge. */
+  .tabbar{flex-wrap:wrap;overflow:visible;justify-content:flex-start;row-gap:10px;gap:10px}
+  /* only the tabs scroll sideways, and only as far as the tabs go */
+  .tabbar>.seg{flex:1 0 100%;max-width:100%;overflow-x:auto;justify-content:flex-start;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tabbar>.seg::-webkit-scrollbar{display:none}
+  .tabbar .seg{flex-wrap:nowrap}
+  .tabbar .seg button{padding:9px 16px;font-size:13px;flex:none}
+  /* the open tab's own controls: full width on the next row, never off-screen */
+  .yearbar{margin-left:0;flex:1 0 100%;width:100%}
+  .yearbar select{flex:1;min-width:0}
+  /* Yearly carries a year picker AND a Both/Income/Expense filter; they cannot
+     share a 390px row, so the filter takes the line under the picker */
+  #yfYearWrap{flex-wrap:wrap;row-gap:8px}
+  #yfYearWrap>.yf-modeseg{flex:1 0 100%}
+  #yfYearWrap>.yf-modeseg button{flex:1;min-width:0}
+
+  /* hero + numbers */
+  .hero{padding:20px 18px 14px}
+  .hero .value{font-size:34px}
+  .chartwrap svg{height:150px}
+
+  /* The holdings table's min-content (7 columns) propagates up through the grid
+     because grid and flex items default to min-width:auto, which dragged every
+     panel 114px past the screen and made the WHOLE page pan sideways. Releasing
+     that lets .tscroll do its job: the table alone scrolls, inside its panel. */
+  #dashView,#dashView .col,#dashView .panel,.tscroll{min-width:0}
+
+  /* holdings table: tighten so 7 columns fit without feeling cramped */
+  .holdings,.cash,.formcard,.stat,.hero{padding:18px 16px}
+  .htable th,.htable td{padding:9px 6px;font-size:12px}
+  /* The broker mark lives in the first cell's left padding, so that padding has
+     to stay wide enough to hold it -- 6px would clip the glyph, and the table
+     is inside .tscroll so it cannot spill left instead. --bk-top follows
+     padding-top for the same reason: the mark aligns with the TICKER, not with
+     the middle of a cell that also carries a sub-line. */
+  /* the broker mark sits in this padding, so it cannot shrink to 6px with the
+     rest -- and the table is inside .tscroll, so it cannot spill left instead */
+  .htable td:first-child{max-width:96px;padding-left:10px}
+  .sym{font-size:12.5px}
+  .sym small{font-size:9.5px}
+  .rm{padding:4px 6px}
+
+  /* Yearly Finance TRANSACTIONS header: title + month picker + the
+     All/Income/Expense filter cannot share one line on a phone, so the title
+     takes its own row and the two controls split the row beneath it. Headers
+     on the other tabs already fit, so wrapping never kicks in for them. */
+  .cash h3,.holdings h3,.formcard h3{flex-wrap:wrap;gap:10px}
+  .yf-txhead{width:100%;justify-content:space-between;gap:8px}
+  /* the pickers already read "All months"/"August 2026" and "All categories"/
+     "Rent" — the labels are noise at this width */
+  .yf-txhead label[for="yfTxMonth"],.yf-txhead label[for="yfTxCat"]{display:none}
+  #yfTxMonth,#yfTxCat{min-width:0!important}   /* overrides the inline min-width:120px */
+  /* three controls will not fit beside the title, so the two pickers share one
+     row and the All/Income/Expense filter gets the full width beneath them */
+  #yfFilterSeg{flex:1 0 100%;min-width:0}
+  #yfFilterSeg button{flex:1;min-width:0;padding:8px 6px;font-size:12px}
+
+  /* forms: 2-up inputs stay usable, buttons full width */
+  .hform,.cashform{gap:8px}
+  input,select{padding:10px 11px;font-size:13.5px}
+  input[type="date"]{height:calc(1.25em + 22px)}   /* 10px padding here, not 11 */
+  /* prevent iOS zoom-on-focus: inputs must be >=16px OR use touch-action; we bump to 16 on focus-critical fields */
+  .cashform input,.hform input,.hform select{font-size:16px}
+
+  footer{font-size:10.5px;padding:0 6px}
+}
+@media (max-width:380px){
+  .tabbar .seg button{padding:8px 12px;font-size:12px}
+  .hero .value{font-size:30px}
+}
+
+
+/* ---------- CSV import ---------- */
+.dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  padding:22px 14px;border:1.5px dashed rgba(255,255,255,.22);border-radius:14px;
+  background:rgba(0,0,0,.2);cursor:pointer;text-align:center;transition:all .2s;
+  text-transform:none;letter-spacing:0;margin:0}
+.dropzone:hover,.dropzone.over{border-color:rgba(94,234,212,.55);background:rgba(94,234,212,.07)}
+.dz-icon{font-size:22px;color:var(--teal);line-height:1}
+.dz-main{font-size:13.5px;font-weight:600;color:var(--text)}
+.dz-sub{font-size:11.5px;color:var(--text-faint)}
+#impTable th,#impTable td{padding:7px 6px;font-size:12px}
+
+
+/* ---------- Collapsible sections ---------- */
+.collapse-btn{display:flex;align-items:center;gap:9px;background:none;border:none;padding:0;
+  color:var(--text);font-family:var(--font-display);font-size:var(--fs-title);font-weight:600;letter-spacing:.02em;cursor:pointer}
+.collapse-btn .chev{display:inline-block;font-size:18px;line-height:1;color:var(--text-faint);
+  transition:transform .25s ease;transform:rotate(0deg)}
+.collapse-btn[aria-expanded="true"] .chev{transform:rotate(90deg);color:var(--teal)}
+.collapsible{display:none}
+.collapsible.open{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+/* ---------- Contribution chart ---------- */
+.lg{width:14px;height:3px;border-radius:2px;display:inline-block}
+.lg-t{background:var(--teal);box-shadow:0 0 8px rgba(94,234,212,.6)}
+.lg-f{background:var(--violet);box-shadow:0 0 8px rgba(167,139,250,.6)}
+
+.ctip{position:absolute;transform:translate(-50%,-100%);pointer-events:none;opacity:0;
+  transition:opacity .15s ease;background:rgba(9,20,32,.95);border:1px solid var(--stroke-top);
+  border-radius:10px;padding:7px 11px;font-size:12px;line-height:1.45;white-space:nowrap;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);backdrop-filter:blur(12px);z-index:5;font-variant-numeric:tabular-nums}
+/* amount, its button, amount, its button — one line, each pair reading together.
+   30/20/30/20: the field you type into earns more room than the button that
+   commits it. Ratios rather than percentages so the gaps come out of the total
+   first, instead of pushing it past 100%. */
+.basegrid{display:grid;grid-template-columns:3fr 2fr 3fr 2fr;gap:10px;margin-top:14px;align-items:center}
+@media(max-width:700px){.basegrid{grid-template-columns:1fr auto}}
+.basegrid input{margin:0}
+@media (max-width:560px){.basegrid{grid-template-columns:1fr 1fr}.basegrid input{grid-column:1/-1}}
+
+/* ---------- Yearly Finance ---------- */
+.yf-cards{display:grid;grid-template-columns:1fr;gap:8px}
+.yf-row2{display:grid;grid-template-columns:1.25fr 1.15fr 1.6fr 1fr;gap:8px;align-items:stretch}
+@media(max-width:1000px){.yf-row2{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.yf-row2{grid-template-columns:1fr}}
+.yf-toprow{display:grid;grid-template-columns:60% 1fr;gap:8px;align-items:stretch}
+/* Highlights hides itself on a year with too little to say; without a floor
+   the reserved panel would then collapse to a sliver instead of an empty slot. */
+.yf-toprow>#yfBlankPanel{min-height:145px}
+@media(max-width:900px){.yf-toprow{grid-template-columns:1fr}}
+.yf-two{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end}
+.yf-two>div{display:flex;flex-direction:column;align-items:center;text-align:center}
+.yf-statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;align-content:center;height:100%}
+.yf-statgrid .cell{display:flex;flex-direction:column;justify-content:center;text-align:center;border-bottom:1px solid rgba(255,255,255,.09);padding:6px 0}
+.yf-statgrid .cell span{color:var(--text-dim);font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase}
+.yf-statgrid .cell.c-inv{border-bottom-color:rgba(74,222,128,.5)}
+.yf-statgrid .cell.c-inv b{color:var(--yf-c-inv)}
+.yf-statgrid .cell.c-mov{border-bottom-color:rgba(229,89,89,.5)}
+.yf-statgrid .cell.c-mov b{color:var(--yf-c-mov)}
+.yf-statgrid .cell.c-sav{border-bottom-color:rgba(6,182,212,.5)}
+.yf-statgrid .cell.c-sav b{color:var(--yf-c-sav)}
+.yf-statgrid .cell.c-off{border-bottom-color:rgba(217,141,76,.5)}
+.yf-statgrid .cell.c-off b{color:var(--yf-c-off)}
+/* card headings: caps + nature-coded colour */
+/* Yearly was the outlier on headings: 15px uppercase where Monthly, Archives
+   and Settings all use the 12.5px eyebrow for the same role. Its .label was a
+   third size again. Both snap to the scale; the colour classes beside them
+   (.yf-h-exp / .yf-h-inc) are untouched, since the colour IS the information. */
+#yearlyView h3{font-size:var(--fs-eyebrow);font-weight:var(--fw-label);
+  text-transform:uppercase;letter-spacing:var(--ls-label)}
+#yearlyView .label{font-size:var(--fs-label);font-weight:var(--fw-label);
+  text-transform:uppercase;letter-spacing:var(--ls-label)}
+/* a drop target is a sentence, not a label, so it opts out of the caps rule the
+   way .kd-text already does -- stated rather than left as a silent override */
+label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
+.yf-h-exp{color:var(--yf-exp)!important}
+.yf-h-inc{color:var(--yf-inc)!important}
+.yf-h-neutral{color:var(--text)}
+#yearlyView .foot{text-transform:uppercase;letter-spacing:var(--ls-label);font-size:var(--fs-label)}
+/* monthly table emphasis */
+.yf-mtable td.tot{font-weight:800}
+.yf-mtable tr.bold td{font-weight:700}
+.yf-mtable td.t-inc{color:var(--yf-inc)}
+.yf-mtable td.t-exp{color:var(--yf-exp)}
+.yf-statgrid .cell b{font-size:16px;font-variant-numeric:tabular-nums;margin-top:2px}
+.yf-card-bars,.yf-card-stats,.yf-card-avg,.yf-savings-card{display:flex;flex-direction:column;justify-content:center}
+.yf-savings{display:flex;flex-direction:column;justify-content:center;text-align:center}
+/* ---- Glassmorphism: Yearly Finance + Finance Archives ---- */
+#yearlyView .panel{
+  background:linear-gradient(135deg,rgba(255,255,255,.11),rgba(255,255,255,.035));
+  backdrop-filter:blur(24px) saturate(165%);
+  -webkit-backdrop-filter:blur(24px) saturate(165%);
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:0 8px 32px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.30), inset 0 -1px 0 rgba(255,255,255,.06);
+  position:relative;overflow:hidden;border-radius:14px}
+/* soft light sweep across the top edge */
+#yearlyView .panel::after{
+  content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(120% 60% at 15% -10%,rgba(255,255,255,.14),transparent 60%)}
+#yearlyView .panel>*{position:relative;z-index:1}
+#yearlyView input,#yearlyView select{
+  background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.20);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#yearlyView .htable thead th{
+  background:rgba(255,255,255,.05);backdrop-filter:blur(6px)}
+/* tighter, continuous look for this tab only */
+#yearlyView .statrow{gap:8px}
+#yearlyView>.statrow{margin:8px 0}
+@media(max-width:900px){.yf-cards{grid-template-columns:1fr}}
+.yf-bar{width:38px;border-radius:8px 8px 3px 3px;margin:0 auto;transition:height .5s cubic-bezier(.2,.8,.2,1)}
+.yf-bar-start{background:var(--yf-start);box-shadow:0 0 18px rgba(160,133,243,.55);height:56px}
+.yf-bar-end{
+  background:linear-gradient(0deg,#A085F3 0%,#ADCB66 50%,#A085F3 100%);
+  background-size:100% 220%;
+  box-shadow:0 0 18px rgba(173,203,102,.5);height:56px;
+  animation:endflow 5.5s linear infinite}
+@keyframes endflow{0%{background-position:50% 0%}100%{background-position:50% 100%}}
+@media (prefers-reduced-motion:reduce){.yf-bar-end{animation:none;background-position:50% 50%}}
+.yf-pa{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12.5px}
+.yf-pa span{width:56px;color:var(--text-dim)}
+.yf-pa b{width:80px;text-align:right;font-variant-numeric:tabular-nums}
+.yf-patrack{flex:1;height:12px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid var(--stroke);overflow:hidden}
+.yf-pafill{height:100%;border-radius:999px;transition:width .5s ease;min-width:0}
+/* headline figure: sparkling gold with a slow travelling sheen */
+.sparkle{
+  background:linear-gradient(100deg,#FFC93C 0%,#FFE9A8 18%,#FFFFFF 30%,#FFE9A8 42%,#FFC93C 60%,#FFD54F 100%);
+  background-size:280% 100%;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:#FFD54F;
+  filter:drop-shadow(0 0 10px rgba(255,201,60,.45));
+  animation:sheen 4.5s ease-in-out infinite}
+@keyframes sheen{0%,100%{background-position:120% 0}50%{background-position:-20% 0}}
+@media (prefers-reduced-motion:reduce){.sparkle{animation:none;background-position:50% 0}}
+.sparkle-green{
+  /* stop-for-stop mirror of .sparkle so both read as the same sheen */
+  background:linear-gradient(100deg,#93E070 0%,#C9F2AE 18%,#FFFFFF 30%,#C9F2AE 42%,#93E070 60%,#A6E888 100%);
+  background-size:280% 100%;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:var(--yf-growth);
+  filter:drop-shadow(0 0 10px rgba(147,224,112,.45));
+  animation:sheen 4.5s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.sparkle-green{animation:none;background-position:50% 0}}
+/* compact transaction history */
+#yfTxTable td{padding:5px 8px;font-size:12.5px}
+#yfTxTable th{padding:7px 8px}
+#yfTxTable .acct-tag{padding:1px 7px;font-size:9.5px}
+#yfTxTable .rm,#yfTxTable .yf-edit{padding:2px 5px;font-size:12px}
+/* clickable sort headers */
+.fbrow{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:12px 14px;border:1px solid var(--stroke);border-radius:14px;background:rgba(0,0,0,.2)}
+.switch{position:relative;display:inline-block;flex:none;cursor:pointer}
+.switch input{position:absolute;opacity:0;width:0;height:0}
+.switch .track{display:block;width:46px;height:26px;border-radius:999px;
+  background:rgba(255,255,255,.14);border:1px solid var(--stroke);transition:background .2s}
+.switch .knob{display:block;width:20px;height:20px;border-radius:50%;background:#E7EEF7;
+  margin:2px;transition:transform .2s cubic-bezier(.3,.8,.3,1)}
+.switch input:checked+.track{background:linear-gradient(90deg,var(--teal),#38BDF8)}
+.switch input:checked+.track .knob{transform:translateX(20px)}
+.switch input:disabled+.track{opacity:.4;cursor:not-allowed}
+.htable th.sortable{cursor:pointer;user-select:none;transition:color .15s}
+.htable th.sortable:hover{color:var(--text)}
+.htable th.sortable.on{color:var(--teal)}
+.htable th.sortable i{display:inline-block;width:0;height:0;margin-left:5px;vertical-align:middle;opacity:0}
+.htable th.sortable.on i{opacity:1;
+  border-left:4px solid transparent;border-right:4px solid transparent;
+  border-top:5px solid currentColor}
+.htable th.sortable.on.asc i{border-top:none;border-bottom:5px solid currentColor}
+/* sell dialog */
+.modal{position:fixed;inset:0;background:rgba(3,10,16,.72);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+.modal.open{display:flex}
+.modal-card{width:100%;max-width:400px;background:linear-gradient(160deg,#0F1E2B,#0A1620);
+  border:1px solid var(--stroke-top);border-radius:20px;padding:22px;
+  box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.modal-card h3{font-family:var(--font-display);font-size:17px;margin-bottom:4px}
+.sell-sum{display:flex;justify-content:space-between;font-size:12.5px;padding:7px 0;
+  border-bottom:1px solid rgba(255,255,255,.07)}
+.sell-sum span{color:var(--text-dim)}
+.sell-sum b{font-variant-numeric:tabular-nums}
+.yf-modeseg button{padding:7px 13px;font-size:12px;letter-spacing:.04em}
+/* Income and Expense read the way ABI / POO do: the chip FILLS with its own colour
+   and the label goes near-black, rather than a white chip with coloured writing.
+   Same idiom as `.seg button.active.poo`, with the money tokens. Both segs carry
+   it -- the mode picker up in the year bar and the table filter down by the
+   transactions -- since one filled and one not would read as a bug.
+   Keyed by id so they clearly outrank `.seg button.active.all`, which sets the
+   white fill "Both" and "All" keep. Note when testing these: `.seg button` has
+   `transition:all .2s`, so reading getComputedStyle().color straight after a
+   click returns a value mid-interpolation, not the final one. Wait it out. */
+#yfModeSeg button.active[data-mode="income"],
+#yfFilterSeg button.active[data-f="income"]{
+  background:linear-gradient(135deg,var(--yf-inc),#7DD3FC);color:#04141f}
+#yfModeSeg button.active[data-mode="expense"],
+#yfFilterSeg button.active[data-f="expense"]{
+  background:linear-gradient(135deg,var(--yf-exp),#FDBA74);color:#1f0d02}
+.yf-mtable{width:100%;table-layout:fixed}
+@media(max-width:900px){
+  .yf-mtable{table-layout:auto;min-width:800px;width:auto}
+  .yf-mtable th,.yf-mtable td{text-overflow:clip;overflow:visible;padding:6px 7px}
+  .yf-mtable th:first-child,.yf-mtable td:first-child{width:auto;position:sticky;left:0;
+    background:linear-gradient(90deg,rgba(12,24,34,.97),rgba(12,24,34,.92));z-index:2}
+}
+.yf-mtable th,.yf-mtable td{padding:6px 4px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.yf-mtable th:first-child,.yf-mtable td:first-child{width:96px;letter-spacing:.02em}
+.yf-mtable td:first-child,.yf-mtable th:first-child{text-align:left;font-weight:600}
+.yf-neg{color:var(--yf-exp)} .yf-pos{color:var(--yf-inc)}
+.yf-plan-in{width:86px;text-align:right;padding:6px 8px;font-size:12.5px;margin-left:auto}
+#yfExpTable td,#yfIncTable td{padding:4px 7px;font-size:12px}
+#yfExpTable th,#yfIncTable th{padding:6px 7px}
+.yf-catbtn{border:none;background:transparent;color:var(--text-faint);font-size:12px;padding:2px 5px;border-radius:6px;cursor:pointer}
+.yf-catbtn:hover{color:var(--teal);background:rgba(94,234,212,.1)}
+.yf-catbtn.del:hover{color:var(--rose);background:rgba(251,113,133,.1)}
+/* Highlights slideshow. Every slide sits in the SAME grid cell, so the panel
+   is as tall as the tallest card and its height never jumps mid-rotation. */
+.yf-hi-stage{display:grid}
+.yf-hi-slide{grid-area:1/1;opacity:0;visibility:hidden;transition:opacity .45s ease}
+.yf-hi-slide.on{opacity:1;visibility:visible}
+.yf-hi-t{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;font-weight:var(--fw-label);margin-bottom:9px}
+.yf-hi-l{font-size:15px;line-height:1.5;font-family:var(--font-display);font-weight:600}
+.yf-hi-dots{display:flex;gap:7px;margin-top:16px}
+.yf-hi-dot{width:7px;height:7px;padding:0;border-radius:50%;border:none;cursor:pointer;
+  background:rgba(234,240,250,.25);transition:background .2s,transform .2s}
+.yf-hi-dot.on{background:var(--text);transform:scale(1.25)}
+@media (prefers-reduced-motion:reduce){.yf-hi-slide{transition:none}}
+/* under a bill's name in the category table: what was billed vs itemised out */
+.yf-billnote{font-size:10px;color:var(--text-faint);font-weight:500;letter-spacing:0;margin-top:2px}
+.yf-addcat{display:flex;gap:8px;margin-top:10px}
+.yf-addcat input{flex:1;padding:8px 10px;font-size:12.5px}
+.yf-addcat .btn{padding:8px 14px;font-size:12px}
+.yf-edit{border:none;background:transparent;color:var(--text-faint);font-size:13px;padding:4px 7px;border-radius:8px;cursor:pointer}
+.yf-edit:hover{color:var(--teal);background:rgba(94,234,212,.1)}
+.tag-inc{background:rgba(56,189,248,.15);color:var(--yf-inc);border:1px solid rgba(56,189,248,.4)}
+.tag-exp{background:rgba(249,115,22,.15);color:var(--yf-exp);border:1px solid rgba(249,115,22,.4)}
+
+
+/* ═════════ Monthly Expense — iOS-style glass, tuned to the app backdrop ═════════ */
+#monthlyView{--sk-ink:#EAF0FA;--sk-amber:#5EEAD4;--sk-green:#4ADE80;--sk-red:#FB7185}
+.me-cards{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:8px}
+@media(max-width:1000px){.me-cards{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.me-cards{grid-template-columns:1fr}}
+
+/* frosted card: translucent fill, heavy blur, bright hairline, soft lift */
+.skeu-panel{position:relative;padding:var(--pad-panel);border-radius:var(--r-panel);color:var(--sk-ink);
+  background:
+    radial-gradient(120% 90% at 0% 0%,rgba(255,255,255,.10),transparent 55%),
+    radial-gradient(110% 80% at 100% 100%,rgba(120,200,255,.055),transparent 60%),
+    linear-gradient(155deg,rgba(255,255,255,.055),rgba(255,255,255,.014));
+  backdrop-filter:blur(40px) saturate(210%) brightness(1.06);
+  -webkit-backdrop-filter:blur(40px) saturate(210%) brightness(1.06);
+  border:1px solid rgba(255,255,255,.11);
+  box-shadow:0 18px 52px rgba(0,0,0,.34),
+             0 2px 8px rgba(0,0,0,.18),
+             inset 0 1px 0 rgba(255,255,255,.50),
+             inset 1px 0 0 rgba(255,255,255,.14),
+             inset -1px 0 0 rgba(255,255,255,.10),
+             inset 0 -1px 0 rgba(255,255,255,.20);
+  overflow:hidden;
+  transition:box-shadow .3s,border-color .3s}
+.skeu-panel:hover{border-color:rgba(255,255,255,.16);
+  box-shadow:0 22px 60px rgba(0,0,0,.36),0 2px 8px rgba(0,0,0,.18),
+             inset 0 1px 0 var(--text-dim),
+             inset 1px 0 0 rgba(255,255,255,.16),
+             inset -1px 0 0 rgba(255,255,255,.12),
+             inset 0 -1px 0 rgba(255,255,255,.22)}
+/* bright refracted rim - the lit edge of a glass pane */
+.skeu-panel::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  padding:1px;
+  background:linear-gradient(135deg,rgba(255,255,255,.78) 0%,rgba(190,230,255,.30) 16%,
+             rgba(255,255,255,.05) 34%,rgba(255,255,255,0) 52%,
+             rgba(255,255,255,.07) 70%,rgba(200,225,255,.26) 88%,var(--text-dim) 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude}
+/* specular sheen across the top-left, like iOS material */
+.skeu-panel::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:
+    radial-gradient(140% 78% at 8% -20%,rgba(255,255,255,.24),transparent 58%),
+    radial-gradient(85% 55% at 110% 115%,rgba(148,214,255,.13),transparent 62%),
+    linear-gradient(180deg,rgba(255,255,255,.07) 0%,transparent 14%)}
+.skeu-panel>*{position:relative;z-index:1}
+/* The header owns the chart's filter popover. Without this it shares z-index:1
+   with the chart wrapper below it, DOM order decides, and the chart paints over
+   the popover -- the checkboxes were unclickable and the click landed outside
+   the popover, which closed it. .skeu-pop's z-index:30 could not help: it is
+   scoped inside this header's own stacking context. */
+.skeu-panel>.skeu-h{z-index:5}
+.skeu-h{font-family:var(--font-display);font-size:var(--fs-eyebrow);letter-spacing:var(--ls-label);font-weight:var(--fw-label);
+  color:var(--text);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.skeu-label{font-size:var(--fs-label);letter-spacing:var(--ls-label);color:#93A2B8;font-weight:var(--fw-label)}
+.skeu-sub{font-size:11px;color:#8695AB}
+.skeu-chip{font-size:10px;letter-spacing:.1em;padding:3px 9px;border-radius:999px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#B9C6D8;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+/* which month the import lands in -- the same month the picker at the top right
+   is showing, repeated down here where the decision is actually committed */
+/* a Yearly bill listed on Monthly: shown so it can be itemised against, edited
+   only on the tab that owns it */
+/* Add Expense in two rows of three: amount / description / allot, then the
+   button / contributor / category. Halves the height the form used to take. */
+.me-addform{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:760px){.me-addform{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.me-addform{grid-template-columns:1fr}}
+/* the reminder that holds the import shut until a bill is chosen */
+.me-impgate{margin:10px 0 0;color:var(--amber);font-weight:600}
+.skeu-btn.is-off{opacity:.45;cursor:not-allowed}
+.me-yfonly{font-size:var(--fs-micro);letter-spacing:var(--ls-label);font-weight:var(--fw-label);color:#7C8BA3;
+  border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:3px 8px;white-space:nowrap}
+/* the merged payment line belongs to the bill above it, so it is tinted rather
+   than ruled off; the rows behind it are indented one step when expanded */
+.me-payrow>td{background:rgba(109,130,232,.08)}
+.me-paykid>td{background:rgba(148,163,184,.05);font-size:11px;opacity:.85}
+.me-paykid>td:first-child{padding-left:24px}
+.me-impmonth{white-space:nowrap;padding:6px 12px;font-size:10.5px;
+  background:rgba(94,234,212,.10);border-color:rgba(94,234,212,.30);color:#8FE3D4}
+.me-impmonth b{color:#CFF6EE;font-weight:700;letter-spacing:.04em}
+.skeu-readout{font-family:var(--font-display);font-size:30px;font-weight:700;margin:6px 0 2px;
+  font-variant-numeric:tabular-nums;color:var(--sk-amber);
+  text-shadow:0 0 22px rgba(94,234,212,.30)}
+.skeu-readout.sm{font-size:21px;color:var(--sk-ink);text-shadow:none}
+.skeu-inset{margin-top:12px;padding:12px 14px;border-radius:var(--r-card);
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+/* pill buttons, frosted */
+.skeu-btn{font-family:inherit;font-size:12.5px;font-weight:600;letter-spacing:.02em;
+  padding:10px 18px;border-radius:999px;cursor:pointer;color:var(--text);
+  background:rgba(255,255,255,.07);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.30),inset 0 -1px 0 rgba(255,255,255,.08);
+  transition:background .18s,transform .08s}
+.skeu-btn:hover{background:rgba(255,255,255,.13)}
+.skeu-btn:active{transform:scale(.97)}
+.skeu-btn.primary{color:#04201C;border-color:rgba(94,234,212,.6);
+  background:linear-gradient(180deg,rgba(126,242,222,.95),rgba(45,212,191,.9));
+  box-shadow:0 4px 16px rgba(94,234,212,.28),inset 0 1px 0 rgba(255,255,255,.45)}
+.skeu-btn.primary:hover{background:linear-gradient(180deg,rgba(150,247,230,1),rgba(60,222,200,.95))}
+.skeu-btn.sm{padding:6px 12px;font-size:11px;letter-spacing:.06em}
+#meMonthWrap{gap:10px}
+/* drop target */
+.skeu-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  padding:24px 14px;border-radius:var(--r-card);cursor:pointer;text-align:center;margin:0;
+  text-transform:none;letter-spacing:0;
+  background:rgba(255,255,255,.03);
+  border:1.5px dashed rgba(255,255,255,.20);transition:border-color .2s,background .2s}
+.skeu-drop:hover,.skeu-drop.over{border-color:rgba(94,234,212,.65);background:rgba(94,234,212,.09)}
+.skeu-drop-icon{font-size:22px;color:var(--sk-amber)}
+.skeu-drop-main{font-size:13.5px;font-weight:600;color:var(--text)}
+.skeu-drop-sub{font-size:11.5px;color:#8695AB}
+/* category bars */
+.me-bars{display:flex;flex-direction:column;gap:7px}
+.me-bar-row{display:grid;grid-template-columns:172px 1fr 92px;gap:10px;align-items:center;font-size:12.5px}
+/* colour and casing are set per row in renderME: each name takes its own
+   category colour, the same one the 12-month trend draws its line in */
+.me-bar-name{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-weight:600;letter-spacing:.04em}
+.me-bar-track{height:14px;border-radius:999px;overflow:hidden;
+  background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.10)}
+.me-bar-fill{height:100%;border-radius:999px;
+  background:linear-gradient(90deg,rgba(94,234,212,.95),rgba(56,189,248,.9));
+  box-shadow:0 0 12px rgba(94,234,212,.35);
+  transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.me-bar-amt{text-align:right;font-variant-numeric:tabular-nums;color:var(--sk-ink)}
+#monthlyView .htable th{color:#93A2B8;border-bottom:1px solid rgba(255,255,255,.10)}
+#monthlyView .htable td{border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;padding:6px 8px}
+#monthlyView input,#monthlyView select{color:var(--text);
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#monthlyView label{color:#93A2B8}
+#monthlyView .empty{color:#8695AB}
+.me-detect{display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px}
+.me-detect span{padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.14);color:#C0CCDD}
+.me-detect span b{color:var(--sk-amber);font-weight:600}
+.me-why{font-size:10px;letter-spacing:.05em;padding:2px 8px;border-radius:999px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#93A2B8;white-space:nowrap}
+.me-why.rule{color:var(--sk-green);border-color:rgba(74,222,128,.4)}
+.me-why.file{color:#7FB6D9;border-color:rgba(127,182,217,.4)}
+.me-why.kw{color:var(--sk-amber);border-color:rgba(94,234,212,.4)}
+.me-why.none{color:#93A2B8}
+.me-why.pay{color:var(--sk-green);border-color:rgba(74,222,128,.4)}
+
+
+/* gear popover */
+.skeu-pop{position:absolute;right:0;top:calc(100% + 8px);width:224px;padding:14px;border-radius:var(--r-card);
+  display:none;z-index:30;text-align:left;
+  background:rgba(16,28,40,.86);
+  backdrop-filter:blur(26px) saturate(180%);-webkit-backdrop-filter:blur(26px) saturate(180%);
+  border:1px solid rgba(255,255,255,.20);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 14px 34px rgba(0,0,0,.5)}
+.skeu-pop.open{display:block}
+.me-poplist{display:flex;flex-direction:column;gap:2px;max-height:250px;overflow-y:auto}
+.me-poplist label{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:8px;margin:0;
+  font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer}
+.me-poplist label:hover{background:rgba(255,255,255,.05)}
+.me-poplist input{width:auto;margin:0;box-shadow:none;padding:0}
+.me-poplist .dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 6px currentColor}
+/* legend */
+.me-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:11.5px;color:#93A2B8}
+.me-legend span{display:flex;align-items:center;gap:6px}
+.me-legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+/* matrix */
+.me-matrix{width:100%;table-layout:fixed}
+.me-matrix th,.me-matrix td{padding:5px 4px;font-size:11px;text-align:right;white-space:nowrap}
+.me-matrix th:first-child,.me-matrix td:first-child{text-align:left;width:132px;
+  overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;
+  background:linear-gradient(90deg,rgba(11,22,32,.96),rgba(11,22,32,.88))}
+.me-matrix tr.tot td{font-weight:800;color:var(--sk-amber);border-top:1px solid rgba(255,255,255,.14)}
+.me-matrix td.col-tot,.me-matrix th.col-tot{font-weight:700;color:var(--sk-ink)}
+.me-matrix td.zero{color:#5D6B7D}
+@media(max-width:900px){.me-matrix{min-width:840px}}
+
+
+/* ═════════ Plan — glass on a deep teal that settles into the app background ═════════ */
+/* Same glass language as the rest of the app, tinted one shade warmer so Plan
+   reads as its own place, and landing on #071520 so the panel meets the page
+   rather than sitting on top of it. */
+#planView .plan-skin{
+  position:relative;overflow:hidden;padding:var(--pad-panel);border-radius:var(--r-panel);
+  border:1px solid rgba(255,255,255,.12);
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;
+  /* Translucent, not solid: the waves drifting behind the page show through and
+     the blur knocks them back, so the tile stays the brightest thing on screen
+     while the background still reads as moving. */
+  background:linear-gradient(165deg,rgba(12,63,74,.74) 0%,rgba(10,46,60,.80) 30%,
+                                    rgba(8,32,44,.86) 62%,rgba(7,21,32,.90) 100%);
+  backdrop-filter:blur(20px) saturate(135%);-webkit-backdrop-filter:blur(20px) saturate(135%);
+}
+#planView .plan-skin>*{position:relative;z-index:1}   /* same job as #yearlyView .panel>* */
+
+#planView h3{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-weight:800;font-size:23px;
+  letter-spacing:-.03em;text-transform:none;color:#fff;margin-bottom:6px}
+#plCount{color:rgba(255,255,255,.55);font-weight:600}
+.pl-sub{color:var(--text-dim);font-size:13.5px;font-weight:500;margin:0 0 18px}
+
+/* ---- Segment: one full-width row closed, expands in place ---- */
+.pl-seg{border:1px solid rgba(94,234,212,.20);border-radius:var(--r-panel);background:rgba(255,255,255,.075);
+  backdrop-filter:blur(26px) saturate(150%);-webkit-backdrop-filter:blur(26px) saturate(150%);
+  margin-bottom:14px;overflow:hidden;box-shadow:0 10px 34px rgba(0,0,0,.30)}
+.pl-seg.open{background:rgba(255,255,255,.10);border-color:rgba(94,234,212,.34)}
+.pl-seghead{display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer}
+.pl-caret{flex:none;width:18px;color:#5EEAD4;font-size:11px;transition:transform .2s}
+.pl-seg.open .pl-caret{transform:rotate(90deg)}
+.pl-segname{flex:1 1 auto;min-width:0;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px 14px;color:#fff;
+  font-size:14.5px;font-weight:700;font-family:'Plus Jakarta Sans','Inter',sans-serif}
+.pl-startwrap{flex:none;display:flex;align-items:center;gap:8px}
+.pl-startwrap>span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
+  color:rgba(255,255,255,.5);font-weight:700}
+.pl-start{width:124px;background:rgba(94,234,212,.13);border:1px solid rgba(94,234,212,.30);
+  border-radius:14px;padding:10px 14px;color:#7DE8C0;font-size:13.5px;font-weight:700;text-align:right;
+  font-variant-numeric:tabular-nums;font-family:'Plus Jakarta Sans','Inter',sans-serif}
+.pl-segsum{flex:none;font-size:11.5px;color:rgba(255,255,255,.55);min-width:150px;text-align:right;
+  font-weight:500;font-variant-numeric:tabular-nums}
+.pl-segsum b{color:#7DE8C0;font-weight:800}
+.pl-segsum b.dn{color:#F9A87C}
+.pl-segdel{flex:none;width:36px;height:36px;border-radius:12px;background:transparent;cursor:pointer;
+  border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.45);display:inline-flex;
+  align-items:center;justify-content:center;transition:color .2s,border-color .2s,background .2s}
+.pl-segdel:hover{color:#F9A87C;border-color:rgba(249,168,124,.5);background:rgba(249,168,124,.1)}
+/* Narrow: name, balance and summary cannot share one line without crushing the
+   name to a couple of characters, so the header wraps. Only the summary flexes --
+   letting the balance grow too pushed the delete button onto a row of its own. */
+@media(max-width:700px){
+  .pl-seghead{flex-wrap:wrap;row-gap:9px}
+  .pl-caret{order:0}
+  .pl-segname{flex:1 1 calc(100% - 30px);order:1}
+  .pl-startwrap{order:2;flex:0 1 auto;margin-left:30px}
+  .pl-startwrap .pl-start{width:112px;min-width:0}
+  .pl-segsum{order:3;flex:1 1 auto;text-align:right;min-width:0;font-size:10.5px}
+  .pl-segdel{order:4;flex:none}
+}
+
+/* ---- Body: list 60% on the left, entry form in the remaining 40% ---- */
+.pl-segbody{padding:0 18px 18px;border-top:1px solid rgba(255,255,255,.1)}
+.pl-split{display:grid;grid-template-columns:60% 1fr;gap:14px;align-items:start;margin-top:14px}
+@media(max-width:900px){.pl-split{grid-template-columns:1fr}}
+.pl-split>.pl-card:last-child{position:sticky;top:14px}   /* list is the long side */
+.pl-card{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.1);
+  border-radius:var(--r-card);padding:18px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.pl-card h4{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:var(--fs-label);letter-spacing:var(--ls-label);
+  text-transform:uppercase;color:rgba(255,255,255,.68);font-weight:700;margin:0 0 12px}
+/* one field per row: at 40% two-up cramps every label */
+.pl-fgrid{display:grid;grid-template-columns:1fr;gap:10px 12px}
+.pl-fgrid label{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
+  color:rgba(255,255,255,.55);font-weight:700;display:block;margin-bottom:5px}
+.pl-fgrid input,.pl-fgrid textarea{width:100%;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:12px 14px;color:#fff;font-size:13.5px;
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;font-variant-numeric:tabular-nums}
+.pl-fgrid textarea{min-height:56px;resize:vertical;line-height:1.5;font-variant-numeric:normal}
+.pl-addbtn{margin-top:2px;background:linear-gradient(180deg,#5EEAD4,#2FC7AE);border:none;
+  border-radius:var(--r-card);padding:14px;color:#052620;font-size:13px;font-weight:800;cursor:pointer;
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;width:100%;
+  box-shadow:0 8px 24px rgba(94,234,212,.28)}
+.pl-cancel{margin-top:8px;background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:14px;
+  padding:11px;color:rgba(255,255,255,.7);font-size:12.5px;font-weight:600;cursor:pointer;
+  font-family:'Plus Jakarta Sans','Inter',sans-serif;width:100%;display:none}
+.pl-card.editing .pl-cancel{display:block}
+.pl-typeseg{display:flex;gap:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+  border-radius:14px;padding:3px}
+.pl-typeseg button{flex:1;background:none;border:none;border-radius:11px;padding:8px 4px;
+  color:rgba(255,255,255,.6);font-size:12px;font-weight:700;cursor:pointer;
+  font-family:'Plus Jakarta Sans','Inter',sans-serif}
+.pl-typeseg button.on{background:rgba(249,168,124,.22);color:#F9A87C}
+.pl-typeseg button.on.inc{background:rgba(94,234,212,.22);color:#5EEAD4}
+
+/* ---- The list: one stream, soonest at the top ---- */
+.pl-listhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.pl-rows{display:flex;flex-direction:column;gap:6px}
+.pl-row{display:grid;grid-template-columns:78px 1fr auto auto;gap:12px;align-items:center;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);border-radius:var(--r-card);padding:13px 15px}
+/* A grid item defaults to min-width:auto, so its min-content can push a 1fr
+   column past its share. A pasted URL offers no break opportunity, so its
+   min-content IS the whole string: the column grew to fit it, the row grew with
+   the column, and the overflow:hidden + ellipsis on .pl-nt below never got the
+   chance to engage -- the text just ran out of the card. Same failure as .hform.
+   The 560px block already carried this line; it belongs at every width. */
+.pl-row>*{min-width:0}
+.pl-nmrow{min-width:0}
+/* Passed items are greyed but never hidden, and stay fully editable. */
+.pl-row.past{background:rgba(255,255,255,.028);border-color:rgba(255,255,255,.06)}
+.pl-row.past .pl-day,.pl-row.past .pl-nm{color:rgba(255,255,255,.5)}
+.pl-row.past .pl-yr,.pl-row.past .pl-nt,.pl-row.past .pl-bal{color:rgba(255,255,255,.3)}
+.pl-row.past .pl-amt{opacity:.55}
+.pl-date{text-align:center;line-height:1}
+.pl-day{font-size:16.5px;font-weight:800;color:#fff;white-space:nowrap;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.pl-yr{display:block;margin-top:3px;font-size:9.5px;font-weight:600;color:var(--text-faint);
+  letter-spacing:.1em}
+.pl-nmrow{display:flex;align-items:center;gap:7px}
+.pl-nm{font-size:14px;color:#fff;font-weight:700;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-clock{flex:none;color:#E8B15C;opacity:.85;display:inline-flex}
+.pl-nt{font-size:11.5px;color:rgba(255,255,255,.48);font-weight:500;margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-amt{text-align:right;font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pl-amt.inc{color:#5EEAD4}.pl-amt.exp{color:#F9A87C}
+.pl-bal{text-align:right;font-size:10.5px;color:rgba(255,255,255,.46);font-weight:600;
+  font-variant-numeric:tabular-nums;margin-top:2px}
+.pl-acts{display:flex;gap:5px}
+.pl-act{width:30px;height:30px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,.15);
+  color:var(--text-faint);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  transition:color .2s,border-color .2s}
+.pl-act:hover{color:#5EEAD4;border-color:rgba(94,234,212,.45)}
+.pl-act.del:hover{color:#F9A87C;border-color:rgba(249,168,124,.45)}
+.pl-today{display:flex;align-items:center;gap:9px;margin:2px 0}
+.pl-today span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:#5EEAD4;font-weight:var(--fw-label)}
+.pl-today i{flex:1;height:1px;background:linear-gradient(90deg,rgba(94,234,212,.5),transparent)}
+.pl-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:11px;padding-top:11px;
+  border-top:1px solid rgba(255,255,255,.14);font-size:11.5px;color:var(--text-dim)}
+.pl-foot b{font-size:15px;color:#7DE8C0;font-weight:800;font-variant-numeric:tabular-nums}
+.pl-foot b.low{font-size:12.5px;color:#F9A87C}
+.pl-new{background:rgba(255,255,255,.04);border:1.5px dashed rgba(255,255,255,.24);border-radius:18px;
+  padding:16px;width:100%;color:rgba(255,255,255,.6);font-size:12.5px;font-weight:700;cursor:pointer;
+  font-family:'Plus Jakarta Sans','Inter',sans-serif}
+.pl-new:hover{background:rgba(255,255,255,.08);color:#fff}
+.pl-none{color:rgba(255,255,255,.45);font-size:12.5px;text-align:center;padding:14px 0}
+/* Phone: a planned row needs ~416px of min-content, and grid items default to
+   min-width:auto, so the column refused to shrink and the segment body ran
+   58px past the panel. Chrome is trimmed, the name cell is allowed to shrink
+   and ellipsis, and the amount sits over its balance as before. */
+@media(max-width:560px){
+  #planView .plan-skin{padding:20px 14px}
+  .pl-seghead{padding:13px 12px}
+  .pl-segbody{padding:0 12px 12px}
+  .pl-card{padding:13px}
+  .pl-split>*,.pl-card,.pl-rows,.pl-row,.pl-row>div{min-width:0}
+  /* One line cannot hold date + name + amount + two buttons here: squeezing it
+     left the name 58px wide at 390px and 0px at 320px. The row becomes two
+     lines instead -- name and controls on top, money underneath, date spanning. */
+  .pl-row{grid-template-columns:56px minmax(0,1fr) auto;
+    grid-template-areas:"date name name" "date amt acts";
+    gap:4px 8px;padding:11px 10px}
+  .pl-row>*:nth-child(1){grid-area:date;align-self:center}
+  .pl-row>*:nth-child(2){grid-area:name}
+  .pl-row>*:nth-child(3){grid-area:amt;display:flex;gap:8px;align-items:baseline}
+  .pl-row>*:nth-child(4){grid-area:acts;align-self:center;justify-self:end}
+  .pl-amt,.pl-bal{text-align:left}
+  .pl-bal{margin-top:0}
+  .pl-day{font-size:14px}
+  .pl-yr{font-size:9px}
+  .pl-nm{font-size:13px}
+  .pl-nt{font-size:10.5px}
+  .pl-amt{font-size:13px}
+  .pl-acts{gap:4px}
+  .pl-act{width:26px;height:26px}
+}
+/* ═════════ Archives — minimal: flat surfaces, thin rules, indigo accent ═════════ */
+#archiveView{--arc:#8B93F8;
+  /* The SAME blue and orange Yearly uses, aliased rather than copied so the two
+     tabs cannot drift apart -- change --yf-inc / --yf-exp and Archives follows.
+     The -hi stops are those two mixed 45% toward white, for the bar gradient.
+     Earlier runs tried cyan/red, emerald/crimson, turquoise/magenta, lime and
+     jade; the panel measures hue 218-222 and swings x1.77 in luminance, so flat
+     mid-tone fills read as dull whatever the hue. What carries these is the lit
+     gradient, the glow and full opacity -- not the choice of hue.
+     Five highlight tones, mapped by what the card SAYS rather than by its
+     tone field alone: alarm, spending, good news, neutral, and the teal that
+     Contributions already owns. */
+  /* Everything below is DERIVED from --arc-bar-in / --arc-bar-out on :root.
+     They were hardcoded rgba before, which meant changing the bar colour did
+     nothing to the bars -- the frosted fill ignored it. color-mix keeps them in
+     step: the lit top is the colour mixed toward white, the body is the colour
+     at 62% alpha, the rim is a bright edge of the same hue.
+     Tune the LOOK with the percentages here; tune the COLOUR on :root.
+
+     39 / 62 / 48 is "A3": less glass than the 52 / 46 / 62 it started at, by
+     about three fifths of the way to a matte bar. The three move TOGETHER on
+     purpose -- they are one material, and sliding the body's alpha without the
+     lit top and the rim following is how a bar stops reading as one object.
+     Below roughly 43 / 56 / 52 the change stops being visible at all on a card
+     this dark, which is why the step is this large rather than a nudge. */
+  --arc-in:var(--arc-bar-in);
+  --arc-in-g1:color-mix(in srgb, #fff 39%, var(--arc-bar-in));
+  --arc-in-g2:color-mix(in srgb, var(--arc-bar-in) 62%, transparent);
+  --arc-in-rim:color-mix(in srgb, #fff 48%, var(--arc-bar-in));
+  --arc-out:var(--arc-bar-out);
+  --arc-out-g1:color-mix(in srgb, #fff 39%, var(--arc-bar-out));
+  --arc-out-g2:color-mix(in srgb, var(--arc-bar-out) 62%, transparent);
+  --arc-out-rim:color-mix(in srgb, #fff 48%, var(--arc-bar-out));
+  --hl-alarm:#FF6B6B; --hl-spend:#FFA23D; --hl-good:#4ADE80;
+  --hl-info:#7DA8FF; --hl-contrib:#2DD4BF}
+#archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
+  border-radius:10px;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:22px 24px}
+#archiveView h3{font-family:var(--font-display);font-size:var(--fs-eyebrow);font-weight:var(--fw-label);letter-spacing:var(--ls-label);
+  text-transform:uppercase;color:var(--arc);margin-bottom:14px}
+#archiveView .note,#archiveView p{color:var(--text-dim);font-size:12.5px;line-height:1.65}
+#archiveView .btn,#archiveView button{border-radius:8px;font-size:12.5px;font-weight:600;
+  padding:9px 16px;color:var(--text);background:rgba(139,147,248,.14);
+  border:1px solid rgba(139,147,248,.38);box-shadow:none;transition:background .18s}
+#archiveView .btn:hover,#archiveView button:hover{background:rgba(139,147,248,.26)}
+#archiveView .btn.primary{background:linear-gradient(180deg,var(--arc),#6E76E8);color:#0B1020;
+  border-color:transparent}
+#archiveView .htable th{color:var(--text-dim);font-size:var(--fs-label);letter-spacing:var(--ls-label);
+  border-bottom:1px solid rgba(255,255,255,.10)}
+#archiveView .htable td{border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px}
+#archiveView input,#archiveView select{background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--text);box-shadow:none}
+#archiveView .empty{color:var(--text-dim)}
+
+/* ---------- Archives: one card per closed year ----------
+   Flat, indigo, hairlines -- the Archives theme, not the glass used elsewhere.
+   Shaped like a travel listing: the destination (the year) owns the left, the
+   numbers line up in columns on the right, and the one figure you actually scan
+   a list of years FOR sits apart at the end, full height. */
+.ay-list{display:flex;flex-direction:column;gap:12px}
+.ay{border:1px solid rgba(255,255,255,.09);border-radius:var(--r-card);
+  background:rgba(255,255,255,.022);overflow:hidden;
+  transition:border-color .18s,background .18s,box-shadow .18s}
+.ay:hover{border-color:rgba(139,147,248,.34);background:rgba(139,147,248,.045)}
+/* ── iOS-style glass, only once the card is open ───────────────────────────
+   Three planes, each one step brighter than the one behind it, so the eye can
+   tell what sits on what:
+     the CARD   is the frosted sheet  — blurred backdrop, a bright rim
+     the HEADER is raised off it      — a lighter wash + a top specular lip
+     each SECTION is raised again     — its own rounded pane
+   The blur is what makes it glass rather than a grey box: it samples the wave
+   backdrop behind the card, which is also what finally stops the motif art
+   showing through the tables. */
+.ay.open{
+  border-color:rgba(255,255,255,.20);
+  /* Option B's tint, EXACTLY as chosen -- do not retune it to fix a shade
+     problem. The card changing shade when a second one opened was not this; it
+     was mix-blend-mode on .ay-yr (see there). Two wrong explanations were
+     offered before measuring: viewport position against the fixed backdrop art
+     (disproved -- the top card does not move), and this translucency (disproved
+     -- neutralising the blend alone took the mean from 7.56 to 0.38 with this
+     line untouched). Opaque alternatives were built and rejected: they flatten
+     the card, because the variation ACROSS it is the art showing through, and
+     three gradient stops cannot reproduce an image. */
+  background:linear-gradient(150deg,var(--arc-card-a),var(--arc-card-b) 46%,var(--arc-card-c));
+  backdrop-filter:blur(26px) saturate(var(--arc-card-sat));
+  -webkit-backdrop-filter:blur(26px) saturate(var(--arc-card-sat));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.30), inset 0 0 0 1px rgba(255,255,255,.05),
+             0 22px 54px rgba(5,8,22,.46);
+}
+/* the specular streak the reference images have running across the sheet */
+.ay.open::after{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(104deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 26%,
+    rgba(255,255,255,0) 68%,rgba(255,255,255,.07) 84%,rgba(255,255,255,0) 100%)}
+.ay{position:relative}
+.ay.open .ay-top{position:relative;z-index:1;
+  background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.018));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+.ay.open .ay-body{position:relative;z-index:1;background:rgba(8,12,28,.16)}
+/* ONE sheet, not four. Boxing every block made the body read as a stack of
+   separate cards; the sections are told apart by a hairline and the rhythm of
+   the headings instead. Highlights is the single exception -- it is the one
+   block that is commentary rather than figures, so it keeps a pane of its own. */
+.ay.open .ay-sec{background:none;border:0;border-radius:0;padding:0}
+@media (prefers-reduced-transparency:reduce){
+  .ay.open{backdrop-filter:none;-webkit-backdrop-filter:none;background:#131a2e}
+  .ay.open::after{display:none}
+}
+/* the expand target and the row actions are siblings -- a button inside a button
+   is invalid, and the actions must not toggle the card */
+.ay-top{display:flex;align-items:stretch}
+#archiveView .ay-head{display:grid;grid-template-columns:40% minmax(0,1fr);align-items:stretch;
+  flex:1 1 auto;min-width:0;background:none;border:0;padding:0;cursor:pointer;
+  text-align:left;color:inherit;border-radius:0}
+#archiveView .ay-head:hover{background:none}
+.ay-id{display:flex;flex-direction:column;justify-content:center;gap:4px;
+  padding:var(--pad-panel);min-width:0;position:relative}
+/* the accent rail: travel cards use one to mark the row you are on */
+.ay-id::before{content:'';position:absolute;left:0;top:16px;bottom:16px;width:2px;border-radius:2px;
+  background:var(--arc);opacity:0;transition:opacity .18s}
+.ay:hover .ay-id::before,.ay.open .ay-id::before{opacity:.85}
+/* Glass numerals. A gradient clipped to the glyphs carries the body and the
+   specular roll-off; mix-blend-mode is what makes it "dynamic" -- the fill is
+   recomputed by the compositor per frame against whatever is actually behind
+   the card, with no sampling and no JS. The bevel is a pair of text-shadows:
+   a bright lip above, a dark shoulder below, then a soft drop so the numerals
+   sit ON the card rather than in it.
+   background-image, NOT the `background` shorthand: the shorthand resets every
+   background-* longhand including background-clip, which silently throws away
+   clip:text and paints the gradient across the whole BOX. */
+/* mix-blend-mode on the numerals was the DOMINANT cause of the card changing
+   shade when a second one opened -- it blends against the backdrop root that
+   backdrop-filter establishes, so it moved with whatever was behind the card.
+   Measured, changing only this and nothing else:
+     plus-lighter   mean 7.56 / max 25   <- the reported bug
+     normal         mean 0.38 / max  8
+   The glyphs keep their gradient, their clip and their bevel; what they lose is
+   reacting to the backdrop. That is the trade -- the card's colour is now
+   stable, and it is still exactly the Option B tint, untouched. */
+.ay-yr{font-family:var(--font-display);font-size:var(--fs-year);font-weight:800;line-height:.9;
+  letter-spacing:-.035em;font-variant-numeric:tabular-nums;
+  color:transparent;
+  -webkit-background-clip:text;background-clip:text;
+  mix-blend-mode:normal;
+  /* The two ends of the gradient, derived HERE rather than on #archiveView.
+     A custom property is substituted on the element that declares it, so peak
+     and sheer resolved up there would inherit down already fixed and the
+     listed-card override below would do nothing. Declared on the same element
+     it overrides, the cascade settles hi/lo first and these follow. */
+  --arc-yr-peak:color-mix(in srgb, var(--arc-yr-col) var(--arc-yr-hi), transparent);
+  --arc-yr-sheer:color-mix(in srgb, var(--arc-yr-col) var(--arc-yr-lo), transparent);
+  /* One colour at six LEVELS, not six colours. The old stops mixed cool greys
+     -- #E2E8F1, #CBD4E1, #B0BBCC -- which is why the year read muddy rather
+     than glassy. Now every stop is a mix of --arc-yr-peak and --arc-yr-sheer,
+     so the shape of the sheen is fixed here and its STRENGTH lives on :root.
+     The percentages are where each stop sat between the old .41 and .87. */
+  background-image:linear-gradient(var(--arc-yr-angle),
+      var(--arc-yr-peak) 0%,
+      color-mix(in srgb, var(--arc-yr-peak) 43.4783%, var(--arc-yr-sheer)) 26%,
+      var(--arc-yr-sheer) 47%,
+      color-mix(in srgb, var(--arc-yr-peak) 69.5652%, var(--arc-yr-sheer)) 63%,
+      color-mix(in srgb, var(--arc-yr-peak) 13.0435%, var(--arc-yr-sheer)) 82%,
+      color-mix(in srgb, var(--arc-yr-peak) 89.1304%, var(--arc-yr-sheer)) 100%);
+  -webkit-text-stroke:.65px color-mix(in srgb, var(--arc-yr-col) var(--arc-yr-edge), transparent);
+  text-shadow:0 1px 0 rgba(255,255,255,.26), 0 -1px 0 rgba(0,0,0,.30),
+              0 9px 24px rgba(0,0,0,.38);
+}
+/* Shut, in the list: brighter, barely transparent. Nothing else changes -- same
+   colour, same angle, same six stops in the same proportions. */
+.ay:not(.open) .ay-yr{--arc-yr-hi:var(--arc-yr-hi-row);--arc-yr-lo:var(--arc-yr-lo-row)}
+@media (prefers-reduced-transparency:reduce){
+  .ay-yr{mix-blend-mode:normal;background-image:none;color:#EAF0FA;
+    -webkit-text-stroke:0;text-shadow:none}
+}
+.ay-meta{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-dim);font-weight:var(--fw-label)}
+.ay-meta b{color:var(--arc);font-weight:700}
+/* unmistakable at a glance, so a fabricated year is never read as a sealed one */
+.ay-meta b.ay-dummy{color:var(--hl-spend)}
+#arcBar{gap:8px}
+.ay-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 1.2fr;align-items:stretch;
+  padding:16px 0}
+.ay-col{display:flex;flex-direction:column;justify-content:center;gap:12px;padding:0 20px;min-width:0}
+.ay-col+.ay-col{border-left:1px solid rgba(255,255,255,.07)}
+/* 2px, not 4: a micro label and the figure it names are ONE unit, and the
+   rhythm's smallest step reads as two separate things. The one stated
+   exception to the 4px grid in this tab. */
+.ay-s{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ay-s span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-dim);font-weight:var(--fw-label);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ay-s b{font-size:var(--fs-figure);font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);
+  white-space:nowrap}
+/* the same money colours the rest of the app uses, so a figure means the same
+   thing wherever it is read. Start/End are Yearly Finance's amethyst and olive. */
+.ay-s b.sta{color:var(--yf-start)}.ay-s b.end{color:var(--yf-end)}
+.ay-s b.inv{color:#4ADE80}.ay-s b.mov{color:#E55959}
+.ay-s b.sav{color:#06B6D4}.ay-s b.off{color:#D98D4C}
+/* full height, both rows -- it is one figure, not a pair */
+.ay-gro{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:4px;
+  padding:0 20px;border-left:1px solid rgba(255,255,255,.07);min-width:0}
+.ay-gro em{font-style:normal;font-size:var(--fs-display);font-weight:800;line-height:1;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;color:#4ADE80}
+.ay-gro em.dn{color:#E55959}
+.ay-gro span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-dim);font-weight:var(--fw-label)}
+/* chevron + the testing-phase actions, far right, small and quiet.
+   #archiveView-scoped because the view's blanket `#archiveView button` rule is
+   an ID selector and beats a plain class -- unscoped, these squeeze to 0px. */
+.ay-acts{display:flex;align-items:center;gap:4px;padding:0 16px 0 12px;flex:none}
+#archiveView .ay-act{width:26px;height:26px;min-width:26px;flex:none;border-radius:var(--r-ctl);
+  background:transparent;border:1px solid rgba(255,255,255,.12);color:var(--text-dim);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;padding:0;
+  transition:color .18s,border-color .18s}
+#archiveView .ay-act svg{flex:none}
+#archiveView .ay-act:hover{color:var(--arc);border-color:rgba(139,147,248,.5);background:transparent}
+#archiveView .ay-act.del:hover{color:#E55959;border-color:rgba(229,89,89,.5)}
+.ay-chev{color:var(--text-dim);transition:transform .2s,color .18s;flex:none;margin-right:2px}
+.ay.open .ay-chev{transform:rotate(90deg);color:var(--arc)}
+/* ---------- the expanded body ---------- */
+.ay-body{border-top:1px solid rgba(255,255,255,.10);padding:24px 26px 26px}
+/* one heading style everywhere in the body, one gap under it, one gap between
+   sections -- the three measurements the whole layout is built from */
+.ay-bh{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;
+  color:var(--text-dim);font-weight:700;margin:0 0 12px}
+.ay-sec+.ay-sec{margin-top:24px;padding-top:24px;
+  border-top:1px solid rgba(255,255,255,.075)}
+.arc-svg{width:100%;height:auto;display:block;overflow:visible}
+/* 75% and centred: at full width the bars sat so far apart the year stopped
+   reading as one shape. The remaining quarter is left empty on purpose. */
+.ay-mid{width:91%;margin:0 auto}
+.arc-tw{position:relative}
+/* heading row: the title on the left, the category gear on the right, the way
+   Monthly's skeu-h carries its own */
+.ay-bhrow{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  position:relative;z-index:5}
+.ay-bhrow .ay-bh{margin:0}
+.arc-gearwrap{position:relative;flex:none}
+#archiveView .arc-gear{width:26px;height:26px;min-width:26px;padding:0;border-radius:var(--r-ctl);
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:var(--text);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-eyebrow)}
+#archiveView .arc-gear:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
+#archiveView .arc-pop input{width:auto;margin:0;box-shadow:none;padding:0;min-height:0}
+/* the native radio comes through as a heavy white disc against this panel.
+   Same size and weight as the colour dot beside it, so the row reads as one
+   control rather than a button next to a swatch. */
+#archiveView .arc-pop input[type="radio"]{-webkit-appearance:none;appearance:none;
+  width:13px;height:13px;flex:none;border-radius:50%;background:transparent;
+  border:1.5px solid rgba(255,255,255,.34);cursor:pointer;position:relative;
+  transition:border-color .15s}
+#archiveView .arc-pop input[type="radio"]:hover{border-color:rgba(255,255,255,.6)}
+#archiveView .arc-pop input[type="radio"]:checked{border-color:var(--arc)}
+#archiveView .arc-pop input[type="radio"]:checked::after{content:'';position:absolute;
+  inset:2.5px;border-radius:50%;background:var(--arc)}
+#archiveView .arc-poplist label{color:var(--text)}
+/* the legend is Monthly's component; inside Archives it joins the 4px rhythm */
+.ay-bhright{display:flex;align-items:center;gap:12px;flex:none}
+.arc-legend{color:var(--text-dim);gap:12px;margin:0;display:inline-flex}
+.arc-legend span{gap:8px}
+/* the rule every third row. It was a BLACK line with a faint white keyline under
+   it, which on this panel read as a gap rather than a divider -- it has to be
+   brighter than the ordinary row borders, not darker. */
+.ay-cm tbody tr.rule td{border-bottom:1px solid rgba(255,255,255,.28)}
+@media(max-width:760px){.arc-tw{overflow-x:auto}.arc-tw .arc-svg{min-width:620px}}
+.arc-tip{position:absolute;transform:translate(-50%,-100%);pointer-events:none;opacity:0;
+  transition:opacity .15s;white-space:nowrap;
+  background:rgba(236,240,255,.14);border:1px solid rgba(255,255,255,.26);
+  backdrop-filter:blur(16px) saturate(170%);-webkit-backdrop-filter:blur(16px) saturate(170%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 26px rgba(5,8,22,.45);
+  color:#F4F7FF;border-radius:10px;padding:7px 11px;font-size:11.5px;line-height:1.35}
+.arc-tip b{color:#fff;font-weight:700}
+.arc-none{color:var(--text-dim);font-size:11.5px;margin:0}
+/* 40 / 40 / 20. The right 20% is deliberately empty and spans BOTH rows, so it
+   stays one reserved strip rather than two separate gaps -- whatever goes there
+   later gets the full height. Highlights take the 80% underneath. */
+.ay-3{display:grid;grid-template-columns:45fr 27.5fr 27.5fr;gap:0;align-items:stretch}
+/* Highlights spans both rows so the hairline beside it still runs full height;
+   Contributions takes the width of Expenses and Income together underneath. */
+.ay-3 .ay-hlcol{grid-column:1;grid-row:1/3}
+.ay-3 .ay-contrib{grid-column:2/4;grid-row:2;padding-top:14px;margin-top:14px;
+  border-top:1px solid rgba(255,255,255,.10)}
+.ay-contrib .h{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
+  font-weight:var(--fw-label);margin-bottom:3px;color:var(--hl-contrib)}
+.ay-contrib .l{font-size:12px;line-height:1.38;color:var(--text);font-weight:500}
+.ay-contrib .l span{display:block}
+.ay-contrib .l span+span{margin-top:4px}
+/* the same hairline that separates the stat columns in the header */
+.ay-3>*{padding:0 22px}
+.ay-3>*:first-child{padding-left:0}
+.ay-3>*:last-child{padding-right:0}
+.ay-3>*+*{border-left:1px solid rgba(255,255,255,.10)}
+/* align-items:start on the grid collapses an empty cell to 0px however many rows
+   it spans, so the reserved strip has to opt out of it explicitly or it is not
+   reserving anything. */
+.ay-3>*{min-width:0}
+.ay-t{width:100%;border-collapse:collapse}
+.ay-t td{padding:7px 2px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.06);
+  color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ay-t td:last-child{text-align:right;font-variant-numeric:tabular-nums;
+  font-weight:600;color:#FFFFFF;padding-left:12px}
+.ay-t tr:last-child td{border-bottom:0}
+/* highlights: header + one line, kept short so nine of them do not tower */
+/* ONE pane around the whole list rather than one per point: the body is a
+   single sheet now, and fifteen little boxes inside it would put the stack of
+   cards straight back. Each point is separated by a hairline and marked by the
+   colour of its own heading. */
+.ay-hlbox{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.10);
+  border-radius:var(--r-card);padding:0 14px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 8px 22px rgba(5,8,22,.18)}
+.ay-hl{display:flex;flex-direction:column;margin:0;padding:0}
+.ay-hl li{list-style:none;padding:7px 0}
+.ay-hl li+li{border-top:1px solid rgba(255,255,255,.08)}
+.ay-hl .h{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;font-weight:var(--fw-label);
+  margin-bottom:3px;color:var(--hl-info)}
+/* what the card is SAYING drives the colour: an alarm is red, a spending fact
+   is amber, good news is green, an observation is blue, contributions teal */
+.ay-hl .t-alarm .h{color:var(--hl-alarm)}
+.ay-hl .t-spend .h{color:var(--hl-spend)}
+.ay-hl .t-good  .h{color:var(--hl-good)}
+.ay-hl .t-info  .h{color:var(--hl-info)}
+.ay-hl .l{font-size:12px;line-height:1.38;color:var(--text);font-weight:500}
+.ay-hl .l span{display:block}
+.ay-hl .l span+span{margin-top:4px}
+/* A heading says what a section IS; this says how it relates to the one above,
+   which the grid needed and nothing else on the card does.
+   Colour, size and leading are deliberately NOT set here: `#archiveView p` is
+   an id selector and wins over a class, so every piece of prose on this tab is
+   already on one spec. Declaring them here would lose silently and leave two
+   specs in the file claiming the same role. Only the spacing is ours. */
+.ay-bnote{margin:-6px 0 12px;max-width:72ch}
+.ay-menote{margin:12px 0 0}
+.ay-menote b{color:var(--text);font-variant-numeric:tabular-nums}
+.ay-split{color:var(--text-faint);font-weight:400;letter-spacing:0;text-transform:none}
+/* category-by-month is 14 columns wide; it scrolls sideways inside the card */
+.ay-scroll{overflow-x:auto}
+.ay-cm{border-collapse:collapse;min-width:720px;width:100%}
+.ay-cm th,.ay-cm td{padding:6px 8px;font-size:var(--fs-dense);white-space:nowrap;
+  border-bottom:1px solid rgba(255,255,255,.055)}
+.ay-cm th{color:var(--text-dim);font-size:var(--fs-micro);letter-spacing:var(--ls-label);
+  text-transform:uppercase;font-weight:700;padding-bottom:7px}
+.ay-cm td{color:var(--text);font-variant-numeric:tabular-nums;text-align:right;
+  font-size:var(--fs-body)}
+.ay-cm td.z{color:var(--text-faint)}
+/* the category names carry their own colour, so they are brightened rather than
+   recoloured -- the colour IS the link to the trend line */
+.ay-cm td:first-child{font-size:var(--fs-body);font-weight:600;filter:brightness(1.24)}
+.ay-cm td:first-child,.ay-cm th:first-child{text-align:left;color:var(--text);position:sticky;left:0;
+  /* tinted to the glass rather than near-black: the column only has to stay
+     opaque while the table is scrolled sideways, and a dark band under the
+     category names read as a highlighted column once they took colour */
+  background:rgba(20,27,52,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+#arcBar .btn{padding:9px 18px}
+@media(max-width:860px){
+  .ay-top{flex-wrap:wrap}
+  #archiveView .ay-head{grid-template-columns:1fr;flex:1 1 100%}
+  .ay-nums{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 0;padding:0 18px 16px}
+  .ay-col+.ay-col{border-left:0}
+  .ay-gro{align-items:flex-start;border-left:0;padding:14px 16px 0;grid-column:1/-1;
+    border-top:1px solid rgba(255,255,255,.07)}
+  .ay-acts{padding:0 14px 14px;margin-left:auto}
+  .ay-yr{font-size:48px}
+}
+@media(max-width:760px){.ay-3{grid-template-columns:1fr}
+  .ay-3>*{padding:14px 0}
+  .ay-3>*+*{border-left:0;border-top:1px solid rgba(255,255,255,.10)}
+  /* the explicit grid-column on these two survives the 1fr collapse and creates
+     implicit tracks 2-4 that do not exist here, so the row silently went back to
+     three columns on a phone. They have to be reset, not just the template. */
+  .ay-3 .ay-hlcol{grid-column:1;grid-row:auto}
+  .ay-3 .ay-contrib{grid-column:1;grid-row:auto;margin-top:0;padding-top:14px}
+  .ay-mid{width:100%}
+  /* the two SVGs keep their aspect ratio, so a 900-wide viewBox squashed into a
+     phone makes the month labels unreadable. They scroll instead of shrinking. */
+  .ay-scroll .arc-svg{min-width:560px}}
+
+.taborder-line{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;align-items:center}
+.taborder-line #tabOrderReset{flex:none;white-space:nowrap}
+/* ---- Settings: section heads with a foldaway help note ----
+   Every instruction in this drawer used to sit on screen permanently, and the
+   drawer ran several screens long as a result. Each is now behind the small "i"
+   beside its heading: read once, folded away after. */
+.sec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+/* 15px display type competed with the controls beneath it. A quiet eyebrow makes
+   MORE hierarchy, not less: the heading names the card and then gets out of the
+   way, leaving the row titles as the loudest thing inside it. */
+.sec-head h3{margin:0;font-family:var(--font-display);font-size:var(--fs-eyebrow);font-weight:var(--fw-label);
+  text-transform:uppercase;letter-spacing:.13em;color:var(--text-dim)}
+.sec-badge{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;font-weight:var(--fw-label);
+  color:var(--text-faint);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:3px 9px}
+.sec-i{flex:none;width:19px;height:19px;padding:0;border-radius:50%;cursor:pointer;
+  border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--text-faint);
+  font:italic 700 11px/1 var(--font-display,serif);
+  display:inline-flex;align-items:center;justify-content:center;transition:all .15s}
+.sec-i:hover{color:var(--text);border-color:rgba(255,255,255,.4)}
+.sec-i[aria-expanded="true"]{background:var(--teal);border-color:var(--teal);color:#06121a}
+.sec-help{margin:0 0 12px}
+.drawer hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:12px 0}
+/* a switch that sits in a button row rather than on its own line. The global
+   label rule uppercases and letter-spaces; this is a sentence, so it opts out. */
+.keepdata{display:flex;align-items:center;gap:12px;flex:none;margin:0;
+  padding:7px 8px 7px 16px;border:1px solid var(--stroke);border-radius:999px;
+  background:rgba(0,0,0,.2);color:var(--text);cursor:pointer}
+.keepdata:hover{background:rgba(255,255,255,.05)}
+/* name over status, the way the row read before it moved into the button strip.
+   The global label rule uppercases and letter-spaces; both of these are prose. */
+.kd-text{display:flex;flex-direction:column;gap:1px;min-width:0;text-align:left}
+.kd-text b{font-size:12.5px;font-weight:600;letter-spacing:.01em;text-transform:none;
+  white-space:nowrap}
+.kd-text i{font-style:normal;font-size:10.5px;font-weight:500;line-height:1.3;
+  letter-spacing:.01em;text-transform:none;color:var(--text-faint)}
+/* 60 / 20 / 20. Row 1 is the connection and its test; row 2 is what this
+   browser keeps and the two manual moves. */
+.syncgrid{display:grid;grid-template-columns:3fr 1fr 1fr;gap:8px;align-items:center}
+/* The connection and what this browser keeps are two halves of one fact, so
+   they share a single container down the left 60% rather than reading as two
+   unrelated strips. */
+.sg-left{grid-column:1;grid-row:1/3;align-self:stretch;
+  display:flex;flex-direction:column;justify-content:center;
+  gap:8px;background:rgba(0,0,0,.2);border:1px solid var(--stroke);border-radius:24px;
+  padding:9px 18px;min-width:0}
+.sg-left .fbrow{border:none;background:transparent;padding:0}
+.sg-left .keepdata{border:none;background:transparent;padding:10px 0 0;border-radius:0;
+  flex:none;min-width:0;justify-content:space-between;
+  border-top:1px solid rgba(255,255,255,.07)}
+.sg-left .keepdata:hover{background:transparent}
+.syncgrid .sg-b{grid-column:2/-1;grid-row:1}
+.syncgrid>.btn{align-self:center}
+.syncgrid .sg-d{grid-column:2;grid-row:2}
+.syncgrid .sg-e{grid-column:3;grid-row:2}
+@media(max-width:760px){
+  .syncgrid{grid-template-columns:1fr}
+  .syncgrid .sg-b,.syncgrid .sg-d,.syncgrid .sg-e,.sg-left{grid-column:auto;grid-row:auto}
+}
+/* A light travelling the rim while the panel is open. The ring is a conic
+   gradient clipped to a 1.5px band by two masks composited apart -- that paints
+   the BORDER rather than the box, which a plain gradient background cannot do.
+   The angle is animated through a registered custom property, because a raw
+   --var is a string to the animation engine and would jump rather than sweep. */
+@property --orbit{syntax:'<angle>';initial-value:0deg;inherits:false}
+.drawer.open::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;
+  padding:1.5px;
+  background:conic-gradient(from var(--orbit),
+    transparent 0 40%, rgba(94,234,212,.85) 47%, rgba(56,189,248,.95) 51%,
+    rgba(167,139,250,.85) 55%, transparent 62% 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude;
+  animation:drawerOrbit 7s linear infinite;
+}
+@keyframes drawerOrbit{to{--orbit:360deg}}
+/* Browsers without @property get the gradient parked rather than a jumping one */
+@supports not (background:conic-gradient(from var(--orbit),red,blue)){
+  .drawer.open::after{animation:none}
+}
+@media (prefers-reduced-motion:reduce){.drawer.open::after{animation:none}}
+
+/* a fact parked on the right half of a card heading */
+.sec-aside{margin-left:auto;flex:0 1 50%;min-width:0;display:flex;align-items:baseline;
+  gap:8px;justify-content:flex-end;font-size:11.5px}
+.sec-aside .sa-lab{color:var(--text-faint);white-space:nowrap}
+.sec-aside b{font-weight:600;color:var(--text);min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:760px){.sec-aside{flex-basis:100%;justify-content:flex-start;margin-left:0}}
+.sec-help code{font-size:10.5px;background:rgba(0,0,0,.28);padding:1px 5px;border-radius:5px;
+  color:var(--teal);word-break:break-word}
+.sec-help .note:first-child{margin-top:0}
+/* actions sitting on the right of a .fbrow, beside or instead of a switch */
+.row-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.row-actions .btn{flex:none;padding:8px 13px;font-size:12px}
+/* ---- clear-data checklist ----
+   Same pill as the Tab order rows below it, so the two lists read as one family;
+   a checkbox stands where Tab order puts its position number. display:contents on
+   the container lets the six tabs, the cloud tick and the button share a single
+   flex line rather than living in nested boxes. */
+.reset-line{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
+.reset-rows{display:contents}
+/* Stretched to fill the line, the slack shared in proportion to each name so
+   "Contributions" stays wider than "Plan" without either truncating. */
+.reset-row{display:flex;align-items:center;justify-content:center;gap:7px;
+  flex:1 1 auto;min-width:0;
+  padding:7px 12px;border-radius:999px;
+  background:var(--glass);border:1px solid var(--stroke);cursor:pointer;font-size:12.5px;
+  transition:background .15s;margin:0}
+.reset-row:hover{background:rgba(255,255,255,.07)}
+/* .drawer input{min-height:36px} was hitting the checkbox, which is why these
+   pills stood 42px tall against Tab order's 35px. */
+.reset-row input{width:15px;height:15px;min-height:0;padding:0;flex:none;margin:0;
+  accent-color:var(--sk-red,#E55959)}
+/* the global label rule uppercases and letter-spaces; these are names, like the
+   Tab order pills, so they are set as names */
+.reset-row b{font-size:12.5px;font-weight:500;white-space:nowrap;letter-spacing:0;
+  text-transform:none;color:var(--text)}
+/* the cloud tick is the dangerous one, so it is warm-toned and set apart */
+.reset-cloud{border-color:rgba(232,176,75,.4);background:rgba(232,176,75,.08)}
+.reset-cloud b{color:var(--amber,#E8B04B);font-weight:600}
+/* never reads smaller than the pills beside it, including when nothing is
+   ticked and the label shrinks back to "Clear" */
+#resetGo{flex:none;min-width:104px;margin:0;white-space:nowrap}
+.taborder{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
+/* same trick as .reset-rows: the pills join the parent's line rather than
+   forming a box of their own, so Reset to default sits on the end of it. */
+.drawer .taborder{display:contents}
+/* one per line at phone width anyway, so let them fill it rather than leaving
+   a ragged right edge */
+@media(max-width:560px){.drawer .taborder-row{flex:1 1 auto}}
+.taborder-row{display:flex;align-items:center;gap:7px;padding:7px 8px 7px 12px;border-radius:999px;
+  background:var(--glass);border:1px solid var(--stroke);cursor:grab;font-size:12.5px;
+  transition:background .15s,transform .15s}
+.taborder-row:hover{background:rgba(255,255,255,.07)}
+.taborder-row.dragging{opacity:.45;cursor:grabbing}
+.taborder-row.over{border-color:var(--teal);transform:scale(1.04)}
+.taborder-row .pos{color:var(--text-faint);font-size:11px;font-variant-numeric:tabular-nums;
+  min-width:14px;text-align:center}
+.taborder-row .nm{white-space:nowrap}
+.taborder-row .mvgrp{display:flex;gap:1px;margin-left:2px}
+.taborder-row .mv{border:none;background:transparent;color:var(--text-faint);cursor:pointer;
+  padding:2px 5px;border-radius:6px;font-size:11px;line-height:1}
+.taborder-row .mv:hover{color:var(--teal);background:rgba(94,234,212,.1)}
+.taborder-row .mv:disabled{opacity:.25;cursor:default}
+@media(max-width:560px){.taborder-row{font-size:12px;padding:6px 6px 6px 10px}}
+
+/* Native <option> lists inherit OS colours and render white-on-white in places.
+   Force a consistent dark palette everywhere, including inside the themed tabs. */
+select option,select optgroup{background-color:#0E1B26;color:#EAF0FA}
+#monthlyView select option{background-color:#101C28;color:#EAF0FA}
+#archiveView select option{background-color:#0D1420;color:var(--text)}
+select option:checked,select option:hover{background-color:#16303f;color:#fff}
+select{color-scheme:dark}
+
+/* ── Mobile: tap targets need ~28px minimum to be reliably hittable ── */
+@media (max-width:560px){
+  .rm,.yf-edit,.yf-catbtn,.mv,.me-why,.sec-i,.qlink{min-height:28px;min-width:28px;
+    display:inline-flex;align-items:center;justify-content:center}
+  .yf-plan-in{min-height:30px;width:76px}
+  #yfExpTable td,#yfIncTable td{padding:6px 5px}
+  #yfTxTable td,#meBody td{padding:8px 6px}
+  .taborder-row .mv{padding:4px 8px}
+  .taborder-row{padding:8px 8px 8px 12px}
+  select,input{min-height:34px}
+  .seg button{min-height:32px}
+  /* wide tables scroll rather than squash */
+  #yfTxTable,#meTable,#mePreview,#ctable{min-width:520px}
+  #yfExpTable,#yfIncTable{min-width:440px}
+  .me-bar-row{grid-template-columns:118px 1fr 78px;font-size:11px}
+  .me-cards{gap:8px}
+  .skeu-readout{font-size:26px}
+  .modal-card{max-width:100%;padding:18px}
+}
+
+/* ═════════════════════ PIN lock screen ═════════════════════ */
+#pinGate{
+  position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  background:
+    radial-gradient(90% 60% at 18% 8%, rgba(94,234,212,.13), transparent 60%),
+    radial-gradient(85% 65% at 84% 92%, rgba(167,139,250,.15), transparent 62%),
+    radial-gradient(120% 90% at 50% 50%, rgba(56,189,248,.06), transparent 70%),
+    #071520;
+  padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));
+}
+/* slow drifting aurora, same language as the app backdrop */
+#pinGate::before{
+  content:''; position:absolute; width:60vw; height:60vw; max-width:680px; max-height:680px;
+  left:-10vw; top:-16vw; border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle, rgba(94,234,212,.16), transparent 62%);
+  filter:blur(60px); animation:pinAurora 18s ease-in-out infinite alternate;
+}
+#pinGate::after{
+  content:''; position:absolute; width:55vw; height:55vw; max-width:620px; max-height:620px;
+  right:-12vw; bottom:-18vw; border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle, rgba(167,139,250,.17), transparent 62%);
+  filter:blur(64px); animation:pinAurora 22s ease-in-out infinite alternate-reverse;
+}
+@keyframes pinAurora{ from{transform:translate3d(0,0,0) scale(1)} to{transform:translate3d(4vw,3vw,0) scale(1.12)} }
+#pinGate.pinlocked{display:flex}
+#pinGate.unlocking{animation:pinUnlock .45s ease forwards}
+@keyframes pinUnlock{ to{ opacity:0; transform:scale(1.03); visibility:hidden } }
+.pin-card{
+  width:100%; max-width:360px; display:flex; flex-direction:column; align-items:center;
+  text-align:center; position:relative; z-index:1;
+  margin:auto;                       /* centres when it fits, scrolls when it doesn't */
+  padding:14px 0;
+}
+/* ── logo: floating, breathing halo, slow rotating ring ── */
+.pin-orb{
+  position:relative; width:74px; height:104px; margin-bottom:12px;
+  background-image:url('spapp.png');
+  background-size:contain; background-repeat:no-repeat; background-position:center;
+  filter:drop-shadow(0 0 14px rgba(94,234,212,.55)) drop-shadow(0 0 34px rgba(167,139,250,.35));
+  animation:pinOrbFloat 5.5s ease-in-out infinite;
+}
+@keyframes pinOrbFloat{
+  0%,100%{ transform:translateY(0) scale(1);
+    filter:drop-shadow(0 0 14px rgba(94,234,212,.55)) drop-shadow(0 0 34px rgba(167,139,250,.35)) }
+  50%{ transform:translateY(-9px) scale(1.035);
+    filter:drop-shadow(0 0 22px rgba(94,234,212,.8)) drop-shadow(0 0 52px rgba(167,139,250,.55)) }
+}
+.pin-orb::before{                       /* expanding authority rings */
+  content:''; position:absolute; left:50%; top:50%; width:96px; height:96px; margin:-48px 0 0 -48px;
+  border-radius:50%; border:1px solid rgba(94,234,212,.35); pointer-events:none;
+  animation:pinRing 3.6s ease-out infinite;
+}
+.pin-orb::after{
+  content:''; position:absolute; left:50%; top:50%; width:96px; height:96px; margin:-48px 0 0 -48px;
+  border-radius:50%; border:1px solid rgba(167,139,250,.3); pointer-events:none;
+  animation:pinRing 3.6s ease-out infinite; animation-delay:1.8s;
+}
+@keyframes pinRing{
+  0%{ transform:scale(.55); opacity:.85 }
+  100%{ transform:scale(1.7); opacity:0 }
+}
+
+/* ── orb stage: three phases cycle beside the logo ── */
+.pin-stage{ position:relative; display:flex; align-items:center; justify-content:center;
+  width:100%; height:118px; margin-bottom:6px }
+.pin-stage .pin-orb{ margin-bottom:0 }
+.pin-ph{ position:absolute; inset:0; pointer-events:none; opacity:0 }
+/* each phase owns 1/3 of a 10.5s loop, with a pause before it repeats */
+.pin-ph-rain { animation:pinPhase 10.5s ease-in-out infinite }
+.pin-ph-grow { animation:pinPhase 10.5s ease-in-out infinite; animation-delay:3.5s }
+.pin-ph-store{ animation:pinPhase 10.5s ease-in-out infinite; animation-delay:7s }
+@keyframes pinPhase{
+  0%   { opacity:0 }
+  4%   { opacity:1 }
+  26%  { opacity:1 }
+  31%  { opacity:0 }
+  100% { opacity:0 }
+}
+/* phase 1 — raining money */
+.pin-ph-rain span{ position:absolute; top:2px; width:11px; height:11px; border-radius:50%;
+  border:1.5px solid #4ADE80; color:#4ADE80;
+  box-shadow:0 0 8px rgba(74,222,128,.55); animation:pinRain 1.5s linear infinite }
+.pin-ph-rain span::after{ content:'$'; position:absolute; inset:0; font-size:8px; font-weight:800;
+  display:flex; align-items:center; justify-content:center; color:#4ADE80 }
+.pin-ph-rain span:nth-child(1){ left:12%;  animation-delay:0s }
+.pin-ph-rain span:nth-child(2){ left:26%;  animation-delay:.35s }
+.pin-ph-rain span:nth-child(3){ left:38%;  animation-delay:.7s }
+.pin-ph-rain span:nth-child(4){ right:38%; animation-delay:.2s }
+.pin-ph-rain span:nth-child(5){ right:24%; animation-delay:.55s }
+.pin-ph-rain span:nth-child(6){ right:11%; animation-delay:.9s }
+@keyframes pinRain{
+  0%{ transform:translateY(0) scale(.7); opacity:0 }
+  15%{ opacity:1 }
+  80%{ opacity:.9 }
+  100%{ transform:translateY(96px) scale(1); opacity:0 }
+}
+/* phase 2 — growing */
+.pin-ph-grow .gl{ position:absolute; bottom:6px; width:40px; height:46px; color:#5EEAD4;
+  filter:drop-shadow(0 0 8px rgba(94,234,212,.5)); transform-origin:50% 100%;
+  animation:pinGrow 1.9s ease-out infinite }
+.pin-ph-grow .gl-l{ left:6% } .pin-ph-grow .gl-r{ right:6%; animation-delay:.45s }
+@keyframes pinGrow{
+  0%{ transform:scaleY(.15) scaleX(.7); opacity:0 }
+  25%{ opacity:1 }
+  70%{ transform:scaleY(1) scaleX(1); opacity:1 }
+  100%{ transform:scaleY(1.03) scaleX(1); opacity:.25 }
+}
+/* phase 3 — stored away */
+.pin-ph-store .vt{ position:absolute; top:34px; width:46px; height:40px; color:#D98D4C;
+  filter:drop-shadow(0 0 9px rgba(217,141,76,.5)); animation:pinStore 2.1s ease-in-out infinite }
+.pin-ph-store .vt-l{ left:5% } .pin-ph-store .vt-r{ right:5%; animation-delay:.5s }
+@keyframes pinStore{
+  0%{ transform:scale(.7) translateY(-12px); opacity:0 }
+  25%{ transform:scale(1) translateY(0); opacity:1 }
+  55%{ transform:scale(1.06) translateY(0); opacity:1 }
+  80%{ transform:scale(1) translateY(0); opacity:.9 }
+  100%{ opacity:0 }
+}
+.pin-phase-label{ position:absolute; bottom:-4px; left:0; right:0; text-align:center;
+  font-size:9.5px; letter-spacing:.2em; font-weight:700; text-transform:uppercase;
+  color:var(--text-faint); opacity:.75 }
+@media (max-height:640px){ .pin-stage{height:88px} .pin-phase-label{display:none} }
+@media (max-height:560px){ .pin-stage{height:64px} .pin-ph{display:none} }
+@media (prefers-reduced-motion: reduce){ .pin-ph,.pin-ph *{ animation:none !important; opacity:0 !important } }
+
+/* ── title with travelling glass shimmer ── */
+.pin-title{
+  position:relative; font-family:var(--font-display); font-size:27px; font-weight:800;
+  letter-spacing:.05em; margin:0; color:var(--text);
+  background:linear-gradient(100deg,#EAF0FA 0%,#EAF0FA 38%,#FFFFFF 47%,#5EEAD4 52%,#EAF0FA 62%,#EAF0FA 100%);
+  background-size:280% 100%;
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  animation:pinSheen 10.5s ease-in-out infinite;
+  text-shadow:0 0 26px rgba(94,234,212,.18);
+}
+@keyframes pinSheen{
+  0%{ background-position:120% 0 }
+  22%{ background-position:-20% 0 }   /* quick sweep... */
+  100%{ background-position:-20% 0 }  /* ...then a long rest before it repeats */
+}
+.pin-sub{
+  font-size:10.5px; letter-spacing:.26em; font-weight:700; margin-top:4px; margin-bottom:20px;
+  background:linear-gradient(100deg,rgba(148,163,184,.85) 0%,rgba(148,163,184,.85) 40%,#FFFFFF 48%,rgba(167,139,250,.95) 54%,rgba(148,163,184,.85) 64%,rgba(148,163,184,.85) 100%);
+  background-size:280% 100%;
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  animation:pinSheen 10.5s ease-in-out infinite; animation-delay:.25s;
+}
+/* ── money animation (unchanged motion, YF stat colours) ── */
+.pin-money{ position:relative; width:100%; height:88px; margin-bottom:16px;
+  display:flex; align-items:center; justify-content:center; gap:14px }
+.pin-coin{ width:52px; height:52px; color:var(--teal); flex:none;
+  filter:drop-shadow(0 0 10px rgba(94,234,212,.5)); animation:pinCoinSpin 3.2s ease-in-out infinite }
+@keyframes pinCoinSpin{ 0%,100%{transform:rotateY(0deg)} 50%{transform:rotateY(180deg)} }
+.pin-ticker{ font-family:var(--font-display); font-size:22px; font-weight:800; color:var(--teal);
+  text-shadow:0 0 14px rgba(94,234,212,.35); font-variant-numeric:tabular-nums; min-width:86px; text-align:left }
+.pin-trend{ width:64px; height:22px; color:var(--violet); opacity:.9 }
+.pin-float{ position:absolute; left:50%; bottom:8px; font-size:12.5px; font-weight:700;
+  opacity:0; animation:pinFloat 3.6s ease-in infinite; pointer-events:none }
+.pin-float.c-inv{ color:#4ADE80; text-shadow:0 0 9px rgba(74,222,128,.5) }
+.pin-float.c-mov{ color:#E55959; text-shadow:0 0 9px rgba(229,89,89,.5) }
+.pin-float.c-sav{ color:#06B6D4; text-shadow:0 0 9px rgba(6,182,212,.5) }
+.pin-float.c-off{ color:#D98D4C; text-shadow:0 0 9px rgba(217,141,76,.5) }
+.pin-float.f1{ margin-left:-70px; animation-delay:0s }
+.pin-float.f2{ margin-left:-20px; animation-delay:.9s }
+.pin-float.f3{ margin-left:30px; animation-delay:1.8s }
+.pin-float.f4{ margin-left:60px; animation-delay:2.7s }
+@keyframes pinFloat{
+  0%{ opacity:0; transform:translateY(0) scale(.8) }
+  15%{ opacity:1; transform:translateY(-10px) scale(1) }
+  85%{ opacity:.9 }
+  100%{ opacity:0; transform:translateY(-64px) scale(.9) }
+}
+/* ── dots ── */
+.pin-dots{ display:flex; gap:14px; margin-bottom:10px }
+.pin-dots span{
+  width:13px; height:13px; border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.28); background:rgba(255,255,255,.05);
+  transition:all .18s cubic-bezier(.2,.8,.2,1);
+}
+.pin-dots span.filled{
+  background:linear-gradient(180deg,#7DF5E4,var(--teal));
+  border-color:rgba(94,234,212,.9); box-shadow:0 0 12px rgba(94,234,212,.6); transform:scale(1.12);
+}
+.pin-dots.shake{ animation:pinShake .4s ease }
+@keyframes pinShake{
+  0%,100%{transform:translateX(0)} 20%{transform:translateX(-9px)} 40%{transform:translateX(8px)}
+  60%{transform:translateX(-6px)} 80%{transform:translateX(5px)}
+}
+.pin-dots.err span.filled{ background:var(--rose); border-color:var(--rose); box-shadow:0 0 12px rgba(251,113,133,.55) }
+.pin-msg{ font-size:12.5px; color:var(--text-dim); letter-spacing:.06em; min-height:16px; margin-bottom:20px }
+.pin-msg.err{ color:var(--rose) }
+/* ── keypad: app-matching glass, shimmer sweeps in after the title ── */
+.pin-keys{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; width:100%; max-width:280px }
+.pin-keys button{
+  position:relative; overflow:hidden;
+  aspect-ratio:1; border-radius:50%; font-family:var(--font-display); font-size:24px; font-weight:600;
+  color:var(--text); cursor:pointer; user-select:none;
+  background:linear-gradient(160deg,rgba(255,255,255,.11),rgba(255,255,255,.035));
+  backdrop-filter:blur(22px) saturate(180%); -webkit-backdrop-filter:blur(22px) saturate(180%);
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.30), 0 8px 22px rgba(0,0,0,.34);
+  transition:transform .08s ease, background .15s ease, border-color .15s ease;
+}
+/* the shimmer sweep itself */
+.pin-keys button::after{
+  content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background:linear-gradient(115deg,transparent 35%,var(--text-faint) 50%,transparent 65%);
+  background-size:280% 100%; background-position:120% 0;
+  animation:pinSheen 10.5s ease-in-out infinite;
+  animation-delay:.5s;                      /* sweeps just behind the title */
+}
+.pin-keys button:active{
+  transform:scale(.90);
+  background:linear-gradient(160deg,rgba(94,234,212,.28),rgba(94,234,212,.12));
+  border-color:rgba(94,234,212,.6);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 0 24px rgba(94,234,212,.4);
+}
+.pin-keys .pin-ghost{
+  background:transparent; border-color:transparent; box-shadow:none; font-size:13px; font-weight:600;
+  color:var(--text-faint); backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+.pin-keys .pin-ghost::after{ display:none }   /* no shimmer on the plain ghost keys */
+.pin-keys .pin-ghost:active{ background:rgba(94,234,212,.12); box-shadow:none; transform:scale(.94); color:var(--teal) }
+@media (prefers-reduced-motion: reduce){
+  .pin-coin,.pin-float,.pin-orb,.pin-title,.pin-sub,.pin-keys button::after,
+  #pinGate::before,#pinGate::after{ animation:none !important }
+  .pin-title,.pin-sub{ -webkit-text-fill-color:currentColor; color:var(--text) }
+}
+@media (max-width:380px){
+  .pin-orb{width:60px;height:86px} .pin-title{font-size:23px}
+  .pin-keys{max-width:250px;gap:12px} .pin-keys button{font-size:21px}
+}
+/* Short viewports (landscape phones, small laptops): shrink rather than clip. */
+@media (max-height:780px){
+  .pin-stage{height:92px}
+  .pin-orb{width:54px;height:76px;margin-bottom:6px}
+  .pin-title{font-size:23px} .pin-sub{margin-bottom:12px;font-size:9.5px}
+  .pin-money{height:56px;margin-bottom:8px}
+  .pin-coin{width:42px;height:42px}
+  .pin-ticker{font-size:19px}
+  .pin-dots{gap:12px;margin-bottom:8px} .pin-dots span{width:11px;height:11px}
+  .pin-msg{margin-bottom:12px}
+  .pin-keys{max-width:236px;gap:10px} .pin-keys button{font-size:20px}
+  .pin-phase-label{font-size:8.5px}
+}
+/* Very short (landscape phone, 320x480): drop the decorative money strip so the
+   functional parts - logo, dots, keypad - all fit without scrolling. */
+@media (max-height:560px){
+  .pin-money{display:none}
+  .pin-stage{height:52px;margin-bottom:2px}
+  .pin-orb{width:36px;height:50px;margin-bottom:0}
+  .pin-title{font-size:17px} .pin-sub{margin-bottom:6px}
+  .pin-dots{margin-bottom:4px} .pin-msg{margin-bottom:6px}
+  .pin-keys{max-width:186px;gap:6px} .pin-keys button{font-size:16px}
+  .pin-card{padding:4px 0}
+  .pin-title{font-size:16px} .pin-sub{font-size:8px;margin-bottom:5px}
+}
+@media (max-height:640px){
+  .pin-orb{width:46px;height:64px;margin-bottom:6px}
+  .pin-title{font-size:19px;letter-spacing:.03em}
+  .pin-sub{font-size:8.5px;letter-spacing:.2em;margin-bottom:8px}
+  .pin-money{height:44px;margin-bottom:6px}
+  .pin-coin{width:32px;height:32px} .pin-ticker{font-size:15px;min-width:66px}
+  .pin-trend{width:48px}
+  .pin-float{font-size:10.5px}
+  .pin-dots{gap:10px;margin-bottom:6px} .pin-dots span{width:9px;height:9px}
+  .pin-msg{font-size:11px;margin-bottom:8px;min-height:13px}
+  .pin-keys{max-width:210px;gap:8px} .pin-keys button{font-size:18px}
+  .pin-card{padding:8px 0}
+}
+
+/* ── DOUBLE-TAP ZOOM ───────────────────────────────────────────────────────
+   A six-digit PIN with a repeated digit -- 112233, or just 111111 -- is two
+   taps on the SAME key inside Safari's double-tap window, and Safari reads that
+   as "zoom in here". You land zoomed into #pinGate, which is position:fixed
+   inset:0, so there is nothing to pan and no way back out -- mid-unlock. The
+   keypad listens on `click`, so nothing in the JS ever sees the gesture and no
+   JS change can fix it.
+
+   `manipulation` is the narrow instrument: per spec it permits panning AND
+   continuous (pinch) zooming, and gives up only double-tap zoom plus the legacy
+   ~300ms tap delay -- so the keypad also stops feeling laggy, which is half of
+   why people tap it twice in the first place. It is deliberately NOT `none` and
+   NOT `pan-y`: either of those takes pinch with it, and pinch is the only way to
+   read .arc-svg at min-width:620px, .me-matrix at 840px, or the sideways-panning
+   body at <=560px on a phone. Measured: .tscroll still reaches its full scroll
+   extent under this rule.
+
+   touch-action does not inherit -- the UA intersects it down the hit-test chain
+   from the touched element to the viewport -- so the html rule alone already
+   covers a tap landing on card padding, a heading, or the 16px gutter between
+   two circular keypad buttons. The element list is restated for two reasons:
+   Safari has a history of not honouring touch-action declared only on the root,
+   and a declaration ON the element is the only thing getComputedStyle can see
+   (html's value reads back as `auto` on a button), which is what section 10 of
+   tests/test-mobile.js asserts.
+
+   The viewport meta is deliberately left alone. maximum-scale=1 would close
+   iOS's zoom-on-focus with no visual change at all, but Android Chrome honours
+   it for PINCH too and would silently kill zooming there, so the test asserts
+   the meta never gains it. iOS zoom-on-focus is a separate mechanism (a field
+   under 16px) and is not addressed here. */
+html{touch-action:manipulation}
+a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipulation}
+</style>
+<style type="text/css">*{animation:none!important;transition:none!important}</style><style type="text/css">
+:root{--pv-rule:#5EEAD4;--pv-warn:#F9A8A0}
+.pv-wrap{max-width:1500px;margin:0 auto;padding:0 24px 60px}
+.pv-head h1{font-family:var(--font-display);font-size:26px;margin:0 0 10px;color:var(--text)}
+.pv-head p{color:var(--text-dim);font-size:13.5px;line-height:1.7;margin:0 0 7px;max-width:94ch}
+.pv-head b{color:var(--text)} .pv-head code{font-family:ui-monospace,monospace;font-size:12.5px;color:var(--teal)}
+.pv-band{margin:26px 0 0}
+.pv-bh{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;
+  color:var(--teal);font-weight:700;margin:0 0 3px}
+.pv-bs{font-size:12.5px;color:var(--text-faint);margin:0 0 14px;max-width:90ch;line-height:1.6}
+.pv-cols{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.pv-col{flex:none;width:428px}
+.pv-ch{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--text-dim);margin:0 0 2px}
+.pv-cs{font-size:11px;color:var(--text-faint);margin:0 0 9px}
+.pv-frame{position:relative}
+.pv-frame .panel{margin:0}
+.pv-tick{position:absolute;top:0;bottom:0;width:1px;background:var(--pv-rule);opacity:.5;z-index:5}
+.pv-tick.edge{opacity:.85}
+.pv-starts{margin:9px 0 0;font-family:ui-monospace,monospace;font-size:11px;
+  color:var(--text-faint);font-variant-numeric:tabular-nums}
+.pv-starts b{color:var(--text-dim);font-weight:600}
+.pv-warn{color:var(--pv-warn)}
+.pv-note{font-size:11.5px;color:var(--text-faint);margin:7px 0 0;line-height:1.6}
+.pv-foot{margin:34px 0 0;padding:16px 0 0;border-top:1px solid var(--stroke);
+  font-size:11.5px;color:var(--text-faint);line-height:1.8}
+.pv-foot b{color:var(--text-dim)}
+</style><style type="text/css">
+    .pv-B #sellsPanel .htable th:first-child,.pv-B #sellsPanel .htable td:first-child{padding-left:0}
+    .pv-B #sellsPanel .htable th:last-child,.pv-B #sellsPanel .htable td:last-child{padding-right:0}
+    .pv-B #sellsPanel .sl-act{align-items:flex-end}
+    .pv-B #sellsPanel .sl-act .rm{width:auto;min-width:0;padding:3px 0;position:relative;text-align:right}
+    .pv-B #sellsPanel .sl-act .rm::before{content:"";position:absolute;inset:-2px 0 -2px -18px}</style><style type="text/css">
+    .pv-C #sellsPanel .htable{table-layout:fixed;width:100%}
+    .pv-C #sellsPanel .htable th,.pv-C #sellsPanel .htable td{width:20%}
+    .pv-C #sellsPanel .htable th:first-child,.pv-C #sellsPanel .htable td:first-child{padding-left:0}</style><style type="text/css">
+    .pv-D #sellsPanel .htable{table-layout:fixed;width:100%}
+    .pv-D #sellsPanel .htable th,.pv-D #sellsPanel .htable td{width:20%}
+    .pv-D #sellsPanel .htable th,.pv-D #sellsPanel .htable td{text-align:left;padding-left:0}
+    .pv-D #sellsPanel .sl-act{align-items:flex-start}</style></head>
+<body class="dash-view"><div class="pv-wrap">
+      <div class="pv-head">
+        <h1>Past sells — where the columns sit</h1>
+        <p>Your marks put each column's text on an evenly spaced tick, with the buttons in a slot of
+          their own at the end. <b>C and D do exactly that</b> — five equal fifths of the panel, so
+          the text starts land on <code>0 / 72 / 144 / 216 / 288</code>. A is today's build and B is
+          the flush-ink option from the last preview, both kept for comparison.</p>
+        <p><b>The thing to decide is in the second band.</b> Equal slots are a fixed grid, so a
+          column cannot borrow room from its neighbour — and the widest real row
+          (<code>BRK.B · Other · 12345 · +C$116,166.00</code>) does not fit in a fifth. It clips.
+          A and B absorb that row because their columns size to content.</p>
+        <p>The teal rules are the fifths, drawn so you can see which option lands on them.
+          Each frame is the real 384px right-hand Dashboard column.</p>
+      </div>
+      <div class="pv-band"><p class="pv-bh">a normal sale</p>
+        <p class="pv-bs">+59.65% · +$433.52 — the row from your screenshot.</p>
+        <div class="pv-cols"><div class="pv-col"><p class="pv-ch">A · Now</p><p class="pv-cs">build 2026-10-07 — nothing changed</p>
+        <div class="pv-frame pv-A" data-k="A" data-s="typical"><section class="panel cash" id="sellsPanel">
+        <h3>Past sells</h3>
+        <div class="st-sum" id="sellSum"><div><span class="k">Realised P / L</span><span class="v up">+$240.75</span></div><div><span class="k">Return on cost</span><span class="v up">+59.55%<small style="font-weight:600;opacity:.6"> USD</small></span></div></div>
+        <!-- A ledger grows without limit, so the panel shows a window rather
+             than everything. Thirty days to today by default. -->
+        <div class="sell-range">
+          <div><label for="sellFrom">From</label>
+            <input id="sellFrom" type="date" value="2026-09-07"></div>
+          <div><label for="sellTo">To</label>
+            <input id="sellTo" type="date" value="2026-10-07"></div>
+          <button class="btn ghost" id="sellSearch" type="button">Search</button>
+        </div>
+        <div class="tscroll">
+          <table class="htable" id="sellTable" style="display: table;">
+            <!-- No colgroup: the columns follow their content and the surplus
+                 goes to the last one. Dropping the column definitions also
+                 dropped the trap that came with them -- hiding a cell without
+                 hiding its column shifted every remaining cell onto the wrong
+                 one. The last header is empty on purpose; it is the actions
+                 column, which carries no label in any table here. -->
+            <thead><tr><th>Date</th><th>Ticker</th><th class="pc">Profit</th><th>$ made</th><th></th></tr></thead>
+            <tbody id="sellBody"><tr><td><span class="sl-d">06 Oct</span><span class="sl-y">2026</span></td><td><span class="sym">AAOX<small>FHSA · 75</small></span></td><td class="pc up" style="font-weight:600">+59.55%</td><td class="pl up">+$240.75<span class="sl-sub">+59.55%</span></td><td><span class="sl-act"><button class="rm sell" data-edit="x" title="Correct this sale" aria-label="Correct the AAOX sale">✎</button><button class="rm" data-del="x" title="Undo this sale" aria-label="Undo the AAOX sale">✕</button></span></td></tr></tbody>
+          </table>
+        </div>
+        <p class="empty" id="sellEmpty" style="display: none;">Nothing sold yet — this fills in when you use the
+          <b>$</b> button on a holding.</p>
+        <p class="empty" id="sellNone" style="display:none">No sales in these dates.</p>
+        <p class="note" id="sellNote2" style="margin: 12px 0px 0px; display: block;">Each sale stays in the currency it
+          happened in and is never converted, so the USD / CAD switch at the top does not change
+          these figures.</p>
+      </section><div class="pv-tick edge" style="left: 22px;"></div><div class="pv-tick" style="left: 99px;"></div><div class="pv-tick" style="left: 176px;"></div><div class="pv-tick" style="left: 252px;"></div><div class="pv-tick" style="left: 329px;"></div><div class="pv-tick edge" style="left: 406px;"></div></div>
+        <p class="pv-starts"><b>text starts</b> 10 / 68 / 145 / 219
+          · <b>✕ to edge</b> 17px<br>nothing clips</p></div><div class="pv-col"><p class="pv-ch">B · Ink flush</p><p class="pv-cs">first column on 0, ✕ on the right edge</p>
+        <div class="pv-frame pv-B" data-k="B" data-s="typical"><section class="panel cash" id="sellsPanel">
+        <h3>Past sells</h3>
+        <div class="st-sum" id="sellSum"><div><span class="k">Realised P / L</span><span class="v up">+$240.75</span></div><div><span class="k">Return on cost</span><span class="v up">+59.55%<small style="font-weight:600;opacity:.6"> USD</small></span></div></div>
+        <!-- A ledger grows without limit, so the panel shows a window rather
+             than everything. Thirty days to today by default. -->
+        <div class="sell-range">
+          <div><label for="sellFrom">From</label>
+            <input id="sellFrom" type="date" value="2026-09-07"></div>
+          <div><label for="sellTo">To</label>
+            <input id="sellTo" type="date" value="2026-10-07"></div>
+          <button class="btn ghost" id="sellSearch" type="button">Search</button>
+        </div>
+        <div class="tscroll">
+          <table class="htable" id="sellTable" style="display: table;">
+            <!-- No colgroup: the columns follow their content and the surplus
+                 goes to the last one. Dropping the column definitions also
+                 dropped the trap that came with them -- hiding a cell without
+                 hiding its column shifted every remaining cell onto the wrong
+                 one. The last header is empty on purpose; it is the actions
+                 column, which carries no label in any table here. -->
+            <thead><tr><th>Date</th><th>Ticker</th><th class="pc">Profit</th><th>$ made</th><th></th></tr></thead>
+            <tbody id="sellBody"><tr><td><span class="sl-d">06 Oct</span><span class="sl-y">2026</span></td><td><span class="sym">AAOX<small>FHSA · 75</small></span></td><td class="pc up" style="font-weight:600">+59.55%</td><td class="pl up">+$240.75<span class="sl-sub">+59.55%</span></td><td><span class="sl-act"><button class="rm sell" data-edit="x" title="Correct this sale" aria-label="Correct the AAOX sale">✎</button><button class="rm" data-del="x" title="Undo this sale" aria-label="Undo the AAOX sale">✕</button></span></td></tr></tbody>
+          </table>
+        </div>
+        <p class="empty" id="sellEmpty" style="display: none;">Nothing sold yet — this fills in when you use the
+          <b>$</b> button on a holding.</p>
+        <p class="empty" id="sellNone" style="display:none">No sales in these dates.</p>
+        <p class="note" id="sellNote2" style="margin: 12px 0px 0px; display: block;">Each sale stays in the currency it
+          happened in and is never converted, so the USD / CAD switch at the top does not change
+          these figures.</p>
+      </section><div class="pv-tick edge" style="left: 22px;"></div><div class="pv-tick" style="left: 99px;"></div><div class="pv-tick" style="left: 176px;"></div><div class="pv-tick" style="left: 252px;"></div><div class="pv-tick" style="left: 329px;"></div><div class="pv-tick edge" style="left: 406px;"></div></div>
+        <p class="pv-starts"><b>text starts</b> 1 / 60 / 142 / 219
+          · <b>✕ to edge</b> 1px<br>nothing clips</p></div><div class="pv-col"><p class="pv-ch">C · Five equal slots</p><p class="pv-cs">money still right-aligned, as every table here does</p>
+        <div class="pv-frame pv-C" data-k="C" data-s="typical"><section class="panel cash" id="sellsPanel">
+        <h3>Past sells</h3>
+        <div class="st-sum" id="sellSum"><div><span class="k">Realised P / L</span><span class="v up">+$240.75</span></div><div><span class="k">Return on cost</span><span class="v up">+59.55%<small style="font-weight:600;opacity:.6"> USD</small></span></div></div>
+        <!-- A ledger grows without limit, so the panel shows a window rather
+             than everything. Thirty days to today by default. -->
+        <div class="sell-range">
+          <div><label for="sellFrom">From</label>
+            <input id="sellFrom" type="date" value="2026-09-07"></div>
+          <div><label for="sellTo">To</label>
+            <input id="sellTo" type="date" value="2026-10-07"></div>
+          <button class="btn ghost" id="sellSearch" type="button">Search</button>
+        </div>
+        <div class="tscroll">
+          <table class="htable" id="sellTable" style="display: table;">
+            <!-- No colgroup: the columns follow their content and the surplus
+                 goes to the last one. Dropping the column definitions also
+                 dropped the trap that came with them -- hiding a cell without
+                 hiding its column shifted every remaining cell onto the wrong
+                 one. The last header is empty on purpose; it is the actions
+                 column, which carries no label in any table here. -->
+            <thead><tr><th>Date</th><th>Ticker</th><th class="pc">Profit</th><th>$ made</th><th></th></tr></thead>
+            <tbody id="sellBody"><tr><td><span class="sl-d">06 Oct</span><span class="sl-y">2026</span></td><td><span class="sym">AAOX<small>FHSA · 75</small></span></td><td class="pc up" style="font-weight:600">+59.55%</td><td class="pl up">+$240.75<span class="sl-sub">+59.55%</span></td><td><span class="sl-act"><button class="rm sell" data-edit="x" title="Correct this sale" aria-label="Correct the AAOX sale">✎</button><button class="rm" data-del="x" title="Undo this sale" aria-label="Undo the AAOX sale">✕</button></span></td></tr></tbody>
+          </table>
+        </div>
+        <p class="empty" id="sellEmpty" style="display: none;">Nothing sold yet — this fills in when you use the
+          <b>$</b> button on a holding.</p>
+        <p class="empty" id="sellNone" style="display:none">No sales in these dates.</p>
+        <p class="note" id="sellNote2" style="margin: 12px 0px 0px; display: block;">Each sale stays in the currency it
+          happened in and is never converted, so the USD / CAD switch at the top does not change
+          these figures.</p>
+      </section><div class="pv-tick edge" style="left: 22px;"></div><div class="pv-tick" style="left: 99px;"></div><div class="pv-tick" style="left: 176px;"></div><div class="pv-tick" style="left: 252px;"></div><div class="pv-tick" style="left: 329px;"></div><div class="pv-tick edge" style="left: 406px;"></div></div>
+        <p class="pv-starts"><b>text starts</b> 1 / 86 / 167 / 242
+          · <b>✕ to edge</b> 17px<br>nothing clips</p></div><div class="pv-col"><p class="pv-ch">D · Five equal slots, all left</p><p class="pv-cs">text sits exactly on each tick — no cell padding</p>
+        <div class="pv-frame pv-D" data-k="D" data-s="typical"><section class="panel cash" id="sellsPanel">
+        <h3>Past sells</h3>
+        <div class="st-sum" id="sellSum"><div><span class="k">Realised P / L</span><span class="v up">+$240.75</span></div><div><span class="k">Return on cost</span><span class="v up">+59.55%<small style="font-weight:600;opacity:.6"> USD</small></span></div></div>
+        <!-- A ledger grows without limit, so the panel shows a window rather
+             than everything. Thirty days to today by default. -->
+        <div class="sell-range">
+          <div><label for="sellFrom">From</label>
+            <input id="sellFrom" type="date" value="2026-09-07"></div>
+          <div><label for="sellTo">To</label>
+            <input id="sellTo" type="date" value="2026-10-07"></div>
+          <button class="btn ghost" id="sellSearch" type="button">Search</button>
+        </div>
+        <div class="tscroll">
+          <table class="htable" id="sellTable" style="display: table;">
+            <!-- No colgroup: the columns follow their content and the surplus
+                 goes to the last one. Dropping the column definitions also
+                 dropped the trap that came with them -- hiding a cell without
+                 hiding its column shifted every remaining cell onto the wrong
+                 one. The last header is empty on purpose; it is the actions
+                 column, which carries no label in any table here. -->
+            <thead><tr><th>Date</th><th>Ticker</th><th class="pc">Profit</th><th>$ made</th><th></th></tr></thead>
+            <tbody id="sellBody"><tr><td><span class="sl-d">06 Oct</span><span class="sl-y">2026</span></td><td><span class="sym">AAOX<small>FHSA · 75</small></span></td><td class="pc up" style="font-weight:600">+59.55%</td><td class="pl up">+$240.75<span class="sl-sub">+59.55%</span></td><td><span class="sl-act"><button class="rm sell" data-edit="x" title="Correct this sale" aria-label="Correct the AAOX sale">✎</button><button class="rm" data-del="x" title="Undo this sale" aria-label="Undo the AAOX sale">✕</button></span></td></tr></tbody>
+          </table>
+        </div>
+        <p class="empty" id="sellEmpty" style="display: none;">Nothing sold yet — this fills in when you use the
+          <b>$</b> button on a holding.</p>
+        <p class="empty" id="sellNone" style="display:none">No sales in these dates.</p>
+        <p class="note" id="sellNote2" style="margin: 12px 0px 0px; display: block;">Each sale stays in the currency it
+          happened in and is never converted, so the USD / CAD switch at the top does not change
+          these figures.</p>
+      </section><div class="pv-tick edge" style="left: 22px;"></div><div class="pv-tick" style="left: 99px;"></div><div class="pv-tick" style="left: 176px;"></div><div class="pv-tick" style="left: 252px;"></div><div class="pv-tick" style="left: 329px;"></div><div class="pv-tick edge" style="left: 406px;"></div></div>
+        <p class="pv-starts"><b>text starts</b> 1 / 77 / 154 / 230
+          · <b>✕ to edge</b> 58px<br>nothing clips</p></div></div></div>
+      <div class="pv-band"><p class="pv-bh">the widest row — where equal slots break</p>
+        <p class="pv-bs">Same four options, the widest data the panel can really hold. Watch the
+          $ MADE column in C and D.</p>
+        <div class="pv-cols"><div class="pv-col"><p class="pv-ch">A · Now</p><p class="pv-cs">build 2026-10-07 — nothing changed</p>
+        <div class="pv-frame pv-A" data-k="A" data-s="widest"><section class="panel cash" id="sellsPanel">
+        <h3>Past sells</h3>
+        <div class="st-sum" id="sellSum"><div><span class="k">Realised P / L</span><span class="v up">+C$116,043.00</span></div><div><span class="k">Return on cost</span><span class="v up">+1880.00%<small style="font-weight:600;opacity:.6"> CAD</small></span></div></div>
+        <!-- A ledger grows without limit, so the panel shows a window rather
+             than everything. Thirty days to today by default. -->
+        <div class="sell-range">
+          <div><label for="sellFrom">From</label>
+            <input id="sellFrom" type="date" value="2026-09-07"></div>
+          <div><label for="sellTo">To</label>
+            <input id="sellTo" type="date" value="2026-10-07"></div>
+          <button class="btn ghost" id="sellSearch" type="button">Search</button>
+        </div>
+        <div class="tscroll">
+          <table class="htable" id="sellTable" style="display: table;">
+            <!-- No colgroup: the columns follow their content and the surplus
+                 goes to the last one. Dropping the column definitions also
+                 dropped the trap that came with them -- hiding a cell without
+                 hiding its column shifted every remaining cell onto the wrong
+                 one. The last header is empty on purpose; it is the actions
+                 column, which carries no label in any table here. -->
+            <thead><tr><th>Date</th><th>Ticker</th><th class="pc">Profit</th><th>$ made</th><th></th></tr></thead>
+            <tbody id="sellBody"><tr><td><span class="sl-d">06 Oct</span><span class="sl-y">2026</span></td><td><span class="sym">BRK.B<small>Other · 12345</small></span></td><td class="pc up" style="font-weight:600">+1880.00%</td><td class="pl up">+C$116,043.00<span class="sl-sub">+1880.00%</span></td><td><span class="sl-act"><button class="rm sell" data-edit="x" title="Correct this sale" aria-label="Correct the BRK.B sale">✎</button><button class="rm" data-del="x" title="Undo this sale" aria-label="Undo the BRK.B sale">✕</button></span></td></tr></tbody>
+          </table>
+        </div>
+        <p class="empty" id="sellEmpty" style="display: none;">Nothing sold yet — this fills in when you use the
+          <b>$</b> button on a holding.</p>
+        <p class="empty" id="sellNone" style="display:none">No sales in these dates.</p>
+        <p class="note" id="sellNote2" style="margin: 12px 0px 0px; display: block;">Each sale stays in the currency it
+          happened in and is never converted, so the USD / CAD switch at the top does not change
+          these figures.</p>
+      </section><div class="pv-tick edge" style="left: 22px;"></div><div class="pv-tick" style="left: 99px;"></div><div class="pv-tick" style="left: 176px;"></div><div class="pv-tick" style="left: 252px;"></div><div class="pv-tick" style="left: 329px;"></div><div class="pv-tick edge" style="left: 406px;"></div></div>
+        <p class="pv-starts"><b>text starts</b> 10 / 67 / 162 / 263
+          · <b>✕ to edge</b> 17px<br>nothing clips</p></div><div class="pv-col"><p class="pv-ch">B · Ink flush</p><p class="pv-cs">first column on 0, ✕ on the right edge</p>
+        <div class="pv-frame pv-B" data-k="B" data-s="widest"><section class="panel cash" id="sellsPanel">
+        <h3>Past sells</h3>
+        <div class="st-sum" id="sellSum"><div><span class="k">Realised P / L</span><span class="v up">+C$116,043.00</span></div><div><span class="k">Return on cost</span><span class="v up">+1880.00%<small style="font-weight:600;opacity:.6"> CAD</small></span></div></div>
+        <!-- A ledger grows without limit, so the panel shows a window rather
+             than everything. Thirty days to today by default. -->
+        <div class="sell-range">
+          <div><label for="sellFrom">From</label>
+            <input id="sellFrom" type="date" value="2026-09-07"></div>
+          <div><label for="sellTo">To</label>
+            <input id="sellTo" type="date" value="2026-10-07"></div>
+          <button class="btn ghost" id="sellSearch" type="button">Search</button>
+        </div>
+        <div class="tscroll">
+          <table class="htable" id="sellTable" style="display: table;">
+            <!-- No colgroup: the columns follow their content and the surplus
+                 goes to the last one. Dropping the column definitions also
+                 dropped the trap that came with them -- hiding a cell without
+                 hiding its column shifted every remaining cell onto the wrong
+                 one. The last header is empty on purpose; it is the actions
+                 column, which carries no label in any table here. -->
+            <thead><tr><th>Date</th><th>Ticker</th><th class="pc">Profit</th><th>$ made</th><th></th></tr></thead>
+            <tbody id="sellBody"><tr><td><span class="sl-d">06 Oct</span><span class="sl-y">2026</span></td><td><span class="sym">BRK.B<small>Other · 12345</small></span></td><td class="pc up" style="font-weight:600">+1880.00%</td><td class="pl up">+C$116,043.00<span class="sl-sub">+1880.00%</span></td><td><span class="sl-act"><button class="rm sell" data-edit="x" title="Correct this sale" aria-label="Correct the BRK.B sale">✎</button><button class="rm" data-del="x" title="Undo this sale" aria-label="Undo the BRK.B sale">✕</button></span></td></tr></tbody>
+          </table>
+        </div>
+        <p class="empty" id="sellEmpty" style="display: none;">Nothing sold yet — this fills in when you use the
+          <b>$</b> button on a holding.</p>
+        <p class="empty" id="sellNone" style="display:none">No sales in these dates.</p>
+        <p class="note" id="sellNote2" style="margin: 12px 0px 0px; display: block;">Each sale stays in the currency it
+          happened in and is never converted, so the USD / CAD switch at the top does not change
+          these figures.</p>
+      </section><div class="pv-tick edge" style="left: 22px;"></div><div class="pv-tick" style="left: 99px;"></div><div class="pv-tick" style="left: 176px;"></div><div class="pv-tick" style="left: 252px;"></div><div class="pv-tick" style="left: 329px;"></div><div class="pv-tick edge" style="left: 406px;"></div></div>
+        <p class="pv-starts"><b>text starts</b> 1 / 58 / 153 / 254
+          · <b>✕ to edge</b> 1px<br>nothing clips</p></div><div class="pv-col"><p class="pv-ch">C · Five equal slots</p><p class="pv-cs">money still right-aligned, as every table here does</p>
+        <div class="pv-frame pv-C" data-k="C" data-s="widest"><section class="panel cash" id="sellsPanel">
+        <h3>Past sells</h3>
+        <div class="st-sum" id="sellSum"><div><span class="k">Realised P / L</span><span class="v up">+C$116,043.00</span></div><div><span class="k">Return on cost</span><span class="v up">+1880.00%<small style="font-weight:600;opacity:.6"> CAD</small></span></div></div>
+        <!-- A ledger grows without limit, so the panel shows a window rather
+             than everything. Thirty days to today by default. -->
+        <div class="sell-range">
+          <div><label for="sellFrom">From</label>
+            <input id="sellFrom" type="date" value="2026-09-07"></div>
+          <div><label for="sellTo">To</label>
+            <input id="sellTo" type="date" value="2026-10-07"></div>
+          <button class="btn ghost" id="sellSearch" type="button">Search</button>
+        </div>
+        <div class="tscroll">
+          <table class="htable" id="sellTable" style="display: table;">
+            <!-- No colgroup: the columns follow their content and the surplus
+                 goes to the last one. Dropping the column definitions also
+                 dropped the trap that came with them -- hiding a cell without
+                 hiding its column shifted every remaining cell onto the wrong
+                 one. The last header is empty on purpose; it is the actions
+                 column, which carries no label in any table here. -->
+            <thead><tr><th>Date</th><th>Ticker</th><th class="pc">Profit</th><th>$ made</th><th></th></tr></thead>
+            <tbody id="sellBody"><tr><td><span class="sl-d">06 Oct</span><span class="sl-y">2026</span></td><td><span class="sym">BRK.B<small>Other · 12345</small></span></td><td class="pc up" style="font-weight:600">+1880.00%</td><td class="pl up">+C$116,043.00<span class="sl-sub">+1880.00%</span></td><td><span class="sl-act"><button class="rm sell" data-edit="x" title="Correct this sale" aria-label="Correct the BRK.B sale">✎</button><button class="rm" data-del="x" title="Undo this sale" aria-label="Undo the BRK.B sale">✕</button></span></td></tr></tbody>
+          </table>
+        </div>
+        <p class="empty" id="sellEmpty" style="display: none;">Nothing sold yet — this fills in when you use the
+          <b>$</b> button on a holding.</p>
+        <p class="empty" id="sellNone" style="display:none">No sales in these dates.</p>
+        <p class="note" id="sellNote2" style="margin: 12px 0px 0px; display: block;">Each sale stays in the currency it
+          happened in and is never converted, so the USD / CAD switch at the top does not change
+          these figures.</p>
+      </section><div class="pv-tick edge" style="left: 22px;"></div><div class="pv-tick" style="left: 99px;"></div><div class="pv-tick" style="left: 176px;"></div><div class="pv-tick" style="left: 252px;"></div><div class="pv-tick" style="left: 329px;"></div><div class="pv-tick edge" style="left: 406px;"></div></div>
+        <p class="pv-starts"><b>text starts</b> 1 / 86 / 167 / 242
+          · <b>✕ to edge</b> 17px<br><span class="pv-warn">clips pl up +18px</span></p></div><div class="pv-col"><p class="pv-ch">D · Five equal slots, all left</p><p class="pv-cs">text sits exactly on each tick — no cell padding</p>
+        <div class="pv-frame pv-D" data-k="D" data-s="widest"><section class="panel cash" id="sellsPanel">
+        <h3>Past sells</h3>
+        <div class="st-sum" id="sellSum"><div><span class="k">Realised P / L</span><span class="v up">+C$116,043.00</span></div><div><span class="k">Return on cost</span><span class="v up">+1880.00%<small style="font-weight:600;opacity:.6"> CAD</small></span></div></div>
+        <!-- A ledger grows without limit, so the panel shows a window rather
+             than everything. Thirty days to today by default. -->
+        <div class="sell-range">
+          <div><label for="sellFrom">From</label>
+            <input id="sellFrom" type="date" value="2026-09-07"></div>
+          <div><label for="sellTo">To</label>
+            <input id="sellTo" type="date" value="2026-10-07"></div>
+          <button class="btn ghost" id="sellSearch" type="button">Search</button>
+        </div>
+        <div class="tscroll">
+          <table class="htable" id="sellTable" style="display: table;">
+            <!-- No colgroup: the columns follow their content and the surplus
+                 goes to the last one. Dropping the column definitions also
+                 dropped the trap that came with them -- hiding a cell without
+                 hiding its column shifted every remaining cell onto the wrong
+                 one. The last header is empty on purpose; it is the actions
+                 column, which carries no label in any table here. -->
+            <thead><tr><th>Date</th><th>Ticker</th><th class="pc">Profit</th><th>$ made</th><th></th></tr></thead>
+            <tbody id="sellBody"><tr><td><span class="sl-d">06 Oct</span><span class="sl-y">2026</span></td><td><span class="sym">BRK.B<small>Other · 12345</small></span></td><td class="pc up" style="font-weight:600">+1880.00%</td><td class="pl up">+C$116,043.00<span class="sl-sub">+1880.00%</span></td><td><span class="sl-act"><button class="rm sell" data-edit="x" title="Correct this sale" aria-label="Correct the BRK.B sale">✎</button><button class="rm" data-del="x" title="Undo this sale" aria-label="Undo the BRK.B sale">✕</button></span></td></tr></tbody>
+          </table>
+        </div>
+        <p class="empty" id="sellEmpty" style="display: none;">Nothing sold yet — this fills in when you use the
+          <b>$</b> button on a holding.</p>
+        <p class="empty" id="sellNone" style="display:none">No sales in these dates.</p>
+        <p class="note" id="sellNote2" style="margin: 12px 0px 0px; display: block;">Each sale stays in the currency it
+          happened in and is never converted, so the USD / CAD switch at the top does not change
+          these figures.</p>
+      </section><div class="pv-tick edge" style="left: 22px;"></div><div class="pv-tick" style="left: 99px;"></div><div class="pv-tick" style="left: 176px;"></div><div class="pv-tick" style="left: 252px;"></div><div class="pv-tick" style="left: 329px;"></div><div class="pv-tick edge" style="left: 406px;"></div></div>
+        <p class="pv-starts"><b>text starts</b> 1 / 77 / 154 / 230
+          · <b>✕ to edge</b> 58px<br><span class="pv-warn">clips pl up +9px</span></p></div></div></div>
+      <div class="pv-foot" id="pvFoot"><b>Sparta AP</b> build 2026-10-07 · each frame is 384px of panel content box, the real
+       right-hand Dashboard column · teal rules are the five equal fifths · nothing in the app
+       was edited to make this page.</div></div></body></html>
