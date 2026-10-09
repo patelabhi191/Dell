@@ -4024,9 +4024,40 @@ const memStore = new Map();
 var localOff = (function(){
   try{ return localStorage.getItem(LOCAL_OFF_KEY)==='true' }catch(e){ return false }
 })();
+/* A FAILED WRITE USED TO BE COMPLETELY INVISIBLE, and the one failure that
+   matters is a FULL drawer. Measured, not theorised: with the quota exhausted
+   and the ledger blob growing, 2,000 added rows were held in memory, drawn on
+   screen, and never written -- nothing threw, nothing was logged, and a reload
+   lost all of them. Of everything in this file that can lose data, this was the
+   only path with no symptom at all until the next load.
+
+   The catch itself stays, and stays broad: it is what lets this file open in a
+   restricted preview where localStorage throws on access, and that behaviour is
+   deliberate. But "storage is unavailable" and "storage is full" are different
+   failures, so only a QUOTA error is reported. In a restricted preview every
+   write fails from the very first one and a warning would be pure noise; a
+   quota error can only happen after writes were working.
+
+   Once per session. persist() runs on a sixty-second timer, so a toast per
+   failed write would bury the app in the moment it most needs to be usable.
+   toast() is tested for existence because store.set() runs while `state` is
+   still being built, long before toast is defined -- the same ordering that
+   made fbApplying a temporal dead zone. */
+var storeQuotaHit=false;
+const isQuotaError=e=>!!e && (e.name==='QuotaExceededError'
+  || e.name==='NS_ERROR_DOM_QUOTA_REACHED' || e.code===22);
+function storeQuotaWarn(){
+  if(storeQuotaHit) return;
+  storeQuotaHit=true;
+  console.error('[sparta] localStorage is full \u2014 changes are NOT being saved');
+  if(typeof toast==='function')
+    toast('This browser\u2019s storage is full \u2014 changes are not being saved. '+
+          'Free some space and reload.');
+}
 const storeDisk = {
   get(k,f){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):f }catch(e){ return f } },
-  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)) }catch(e){} },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)) }
+    catch(e){ if(isQuotaError(e)) storeQuotaWarn() } },
   del(k){ try{ localStorage.removeItem(k) }catch(e){} }
 };
 const onDisk = k => !localOff || STORE_EXEMPT.indexOf(k)>-1;

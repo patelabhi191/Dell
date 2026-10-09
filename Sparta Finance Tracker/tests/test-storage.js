@@ -932,6 +932,84 @@ const YEAR = 2026;
     await c.close();
   }
 
+  /* 10h. A FULL DRAWER USED TO BE SILENT, and of everything here that can lose
+     data it was the only path with no symptom until the next load. Measured:
+     with the quota exhausted and the ledger blob growing, 2,000 added rows sat
+     in memory, were drawn on screen, and were never written. Nothing threw,
+     nothing was logged.
+
+     The broad catch in storeDisk.set stays -- it is what lets this file open in
+     a restricted preview where localStorage throws on access -- so only a QUOTA
+     error is reported. Those are different failures: in a preview every write
+     fails from the first one, where a warning would be noise.
+
+     The PRECONDITION is asserted first. If the write actually landed, the whole
+     section proves nothing (bug class 7), and it is easy for it to land: the
+     blob has to GROW past what is left, because replacing a key frees its own
+     bytes first. An earlier version of this check wrote one row, it fitted, and
+     the check passed against the unfixed build. */
+  {
+    const c = await browser.newContext();
+    const p = await c.newPage();
+    await stub(p);
+    /* The fix logs to console.error ON PURPOSE -- being loud is the point -- so
+       this page collects errors separately instead of using the shared list. */
+    const con = [];
+    p.on('console', m => { if (m.type() === 'error') con.push(m.text()); });
+    await p.goto(url, { waitUntil: 'load' });
+    await p.waitForTimeout(350);
+
+    const q = await p.evaluate(() => {
+      /* Coarse then FINE. Filling with 256KB blobs alone stops ~256KB short of
+         the ceiling, and the ledger write is smaller than that, so it still
+         fitted and the section proved nothing. Topping up with 4KB and then 256B
+         blobs leaves genuinely almost nothing free. */
+      const fill = (size, cap) => {
+        const blob = 'x'.repeat(size);
+        for (let i = 0; i < cap; i++) {
+          try { localStorage.setItem('__f' + size + '_' + i, blob); } catch (e) { return; }
+        }
+      };
+      fill(1024 * 256, 400); fill(1024 * 4, 400); fill(256, 400);
+      const key = 'sparta.' + DB_ID + '.yf.data';
+      const before = localStorage.getItem(key) || '';
+      for (let i = 0; i < 2000; i++)
+        state.yf.txns.push({ id: 'q' + i, type: 'expense', date: '2026-07-07',
+          amt: 9.99, desc: 'OVERFLOW ROW ' + i, cat: 'Home', tab: 'yf', who: 'ABI' });
+      let threw = null;
+      try { yfPersist(); } catch (e) { threw = e.name; }
+      const after = localStorage.getItem(key) || '';
+      const t = document.getElementById('toast');
+      return { threw, landed: after.includes('q1999'), grew: after.length > before.length,
+        inMemory: state.yf.txns.some(x => x.id === 'q1999'),
+        shown: !!(t && t.classList.contains('show')), text: t ? t.textContent : '' };
+    });
+
+    check(q.landed === false && q.grew === false,
+      '10h: precondition — the write really did fail, so there is something to report',
+      JSON.stringify({ landed: q.landed, grew: q.grew }));
+    check(q.inMemory === true,
+      '10h: and the rows are in memory and on screen, which is what makes it dangerous');
+    check(q.threw === null,
+      '10h: persist still does not throw, so the broad catch is intact');
+    check(q.shown && /storage is full/i.test(q.text),
+      '10h: the user is told the changes are not being saved', JSON.stringify(q.text));
+    check(con.some(t => /localStorage is full/i.test(t)),
+      '10h: and it is on the console too', JSON.stringify(con.slice(0, 2)));
+    /* Once per session: persist() runs on a sixty-second timer, and a toast per
+       failed write would bury the app exactly when it needs to be usable. */
+    const again = await p.evaluate(() => {
+      const t = document.getElementById('toast');
+      t.classList.remove('show');
+      state.yf.txns.push({ id: 'q-again', type: 'expense', date: '2026-07-08',
+        amt: 1, desc: 'ONE MORE', cat: 'Home', tab: 'yf', who: 'ABI' });
+      yfPersist();
+      return t.classList.contains('show');
+    });
+    check(again === false, '10h: and said once, not on every failed write afterwards');
+    await c.close();
+  }
+
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nSTORAGE: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
