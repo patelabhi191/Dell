@@ -513,6 +513,43 @@ const YEAR = 2026;
   check(coll.total === '$500.00',
     'and the figures above still describe the whole month, filter or not', coll.total);
 
+  /* ── 17. the category bars are scaled off a figure that is a spend ────────
+     The scale was cats[0][1], the top of a list sorted descending -- which in
+     a month whose every category came out negative is the SMALLEST refund.
+     A bigger refund divided by it gave a fill 500% as wide as the track it is
+     meant to sit inside.                                                    */
+  section('17. a month of nothing but refunds does not overflow its bars');
+  const bars = await page.evaluate(([y]) => {
+    const rows = () => [...document.querySelectorAll('#meBars .me-bar-row')].map(r => ({
+      name: r.querySelector('.me-bar-name').textContent,
+      width: r.querySelector('.me-bar-fill').style.width,
+      fill: Math.round(r.querySelector('.me-bar-fill').getBoundingClientRect().width),
+      track: Math.round(r.querySelector('.me-bar-track').getBoundingClientRect().width),
+      amt: r.querySelector('.me-bar-amt').textContent }));
+    load([
+      { id: 'q1', type: 'expense', date: `${y}-04-04`, amt: -10, desc: 'Refund A', cat: 'Groceries', who: 'ABI', tab: 'me' },
+      { id: 'q2', type: 'expense', date: `${y}-04-06`, amt: -50, desc: 'Refund B', cat: 'Shopping', who: 'ABI', tab: 'me' }]);
+    meMonth = `${y}-04`; meTxCat = 'all'; renderME();
+    const allNeg = rows();
+    // an ordinary month must be scaled exactly as it was before
+    load([
+      { id: 'q3', type: 'expense', date: `${y}-05-04`, amt: 400, desc: 'Big', cat: 'Groceries', who: 'ABI', tab: 'me' },
+      { id: 'q4', type: 'expense', date: `${y}-05-06`, amt: 100, desc: 'Small', cat: 'Shopping', who: 'ABI', tab: 'me' },
+      { id: 'q5', type: 'expense', date: `${y}-05-08`, amt: -20, desc: 'Back', cat: 'Transit', who: 'ABI', tab: 'me' }]);
+    meMonth = `${y}-05`; renderME();
+    return { allNeg, mixed: rows() };
+  }, [YEAR]);
+  // Precondition: the refund month really did produce bars to measure.
+  check(bars.allNeg.length === 2 && bars.allNeg.every(r => /^-\$/.test(r.amt)),
+    'precondition: two categories, both of them negative, are on screen',
+    JSON.stringify(bars.allNeg.map(r => r.amt)));
+  check(bars.allNeg.every(r => r.fill <= r.track),
+    'no fill is wider than the track it sits in',
+    JSON.stringify(bars.allNeg.map(r => `${r.fill}/${r.track}`)));
+  check(bars.mixed.map(r => r.width).join(',') === '100%,25%,0%',
+    'and an ordinary month is scaled off its largest spend, as before',
+    JSON.stringify(bars.mixed.map(r => r.name + ' ' + r.width)));
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nBILL PAYMENT: ${pass} passed, ${fail} failed`);

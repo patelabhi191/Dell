@@ -8816,7 +8816,17 @@ function renderME(){
   const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
   $('meTopCat').textContent=cats.length?cats[0][0]:'\u2014';
   $('meTopAmt').textContent=cats.length?meMoney(cats[0][1]):meMoney(0);
-  const max=cats.length?cats[0][1]:1;
+  /* THE BAR LENGTHS ARE SCALED OFF THE LARGEST SPEND, which has to be a spend.
+     This took cats[0][1] -- the top of a list sorted descending -- and in a
+     month whose every category came out negative that is the SMALLEST refund.
+     Dividing a bigger refund by it gave 500%, and the fill is 500% of a track
+     it is supposed to sit inside: a -$50 row painted 4,000px of bar across an
+     802px track. Taking the largest positive figure instead leaves every
+     ordinary month scaled exactly as before (cats is sorted, so cats[0][1] IS
+     that figure whenever it is positive) and gives an all-refund month no bar
+     lengths at all, which is already how a single negative category reads
+     beside positive ones. The amounts beside them still print, signed. */
+  const max=Math.max(...cats.map(([,v])=>v),0)||1;
   $('meBars').innerHTML=cats.map(([c,v])=>`
     <div class="me-bar-row">
       <div class="me-bar-name" title="${c}" style="color:${meColor(c)}">${c.toUpperCase()}</div>
