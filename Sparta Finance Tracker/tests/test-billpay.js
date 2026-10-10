@@ -476,6 +476,43 @@ const YEAR = 2026;
     'and itemised rows that genuinely net below zero print signed, not nothing',
     item.oct);
 
+  /* ── 16. the table filter means MONTHLY's category ────────────────────────
+     meFillTxCat builds its options from Monthly's rows alone, so picking
+     "Health/medical" asks for Monthly's Health/medical -- but the filter then
+     matched the bare name across the shared ledger, and SS6 is explicit that a
+     name on both lists is still two different categories. A Yearly bill that
+     happened to share the name was pulled into the filtered table, and which
+     bills leaked was decided by naming alone: filter Groceries and the Credit
+     Bill never appeared, filter Health/medical and the dentist bill did.     */
+  section('16. filtering to a Monthly category does not pull in a Yearly bill');
+  const coll = await page.evaluate(([y]) => {
+    load([
+      { id: 'yb', type: 'expense', date: `${y}-06-18`, amt: 400, desc: 'Dentist bill', cat: 'Health/medical', who: 'ABI', tab: 'yf' },
+      { id: 'mm', type: 'expense', date: `${y}-06-04`, amt: 30, desc: 'Advil', cat: 'Health/medical', who: 'ABI', tab: 'me' },
+      { id: 'mg', type: 'expense', date: `${y}-06-06`, amt: 70, desc: 'Loblaws', cat: 'Groceries', who: 'ABI', tab: 'me' }]);
+    meMonth = `${y}-06`; meTxCat = 'all'; renderME();
+    const read = () => [...document.querySelectorAll('#meBody tr')]
+      .map(tr => tr.children[1].textContent.trim());
+    const all = read();
+    const opts = [...document.getElementById('meTxCat').options].map(o => o.value);
+    meTxCat = 'Health/medical'; renderME();
+    const filtered = read();
+    const total = document.getElementById('meTotal').textContent;
+    meTxCat = 'all'; renderME();
+    return { all, opts, filtered, total };
+  }, [YEAR]);
+  // Preconditions: both tabs really do hold that one name, and it really is on
+  // offer -- without these the filter could be matching nothing at all.
+  check(coll.all.includes('Dentist bill') && coll.all.includes('Advil'),
+    'precondition: both tabs hold a Health/medical row, and both are listed',
+    JSON.stringify(coll.all));
+  check(coll.opts.includes('Health/medical'),
+    'precondition: the filter offers the name', JSON.stringify(coll.opts));
+  check(JSON.stringify(coll.filtered) === JSON.stringify(['Advil']),
+    "only Monthly's own row survives the filter", JSON.stringify(coll.filtered));
+  check(coll.total === '$500.00',
+    'and the figures above still describe the whole month, filter or not', coll.total);
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nBILL PAYMENT: ${pass} passed, ${fail} failed`);
