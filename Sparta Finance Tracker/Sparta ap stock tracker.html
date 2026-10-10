@@ -4144,6 +4144,21 @@ function histPts(a){
    at all becomes 0, where it is at least visible and editable. */
 const fin=v=>{ const n = typeof v==='number' ? v : (v==null||v==='' ? NaN : +v);
   return isFinite(n) ? n : 0; };
+/* ABI OR POO, AND NOTHING ELSE. Both selects offer exactly those two, and every
+   figure that splits by contributor compares with === -- contributedBy() on this
+   tab, the who filters on Yearly and Monthly -- while the HOUSEHOLD figures
+   (contributed(), the hero cards, the room bars, the month total) do not look at
+   the field at all. So a row carrying anything else is counted by the household
+   and by NEITHER person: the TFSA hero card read C$3,000 over a backfill table
+   whose four columns summed to C$1,000, with $2,000 of real money visible in no
+   split anywhere, and on Monthly such a row sits in the ALL total and in neither
+   person's view of it.
+   That is reachable without anyone doing anything odd: 'Abi' is the casing this
+   project's own reference document still writes, so an older build or a
+   hand-edited cloud record can hold it. Folded here, next to fin() and at the
+   same choke points, to the two values the app can actually compare -- and
+   defaulting to ABI, exactly as a missing one already did. */
+const who2=w=>String(w||'').trim().toUpperCase()==='POO'?'POO':'ABI';
 /* Cash is the three account buckets and nothing else, so the shape is fixed and
    the figures are coerced with it -- cashInScope() adds all three, so one bad
    bucket is enough to make the Dashboard hero total NaN. */
@@ -4462,7 +4477,7 @@ function limitFor(acct,y){
 state.contribs.forEach(c=>{ if(!c.id) c.id=uid();
   if(c.y==null) c.y=new Date(c.t).getFullYear();
   if(!isFinite(c.y)) c.y=new Date().getFullYear();
-  c.amt=fin(c.amt); if(!c.who) c.who='ABI'; });
+  c.amt=fin(c.amt); c.who=who2(c.who); });
 // Contributions used to be stored in USD base and re-converted at the live rate on
 // every render, so recorded CAD amounts drifted whenever FX moved. They are now
 // stored as plain CAD. Convert existing rows once, at the current rate.
@@ -6616,7 +6631,7 @@ state.yearly.forEach(r=>{
 state.contribs.forEach(c=>{ if(!c.id) c.id=uid();
   if(c.y==null) c.y=new Date(c.t).getFullYear();
   if(!isFinite(c.y)) c.y=new Date().getFullYear();
-  c.amt=fin(c.amt); if(!c.who) c.who='ABI'; });
+  c.amt=fin(c.amt); c.who=who2(c.who); });
 // migrate holdings saved under the old "everything in base USD" model to native values
 (function migrateNative(){
   let changed=false;
@@ -7272,7 +7287,7 @@ function normalizeYF(){
   y.txns.forEach(t=>{ t.amt=fin(t.amt); });
   // default any transaction logged before contributor-tracking existed to ABI;
   // ABI/POO are hardcoded directly in each <select>, matching the Contributions tab.
-  y.txns.forEach(t=>{ if(!t.who) t.who='ABI'; });
+  y.txns.forEach(t=>{ t.who=who2(t.who); });
   // an allocation always knows which month's bill it belongs to; fall back to
   // its own date for anything written before allotM existed
   y.txns.forEach(t=>{ if(t.allot && !t.allotM) t.allotM=(t.date||'').slice(0,7); });

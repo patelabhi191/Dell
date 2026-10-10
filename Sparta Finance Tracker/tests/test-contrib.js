@@ -236,6 +236,67 @@ const YEAR = new Date().getFullYear();
     await ctx.close();
   }
 
+  /* ── Check N+1: a contributor name the app cannot compare ──────────────────
+     Every per-person figure compares with === while every household figure
+     ignores the field, so a row carrying 'Abi' rather than 'ABI' -- the casing
+     this project's own reference document writes, so an older build or a
+     hand-edited cloud record can hold it -- was counted by the household and by
+     neither person. The hero card read C$3,000 over four columns summing to
+     C$1,000. Seeded through localStorage, because the fold happens where the
+     data enters: unlike normalizeYF this migration runs at load and on a cloud
+     pull, not on every render.                                              */
+  console.log('\n── Check N+1: a who the app cannot compare is folded on load ──');
+  {
+    const y = YEAR;
+    const { ctx, page, errs } = await open(browser, url, {
+      'sparta.contrib.cadFixed': 'true',
+      'sparta.contrib.entries': JSON.stringify([
+        { id: 'k1', t: Date.UTC(y, 0, 5), acct: 'TFSA', amt: 1000, y, cad: true, who: 'ABI' },
+        { id: 'k2', t: Date.UTC(y, 0, 6), acct: 'TFSA', amt: 2000, y, cad: true, who: 'Abi' },
+        { id: 'k3', t: Date.UTC(y, 0, 7), acct: 'FHSA', amt: 500, y, cad: true, who: 'poo' }]),
+      'sparta.yf.data': JSON.stringify({
+        txns: [{ id: 'z1', type: 'expense', date: `${y}-03-04`, amt: 60, desc: 'Advil',
+                 cat: 'Groceries', who: 'Abi', tab: 'me' }],
+        planned: {}, start: {}, cats: {} }),
+    });
+    const r = await page.evaluate(y2 => {
+      state.cYear = y2; state.logYear = String(y2); state.cWho = 'ALL'; render();
+      const cell = n => [...document.querySelectorAll('#ybody tr')]
+        .map(tr => tr.children[n] && tr.children[n].textContent.trim())[0];
+      const money = t => +String(t || '').replace(/[^0-9.]/g, '');
+      meMonth = `${y2}-03`; meWhoFilter = 'ABI'; renderME();
+      const meAbi = document.getElementById('meTotal').textContent;
+      meWhoFilter = 'ALL'; renderME();
+      return {
+        whos: state.contribs.map(c => c.who),
+        ledgerWho: (state.yf.txns || []).map(t => t.who),
+        tHouse: contributed('TFSA', y2), tAbi: contributedBy('TFSA', y2, 'ABI'),
+        tPoo: contributedBy('TFSA', y2, 'POO'),
+        fHouse: contributed('FHSA', y2), fPoo: contributedBy('FHSA', y2, 'POO'),
+        hero: money(document.getElementById('cTfsaAmt').textContent),
+        cols: [money(cell(1)), money(cell(2)), money(cell(3)), money(cell(4))],
+        meAbi,
+      };
+    }, y);
+    // Precondition: the seed really is the awkward shape, and really did load.
+    check(r.whos.length === 3 && r.ledgerWho.length === 1,
+      'precondition: three deposits and one ledger row loaded', JSON.stringify(r.whos));
+    check(r.whos.join(',') === 'ABI,ABI,POO',
+      "'Abi' and 'poo' are folded to the two values the app compares",
+      JSON.stringify(r.whos));
+    check(r.tHouse === r.tAbi + r.tPoo && r.fHouse === r.fPoo,
+      'the household total is exactly the two contributors added up',
+      JSON.stringify([r.tHouse, r.tAbi, r.tPoo, r.fHouse, r.fPoo]));
+    check(r.hero === r.cols[0] + r.cols[1],
+      "and the hero card equals the backfill table's TFSA columns beside it",
+      JSON.stringify([r.hero, r.cols]));
+    check(r.ledgerWho[0] === 'ABI' && r.meAbi === '$60.00',
+      "the shared ledger is folded too, so Monthly's ABI view holds the row",
+      JSON.stringify([r.ledgerWho, r.meAbi]));
+    check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
+    await ctx.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nCONTRIB FEATURE VERIFICATION: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
