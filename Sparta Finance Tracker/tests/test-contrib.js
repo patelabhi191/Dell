@@ -331,6 +331,45 @@ const YEAR = new Date().getFullYear();
     await ctx.close();
   }
 
+  /* ── Check N+3: saving two drafts where one is blocked ─────────────────────
+     The toast was an either/or, so a save that blocked one year and wrote
+     another reported only the block -- while the written year's draft row
+     disappeared from the table with it. And + Add year created the retired
+     {tfsa, fhsa} pair, so a brand-new draft was immediately a legacy row the
+     load-time migration had to convert.                                     */
+  console.log('\n── Check N+3: the backfill save reports what it did, not only what it refused ──');
+  {
+    const { ctx, page, errs } = await open(browser, url, {});
+    const r = await page.evaluate(y => {
+      state.contribs = []; state.yearly = []; render();
+      document.getElementById('addYearBtn').click();
+      const fresh = Object.keys(state.yearly[0]).sort().join(',');
+      // one year already holding real deposits, one clear
+      state.contribs = [{ id: 'live', t: Date.UTC(y - 1, 5, 1), acct: 'TFSA', amt: 500,
+                          y: y - 1, cad: true, who: 'ABI' }];
+      state.yearly = [{ id: 'd1', y: y - 1, tfsaAbi: 100, tfsaPoo: 0, fhsaAbi: 0, fhsaPoo: 0 },
+                      { id: 'd2', y: y - 3, tfsaAbi: 700, tfsaPoo: 0, fhsaAbi: 0, fhsaPoo: 0 }];
+      render();
+      const said = []; const orig = window.toast; window.toast = m => said.push(m);
+      saveYearly();
+      window.toast = orig;
+      return { fresh, said: said.join(''), drafts: state.yearly.map(d => d.y),
+               written: state.contribs.filter(c => c.backfill).map(c => c.y + ':' + c.amt) };
+    }, YEAR);
+    // Precondition: one really was written and one really was refused, or a
+    // toast mentioning only one of them would be the correct report.
+    check(JSON.stringify(r.written) === JSON.stringify([String(YEAR - 3) + ':700'])
+          && JSON.stringify(r.drafts) === JSON.stringify([YEAR - 1]),
+      'precondition: one year was written and the blocked one stayed a draft',
+      JSON.stringify([r.written, r.drafts]));
+    check(/1 year saved/.test(r.said) && /already has deposits/.test(r.said),
+      'the toast reports the save as well as the block', r.said);
+    check(r.fresh === 'fhsaAbi,fhsaPoo,id,tfsaAbi,tfsaPoo,y',
+      '+ Add year creates the four-amount shape, not the retired pair', r.fresh);
+    check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
+    await ctx.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nCONTRIB FEATURE VERIFICATION: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

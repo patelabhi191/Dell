@@ -4678,9 +4678,15 @@ function saveYearly(){
   });
   state.yearly=kept;
   persist(); render();
-  toast(blocked!=null
-    ? blocked+' already has deposits in the log — remove them there first'
-    : (saved?saved+' year'+(saved>1?'s':'')+' saved':'Enter an amount before saving'));
+  /* SAY BOTH THINGS WHEN BOTH HAPPENED. Saving two drafts where one year is
+     blocked by live deposits and the other goes through reported only the
+     block, so the year that WAS written -- its draft row gone from the table
+     with it -- was never mentioned. A user re-typed it, or assumed nothing had
+     saved. Neither clause is new; they just no longer exclude each other. */
+  const done=[];
+  if(saved) done.push(saved+' year'+(saved>1?'s':'')+' saved');
+  if(blocked!=null) done.push(blocked+' already has deposits in the log — remove them there first');
+  toast(done.length?done.join(' · '):'Enter an amount before saving');
 }
 
 function depositContrib(acct){
@@ -6387,7 +6393,11 @@ $('limF').addEventListener('change',()=>{markUserEdit();state.limitsY['FHSA-'+st
 $('addYearBtn').onclick=()=>{
   const used=new Set([...state.contribs.map(c=>c.y), ...state.yearly.map(r=>r.y)]);
   let y=YEAR; while(used.has(y)&&y>2009) y--;
-  state.yearly.push({id:uid(),y,tfsa:0,fhsa:0});
+  // The four-amount shape, which is what every reader wants. This wrote the
+  // retired {tfsa, fhsa} pair, so a row created by this button was immediately
+  // a legacy row: the draft inputs read tfsaAbi and found nothing, and the
+  // load-time migration had to convert something written seconds earlier.
+  state.yearly.push({id:uid(),y,tfsaAbi:0,tfsaPoo:0,fhsaAbi:0,fhsaPoo:0});
   persist(); renderYearly();
   toast('Enter amounts, then click Save');
 };
