@@ -7403,29 +7403,36 @@ function yfCats(type){ return type==='income'?state.yf.cats.inc:state.yf.cats.ex
 function yfPlanned(cat){ const p=state.yf.planned[state.yfYear]||{}; return p[cat]||0; }
 /* ---------- bills & allocations ----------
    An expense carrying `allot` is an ALLOCATION: a detail line explaining part of
-   a bill already recorded under that category. It carries NO category of its own
-   The bill counted that money once already, so an allocation must NEVER add to
-   a total. What it does to the CATEGORY breakdown depends on whether it carries
-   a category of its own, and there are two real shapes:
+   a bill already recorded under that category. The bill counted that money once
+   already, so an allocation must NEVER add to a total.
 
-   1. WITH a category -- an imported statement. The categoriser names every row
-      (Transit, Groceries, ...) and "Allot all to" points them at the bill. Such
-      a row is a reclassification: it adds to its own category and comes back out
-      of the bill's, so a $1,991 statement itemised into $33 of Transit reads
-      Transit $33 + Credit Bill $1,958, still $1,991 of spending.
-
-   2. WITHOUT a category -- typed in on Add Expense, where filing is either/or.
-      It is a pure annotation: a $550 trip noted as $20 parking and $100 food is
-      still $550 under Travel, and the notes land nowhere.
+   ON YEARLY IT ADDS TO NOTHING AT ALL -- not to its own category either, even
+   when it carries one. Every allocation is Monthly's (`tab:'me'`, SS0) and
+   yfTxns() drops Monthly's rows before these two functions ever see them, so
+   neither term below can contain one. A $1,991 statement itemised into $33 of
+   Transit therefore reads Credit Bill $1,991 and Transit $0 here, and the $33
+   shows on Monthly, which is the tab that asks about habits. test-bills.js SS22
+   pins exactly that (`grocery === 0`, `cb === 2000`) and SS27 pins the trip case.
 
      spend       = sum of expenses that are NOT allocations
-     actual(cat) = everything filed under cat  -  everything CATEGORISED out of cat
+     actual(cat) = everything filed under cat
 
-   Summing actual() over every category gives back spend exactly under both
-   shapes: a categorised allocation adds itself once and subtracts itself once,
-   and an uncategorised one appears in neither term. tests/test-bills.js pins
-   that identity down. Either way the Yearly category table reports the detail
-   as "billed / itemised / over" beside the bill. */
+   Summing actual() over every category gives back spend, because the one kind
+   of row the two definitions disagree about cannot be in the list. The `!t.allot`
+   test in yfSpendOf is therefore belt and braces against the list it is handed
+   rather than the thing doing the work -- worth keeping, since the tests call it
+   with hand-built lists, but it is not what makes the identity hold.
+
+   This comment used to describe the opposite: a categorised allocation
+   "reclassifying", adding to its own category and coming back out of the bill's,
+   against an `actual(cat)` with a subtraction term. There is no subtraction term
+   in yfCatOf and there never can be one while yfTxns() is scoped by tab. The
+   arithmetic it claimed and the arithmetic the file performs give the same
+   answer for `spend`, which is how it survived; they give different answers for
+   every individual category.
+
+   Either way the Yearly category table reports the detail as
+   "billed / itemised / over" beside the bill. */
 const yfSpendOf=list=>list.reduce((s,t)=>s+(t.type==='expense'&&!t.allot?t.amt:0),0);
 function yfCatOf(list,cat){
   return list.reduce((s,t)=>t.type!=='expense'?s:s+(t.cat===cat?t.amt:0),0);
