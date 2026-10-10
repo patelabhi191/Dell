@@ -4352,17 +4352,39 @@ function render(){
   $('sortSym').classList.toggle('on',sortBy==='sym');
   $('sortSym').classList.toggle('asc',sortBy==='sym');
   $('sortPL').classList.toggle('on',sortBy==='pl');
-  /* BOTH SUB-LINES CARRY opacity:.8, and the figure is 4.73:1 against the
-     panel. `opacity` composites the whole element over what is behind it, so
-     the ratio to judge is the COMPOSITED colour -- getComputedStyle().color
-     still reports the full-strength value, which is why this reads as fine and
-     is not. The P/L percentage was at .75, where the LOSS colour lands on
-     4.28:1 against a 4.5 requirement (11px is nowhere near the large-text
-     exemption). The gain colour is far brighter and passed either way, so the
-     failure only ever showed on a position that was DOWN -- the number most
-     worth being able to read. The two sub-lines are the same kind of thing and
-     now share one value, which is also one fewer figure invented by accident.
-     Measured, not guessed: test-ui.js composites the colour and asserts it. */
+  /* BOTH SUB-LINES CARRY opacity:.9, which composites the LOSS colour to about
+     5.05:1 on the surface this table actually sits on. `opacity` composites the
+     whole element over what is behind it, so the ratio to judge is the
+     COMPOSITED colour -- getComputedStyle().color still reports the
+     full-strength value, which is why this reads as fine and is not. 11px is
+     nowhere near the large-text exemption, so the bar is 4.5.
+
+     THE BACKDROP IS THE THING TO GET RIGHT, and it is why this took two passes.
+     The row is not on the page, it is on a glass panel: the painted pixel under
+     these glyphs is rgb(19,32,43), not the page's #071520. Against the page the
+     loss colour reads 6.86:1 undimmed and 4.73:1 at .8, which is comfortable and
+     wrong; against the panel it is 6.15:1 and 4.36:1, which still fails. .75 was
+     3.98:1. Every glass surface here is translucent at about .03 alpha, so a
+     walk up the ancestors looking for an opaque background finds none and falls
+     through to the page -- that is exactly how a first fix landed on .8 and a
+     test certified it. The test now SAMPLES the painted pixel with the glyphs
+     hidden, which is ground truth and also survives backdrop-filter, where a
+     pure compositor would not.
+
+     .9 RATHER THAN THE .85 THAT ALSO CLEARS THE BAR, because the backdrop here
+     is not one colour. It is an animated decorative field under glass, and it
+     varies both with time and with where on the panel a row sits: ten samples of
+     one pixel over four seconds gave three distinct values, and across rows the
+     sampled backdrop ranged from rgb(14,34,48) to rgb(14,37,54). At .85 that put
+     the worst row on 4.54:1 -- compliant by four hundredths, on a background that
+     moves. .9 holds about 5.05:1 everywhere measured. The visual difference
+     between .85 and .9 at 11px is not perceptible; the difference in whether the
+     claim survives a future change to the backdrop is the whole point.
+
+     The gain colour is far brighter against the dark panel and passed at every
+     value tried, so the failure only ever showed on a position that was DOWN --
+     the number most worth being able to read. Both sub-lines share one value;
+     one of them having been .75 is how the failure got in. */
   /* A ticker reaches four attributes and one cell below, and the quote link's
      BASE is a value the user pasted into Settings. Both are user text in an
      innerHTML: a ticker holding a quote closed `title="` and hung an event
@@ -4392,9 +4414,9 @@ function render(){
         ></a><small>${h.acct}${h.ccy?' · '+h.ccy:''}${h.manual?' · manual':''}</small></span></td>
       <td>${h.qty}</td>
       <td>${fmtNat(h.avg,c)}</td>
-      <td class="${pxCls}" style="font-weight:600">${fmtNat(price,c)}<br><span style="font-size:10.5px;opacity:.8">${arrow} ${(pxDiff>=0?'+':'')+pxDiff.toFixed(2)}%</span></td>
+      <td class="${pxCls}" style="font-weight:600">${fmtNat(price,c)}<br><span style="font-size:10.5px;opacity:.9">${arrow} ${(pxDiff>=0?'+':'')+pxDiff.toFixed(2)}%</span></td>
       <td>${fmtNat(val,c)}</td>
-      <td class="pl ${pnl>0?'up':pnl<0?'down':'flat'}">${signedNat(pnl,c)}<br><span style="font-size:11px;opacity:.8">${(pnl>=0?'+':'')+pct.toFixed(2)}%</span></td>
+      <td class="pl ${pnl>0?'up':pnl<0?'down':'flat'}">${signedNat(pnl,c)}<br><span style="font-size:11px;opacity:.9">${(pnl>=0?'+':'')+pct.toFixed(2)}%</span></td>
       <td style="white-space:nowrap"><button class="rm sell" title="Sell to cash" data-id="${h.id}">$</button><button class="rm" title="Remove from portfolio" data-id="${h.id}">✕</button></td>`;
     tb.appendChild(tr);
   });
@@ -6045,7 +6067,17 @@ $('sortSym').onclick=()=>{ sortBy='sym'; render() };
 $('sortPL').onclick=()=>{ sortBy='pl'; render() };
 $('addCash').onclick=()=>moveCash(1);
 $('rmCash').onclick=()=>moveCash(-1);
-$('settingsBtn').onclick=()=>{const d=$('drawer');d.classList.toggle('open');$('settingsBtn').setAttribute('aria-expanded',d.classList.contains('open'))};
+/* The year list is filled by renderYF(), which only runs once the Yearly tab has
+   been visited. Open Settings straight from the Dashboard on a fresh load and
+   the "Yearly starting balance" row offered an EMPTY dropdown with a figure
+   field beside it and nothing to attach it to. Filled on open rather than at
+   boot, so it also picks up a year added since the drawer was last shut. */
+$('settingsBtn').onclick=()=>{
+  const d=$('drawer'), opening=!d.classList.contains('open');
+  if(opening && typeof yfFillStartYear==='function') yfFillStartYear();
+  d.classList.toggle('open');
+  $('settingsBtn').setAttribute('aria-expanded',d.classList.contains('open'));
+};
 /* ============ selective reset ============
    One table, read by the checkbox list, the handler and the tests alike.
 

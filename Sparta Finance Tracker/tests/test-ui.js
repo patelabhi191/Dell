@@ -1896,35 +1896,76 @@ const section = t => console.log(`\n── ${t} ──`);
     const O = await open(browser, url, SEED);
     await O.page.click('#viewSeg button[data-view="dash"]');
     await O.page.waitForTimeout(600);     // past the panel transition (bug class 11)
-    const m = await O.page.evaluate(() => {
-      const rgb = s => { const x = String(s).match(/[\d.]+/g) || [0, 0, 0]; return x.slice(0, 3).map(Number); };
-      const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
-      const L = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-      const ratio = (a, b) => { const l1 = L(a), l2 = L(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
-      const bgOf = el => { let n = el;
-        while (n && n !== document.documentElement) {
-          const q = String(getComputedStyle(n).backgroundColor).match(/[\d.]+/g);
-          if (q && (q.length < 4 || Number(q[3]) > 0.9)) return rgb(getComputedStyle(n).backgroundColor);
-          n = n.parentElement; }
-        return [11, 15, 25]; };
+    /* THE BACKDROP IS SAMPLED, NOT DERIVED, and that is the whole point of this
+       section. The first version of it walked up the ancestors for a background
+       whose alpha was over .9 and, finding none -- every glass surface in this
+       app is translucent at about .03 -- fell through to a hardcoded page
+       colour. Against the page the loss colour reads 4.73:1 at opacity .8;
+       against the panel the row is really on it is 4.36:1. So the test PASSED a
+       value that fails, and a fix was landed on the strength of it.
+
+       Hiding only the glyphs and screenshotting the pixel underneath is ground
+       truth: it needs no model of the compositing order, and unlike a pure
+       compositor it also survives backdrop-filter, which blurs what is behind
+       rather than simply layering it. */
+    /* ONE full-page screenshot with every probed glyph hidden, then each span is
+       sampled at its PAGE-relative coordinate. Per-element clips were the first
+       attempt and they throw the moment a row sits below the fold, which it does
+       at any ordinary viewport; `fullPage` also sidesteps the smooth-scroll trap,
+       where a rect read straight after scrollIntoView() is still the pre-scroll
+       one. One capture, so the backdrop is read from a single consistent paint. */
+    const spans = await O.page.evaluate(() => {
       const out = [];
-      document.querySelectorAll('#hbody span[style*="opacity"]').forEach(el => {
-        const cs = getComputedStyle(el), op = Number(cs.opacity);
-        const fg = rgb(cs.color), bg = bgOf(el);
-        out.push({ text: (el.textContent || '').trim(), op,
-          eff: +ratio(fg.map((v, i) => v * op + bg[i] * (1 - op)), bg).toFixed(2),
-          down: !!el.closest('.down') });
+      document.querySelectorAll('#hbody span[style*="opacity"]').forEach((el, i) => {
+        const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+        el.setAttribute('data-plprobe', String(i));
+        out.push({ i, text: (el.textContent || '').trim(), op: Number(cs.opacity),
+          color: cs.color, down: !!el.closest('.down'),
+          x: Math.round(r.left + r.width / 2 + scrollX),
+          y: Math.round(r.top + r.height / 2 + scrollY) });
       });
       return out;
+    });
+    await O.page.evaluate(() => {
+      document.querySelectorAll('[data-plprobe]').forEach(e => { e.style.visibility = 'hidden' });
+    });
+    const sheet = (await O.page.screenshot({ fullPage: true })).toString('base64');
+    await O.page.evaluate(() => {
+      document.querySelectorAll('[data-plprobe]').forEach(e => { e.style.visibility = '' });
+    });
+    const bgs = await O.page.evaluate(async ({ b, pts }) => {
+      const img = new Image();
+      await new Promise(r => { img.onload = r; img.src = 'data:image/png;base64,' + b });
+      const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+      const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+      return pts.map(p => { const d = g.getImageData(p.x, p.y, 1, 1).data; return [d[0], d[1], d[2]] });
+    }, { b: sheet, pts: spans.map(sp => ({ x: sp.x, y: sp.y })) });
+    const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4) };
+    const L = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    const ratio = (a, b) => { const l1 = L(a), l2 = L(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05) };
+    const m = spans.map((sp, k) => {
+      const bg = bgs[k];
+      const fg = (sp.color.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+      const eff = fg.map((v, q) => v * sp.op + bg[q] * (1 - sp.op));
+      return { text: sp.text, op: sp.op, bg: `rgb(${bg.join(',')})`,
+        eff: +ratio(eff, bg).toFixed(2), down: sp.down };
     });
     /* The fixture has to CONTAIN a losing position, or the only check that
        could fail is not exercised at all (bug class 7). SEED's NVDA is held
        at 900 and marked at 845.25. */
     check(m.some(r => r.down), 'the fixture holds a position that is down, so the loss colour is on screen',
       JSON.stringify(m.map(r => r.down)));
+    /* The backdrop is asserted to be the PANEL and not the page, because that
+       is the error this section exists to prevent recurring: if a future change
+       makes the sampled pixel read as #071520 again, the ratios go comfortable
+       and meaningless, and this check says so before the next one passes. */
+    const PAGEISH = ['rgb(7,21,32)', 'rgb(11,15,25)'];   // the page, and the old hardcoded fallback
+    check(m.length > 0 && m.every(r => PAGEISH.indexOf(r.bg) < 0),
+      'the sampled backdrop is the glass panel, not the page behind it',
+      JSON.stringify([...new Set(m.map(r => r.bg))]));
     check(m.length > 0 && m.every(r => r.eff >= 4.5),
-      'every holdings sub-line composites to at least 4.5:1',
-      JSON.stringify(m.filter(r => r.eff < 4.5)));
+      'every holdings sub-line composites to at least 4.5:1 on what it is painted on',
+      JSON.stringify(m.map(r => ({ t: r.text.slice(0, 9), op: r.op, bg: r.bg, eff: r.eff }))));
     /* The two sub-lines are the same kind of thing and should not disagree --
        one of them having been .75 is how the failure got in. */
     check(new Set(m.map(r => r.op)).size === 1,

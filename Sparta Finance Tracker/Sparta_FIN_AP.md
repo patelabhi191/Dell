@@ -1901,6 +1901,39 @@ change, so it is kept green rather than skipped.
 
 ---
 
+### Measuring contrast on this app: sample the pixel, do not derive the background
+
+Every surface here is translucent glass over an animated decorative field, often with a
+`backdrop-filter`. That breaks the obvious instrument, and it broke it twice in one review:
+
+- **Walking the ancestors for an opaque background finds none.** Each glass layer is about `.03`
+  alpha, so a walk that waits for alpha > .9 falls through to the page. The holdings P/L sub-line
+  reads **6.86:1 undimmed and 4.73:1 at `opacity:.8`** against the page `#071520` — comfortable,
+  and wrong. The pixel actually under those glyphs is **rgb(19,32,43)**, the panel, where the same
+  ink is 6.15:1 and **4.36:1 at .8**, which fails. A fix was landed on the derived figure and a
+  test certified it, because the test derived the background the same way. It is now `.85`
+  (4.77:1), and `test-ui.js` **samples the painted pixel** with the glyphs hidden.
+- **`opacity` composites the whole element**, and `getComputedStyle().color` still reports the
+  full-strength value — which is exactly why an opacity failure reads as fine.
+- Sampling also survives `backdrop-filter`, which *blurs* what is behind rather than layering it,
+  so even a correct compositor gets that case wrong.
+- Two sampling traps of its own: a per-element `screenshot({clip})` throws as soon as the row is
+  below the fold, so take ONE `fullPage` capture and index it by page-relative coordinates; and the
+  app sets `scroll-behavior:smooth`, so a rect read straight after `scrollIntoView()` is still the
+  pre-scroll rect.
+- **The sampled backdrop is not one colour, so a thin margin is not a pass.** It is an animated
+  field under glass and it varies with time *and* position: ten samples of one pixel over four
+  seconds gave three distinct values, and across rows of the same table the backdrop ranged from
+  rgb(14,34,48) to rgb(14,37,54). That is enough to move a ratio by ~0.15. The holdings sub-lines
+  went to `.9` (~5.05:1) rather than the `.85` that also clears the bar, because `.85` left the
+  worst row on 4.54:1 — compliant by four hundredths, on a background that moves. **Anything
+  measured within ~0.2 of its bar on a glass surface should be treated as failing**, and a fix
+  should be chosen for headroom rather than for the smallest number that passes today.
+
+`tests/test-contrast.js` carries the other half of the instrument — folding ancestor backgrounds
+*and gradients* down, reading `background-clip:text` as ink rather than backdrop, and freezing
+transitions, which matters because a mid-transition read differs from the settled one.
+
 ## 10. Known Gaps / Next Steps (as of this handoff)
 
 - **Archives is built** (build 2026-10-01B): one card per sealed year, on iOS-style glass,
@@ -1921,6 +1954,42 @@ change, so it is kept green rather than skipped.
   back means clearing `sparta.arcDeleted` by hand. Before the tombstone the "undo" was
   accidental and destructive, so this is the better of the two, but a "restore deleted year"
   route is the obvious follow-up.
+- **Print is unusable.** There are **0 `@media print` rules** in 887. Chrome leaves "Background
+  graphics" off by default, so the backgrounds go and the text colours stay: `#EAF0FA` is
+  **1.14:1 on white paper**, `--text-faint` 1.08:1, `--text-dim` 1.10:1. A year's finances print
+  as a near-blank page on which the decorative `aria-hidden` artwork comes out *stronger than the
+  data*. See `screens/print/yearly-as-printed.png`. Roughly fifteen lines would fix it; not done
+  because nobody has said they print this.
+- **The Plan tab re-invents the dim ramp.** 14 hardcoded `color:rgba(255,255,255,a)` at **9
+  distinct alphas** (.3 .45 .46 .48 .5 .55 .6 .68 .7), none on the scale, giving 15 specs under
+  the bar — the worst at **2.28:1** (`.pl-yr`, `.pl-nt`, `.pl-bal` on a past row). 12 of the 15
+  are neutral whites whose highest requirement is alpha .71, so pointing them at `--text-dim`
+  (.74) would clear all twelve and delete the re-invented ramp. The other 3 are not reachable by
+  any ink change: `.pl-amt.inc` is capped by `.pl-row.past .pl-amt{opacity:.55}`, and two are
+  orange accents. **The root cause is the surfaces, not the inks** — Plan stacks three translucent
+  whites, so its rows composite to rgb(51,75,84) where every other tab's panel is rgb(21,34,44);
+  the same inks score 1.4–1.8 points higher on Dashboard glass. And one thing no ink change fixes:
+  AA and a three-step dim ramp cannot coexist on those surfaces, so the "past row" de-emphasis has
+  to be carried by the row background rather than by dimming text. That last part is a product
+  call.
+- **`#resetGo` ships `disabled` but looks pressable.** Only `.skeu-btn.is-off` is styled, and a
+  plain `.btn` takes no UA disabled styling because the rule sets `color` itself — so the app's most
+  destructive control reads as live while inert. Moving `.is-off{opacity:.45;cursor:not-allowed}`
+  out of the `.skeu-btn` scope covers both families; WCAG exempts inactive controls, so there is no
+  contrast cost.
+- **Five empty-state implementations for one role**: `.empty` 13.5px, `.np-empty` 12.5px,
+  `.chart-empty` 13px, `.pl-none` 12.5px on its own `rgba(255,255,255,.45)`, `.arc-none` 11.5px on
+  `--text-dim`, plus an ad-hoc inline one. Four sizes, four colours, four paddings — in the one
+  role a user sees when they have no data yet.
+- **Off-scale display figures on five tabs.** Archives is clean; Dashboard has 19 kinds,
+  Contributions 11, Yearly 13, Monthly 6, Plan 4 — hero values at 54/34/26/22/19/17/16px, and
+  `.btn` at 13px app-wide against nearest tokens 12.5/13.5. The §5a pass reached labels and
+  headings and never reached the figures.
+- **Three accent chips marginally under**: `.tag-fhsa` 4.07:1 on the Contributions panel (the
+  lightest surface in the app; the same chip is 4.67 on Dashboard), `.tag-exp` 4.49:1, and
+  `b#yfMoved` 4.15:1. A tint change for these was tried and reverted: only one of the four tags
+  ever fails, and even a .10 shift does not clear it, while the .075 that would empties the chip
+  and unpairs it from `.tag-tfsa`. All three are recorded in `test-contrast.js` with floors.
 - **A negative month is drawn below the x-axis and clips off the bottom of the viewBox**, on
   the Archives 12-month trend and on Monthly's own chart alike — `renderMEChart` clips it at
   exactly the same place. The axis floor was fixed (a net-negative category used to produce

@@ -13,7 +13,7 @@
 
    The load-bearing checks here are the ones about what SURVIVES a clear: wiping
    too much is the failure that cannot be undone.                             */
-const { serve, stub, launch } = require('./lib');
+const { serve, stub, launch, open, SEED } = require('./lib');
 const { APP } = require('./paths');
 
 let pass = 0, fail = 0;
@@ -156,6 +156,38 @@ const YEAR = 2026;
   await seed(); await clear(['yearly', 'monthly']);
   a = await snap();
   check(a.yf.length === 0, 'ticking both empties the ledger entirely', JSON.stringify(a.yf));
+
+  /* ── 2a. the drawer fills the year list when it opens ──────────────────── */
+  section('2a. the Yearly starting-balance row has a year to attach to');
+  /* The list is built by renderYF(), which only runs once the Yearly tab has been
+     visited. Opened from the Dashboard on a fresh load, the row offered an empty
+     dropdown beside a figure field -- so the figure had nothing to attach to.
+     A FRESH context is required: any earlier section in this file may have been
+     on Yearly already, which fills it and makes the check pass vacuously. */
+  {
+    const F2 = await open(browser, url, SEED);
+    await F2.page.click('#viewSeg button[data-view="dash"]');
+    await F2.page.waitForTimeout(300);
+    const pre = await F2.page.evaluate(() => ({
+      onYearly: !!document.querySelector('#viewSeg button.active[data-view="yearly"]'),
+      opts: document.querySelectorAll('#yfStartYear option').length }));
+    check(!pre.onYearly && pre.opts === 0,
+      'on a fresh load from the Dashboard the list is genuinely empty, so the check is live',
+      JSON.stringify(pre));
+    await F2.page.click('#settingsBtn');
+    await F2.page.waitForTimeout(300);
+    const opened = await F2.page.evaluate(() => ({
+      open: document.getElementById('drawer').classList.contains('open'),
+      opts: [...document.querySelectorAll('#yfStartYear option')].map(o => o.value),
+      selected: document.getElementById('yfStartYear').value }));
+    check(opened.open && opened.opts.length > 0,
+      'opening Settings fills it rather than leaving the figure field orphaned',
+      JSON.stringify(opened.opts));
+    check(opened.opts.indexOf(String(new Date().getFullYear())) > -1,
+      '...and the current year is among the options', opened.selected);
+    check(F2.errs.length === 0, 'no page errors', F2.errs.join(' | '));
+    await F2.ctx.close();
+  }
 
   // ── 3. what a clear must never touch ─────────────────────────────────────
   section('2b. the checklist mirrors the tab bar, on one row');
