@@ -388,6 +388,49 @@ const YEAR = 2026;
     'and the TOTAL row, which had its own copy of the test, agrees too',
     JSON.stringify([grid.totRow[1], grid.grand]));
 
+  /* ── 14. an imported refund can still be edited ───────────────────────────
+     meSaveTx refused anything at or below zero, and meStartEdit hands a
+     non-payment row its stored amount back unchanged -- so opening the pencil
+     on a refund put -90 in the field and Update then rejected it. The row was
+     visible and untouchable: its description, category, contributor and bill
+     could not be corrected. Yearly writes negatives to this same ledger.     */
+  section('14. an imported refund is editable, and keeps its sign');
+  const refund = await page.evaluate(([y]) => {
+    load([
+      { id: 'rb', type: 'expense', date: `${y}-05-20`, amt: 500, desc: 'May card', cat: 'Credit Bill', who: 'ABI', tab: 'yf' },
+      { id: 'rf', type: 'expense', date: `${y}-05-09`, amt: -90, desc: 'RETURN LOBLAWS', cat: 'Groceries', who: 'ABI', tab: 'me', src: 'may.csv' }]);
+    meMonth = `${y}-05`; renderME();
+    meStartEdit('rf');
+    const handedBack = document.getElementById('meAmt').value;   // the PRECONDITION
+    document.getElementById('meDesc').value = 'Loblaws return, corrected';
+    const said = [];
+    const orig = window.toast; window.toast = m => said.push(m);
+    meSaveTx();
+    // and zero is still refused -- the guard was loosened, not removed
+    document.getElementById('meAmt').value = '0';
+    document.getElementById('meCat').value = 'Groceries';
+    meSaveTx();
+    const zeroSaid = said.slice(-1)[0];
+    window.toast = orig;
+    const row = (state.yf.txns || []).find(t => t.id === 'rf');
+    return { handedBack, said: said[0], zeroSaid, rows: state.yf.txns.length,
+             desc: row && row.desc, amt: row && row.amt, cat: row && row.cat,
+             total: document.getElementById('meTotal').textContent };
+  }, [YEAR]);
+  // Without this the section would pass against a build that handed back +90.
+  check(refund.handedBack === '-90',
+    'precondition: the pencil really does hand a refund back as a negative', refund.handedBack);
+  check(refund.said === 'Expense updated',
+    'the edit is accepted rather than refused', JSON.stringify(refund.said));
+  check(refund.desc === 'Loblaws return, corrected' && refund.amt === -90,
+    "the description is corrected and the refund keeps its sign",
+    JSON.stringify([refund.desc, refund.amt]));
+  check(refund.zeroSaid === 'Enter an amount' && refund.rows === 2,
+    'a row of zero money is still refused, and nothing was added',
+    JSON.stringify([refund.zeroSaid, refund.rows]));
+  check(refund.total === '$410.00',
+    'the month still reads the bill less the refund', refund.total);
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nBILL PAYMENT: ${pass} passed, ${fail} failed`);

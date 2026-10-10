@@ -8357,7 +8357,19 @@ function meSaveTx(){
   const amt=parseFloat($('meAmt').value),
         cat=$('meCat').value, desc=$('meDesc').value.trim(), who=$('meWho').value||'ABI',
         allot=($('meAllot')?$('meAllot').value:'')||'';
-  if(!(amt>0)){ toast('Enter an amount greater than 0'); return }
+  /* THE AMOUNT IS SIGNED. A refund is an ordinary negative row -- that is how
+     the importer files one, and it is what makes it come back out of the
+     category it was charged to -- so refusing anything at or below zero here
+     left those rows unreachable. The pencil handed the stored -90 straight back
+     into this field and Update was then refused, which meant the description,
+     category, contributor and bill of an imported refund could not be corrected
+     at all: a row the user could see and not touch. Yearly's yfSaveTx writes to
+     the same ledger and has always accepted a negative, so the two tabs
+     disagreed about what their shared ledger may hold.
+     Zero is still refused -- a row of no money says nothing -- and a non-finite
+     figure with it, rather than leaning on the number field's own sanitising to
+     be the only thing standing between $Infinity and the month total. */
+  if(!isFinite(amt)||amt===0){ toast('Enter an amount'); return }
   // at least one is required: with neither there is nothing saying what this
   // money was, and the row would vanish from every breakdown
   if(!allot&&!cat){ toast('Pick a category, or a bill to allot this to'); return }
