@@ -7417,12 +7417,12 @@ function yfPlanned(cat){ const p=state.yf.planned[state.yfYear]||{}; return p[ca
    already, so an allocation must NEVER add to a total.
 
    ON YEARLY IT ADDS TO NOTHING AT ALL -- not to its own category either, even
-   when it carries one. Every allocation is Monthly's (`tab:'me'`, SS0) and
+   when it carries one. Every allocation is Monthly's (`tab:'me'`, section 0) and
    yfTxns() drops Monthly's rows before these two functions ever see them, so
    neither term below can contain one. A $1,991 statement itemised into $33 of
    Transit therefore reads Credit Bill $1,991 and Transit $0 here, and the $33
-   shows on Monthly, which is the tab that asks about habits. test-bills.js SS22
-   pins exactly that (`grocery === 0`, `cb === 2000`) and SS27 pins the trip case.
+   shows on Monthly, which is the tab that asks about habits. test-bills.js section 22
+   pins exactly that (`grocery === 0`, `cb === 2000`) and section 27 pins the trip case.
 
      spend       = sum of expenses that are NOT allocations
      actual(cat) = everything filed under cat
@@ -8884,7 +8884,7 @@ function renderME(){
      meFillTxCat builds its options from `t.tab==='me'` rows alone -- picking
      "Health/medical" there asks for Monthly's Health/medical -- but this test
      then matched the bare NAME across the whole shared ledger, and both tabs
-     may legitimately hold that name (SS6: a name on both lists is still two
+     may legitimately hold that name (section 6: a name on both lists is still two
      different categories). So filtering to a Monthly habit also pulled in the
      Yearly bill that happened to share its name: a $400 dentist bill appearing
      under a category it is not in. Which bills leaked was decided purely by

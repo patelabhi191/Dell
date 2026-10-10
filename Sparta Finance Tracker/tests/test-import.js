@@ -343,7 +343,7 @@ const CSV_NEG = ['Date,Description,Amount',
     JSON.stringify(picker.dates));
   const bad = picker.months.filter(m => !/^\d{4}-(0[1-9]|1[0-2])$/.test(m));
   check(bad.length === 0, 'no impossible month reached the month picker', JSON.stringify(bad));
-  // The mislabelling is pinned as a unit check in test-dates SS5 rather than
+  // The mislabelling is pinned as a unit check in test-dates section 5 rather than
   // here: "January 2027" only COLLIDES with a real entry if 2027-01 is also in
   // the list, which it is not twelve months out, so a duplicate-label assertion
   // on this fixture would pass against the broken build and prove nothing.

@@ -433,7 +433,7 @@ const YEAR = 2026;
 
   /* ── 15. the month's "itemised" figure is the charges ─────────────────────
      It summed every row carrying an allot, payments included, so it reported
-     the NET -- the very figure SS0 retired from the bill's own line, for the
+     the NET -- the very figure section 0 retired from the bill's own line, for the
      reason given there. The bill beside it says $1,250 Spend and $500 Bill
      Paid; the month sub-line said $750 itemised, agreeing with neither. And
      being gated on `itemised>0` it vanished exactly when the payments outran
@@ -479,7 +479,7 @@ const YEAR = 2026;
   /* ── 16. the table filter means MONTHLY's category ────────────────────────
      meFillTxCat builds its options from Monthly's rows alone, so picking
      "Health/medical" asks for Monthly's Health/medical -- but the filter then
-     matched the bare name across the shared ledger, and SS6 is explicit that a
+     matched the bare name across the shared ledger, and section 6 is explicit that a
      name on both lists is still two different categories. A Yearly bill that
      happened to share the name was pulled into the filtered table, and which
      bills leaked was decided by naming alone: filter Groceries and the Credit
