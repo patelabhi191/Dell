@@ -8743,8 +8743,22 @@ function renderME(){
   const spend=txns.filter(t=>!t.allot&&!meIsNonSpend(t.cat));
   const total=spend.reduce((s,t)=>s+t.amt,0);
   $('meTotal').textContent=meMoney(total);
-  const itemised=txns.reduce((s,t)=>s+(t.allot?t.amt:0),0);
-  $('meCount').textContent=txns.length+(itemised>0?' \u00b7 '+meMoney(itemised)+' itemised':'');
+  /* WHAT HAS BEEN ITEMISED IS THE CHARGES, not the charges netted against the
+     payments. This summed every row carrying an allot, payments included, so a
+     month of $1,250 of charges less a $500 payment reported "$750 itemised" --
+     a figure nothing else on screen agrees with. The bill's own note keeps
+     those apart on purpose (yfBillSpend $1,250 Spend, yfBillPaid $500 Bill
+     Paid) because netting them only reconciles if you also hold the previous
+     month's statement in your head.
+     It had inherited the retired Itemised figure's other fault with it: the
+     test was `itemised>0`, so a month whose payments outweighed its charges
+     printed no line at all, and the bills least accounted for were the ones
+     saying nothing. The test is now "is there anything filed here", so a total
+     that comes out below zero -- a month that was mostly returns -- still
+     reports, signed. */
+  const allotted=txns.filter(t=>t.allot&&!meIsNonSpend(t.cat));
+  const itemised=allotted.reduce((s,t)=>s+t.amt,0);
+  $('meCount').textContent=txns.length+(allotted.length?' \u00b7 '+meMoney(itemised)+' itemised':'');
   $('meAvg').textContent='avg '+meMoney(spend.length?total/spend.length:0);
 
   // previous month comparison

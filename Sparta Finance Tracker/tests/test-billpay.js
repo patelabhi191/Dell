@@ -431,6 +431,51 @@ const YEAR = 2026;
   check(refund.total === '$410.00',
     'the month still reads the bill less the refund', refund.total);
 
+  /* ── 15. the month's "itemised" figure is the charges ─────────────────────
+     It summed every row carrying an allot, payments included, so it reported
+     the NET -- the very figure SS0 retired from the bill's own line, for the
+     reason given there. The bill beside it says $1,250 Spend and $500 Bill
+     Paid; the month sub-line said $750 itemised, agreeing with neither. And
+     being gated on `itemised>0` it vanished exactly when the payments outran
+     the charges, so the least accounted-for months said nothing at all.      */
+  section('15. "itemised" reports the charges, and reports them when negative');
+  const item = await page.evaluate(([y]) => {
+    const read = () => document.getElementById('meCount').textContent;
+    load([
+      { id: 'ab', type: 'expense', date: `${y}-08-20`, amt: 750, desc: 'Aug statement', cat: 'Credit Bill', who: 'ABI', tab: 'yf' },
+      { id: 'ac', type: 'expense', date: `${y}-08-02`, amt: 1250, desc: 'Charges', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'ab', allotM: `${y}-08` },
+      { id: 'ap', type: 'expense', date: `${y}-08-03`, amt: -500, desc: 'PAYMENT THANK YOU', cat: 'Bill Payment', who: 'ABI', tab: 'me', allot: 'ab', allotM: `${y}-08` }]);
+    meMonth = `${y}-08`; renderME();
+    const bill = (state.yf.txns || []).find(t => t.id === 'ab');
+    const aug = { line: read(), spend: yfBillSpend(bill), paid: yfBillPaid(bill) };
+    // now a month the payments outran: $200 charged, $800 cleared
+    load([
+      { id: 'sb', type: 'expense', date: `${y}-09-20`, amt: 900, desc: 'Sep statement', cat: 'Credit Bill', who: 'ABI', tab: 'yf' },
+      { id: 'sc', type: 'expense', date: `${y}-09-02`, amt: 200, desc: 'Charges', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'sb', allotM: `${y}-09` },
+      { id: 'sp', type: 'expense', date: `${y}-09-03`, amt: -800, desc: 'AUTOPAY', cat: 'Bill Payment', who: 'ABI', tab: 'me', allot: 'sb', allotM: `${y}-09` }]);
+    meMonth = `${y}-09`; renderME();
+    const sep = { line: read(), net: 200 - 800 };
+    // and a month whose itemised rows net below zero: a statement of returns
+    load([
+      { id: 'rb2', type: 'expense', date: `${y}-10-20`, amt: 300, desc: 'Oct statement', cat: 'Credit Bill', who: 'ABI', tab: 'yf' },
+      { id: 'rc', type: 'expense', date: `${y}-10-02`, amt: 60, desc: 'Charge', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'rb2', allotM: `${y}-10` },
+      { id: 'rr', type: 'expense', date: `${y}-10-04`, amt: -160, desc: 'RETURN', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'rb2', allotM: `${y}-10` }]);
+    meMonth = `${y}-10`; renderME();
+    return { aug, sep, oct: read() };
+  }, [YEAR]);
+  // Precondition: the fixture really does hold a payment that nets the month down.
+  check(item.aug.spend === 1250 && item.aug.paid === 500,
+    'precondition: the bill itself reports $1,250 charged and $500 cleared',
+    JSON.stringify([item.aug.spend, item.aug.paid]));
+  check(/\$1,250\.00 itemised/.test(item.aug.line),
+    'the month agrees with the bill rather than reporting the $750 net', item.aug.line);
+  check(/\$200\.00 itemised/.test(item.sep.line),
+    'a month whose payments outran its charges still reports what was itemised',
+    item.sep.line);
+  check(/-\$100\.00 itemised/.test(item.oct),
+    'and itemised rows that genuinely net below zero print signed, not nothing',
+    item.oct);
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nBILL PAYMENT: ${pass} passed, ${fail} failed`);
