@@ -5728,13 +5728,23 @@ function renderSells(){
     b.pnl+=proceeds-cost; b.cost+=cost; });
   const ccys=Object.keys(by).sort();
   const lines=(f)=>ccys.map(c=>f(by[c],c)).join('');
+  /* NO OPACITY ON THE CURRENCY SUFFIX. It inherits the row's own up/down
+     colour, and `opacity` composites the whole element -- so on a LOSING
+     return the suffix was the loss red at .6 over glass, which samples at
+     2.83:1. The gain teal passed either way, which is why this only ever
+     showed on a negative return. .85 reaches 4.40 and .9 only 4.78, both
+     too close to the 4.5 bar for a backdrop that moves; at full strength it
+     is 5.62, and the suffix still reads as one because `small` and the
+     weight already say so. Same fault and same reasoning as the holdings
+     sub-lines. Measured by sampling the painted pixel, because
+     getComputedStyle().color reports full strength under opacity. */
   $('sellSum').innerHTML = !rows.length ? '' :
     `<div><span class="k">Realised P / L</span>${lines((b,c)=>
       `<span class="v ${b.pnl>0?'up':b.pnl<0?'down':'flat'}">${signedNat(b.pnl,c)}</span>`)}</div>`+
     `<div><span class="k">Return on cost</span>${lines((b,c)=>
       `<span class="v ${b.pnl>0?'up':b.pnl<0?'down':'flat'}">${
         b.cost>0?(b.pnl>=0?'+':'−')+Math.abs(b.pnl/b.cost*100).toFixed(2)+'%':'—'
-      }<small style="font-weight:600;opacity:.6"> ${esc(c)}</small></span>`)}</div>`+
+      }<small style="font-weight:600"> ${esc(c)}</small></span>`)}</div>`+
     '';
 }
 
@@ -8135,9 +8145,17 @@ const meMonthOf=t=>t.allot?(t.allotM||(t.date||'').slice(0,7)):(t.date||'').slic
 // ordinary row — so say so. `src` is whatever statement the row was imported
 // from, typed in at import time; both are user text, so both are escaped.
 const tagEsc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+/* NEITHER TAG CARRIES AN OPACITY, and that is the point: they are one
+   component, and the source tag used to be a second rendering of it.
+   .tag-other's colour is already --text-dim, an alpha ink at .55, so the
+   .75 the source tag carried multiplied down to about .41 effective and
+   sampled at 3.52:1 on Monthly's glass. There is no value to tune it to --
+   even .9 reaches only 4.47, under the 4.5 bar -- and none is needed: the
+   tag is set apart by its pill, its border and 10px type, not by being
+   faint. The bill tag beside it never had one and samples 4.93-5.20. */
 const txTags=t=>(t.allot&&yfBillOf(t)?'<span class="acct-tag tag-other" style="margin:0 0 0 6px">\u2192 '+
     tagEsc(yfBillLabel(yfBillOf(t)))+'</span>':'')+
-  (t.src?'<span class="acct-tag tag-other" style="margin:0 0 0 6px;opacity:.75">'+
+  (t.src?'<span class="acct-tag tag-other" style="margin:0 0 0 6px">'+
     tagEsc(t.src)+'</span>':'');
 // an allocation has no category of its own; a dash reads better than a blank cell
 const txCat=t=>t.cat?tagEsc(t.cat):'\u2014';
@@ -8674,11 +8692,14 @@ function meRenderPayRow(tb,e){
     r.className='me-paykid';
     // no "-> bill" tag down here: the line above already says which bill these
     // cleared, and repeating it on every row is noise
+    /* The source tag is at full strength for the reason given on txTags: the
+       .75 it used to carry stacked on an ink that is already alpha .55 and
+       sampled at 3.53:1 here. */
     r.innerHTML=`<td style="text-align:left">${txDate(t)}</td>
       <td style="text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis">${(t.desc||'').replace(/</g,'&lt;')}</td>
       <td style="font-weight:600">${meMoney(t.amt)}</td>
       <td style="text-align:left">${txCat(t)}${t.src
-        ? '<span class="acct-tag tag-other" style="margin:0 0 0 6px;opacity:.75">'+tagEsc(t.src)+'</span>' : ''}</td>
+        ? '<span class="acct-tag tag-other" style="margin:0 0 0 6px">'+tagEsc(t.src)+'</span>' : ''}</td>
       <td style="text-align:left"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
       <td style="white-space:nowrap"><button class="yf-edit" data-meedit="${t.id}" title="Edit">\u270e</button><button class="rm" data-medel="${t.id}" title="Delete">\u2715</button></td>`;
     tb.appendChild(r);
@@ -9451,11 +9472,20 @@ function plListHTML(seg){
     const past = it.date < today;
     if(!past && !marked){ marked=true; out+='<div class="pl-today"><span>Today</span><i></i></div>' }
     const [y,m,d]=it.date.split('-');
+    /* "Untitled" is dimmed to .9 and not .5. It is a PLACEHOLDER rather than
+       the user's own text, so the dimming is worth keeping -- but on #fff over
+       the Plan aurora .5 samples at 2.75:1, where .9 holds 5.25:1 and still
+       reads as secondary.
+       A PAST row is not fixed by this and cannot be from here: CSS gives
+       `.pl-row.past .pl-nm` rgba(255,255,255,.5), which halves the ink before
+       any opacity applies. An untitled past row sits at 2.87:1 and a NAMED one
+       at 2.94:1 -- so that is the whole past-row treatment, not this
+       placeholder, and it belongs to the style block. */
     out+='<div class="pl-row'+(past?' past':'')+'" data-id="'+it.id+'">'+
       '<div class="pl-date"><span class="pl-day">'+d+' '+(PL_MON[+m-1]||'')+'</span>'+
         '<span class="pl-yr">'+y+'</span></div>'+
       '<div><div class="pl-nmrow">'+(past?PL_CLOCK:'')+'<span class="pl-nm">'+
-        (plEsc(it.name)||'<span style="opacity:.5">Untitled</span>')+'</span></div>'+
+        (plEsc(it.name)||'<span style="opacity:.9">Untitled</span>')+'</span></div>'+
         (it.notes?'<div class="pl-nt">'+plEsc(it.notes)+'</div>':'')+'</div>'+
       '<div><div class="pl-amt '+(it.type==='income'?'inc':'exp')+'">'+
         (it.type==='income'?'+':'−')+plMoney(it.amt)+'</div>'+
