@@ -6929,9 +6929,16 @@ function renderContribChart(){
   const sumEl=$('cContribSummary');
   if(sumEl){
     const fmtY=who=>fmtCADterm(contributedBy('TFSA',state.cYear,who)+contributedBy('FHSA',state.cYear,who));
+    /* These figures are for the year being VIEWED, which the selector above
+       can point anywhere back to 2009 -- so "This year" was a claim about the
+       calendar every time it was not pointed at the calendar's year. Looking at
+       2024 read "This year: ABI C$1,111.00" beside a hero card and a chart both
+       labelled 2024. Name the year it is actually summing, and keep the wording
+       for the year that really is this one. */
+    const per=state.cYear===YEAR?'This year':state.cYear;
     sumEl.textContent=state.cWho==='ALL'
-      ? `This year: ABI ${fmtY('ABI')} · POO ${fmtY('POO')}`
-      : `This year: ${state.cWho} ${fmtY(state.cWho)}`;
+      ? `${per}: ABI ${fmtY('ABI')} · POO ${fmtY('POO')}`
+      : `${per}: ${state.cWho} ${fmtY(state.cWho)}`;
   }
   const xs=years.slice(-6);                       // keep it readable
   const zeros=xs.map(()=>0);

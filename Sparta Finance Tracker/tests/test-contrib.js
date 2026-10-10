@@ -297,6 +297,40 @@ const YEAR = new Date().getFullYear();
     await ctx.close();
   }
 
+  /* ── Check N+2: the chart summary names the year it is summing ─────────────
+     The line is built from state.cYear, which the year selector can point
+     anywhere back to 2009, but it always said "This year" -- so viewing 2024
+     read "This year: ABI C$1,111.00" beside a hero card and a chart both
+     labelled 2024.                                                          */
+  console.log('\n── Check N+2: the contribution summary names the viewed year ──');
+  {
+    const { ctx, page, errs } = await open(browser, url, {});
+    const r = await page.evaluate(y => {
+      state.contribs = [
+        { id: 'p1', t: Date.UTC(y - 2, 0, 8), acct: 'TFSA', amt: 1111, y: y - 2, cad: true, who: 'ABI' },
+        { id: 'p2', t: Date.UTC(y, 0, 8), acct: 'TFSA', amt: 2222, y, cad: true, who: 'ABI' }];
+      state.cWho = 'ALL';
+      state.cYear = y; state.logYear = String(y); render();
+      const now = { line: document.getElementById('cContribSummary').textContent,
+                    hero: document.getElementById('cTfsaAmt').textContent };
+      state.cYear = y - 2; state.logYear = String(y - 2); render();
+      const past = { line: document.getElementById('cContribSummary').textContent,
+                     hero: document.getElementById('cTfsaAmt').textContent };
+      return { now, past, y };
+    }, YEAR);
+    // Precondition: the two years really do carry different figures, or a label
+    // naming the wrong one could not be told from a label naming the right one.
+    check(/1,111/.test(r.past.hero) && /2,222/.test(r.now.hero),
+      'precondition: the viewed year really changed the figures',
+      JSON.stringify([r.now.hero, r.past.hero]));
+    check(/^This year:/.test(r.now.line),
+      'the current year still reads "This year"', r.now.line);
+    check(r.past.line.startsWith(String(r.y - 2) + ':') && /1,111/.test(r.past.line),
+      'a past year is named rather than called this one', r.past.line);
+    check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
+    await ctx.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nCONTRIB FEATURE VERIFICATION: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
