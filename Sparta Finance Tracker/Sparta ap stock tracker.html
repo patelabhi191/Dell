@@ -8957,7 +8957,14 @@ function meHandleCSV(text){
       else amt=NaN;
     }
     else { const v=numify(r[cAmt]); amt=isNaN(v)?NaN:(signMode==='neg'?-v:v); }
-    if(isNaN(amt)||amt===0) return;                      // only blanks and zeros are skipped
+    /* Blanks, zeros -- and a figure that is not a finite number. numify runs
+       parseFloat, which answers Infinity for anything past 1.8e308, and
+       isNaN(Infinity) is false, so such a row sailed through to be written into
+       the ledger. JSON.stringify then stores it as null and fin() reads it back
+       as 0, so the row ended up silently worth nothing while the preview had
+       shown "$Infinity" and the over-allotment toast quoted it. Refusing the
+       row says so instead. */
+    if(!isFinite(amt)||amt===0) return;
     // Cards file a payment whichever way suits them -- some as a credit, some as a
     // positive line. It always comes OFF the bill, so the sign is forced rather
     // than trusted; a positive one sailing through double-counted the statement.
@@ -8975,12 +8982,37 @@ function meHandleCSV(text){
   if(!mePending.length){ toast(`Nothing new to import${skippedDup?` — all ${skippedDup} rows are already in the ledger`:''}`); $('mePreviewWrap').style.display='none'; return }
   meRenderPreview(skippedTr,skippedDup,restoring,payments);
 }
+/* A LEDGER DATE HAS TO BE A REAL DATE. meParseDate used to assemble the string
+   out of whatever the columns held and check nothing, so a statement exported
+   DD/MM/YYYY -- the ordinary format outside North America, and the assumption
+   below admits as much -- turned 13/07/2026 into "2026-13-07", and a plain
+   31-12-2026 into "2026-31-12". Nothing downstream refuses such a row:
+
+     - meMonthOptions offered a "2026-13" whose LABEL reads "January 2027",
+       because meMonthName hands 13 to new Date(y, 12, 1). A phantom month in
+       the picker, sorting beside the real one it shadows.
+     - the list printed the impossible date in its own date column.
+     - meMonthlyByCat dropped the row, month 13 failing its 0..11 test -- so the
+       money counted in the month total and was missing from the grid under it.
+
+   The month is therefore range-checked on both branches, and a first field past
+   12 is read the only way round it CAN be read, since no month is 13. A pair
+   that works neither way returns null, which is the answer this function
+   already gives for junk and which makes the importer skip the row.
+   The day is range-checked but not calendar-checked: a 31 April moves no
+   figure, while an impossible MONTH moved several. */
+const meYMD=(y,m,d)=>{
+  const mi=+m, di=+d;
+  if(!(mi>=1&&mi<=12)||!(di>=1&&di<=31)) return null;
+  return `${y}-${String(mi).padStart(2,'0')}-${String(di).padStart(2,'0')}`;
+};
 function meParseDate(v){
   const s=String(v||'').trim(); if(!s) return null;
   let m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
-  if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
-  m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);       // assume MM/DD/YYYY (North American cards)
-  if(m) return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+  if(m) return meYMD(m[1],m[2],m[3]);
+  m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);       // MM/DD/YYYY for North American cards...
+  if(m) return +m[1]>12 ? meYMD(m[3],m[2],m[1])                // ...unless the first field cannot be a month
+                        : meYMD(m[3],m[1],m[2]);
   const d=new Date(s);
   return isNaN(d.getTime())?null:isoLocal(d);
 }

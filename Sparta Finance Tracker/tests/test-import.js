@@ -290,6 +290,67 @@ const CSV_NEG = ['Date,Description,Amount',
   check(after.inList !== before, `clicking "${firstCat}" toggles it`, `${before} → ${after.inList}`);
   check(after.open, 'and the popover stays open instead of vanishing');
 
+  /* ── 8. a statement the parser should refuse rather than mangle ───────────
+     The import is the one place data from outside reaches this app, and two
+     fields were taken on trust. A DD/MM/YYYY date -- the ordinary format
+     outside North America -- became "2026-13-07", which then reached the month
+     picker as an option labelled "January 2027" and was dropped by the category
+     grid for failing its 0..11 test, so the money sat in the month total and
+     nowhere in the grid under it. And numify answers Infinity for anything past
+     1.8e308, which isNaN() does not catch, so such a row reached the ledger to
+     be stored as null and read back as 0.                                   */
+  section('8. the importer refuses a date and an amount it cannot use');
+  await go('monthly');
+  await page.evaluate(() => { meMonth = '2026-07'; mePending = []; renderME(); });
+  await feed(['Date,Description,Amount',
+    '13/07/2026,LOBLAWS DOWNTOWN,41.20',      // 13 cannot be a month
+    '31-12-2026,ROGERS WIRELESS,85.00',
+    '2026-07-09,OVERFLOW ROW,1e999',          // parseFloat -> Infinity
+    '2026-13-07,IMPOSSIBLE MONTH,12.00',
+    '2026-07-10,TIM HORTONS,6.45'].join('\n'), 'odd.csv');
+  const odd = await page.evaluate(() => ({
+    rows: mePending.map(p => ({ d: p.date, n: p.desc, a: p.amt })),
+    months: [...document.getElementById('meMonthSel').options].map(o => o.value),
+  }));
+  // Precondition: the file really did reach the previewer, or nothing below holds.
+  check(odd.rows.length > 0, 'precondition: the file parsed and produced a preview',
+    JSON.stringify(odd.rows.length));
+  const by = n => odd.rows.find(r => new RegExp(n).test(r.n));
+  check(by('LOBLAWS') && by('LOBLAWS').d === '2026-07-13',
+    'a DD/MM/YYYY row lands on the 13th of July, not in month 13',
+    JSON.stringify(by('LOBLAWS')));
+  check(by('ROGERS') && by('ROGERS').d === '2026-12-31',
+    'and a dashed DD-MM-YYYY row lands on the last of December',
+    JSON.stringify(by('ROGERS')));
+  check(!by('OVERFLOW'), 'the row whose amount is not a finite number is skipped',
+    JSON.stringify(by('OVERFLOW')));
+  check(!by('IMPOSSIBLE'), 'so is the row whose month does not exist',
+    JSON.stringify(by('IMPOSSIBLE')));
+  check(by('TIM HORTONS') && by('TIM HORTONS').a === 6.45,
+    'and the ordinary rows beside them are imported untouched',
+    JSON.stringify(by('TIM HORTONS')));
+  /* The picker is the consequence worth pinning, and it only fills from rows
+     that are actually IN the ledger -- so this has to be read after the commit.
+     Checked before it, the assertion passes against the broken build too. */
+  await commit();
+  const picker = await page.evaluate(() => ({
+    months: [...document.getElementById('meMonthSel').options].map(o => o.value),
+    labels: [...document.getElementById('meMonthSel').options].map(o => o.textContent),
+    dates: (state.yf.txns || []).filter(t => t.tab === 'me').map(t => t.date),
+  }));
+  check(picker.dates.length >= 3,
+    'precondition: the imported rows really are in the ledger now',
+    JSON.stringify(picker.dates));
+  const bad = picker.months.filter(m => !/^\d{4}-(0[1-9]|1[0-2])$/.test(m));
+  check(bad.length === 0, 'no impossible month reached the month picker', JSON.stringify(bad));
+  // The mislabelling is pinned as a unit check in test-dates SS5 rather than
+  // here: "January 2027" only COLLIDES with a real entry if 2027-01 is also in
+  // the list, which it is not twelve months out, so a duplicate-label assertion
+  // on this fixture would pass against the broken build and prove nothing.
+  check(!picker.months.includes('2026-13'),
+    'and specifically not the 2026-13 that labelled itself January 2027',
+    JSON.stringify(picker.months.slice(0, 4)));
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nIMPORT: ${pass} passed, ${fail} failed`);

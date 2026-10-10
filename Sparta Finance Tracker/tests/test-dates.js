@@ -97,6 +97,38 @@ const fakeClock = ms => `(()=>{const R=Date;let cur=${ms};
   check(parsed.slashes === '2026-01-05', 'CSV: MM/DD/YYYY parses correctly', parsed.slashes);
   check(parsed.wordy === '2026-01-05', 'CSV: worded date does not shift a day', parsed.wordy);
   check(parsed.junk === null, 'CSV: unparseable date returns null', String(parsed.junk));
+
+  /* An impossible month must never reach the ledger. The parser assembled the
+     string from whatever the columns held, so a DD/MM/YYYY statement -- the
+     ordinary format outside North America -- produced "2026-13-07", and that
+     month then reached the month picker as an option LABELLED "January 2027"
+     (meMonthName hands 13 to new Date(y,12,1)), shadowing a real month, while
+     meMonthlyByCat dropped the row for failing its 0..11 test. The money was
+     in the month total and missing from the grid under it.                  */
+  const odd = await page.evaluate(() => ({
+    ddmm: meParseDate('13/07/2026'),          // 13 cannot be a month
+    ddmmDash: meParseDate('31-12-2026'),
+    ambiguous: meParseDate('05/06/2026'),     // still read the documented way
+    isoBadMonth: meParseDate('2026-13-07'),
+    isoDayZero: meParseDate('2026-07-00'),
+    monthZero: meParseDate('00/15/2026'),
+    bothPast12: meParseDate('13/32/2026'),
+    label13: meMonthName('2026-13'),          // the PRECONDITION for all of it
+  }));
+  // Nothing below means anything unless an impossible month really does mislabel
+  // a picker entry -- that is the consequence the range check exists to prevent.
+  check(/2027/.test(odd.label13),
+    'precondition: month 13 really does label itself as the next January', odd.label13);
+  check(odd.ddmm === '2026-07-13',
+    'CSV: a first field past 12 is read as a day, not an impossible month', String(odd.ddmm));
+  check(odd.ddmmDash === '2026-12-31',
+    'CSV: and the same with dashes — 31-12-2026 is the last of December', String(odd.ddmmDash));
+  check(odd.ambiguous === '2026-05-06',
+    'CSV: a genuinely ambiguous pair keeps the North American reading', String(odd.ambiguous));
+  check(odd.isoBadMonth === null && odd.isoDayZero === null && odd.monthZero === null
+        && odd.bothPast12 === null,
+    'CSV: a date that is not a real date is refused, so the importer skips the row',
+    JSON.stringify([odd.isoBadMonth, odd.isoDayZero, odd.monthZero, odd.bothPast12]));
   await ctx.close();
 
   // ── 6. fresh load on Jan 1 2027: does everything read 2027? ──
