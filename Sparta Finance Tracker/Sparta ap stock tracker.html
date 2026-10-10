@@ -8636,7 +8636,17 @@ function renderMEMatrix(){
   const cats=Object.keys(data).sort((a,b)=>
     data[b].reduce((s,v)=>s+v,0)-data[a].reduce((s,v)=>s+v,0));
   $('meMatrixHead').innerHTML='<th>Category</th>'+YF_MONTHS.map(m=>`<th>${m}</th>`).join('')+'<th class="col-tot">TOTAL</th>';
-  const cell=v=>v>0?`<td>${Math.round(v).toLocaleString('en-CA')}</td>`:'<td class="zero">\u2013</td>';
+  /* A MONTH THAT NETS BELOW ZERO IS STILL A FIGURE. The test here used to be
+     `v>0`, so a month whose refunds outweighed its charges was painted with the
+     very dash that means "nothing happened" -- while both TOTAL cells went on
+     counting it. One refund was enough to make a row read 300 / - / 200 against
+     a TOTAL of 450: a grid that visibly does not add up, and the one month worth
+     looking at was the one saying nothing at all. Dash only for a genuine zero.
+     `Math.round(v)||0` collapses the -0 that -0.4 would otherwise round to, the
+     same guard yf$ makes for the same reason. */
+  const cell=v=>Math.abs(v)<0.005
+    ? '<td class="zero">\u2013</td>'
+    : `<td>${(Math.round(v)||0).toLocaleString('en-CA')}</td>`;
   const colTot=Array(12).fill(0);
   let body=cats.map(c=>{
     const arr=data[c]; const tot=arr.reduce((s,v)=>s+v,0);
@@ -8645,7 +8655,9 @@ function renderMEMatrix(){
       arr.map(cell).join('')+`<td class="col-tot">${Math.round(tot).toLocaleString('en-CA')}</td></tr>`;
   }).join('');
   const grand=colTot.reduce((s,v)=>s+v,0);
-  body+=`<tr class="tot"><td>TOTAL</td>`+colTot.map(v=>v>0?`<td>${Math.round(v).toLocaleString('en-CA')}</td>`:'<td class="zero">\u2013</td>').join('')+
+  // the same renderer as the category rows: the totals row had its own copy of
+  // the `v>0` test, so it hid a negative column total too
+  body+=`<tr class="tot"><td>TOTAL</td>`+colTot.map(cell).join('')+
     `<td class="col-tot">${Math.round(grand).toLocaleString('en-CA')}</td></tr>`;
   $('meMatrixBody').innerHTML=cats.length?body:'<tr><td colspan="14" style="text-align:center;color:#7F8C9C;padding:14px">No expenses recorded for '+year+'</td></tr>';
 }

@@ -352,6 +352,42 @@ const YEAR = 2026;
   check(drop.tr.every(Boolean), 'every transfer wording is still excluded', JSON.stringify(drop.tr));
   check(drop.trPay.every(v => !v), 'and a transfer is never mistaken for a card payment');
 
+  /* ── 13. a refunded month is a figure in the grid, not a blank ────────────
+     Category by month painted any cell that was not strictly positive with the
+     dash that means "nothing here", while both TOTAL cells went on counting it.
+     One refund made a row read 300 / - / 200 against a TOTAL of 450. The claim
+     under test is the one a reader makes with their eye: the twelve cells add
+     up to the TOTAL beside them.                                            */
+  section('13. a month that nets below zero still prints');
+  const grid = await page.evaluate(([y]) => {
+    load([
+      { id: 'g1', type: 'expense', date: `${y}-01-05`, amt: 300, desc: 'Loblaws', cat: 'Groceries', who: 'ABI', tab: 'me' },
+      { id: 'g2', type: 'expense', date: `${y}-02-05`, amt: 40, desc: 'Loblaws', cat: 'Groceries', who: 'ABI', tab: 'me' },
+      { id: 'g3', type: 'expense', date: `${y}-02-07`, amt: -90, desc: 'Loblaws refund', cat: 'Groceries', who: 'ABI', tab: 'me' },
+      { id: 'g4', type: 'expense', date: `${y}-03-05`, amt: 200, desc: 'Metro', cat: 'Groceries', who: 'ABI', tab: 'me' }]);
+    meMonth = `${y}-02`; renderME();
+    const row = [...document.querySelectorAll('#meMatrixBody tr')]
+      .find(tr => /Groceries/.test(tr.children[0].textContent));
+    const tot = [...document.querySelectorAll('#meMatrixBody tr.tot')][0];
+    const cells = tr => [...tr.children].slice(1, 13).map(td => td.textContent.trim());
+    return { feb: meMonthlyByCat(String(y)).Groceries,       // the PRECONDITION
+             cat: cells(row), catTot: row.lastElementChild.textContent.trim(),
+             totRow: cells(tot), grand: tot.lastElementChild.textContent.trim() };
+  }, [YEAR]);
+  // Without this the whole section can pass on a fixture that never went negative.
+  check(grid.feb && grid.feb[1] === -50,
+    'precondition: February really nets -$50 in the data', JSON.stringify(grid.feb));
+  const num = t => t === '\u2013' ? 0 : +t.replace(/,/g, '');
+  const sum = a => a.reduce((s, t) => s + num(t), 0);
+  check(grid.cat[1] === '-50',
+    "February prints its own figure rather than the empty-cell dash", grid.cat[1]);
+  check(sum(grid.cat) === num(grid.catTot),
+    'the twelve cells add up to the row TOTAL beside them',
+    `${sum(grid.cat)} vs ${grid.catTot}`);
+  check(grid.totRow[1] === '-50' && sum(grid.totRow) === num(grid.grand),
+    'and the TOTAL row, which had its own copy of the test, agrees too',
+    JSON.stringify([grid.totRow[1], grid.grand]));
+
   check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nBILL PAYMENT: ${pass} passed, ${fail} failed`);
