@@ -181,6 +181,61 @@ const YEAR = new Date().getFullYear();
     await ctx.close();
   }
 
+  /* ── Check N: the log's scope line counts each filter where it applies ──
+     Two filters hide rows in this table for different reasons, and the scope
+     line subtracted one count from another and blamed the year for both. With
+     the contributor filter on ABI and every deposit dated this year, it read
+     "2 hidden from other years" -- about rows in the year on screen. In
+     all-years mode it printed the unfiltered count beside a filtered table.
+     The empty state had the matching fault: it denied deposits the tab was
+     holding and pointed at the wrong control.                               */
+  console.log("\n── Check N: the deposit log's scope line and empty state ──");
+  {
+    const { ctx, page, errs } = await open(browser, url, {});
+    const r = await page.evaluate(y => {
+      state.contribs = [
+        { id: 'a1', t: Date.UTC(y, 0, 8), acct: 'TFSA', amt: 1000, y, cad: true, who: 'ABI' },
+        { id: 'a2', t: Date.UTC(y, 1, 8), acct: 'TFSA', amt: 2000, y, cad: true, who: 'POO' },
+        { id: 'a3', t: Date.UTC(y, 2, 8), acct: 'FHSA', amt: 3000, y, cad: true, who: 'POO' },
+        { id: 'a4', t: Date.UTC(y - 1, 5, 8), acct: 'TFSA', amt: 400, y: y - 1, cad: true, who: 'ABI' }];
+      state.cYear = y; state.logYear = String(y); state.cWho = 'ABI';
+      render();
+      const read = () => ({ scope: document.getElementById('logScope').textContent.trim(),
+                            rows: document.querySelectorAll('#cbody tr').length });
+      const oneYear = read();                       // 2026 filtered to ABI
+      state.cWho = 'ALL'; render();
+      const allWho = read();                        // 2026, everyone
+      state.logYear = 'ALL'; state.cWho = 'ABI'; render();
+      const allYears = read();
+      state.logYear = String(y); state.cWho = 'POO'; render();
+      const pooOnly = read();
+      // every row in the year belongs to the other contributor
+      state.cWho = 'ABI';
+      state.contribs = state.contribs.map(c => c.y === y ? { ...c, who: 'POO' } : c);
+      render();
+      const empty = { msg: document.getElementById('cEmpty').textContent.trim(),
+                      shown: document.getElementById('cEmpty').style.display,
+                      rows: document.querySelectorAll('#cbody tr').length };
+      return { oneYear, allWho, allYears, pooOnly, empty };
+    }, YEAR);
+    // Precondition: the filter really is hiding rows, or every claim below is vacuous.
+    check(r.oneYear.rows === 1 && r.allWho.rows === 3,
+      'precondition: the contributor filter really hides two rows of this year',
+      JSON.stringify([r.oneYear.rows, r.allWho.rows]));
+    check(r.oneYear.scope === '— 1 hidden from other years',
+      'the year clause counts only rows genuinely in another year', r.oneYear.scope);
+    check(r.pooOnly.scope === '— 1 hidden from other years',
+      'and it does not move when the contributor filter changes', r.pooOnly.scope);
+    check(r.allYears.scope === '— all years (2)' && r.allYears.rows === 2,
+      'all-years mode counts the rows actually shown',
+      JSON.stringify([r.allYears.scope, r.allYears.rows]));
+    check(r.empty.rows === 0 && /ABI/.test(r.empty.msg) && /contributor/.test(r.empty.msg),
+      'an empty table names the filter responsible instead of denying the deposits',
+      JSON.stringify(r.empty));
+    check(errs.length === 0, 'no page errors', errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
+    await ctx.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nCONTRIB FEATURE VERIFICATION: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

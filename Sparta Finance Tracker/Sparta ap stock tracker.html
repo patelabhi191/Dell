@@ -4540,11 +4540,21 @@ function renderContribs(){
     lsel.dataset.opts=wantOpts;
   }
   lsel.value=state.logYear;
-  const rows=(state.logYear==='ALL'?allRows:allRows.filter(c=>c.y===parseInt(state.logYear,10)))
-    .filter(c=>state.cWho==='ALL'||c.who===state.cWho);
+  /* TWO FILTERS HIDE ROWS HERE, FOR DIFFERENT REASONS -- the log's own year
+     selector and the tab's contributor segment -- and this line used to
+     subtract one count from another and blame the whole difference on the year.
+     With the filter on ABI, three deposits all dated this year reported
+     "2 hidden from other years", about rows sitting in the very year on screen.
+     In all-years mode it printed the UNFILTERED count, so the figure beside the
+     log disagreed with the number of rows under it. Each filter is now counted
+     where it applies, and the year clause speaks only for rows that really are
+     in another year. */
+  const inYear=state.logYear==='ALL'?allRows:allRows.filter(c=>c.y===parseInt(state.logYear,10));
+  const rows=inYear.filter(c=>state.cWho==='ALL'||c.who===state.cWho);
+  const offYear=allRows.length-inYear.length;
   $('logScope').textContent=state.logYear==='ALL'
-    ? '\u2014 all years ('+allRows.length+')'
-    : (allRows.length>rows.length?'\u2014 '+(allRows.length-rows.length)+' hidden from other years':'');
+    ? '\u2014 all years ('+rows.length+')'
+    : (offYear?'\u2014 '+offYear+' hidden from other years':'');
   const tb=$('cbody');tb.innerHTML='';
   rows.forEach(c=>{
     const dte=new Date(c.t);
@@ -4563,9 +4573,22 @@ function renderContribs(){
   tb.querySelectorAll('[data-cedit]').forEach(b=>b.onclick=()=>editContrib(b.dataset.cedit));
   $('ctable').style.display=rows.length?'table':'none';
   $('cEmpty').style.display=rows.length?'none':'block';
-  $('cEmpty').textContent=allRows.length
-    ? 'No deposits recorded for '+state.logYear+'. Switch the year filter to see others.'
-    : 'Money added here or on the Dashboard is logged automatically as a contribution.';
+  /* THREE REASONS FOR AN EMPTY TABLE, and this said the same thing for two of
+     them. With every deposit filed under POO and the filter on ABI, a year
+     holding three of them read "No deposits recorded for 2026" -- the tab
+     denying money it was holding, and pointing at the year selector, which was
+     not the control responsible. Name the filter that is actually empty.
+     The onboarding line also promised something no code does: nothing on the
+     Dashboard writes a contribution. moveCash() adjusts state.cash and stops
+     there, and depositContrib says so in its own comment ("independent of
+     Dashboard cash"). A user who believed it would under-record every TFSA
+     deposit they made and overshoot their CRA room on the strength of it. */
+  const yrWord=state.logYear==='ALL'?'any year':state.logYear;
+  $('cEmpty').textContent=!allRows.length
+    ? 'Money added on this tab is logged automatically as a contribution.'
+    : inYear.length
+    ? 'No '+state.cWho+' deposits in '+yrWord+' \u2014 switch the contributor filter to All.'
+    : 'No deposits recorded for '+yrWord+'. Switch the year filter to see others.';
   renderYearly();
   renderContribChart();
  }catch(e){ console.error('contrib render:',e) }
