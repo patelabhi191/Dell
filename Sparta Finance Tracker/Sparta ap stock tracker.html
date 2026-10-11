@@ -7811,21 +7811,52 @@ function renderYF(){
      out "$-7,200" the moment its sign could go negative. One renderer for both. */
   const diffCell=d=>`<td class="${d<0?'yf-neg':d>0?'yf-pos':''}">`+
     `${d>0?'+':''}${yf$(Math.abs(d)).replace('$',d<0?'\u2212$':'$')}</td>`;
-  const catRow=(cat,type,withMonthly)=>{
+  const catRow=(cat,type,withMonthly,offList)=>{
     const plan=yfPlanned(cat), act=yfActual(type,cat), mo=act/nowM;
     /* Expenses ask "is my monthly rate off the plan"; Income still asks the
        year-to-date question, so the two tables compute Diff differently. */
     const diff = withMonthly ? plan-mo : plan-act;
     // Numbers only, the same as every other row. What Monthly itemised into a
     // bill is reported on the bill's own line in TRANSACTIONS, not here.
+    /* No rename or delete on a name that is not ON the list: yfRenameCat does
+       `list.indexOf(oldName)` and returns silently at -1, so the pencil would be
+       a control that does nothing at all. The route back is to add the category
+       under that name, which folds the row into the configured list -- the union
+       below de-duplicates, so it does not then appear twice. */
     return `<tr>
       <td style="text-align:left">${esc(cat)}</td>
       <td>${yf$(act)}</td>
       <td><input class="yf-plan-in" data-cat="${esc(cat)}" type="number" step="1" min="0" value="${plan||''}" placeholder="0"></td>
       ${diffCell(diff)}
       ${withMonthly?`<td>${yf$(mo)}</td>`:''}
-      <td style="white-space:nowrap"><button class="yf-catbtn" data-ren="${esc(cat)}" data-t="${type}" title="Rename">\u270e</button><button class="yf-catbtn del" data-del="${esc(cat)}" data-t="${type}" title="Delete">\u2715</button></td>
+      ${offList?'<td></td>':`<td style="white-space:nowrap"><button class="yf-catbtn" data-ren="${esc(cat)}" data-t="${type}" title="Rename">\u270e</button><button class="yf-catbtn del" data-del="${esc(cat)}" data-t="${type}" title="Delete">\u2715</button></td>`}
     </tr>`;
+  };
+  /* THE CONFIGURED LIST IS NOT THE WHOLE STORY, and the Totals row above these
+     is summed from the ROWS rather than from the list. A Yearly row can carry a
+     category that is not in yf.cats -- the list is replaced with the defaults by
+     normalizeYF() whenever a partial or hand-edited cloud record arrives without
+     one (recurring class 8.3), which is exactly how a custom category's money
+     goes missing while its rows stay put. Built from the list alone, the table
+     then printed Totals $1,950 over rows adding to $1,450, with no hint of where
+     the other $500 went: money in the total and in no row, which is the one
+     thing a table of money must not do.
+     arcSnapshot() has unioned the configured names with the ones the year's rows
+     actually carry since the archives were built, for this same reason -- so
+     before this the live tab and the sealed card for the SAME year disagreed
+     about the category tables, which is the disagreement arcSnapshot reusing
+     these functions exists to prevent.
+     Configured names keep their order; the recovered ones are appended A-Z, so
+     an ordinary year's table is byte-for-byte what it was.
+     Still left out, on purpose and on BOTH sides: a row with no category at all.
+     arcSnapshot drops it with the same `.filter(Boolean)`, and inventing a
+     "(none)" row here alone would put the two tabs back out of step. */
+  const catList=type=>{
+    const cfg=yfCats(type), extra=[];
+    txns.forEach(t=>{ if(t.type===type && t.cat && cfg.indexOf(t.cat)<0 && extra.indexOf(t.cat)<0)
+      extra.push(t.cat) });
+    extra.sort((a,b)=>String(a).localeCompare(String(b)));
+    return cfg.map(c=>[c,false]).concat(extra.map(c=>[c,true]));
   };
   /* Yearly's own categories, and nothing else. Monthly's names must never appear
      here -- they were briefly added as extra rows to keep the totals reconciling,
@@ -7835,10 +7866,10 @@ function renderYF(){
      there is nothing of Monthly's inside the Totals row to account for. */
   $('yfExpBody').innerHTML=
     `<tr style="font-weight:700"><td style="text-align:left">Totals</td><td>${yf$(totExp)}</td><td>${yf$(expPlanT)}</td>${diffCell(expPlanT-totExp/nowM)}<td>${yf$(totExp/nowM)}</td><td></td></tr>`+
-    yfCats('expense').map(c=>catRow(c,'expense',true)).join('');
+    catList('expense').map(r=>catRow(r[0],'expense',true,r[1])).join('');
   $('yfIncBody').innerHTML=
     `<tr style="font-weight:700"><td style="text-align:left">Totals</td><td>${yf$(totInc)}</td><td>${yf$(incPlanT)}</td>${diffCell(incPlanT-totInc)}<td></td></tr>`+
-    yfCats('income').map(c=>catRow(c,'income',false)).join('');
+    catList('income').map(r=>catRow(r[0],'income',false,r[1])).join('');
 
   // ----- transaction list -----
   yfFillTxMonth();                    // may reset yfTxMonth if that month is now empty

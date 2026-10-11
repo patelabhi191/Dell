@@ -684,6 +684,88 @@ const cards = page => page.evaluate(() =>
     await c4.close();
   }
 
+  /* ── 8f. the category tables add up to their own Totals row ──────────────
+     Totals is summed from the ROWS of the ledger; the rows beneath it were
+     built from the configured list. A Yearly row can carry a category that is
+     not on that list -- normalizeYF() replaces cats with the defaults whenever
+     a partial or hand-edited cloud record arrives without one, which is
+     recurring class 8.3 -- and the money then sat in the total and in no row:
+     Totals $1,950 over rows adding to $1,450, with nothing saying where the
+     other $500 was.
+     arcSnapshot() has unioned the configured names with the ones the year's rows
+     carry since the archives were built, so the live tab and the sealed card for
+     the same year disagreed about this table. That disagreement is what
+     arcSnapshot reusing these functions exists to prevent, so it is asserted
+     here as well as the arithmetic. */
+  console.log('\n── 8f. a category off the configured list still reports its money ──');
+  {
+    const c5 = await browser.newContext();
+    const p5 = await c5.newPage();
+    await stub(p5);
+    const perr5 = [];
+    p5.on('pageerror', e => perr5.push(e.message));
+    await p5.goto(url, { waitUntil: 'load' });
+    await p5.waitForTimeout(300);
+
+    const OFF = 'Daycare';
+    const pre5 = await p5.evaluate(([y, off]) => {
+      state.yfYear = y;
+      state.yf.txns = [
+        { id: 'o1', type: 'income',  date: y + '-01-15', amt: 4200, desc: 'Pay',  cat: 'Paycheck', who: 'ABI', tab: 'yf' },
+        { id: 'o2', type: 'expense', date: y + '-01-19', amt: 1450, desc: 'Rent', cat: 'Home',     who: 'ABI', tab: 'yf' },
+        { id: 'o3', type: 'expense', date: y + '-02-04', amt:  500, desc: 'Sitter', cat: off,      who: 'ABI', tab: 'yf' },
+      ];
+      state.yf.start = { [y]: 8000 };
+      state.yf.planned = { [y]: {} };
+      if (!state.yf.cats.exp.includes('Home')) state.yf.cats.exp.push('Home');
+      state.yf.cats.exp = state.yf.cats.exp.filter(c => c !== off);
+      render(); renderYF();
+      return { onList: state.yf.cats.exp.includes(off), rowExists: state.yf.txns.some(t => t.cat === off) };
+    }, [YEAR, OFF]);
+    // the induced condition, stated: a row under a name the list does not hold
+    check(!pre5.onList && pre5.rowExists,
+      '8f: PRECONDITION — a row carries a category the configured list does not',
+      JSON.stringify(pre5));
+
+    await goYearly(p5);
+    const tbl = await p5.evaluate(() => {
+      const head = [...document.querySelectorAll('#yfExpTable thead th')]
+        .map(th => th.textContent.trim().toLowerCase());
+      const col = head.indexOf('spend');
+      const rows = [...document.querySelectorAll('#yfExpBody tr')].map(tr => ({
+        name: tr.children[0].textContent.trim(),
+        act: parseFloat((tr.children[col].textContent || '').replace(/[^0-9.\-\u2212]/g, '')
+          .replace('\u2212', '-')) || 0,
+        btns: tr.querySelectorAll('.yf-catbtn').length,
+      }));
+      return { col, totals: rows[0], body: rows.slice(1),
+               cardCats: arcSnapshot(new Date().getFullYear()).exp.map(r => r.c) };
+    });
+    const row = tbl.body.find(r => r.name === OFF);
+    check(!!row && row.act === 500,
+      '8f: the recovered category is a row of its own with its own figure',
+      JSON.stringify(row));
+    const sum = +tbl.body.reduce((t, r) => t + r.act, 0).toFixed(2);
+    check(sum === tbl.totals.act && tbl.totals.act === 1950,
+      '8f: and the rows now add up to the Totals row above them',
+      `rows ${sum} vs totals ${tbl.totals.act}`);
+    /* The pencil would be a dead control on a name the list does not hold --
+       yfRenameCat returns silently at indexOf -1 -- so it is not offered. */
+    check(row && row.btns === 0,
+      '8f: it carries no rename or delete, which could not work on it',
+      String(row && row.btns));
+    check(tbl.body.some(r => r.name === 'Home' && r.btns === 2),
+      '8f: a configured category still carries both');
+    /* THE AGREEMENT. Every category the sealed card shows is on the live tab. */
+    const names = tbl.body.map(r => r.name);
+    check(tbl.cardCats.length > 0 && tbl.cardCats.every(c => names.includes(c)),
+      '8f: and every category the Archives card would show is on the tab too',
+      JSON.stringify(tbl.cardCats));
+
+    check(perr5.length === 0, '8f: no page errors', perr5.join(' | '));
+    await c5.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nYF HIGHLIGHTS: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
