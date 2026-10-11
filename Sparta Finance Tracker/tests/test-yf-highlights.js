@@ -573,6 +573,117 @@ const cards = page => page.evaluate(() =>
     await c3.close();
   }
 
+  /* ── 8e. the opening balance and the budget are money, and are coerced as money
+     normalizeYF() has put every row's `amt` through fin() since the non-finite
+     pass, but `state.yf.start` and `state.yf.planned` were taken on trust --
+     and `start` is read straight into `start + totInc - totExp`, which is the
+     base of End, Saved and Growth. `+` concatenates when one side is a string,
+     so a start of "8000" against $4,200 in and $1,750 out printed End as
+     $80,002,450 and Growth as +999930.6%, beside a Start tile still reading an
+     ordinary $8,000. "abc" is truthy, survives the `|| 0` fallback, makes End
+     NaN, and yf$ prints NaN as "$0" -- a year holding $2,450 reading as empty.
+
+     arcSnapshot computes the same six figures from the same expression on
+     purpose, so whatever this does is SEALED INTO THE ARCHIVE as well: that is
+     asserted here rather than left to 8d, because an archive is the record
+     meant to be final.
+
+     Section 8.3 is the class: `store.get(key, default)` only applies the
+     default when the key is entirely ABSENT, so a partial or hand-edited cloud
+     record walks straight past it. The string-year archive bug fixed earlier in
+     this review was the same mistake in the same data. */
+  console.log('\n── 8e. start and planned are coerced like the money they are ──');
+  {
+    const c4 = await browser.newContext();
+    const p4 = await c4.newPage();
+    await stub(p4);
+    const perr4 = [];
+    p4.on('pageerror', e => perr4.push(e.message));
+    await p4.goto(url, { waitUntil: 'load' });
+    await p4.waitForTimeout(300);
+
+    /* Income 4,200 · expenses 1,450 + 300 · start "8000" as a STRING.
+       Written WITHOUT rendering, so the shape can be asserted before anything
+       normalises it -- otherwise this whole section could pass while proving
+       nothing, having silently tested a number. */
+    const pre = await p4.evaluate(y => {
+      state.yfYear = y;
+      state.yf.txns = [
+        { id: 's1', type: 'income',  date: y + '-01-15', amt: 4200, desc: 'Pay',  cat: 'Paycheck', who: 'ABI', tab: 'yf' },
+        { id: 's2', type: 'expense', date: y + '-01-19', amt: 1450, desc: 'Rent', cat: 'Home',     who: 'ABI', tab: 'yf' },
+        { id: 's3', type: 'expense', date: y + '-02-04', amt:  300, desc: 'Food', cat: 'Grocery',  who: 'ABI', tab: 'yf' },
+      ];
+      state.yf.start = { [y]: '8000' };
+      state.yf.planned = { [y]: { Home: '1450', Grocery: 300 } };
+      if (!state.yf.cats.exp.includes('Home')) state.yf.cats.exp.push('Home');
+      if (!state.yf.cats.exp.includes('Grocery')) state.yf.cats.exp.push('Grocery');
+      return { start: typeof state.yf.start[y], plan: typeof state.yf.planned[y].Home };
+    }, YEAR);
+    check(pre.start === 'string' && pre.plan === 'string',
+      '8e: PRECONDITION — the start and the plan really did arrive as strings',
+      JSON.stringify(pre));
+
+    await p4.evaluate(() => { render(); renderYF(); });
+    await goYearly(p4);
+    const t4 = await p4.evaluate(() => {
+      const t = id => (document.getElementById(id).textContent || '').trim();
+      // by heading, never by position: these columns have been reordered before
+      const head = [...document.querySelectorAll('#yfExpTable thead th')]
+        .map(th => th.textContent.trim());
+      const col = head.findIndex(h => /^Planned/.test(h));
+      const totals = document.querySelector('#yfExpBody tr');
+      return { start: t('yfStartVal'), end: t('yfEndVal'), saved: t('yfSaved'),
+               off: t('yfOffPaper'), pct: t('yfPct'),
+               planCol: col, planTot: col > -1 ? totals.children[col].textContent.trim() : null,
+               snap: arcSnapshot(new Date().getFullYear()) };
+    });
+    check(t4.end === '$10,450', '8e: End is start + income − expenses, not a concatenation',
+      t4.end);
+    check(t4.saved === '$2,450' && t4.start === '$8,000',
+      '8e: Saved and Start agree with it', JSON.stringify([t4.start, t4.saved]));
+    check(t4.pct === '+30.6%', '8e: and Growth is a real percentage', t4.pct);
+    check(t4.planCol > -1 && t4.planTot === '$1,750',
+      '8e: the Planned total adds the budget instead of concatenating it', t4.planTot);
+    /* The same figures as the tiles, because the archive is built from the same
+       expression -- and NUMBERS, so nothing downstream of a seal inherits it. */
+    check(t4.snap.stats.end === 10450 && typeof t4.snap.stats.start === 'number',
+      '8e: and the figure sealed into an archive is a number that agrees',
+      JSON.stringify(t4.snap.stats));
+
+    /* "abc" has no number in it at all, so fin() makes it 0 -- visible and
+       editable in the Start field, which is the trade fin() already states. */
+    const junk = await p4.evaluate(y => {
+      state.yf.start = { [y]: 'abc' };
+      renderYF();
+      const t = id => (document.getElementById(id).textContent || '').trim();
+      return { start: t('yfStartVal'), end: t('yfEndVal'), saved: t('yfSaved') };
+    }, YEAR);
+    check(junk.end === '$2,450' && junk.start === '$0',
+      '8e: a start with no number in it reads as $0 and leaves End standing',
+      JSON.stringify(junk));
+
+    /* THE KEY MUST SURVIVE whatever happens to the value. arcCarryStart() tests
+       `now in state.yf.start` rather than a falsy test, specifically so a
+       deliberately typed 0 is not re-seeded from last year's close -- so a
+       coercion that dropped the key would hand that 0 back to the rollover. */
+    const keys = await p4.evaluate(y => {
+      const out = {};
+      [0, null, 'abc', '0'].forEach((v, i) => {
+        state.yf.start = { [y]: v };
+        normalizeYF();
+        out['v' + i] = { kept: Object.prototype.hasOwnProperty.call(state.yf.start, String(y)),
+                         val: state.yf.start[y] };
+      });
+      return out;
+    }, YEAR);
+    check(Object.values(keys).every(r => r.kept && r.val === 0),
+      '8e: a 0, a null and an unusable string all stay as a 0 under their own year',
+      JSON.stringify(keys));
+
+    check(perr4.length === 0, '8e: no page errors', perr4.join(' | '));
+    await c4.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nYF HIGHLIGHTS: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
