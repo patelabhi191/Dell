@@ -962,6 +962,43 @@ const cards = page => page.evaluate(() =>
   check(JSON.stringify(noType.tags) === JSON.stringify(['IN', 'EXP', 'IN']),
     "8j: 'Income' stays income rather than crossing the year", JSON.stringify(noType.tags));
 
+  /* ── 8k. a Diff that rounds away is nothing, not minus nothing ────────
+     yf$ collapses a figure that rounds to zero so it cannot print "-$0" -- its
+     comment says exactly that -- and diffCell then put the sign back on by
+     hand, off the RAW value. The Monthly basis is `act/nowM`, so a plan within
+     a few cents of the rate it is judged against lands there: a $100 plan
+     against $1,004 over ten months is -0.40 precisely. It read "−0" in the
+     over-spent colour: a category reported as over budget by nothing. */
+  console.log('\n── 8k. a Diff of forty cents under ──');
+  const tiny = await p6.evaluate(y => {
+    const nowM = (y === new Date().getFullYear()) ? (new Date().getMonth() + 1) : 12;
+    state.yfYear = y;
+    // act/nowM comes to 100.40 exactly, against a plan of 100 -> diff -0.40
+    state.yf.txns = [{ id: 'y1', type: 'expense', date: y + '-01-10', amt: 100.4 * nowM,
+                       desc: 'rate', cat: 'Home', who: 'ABI', tab: 'yf' }];
+    state.yf.start = { [y]: 0 };
+    state.yf.planned = { [y]: { Home: 100 } };
+    if (!state.yf.cats.exp.includes('Home')) state.yf.cats.exp.push('Home');
+    renderYF();
+    const head = [...document.querySelectorAll('#yfExpTable thead th')]
+      .map(th => th.textContent.trim().toLowerCase());
+    const col = head.findIndex(h => /^diff/.test(h));
+    const tr = [...document.querySelectorAll('#yfExpBody tr')]
+      .find(r => r.children[0].textContent.trim() === 'Home');
+    const cell = tr && tr.children[col];
+    return { nowM, raw: 100 - 100.4, col,
+             txt: cell && cell.textContent.trim(), cls: cell && cell.className,
+             sign: yfSign$(-0.4) };
+  }, YEAR);
+  // the fixture only means something if the Diff really is a hair below zero
+  check(Math.abs(tiny.raw + 0.4) < 1e-9 && tiny.col > 0,
+    '8k: PRECONDITION — the Diff for this row is −0.40 and the column was found',
+    JSON.stringify({ raw: tiny.raw, col: tiny.col }));
+  check(tiny.txt === '$0', '8k: it prints $0, with no sign in front of it', JSON.stringify(tiny.txt));
+  check(tiny.cls === '', '8k: and in no colour, since it is neither over nor under',
+    JSON.stringify(tiny.cls));
+  check(tiny.sign === '$0', '8k: yfSign$ agrees — a bill note of −$0.40 reads $0', tiny.sign);
+
   check(perr6.length === 0, '8g: no page errors', perr6.join(' | '));
   await c6.close();
 

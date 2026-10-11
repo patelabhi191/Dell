@@ -7460,7 +7460,10 @@ let yfEditId=null, yfFilter='all', yfChartMode='both', yfTxMonth='all', yfWhoFil
    round to, so a figure that rounds away prints $0 and not −$0. */
 const yf$=v=>{ const r=Math.round(v)||0;
   return (r<0?'\u2212':'')+'$'+Math.abs(r).toLocaleString('en-CA'); };
-const yfSign$=v=>(v<0?'\u2212':'')+yf$(Math.abs(v));
+/* Same rule as yf$, which it wraps: a figure that rounds away prints $0 rather
+   than gaining a minus it does not have. A bill whose refunds very nearly cancel
+   its charges reaches this through yfSpendNote. */
+const yfSign$=v=>{ const r=Math.round(v)||0; return (r<0?'\u2212':'')+yf$(Math.abs(r)); };
 const yf$2=v=>{ const n=(v||0)<0?-(v||0):(v||0);
   return ((v||0)<0?'\u2212':'')+'$'+n.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}); };
 function yfPersist(){ store.set('sparta.yf.data', state.yf); touchUpdatedAt();
@@ -7882,8 +7885,16 @@ function renderYF(){
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   /* Totals used to build their own Diff cell, which is how the income total came
      out "$-7,200" the moment its sign could go negative. One renderer for both. */
-  const diffCell=d=>`<td class="${d<0?'yf-neg':d>0?'yf-pos':''}">`+
-    `${d>0?'+':''}${yf$(Math.abs(d)).replace('$',d<0?'\u2212$':'$')}</td>`;
+  /* THE SIGN AND THE COLOUR COME OFF THE ROUNDED FIGURE, not the raw one. yf$
+     collapses a value that rounds away to "$0" on purpose -- its own comment
+     says so -- and this cell then put the sign back on by hand, so a Diff of
+     -$0.40 printed "−0" in the over-spent colour. That is not a rare shape: the
+     Monthly basis is `act/nowM`, so any plan within a few cents of the rate it
+     is judging against lands there (a $100 plan against $1,004 over ten months
+     is exactly -0.40). A figure that rounds to nothing should read as nothing. */
+  const diffCell=d=>{ const r=Math.round(d)||0;
+    return `<td class="${r<0?'yf-neg':r>0?'yf-pos':''}">`+
+      `${r>0?'+':''}${yf$(Math.abs(r)).replace('$',r<0?'\u2212$':'$')}</td>`; };
   const catRow=(cat,type,withMonthly,offList)=>{
     const plan=yfPlanned(cat), act=yfActual(type,cat), mo=act/nowM;
     /* Expenses ask "is my monthly rate off the plan"; Income still asks the
