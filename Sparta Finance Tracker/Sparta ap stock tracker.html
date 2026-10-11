@@ -7666,7 +7666,12 @@ function yfHighlights(d){
   if(exps.length>1){                       // with one expense it is just the only expense
     const big=exps.reduce((a,b)=>b.amt>a.amt?b:a);
     push('bigTx','exp','Largest single expense',
-      yf$2(big.amt)+(big.desc?' on '+big.desc:'')+' ('+big.cat+') — '+big.date+'.');
+      // the category is in brackets only when there IS one: a row from before the
+      // guard in yfSaveTx, or an older file, printed a literal "(undefined)" here
+      // the category is in brackets only when there IS one: a row from before the
+      // guard in yfSaveTx, or an older file, printed a literal "(undefined)" here
+      yf$2(big.amt)+(big.desc?' on '+big.desc:'')+(big.cat?' ('+big.cat+')':'')+
+        ' — '+big.date+'.');
   }
   // spend only: counting both a bill and its allocations would double the split
   const spendTx=exps.filter(t=>!t.allot);
@@ -7888,7 +7893,7 @@ function renderYF(){
   /* THE SIGN AND THE COLOUR COME OFF THE ROUNDED FIGURE, not the raw one. yf$
      collapses a value that rounds away to "$0" on purpose -- its own comment
      says so -- and this cell then put the sign back on by hand, so a Diff of
-     -$0.40 printed "−0" in the over-spent colour. That is not a rare shape: the
+     -$0.40 printed "−$0" in the over-spent colour. That is not a rare shape: the
      Monthly basis is `act/nowM`, so any plan within a few cents of the rate it
      is judging against lands there (a $100 plan against $1,004 over ten months
      is exactly -0.40). A figure that rounds to nothing should read as nothing. */
@@ -8086,6 +8091,33 @@ function yfSaveTx(){
         who=$('yfWho').value||'ABI';
   if(!date){ toast('Pick a date'); return }
   if(isNaN(amt)){ toast('Enter an amount'); return }
+  /* NO CATEGORY, NO ROW -- the same trade Add Expense already makes for a Bill
+     Payment with no bill: "a negative row in no total at all is worse than no
+     row". Yearly files everything by category, so a row carrying none is in the
+     Totals figure and in no row of the table under it, and the category tables
+     stop adding up. yfCats() can legitimately be EMPTY -- deleting a category
+     is refused only while rows use it, so a fresh ledger can have all fifteen
+     deleted -- and an empty <select> has value '', which sailed through to the
+     ledger. The picker cannot offer a category that does not exist, so this is
+     the only place to say so.
+     Monthly is deliberately not held to this: an allocation typed on its form
+     carries no category by design, which is what makes it an annotation rather
+     than a reclassification. */
+  if(!cat){ toast(`Add ${type==='income'?'an income':'an expense'} category first \u2014 `+
+    `Yearly files every row by category`); return }
+  /* NO CATEGORY, NO ROW -- the same trade Add Expense already makes for a Bill
+     Payment with no bill: "a negative row in no total at all is worse than no
+     row". Yearly files everything by category, so a row carrying none is in the
+     Totals figure and in no row of the table under it, and the category tables
+     stop adding up. yfCats() can legitimately be EMPTY -- deleting a category
+     is refused only while rows use it, so a fresh ledger can have all fifteen
+     deleted -- and an empty <select> has value '', which sailed through to the
+     ledger. The picker cannot offer a category that does not exist, so this is
+     the only place to say so.
+     Monthly is deliberately not held to this: an allocation typed on its form
+     carries no category by design, which is what makes it an annotation rather
+     than a reclassification. */
+
   if(yfEditId){
     const t=state.yf.txns.find(x=>x.id===yfEditId);
     if(t){ Object.assign(t,{type,date,amt,desc,cat,who}); toast('Transaction updated'); }

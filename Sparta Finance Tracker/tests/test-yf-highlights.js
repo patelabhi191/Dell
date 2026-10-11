@@ -999,6 +999,65 @@ const cards = page => page.evaluate(() =>
     JSON.stringify(tiny.cls));
   check(tiny.sign === '$0', '8k: yfSign$ agrees — a bill note of −$0.40 reads $0', tiny.sign);
 
+  /* ── 8l. a Yearly row with no category at all ─────────────────────
+     Yearly files everything by category, so a row carrying none counts in the
+     Totals figure and in no row of the table under it -- and the configured list
+     can legitimately be EMPTY, since deleting a category is refused only while
+     rows use it. An empty <select> has value '', which went straight into the
+     ledger. The picker cannot offer a category that does not exist, so the form
+     is the only place that can say so. Add Expense already refuses a Bill
+     Payment with no bill for the same stated reason.
+     The highlight card is the second half: it printed the category in brackets
+     unconditionally, so such a row read "(undefined)" on the carousel. */
+  console.log('\n── 8l. a row with no category ──');
+  const guard = await p6.evaluate(y => {
+    state.yfYear = y;
+    state.yf.txns = [];
+    state.yf.start = { [y]: 0 };
+    state.yf.planned = { [y]: {} };
+    state.yf.cats.exp = [];                 // every expense category deleted
+    /* The type FIRST: yfFillCats() fills the picker from whichever side
+       #yfType is on, so filling it while the form still said Income listed the
+       income categories and the save below was an ordinary one -- the
+       precondition caught exactly that. */
+    document.getElementById('yfType').value = 'expense';
+    yfFillCats(); renderYF();
+    const sel = document.getElementById('yfCat');
+    const pickerEmpty = sel.options.length === 0 && sel.value === '';
+    document.getElementById('yfDate').value = y + '-05-05';
+    document.getElementById('yfAmt').value = '500';
+    document.getElementById('yfDesc').value = 'no category';
+    yfSaveTx();
+    return { pickerEmpty, n: state.yf.txns.length,
+             msg: document.getElementById('toast').textContent };
+  }, YEAR);
+  // if the picker still had a value, the save below would be an ordinary one
+  check(guard.pickerEmpty,
+    '8l: PRECONDITION — with no categories configured the picker has no value',
+    JSON.stringify(guard.pickerEmpty));
+  check(guard.n === 0 && /category first/.test(guard.msg),
+    '8l: the row is refused rather than filed under nothing', JSON.stringify(guard));
+
+  const hl = await p6.evaluate(y => {
+    state.yf.cats.exp = ['Home'];
+    state.yf.txns = [
+      { id: 'u1', type: 'expense', date: y + '-01-05', amt: 500, desc: 'A', who: 'ABI', tab: 'yf' },
+      { id: 'u2', type: 'expense', date: y + '-02-05', amt: 100, desc: 'B', cat: 'Home', who: 'ABI', tab: 'yf' },
+      { id: 'u3', type: 'income',  date: y + '-01-01', amt: 9000, desc: 'Pay', cat: 'Paycheck', who: 'ABI', tab: 'yf' },
+    ];
+    renderYF();
+    return { noCat: state.yf.txns[0].cat === undefined,
+             lines: [...document.querySelectorAll('#yfHiSlides .yf-hi-l')].map(e => e.textContent) };
+  }, YEAR);
+  // an older file can still hold one, which is what the card has to survive
+  check(hl.noCat, '8l: PRECONDITION — the largest expense is a row with no category',
+    String(hl.noCat));
+  check(hl.lines.some(l => /\$500\.00 on A/.test(l)),
+    '8l: the Largest single expense card still names it', JSON.stringify(hl.lines.find(l => /on A/.test(l))));
+  check(!hl.lines.some(l => /undefined/.test(l)),
+    '8l: and no card prints "(undefined)" for the category it does not have',
+    JSON.stringify(hl.lines.filter(l => /undefined/.test(l))));
+
   check(perr6.length === 0, '8g: no page errors', perr6.join(' | '));
   await c6.close();
 
