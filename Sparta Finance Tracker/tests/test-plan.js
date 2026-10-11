@@ -477,6 +477,78 @@ const section = t => console.log(`\n── ${t} ──`);
   check(!level.dn,
     'so a plan that ends level is not painted as having fallen below its start', level.sum.trim());
 
+  /* ── two open segments, one pencil ────────────────────────────────
+     plEditId is one id for the whole tab, but every open segment carries its own
+     form. With the pencil pressed in one segment and "Add to plan" pressed in
+     another, the add branch looked the row up in the SECOND segment's items,
+     found nothing, and fell through having done nothing at all -- then cleared
+     the form and redrew the list, so the item vanished with no toast and every
+     outward sign of having been saved. Typed-in money disappearing silently is
+     the worst thing this tab can do. */
+  section('an add in one segment is not swallowed by an edit pending in another');
+  await page.evaluate(() => {
+    state.plan = { segments: [
+      { id: 'A', name: 'Alpha', start: 1000, open: true, items: [
+        { id: 'a1', date: '2026-11-01', type: 'expense', name: 'Rent', amt: 400, notes: '' }] },
+      { id: 'B', name: 'Beta', start: 500, open: true, items: [] }] };
+    normalizePlan(); renderPlan();
+  });
+  await page.waitForTimeout(200);
+  await page.click('.pl-seg[data-id="A"] .pl-row .pl-act.edit');
+  await page.waitForTimeout(150);
+  const pending = await page.evaluate(() => ({
+    id: plEditId,
+    aEditing: document.querySelector('.pl-seg[data-id="A"] .pl-form').classList.contains('editing'),
+    bEditing: document.querySelector('.pl-seg[data-id="B"] .pl-form').classList.contains('editing'),
+  }));
+  // the induced state has to be real, or the add below is just an ordinary add
+  check(pending.id === 'a1' && pending.aEditing && !pending.bEditing,
+    "PRECONDITION: Alpha's row is pending an edit while Beta's form is idle",
+    JSON.stringify(pending));
+
+  await page.fill('.pl-seg[data-id="B"] .pl-f-name', 'Car insurance');
+  await page.fill('.pl-seg[data-id="B"] .pl-f-amt', '900');
+  await page.click('.pl-seg[data-id="B"] .pl-addbtn');
+  await page.waitForTimeout(200);
+  const landed = await page.evaluate(() => ({
+    beta: state.plan.segments[1].items.map(i => i.name + ':' + i.amt),
+    alpha: state.plan.segments[0].items.map(i => i.name + ':' + i.amt),
+    editId: plEditId,
+    stillEditing: document.querySelectorAll('#planSegs .pl-form.editing').length,
+    rows: document.querySelectorAll('.pl-seg[data-id="B"] .pl-row').length,
+  }));
+  check(JSON.stringify(landed.beta) === JSON.stringify(['Car insurance:900']),
+    'the item lands in the segment it was typed into', JSON.stringify(landed.beta));
+  check(JSON.stringify(landed.alpha) === JSON.stringify(['Rent:400']),
+    "and Alpha's row is untouched — it was not overwritten either",
+    JSON.stringify(landed.alpha));
+  check(landed.rows === 1, 'the list redraws with it', String(landed.rows));
+  /* ...and nothing is left claiming to be mid-edit: a form saying "Save
+     changes" while plEditId is null is a button that cannot do what it says. */
+  check(landed.editId === null && landed.stillEditing === 0,
+    'no form is left wearing the editing look once the edit is over',
+    JSON.stringify([landed.editId, landed.stillEditing]));
+
+  // the same invariant from the other direction: the pencil moves, it never doubles
+  await page.evaluate(() => {
+    state.plan.segments[1].items.push(
+      { id: 'b2', date: '2026-12-02', type: 'income', name: 'Bonus', amt: 100, notes: '' });
+    renderPlan();
+  });
+  await page.waitForTimeout(150);
+  await page.click('.pl-seg[data-id="A"] .pl-row .pl-act.edit');
+  await page.waitForTimeout(120);
+  await page.click('.pl-seg[data-id="B"] .pl-row:last-of-type .pl-act.edit');
+  await page.waitForTimeout(150);
+  const moved = await page.evaluate(() => ({
+    id: plEditId,
+    editing: [...document.querySelectorAll('#planSegs .pl-form')]
+      .map(f => f.classList.contains('editing')),
+  }));
+  check(moved.id === 'b2' && JSON.stringify(moved.editing) === JSON.stringify([false, true]),
+    'pressing a second pencil moves the edit rather than leaving two forms open',
+    JSON.stringify(moved));
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nPLAN: ${pass} passed, ${fail} failed`);

@@ -9804,9 +9804,19 @@ function plClearForm(formEl){
   formEl.querySelector('.pl-addbtn').textContent='Add to plan';
   plEditId=null;
 }
+/* plEditId is ONE id for the whole tab -- "one row at a time, across all
+   segments" -- but every open segment carries its own form, and nothing stopped
+   two of them wearing the editing look at once. A form saying "Save changes"
+   while plEditId points into a different segment is a button that cannot do what
+   it says, so only the form being edited keeps the look. */
+function plClearOtherForms(keep){
+  document.querySelectorAll('#planSegs .pl-form.editing')
+    .forEach(f=>{ if(f!==keep) plClearForm(f) });
+}
 function plLoadForEdit(segEl,seg,id){
   const it=seg.items.find(x=>x.id===id); if(!it) return;
   const f=plFormOf(segEl); if(!f) return;
+  plClearOtherForms(f);              // before the fields: plClearForm nulls plEditId
   f.querySelector('.pl-f-date').value=it.date;
   f.querySelector('.pl-f-name').value=it.name;
   f.querySelector('.pl-f-amt').value=String(it.amt);
@@ -9868,13 +9878,19 @@ if($('planSegs')){
                   amt:Math.abs(plNum(f.querySelector('.pl-f-amt').value)),
                   notes:f.querySelector('.pl-f-notes').value.trim() };
       if(!rec.name && !rec.amt){ toast('Give it a name or an amount'); return }
-      if(plEditId){
-        const it=seg.items.find(x=>x.id===plEditId);
-        if(it) Object.assign(it,rec);
-      } else {
-        seg.items.push(Object.assign({id:uid()},rec));
-      }
-      planPersist(); plClearForm(f); plRedrawList(segEl,seg); return;
+      /* THE ROW BEING EDITED HAS TO BE IN THIS SEGMENT. plEditId is one id for
+         the whole tab, so with the pencil pressed in one open segment and "Add
+         to plan" pressed in another, `find` came back empty, `if(it)` was false
+         and the branch fell through having done NOTHING -- the form then cleared
+         and the list redrew, so a typed-in item vanished with no toast and
+         every sign of having been saved. Resolving the row against THIS
+         segment's items makes the same press an ordinary add, which is what it
+         looks like to the person making it. */
+      const it = plEditId ? seg.items.find(x=>x.id===plEditId) : null;
+      if(it) Object.assign(it,rec);
+      else seg.items.push(Object.assign({id:uid()},rec));
+      planPersist(); plClearForm(f); plClearOtherForms(f);
+      plRedrawList(segEl,seg); return;
     }
     // clicks on the header toggle, unless they landed in a field
     if(e.target.closest('.pl-seghead') && !e.target.closest('input')){
