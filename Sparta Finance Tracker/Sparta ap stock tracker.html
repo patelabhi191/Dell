@@ -7302,6 +7302,35 @@ function normalizeYF(){
      trade. Zeroed, it shows as $0 in the list where it can be seen and fixed;
      left alone, one of them made every figure on two tabs read $NaN. */
   y.txns.forEach(t=>{ t.amt=fin(t.amt); });
+  /* THE OPENING BALANCE AND THE BUDGET ARE MONEY TOO, and nothing coerced them.
+     `start[year]` is the Start tile and the base of End, Saved and Growth, and
+     every one of those is computed with `start + totInc - totExp`. Hand a
+     STRING to that and `+` concatenates instead of adding: a start of "8000"
+     against $4,200 in and $1,750 out printed End as $80,002,450, Saved as
+     $79,994,450 and Growth as +999930.6%, beside a Start tile still reading a
+     perfectly ordinary $8,000. A start of "abc" is truthy, so it survives the
+     `||0` fallback and makes End NaN, which yf$ then prints as $0 -- a year
+     with $2,450 in it reading as empty. arcSnapshot computes the same six
+     figures from the same expression, so the garbage is SEALED INTO AN ARCHIVE
+     as well, which is the one record that is supposed to be final.
+     A planned amount is the same story one step along: yfPlanned() returns it
+     raw and the Totals row sums it with reduce(), so one string turns the whole
+     column into concatenation -- a budget of "1450" and 300 printed a planned
+     total of $145,030,000.
+     Coerced HERE, next to the amt pass and for the stated reason: one choke
+     point beats a guard in each of the seven readers, and both tabs read these
+     two maps through it. fin() keeps a numeric string's value rather than
+     zeroing it, so "8000" is the $8,000 the user meant.
+     The KEYS are left exactly as they are: arcCarryStart() tests `now in
+     state.yf.start` rather than a falsy test, specifically so a deliberately
+     typed 0 is not re-seeded from last year's close, and dropping a key here
+     would hand that 0 straight back to the rollover. */
+  Object.keys(y.start).forEach(k=>{ y.start[k]=fin(y.start[k]); });
+  Object.keys(y.planned).forEach(yr=>{
+    const p=y.planned[yr];
+    if(!p || typeof p!=='object'){ y.planned[yr]={}; return }
+    Object.keys(p).forEach(c=>{ p[c]=fin(p[c]); });
+  });
   // default any transaction logged before contributor-tracking existed to ABI;
   // ABI/POO are hardcoded directly in each <select>, matching the Contributions tab.
   y.txns.forEach(t=>{ t.who=who2(t.who); });
