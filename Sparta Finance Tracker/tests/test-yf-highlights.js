@@ -858,6 +858,72 @@ const cards = page => page.evaluate(() =>
     '8h: the month picker offers all twelve plus All, on a year with one record',
     JSON.stringify(months));
 
+  /* ── 8i. a date that is not a YYYY-MM-DD string ────────────────────
+     Four readers do `t.date.slice(...)` or `date.localeCompare` without asking
+     what they have, so a row whose date is the NUMBER 2026 threw. The throw is
+     the interesting part: renderYF() catches its own body, so the tab rendered
+     NOTHING and every tile kept whatever it last said; arcSnapshot() does not,
+     so the same row ALSO took out the rollover, whose try/catch then swallowed
+     the skipped seal -- the failure the prev.stats guard exists for.
+     Checked by driving a good year first, so "the tiles are right" cannot pass
+     on a tab that simply never repainted. */
+  console.log('\n── 8i. a row whose date is not a string ──');
+  await p6.evaluate(y => {
+    state.yfYear = y;
+    state.yf.txns = [{ id: 'd0', type: 'income', date: y + '-01-10', amt: 1000,
+                       desc: 'Pay', cat: 'Paycheck', who: 'ABI', tab: 'yf' }];
+    state.yf.start = { [y]: 0 };
+    state.yf.planned = { [y]: {} };
+    renderYF();
+  }, YEAR);
+  const before9 = await p6.evaluate(() => (document.getElementById('yfEndVal').textContent || '').trim());
+  check(before9 === '$1,000',
+    '8i: PRECONDITION — the tab is painting a known figure before the bad row',
+    before9);
+
+  const bad = await p6.evaluate(y => {
+    state.yf.txns.push({ id: 'd1', type: 'expense', date: y, amt: 250,
+                         desc: 'numeric date', cat: 'Home', who: 'ABI', tab: 'yf' });
+    const wasNumber = typeof state.yf.txns[1].date === 'number';
+    let threw = null;
+    try { renderYF() } catch (e) { threw = e.message }
+    const t = id => (document.getElementById(id).textContent || '').trim();
+    let snapErr = null, snap = null;
+    try { snap = arcSnapshot(y).stats } catch (e) { snapErr = e.message }
+    return { wasNumber, threw, snapErr, snap,
+             repaired: state.yf.txns[1].date,
+             end: t('yfEndVal'), rows: document.querySelectorAll('#yfTxBody tr').length,
+             sumsAgree: (() => {
+               const head = [...document.querySelectorAll('#yfExpTable thead th')]
+                 .map(th => th.textContent.trim().toLowerCase());
+               const col = head.indexOf('spend');
+               const rows = [...document.querySelectorAll('#yfExpBody tr')];
+               const num = tr => parseFloat((tr.children[col].textContent || '')
+                 .replace(/[^0-9.\-\u2212]/g, '').replace('\u2212', '-')) || 0;
+               const tot = num(rows[0]);
+               const sum = +rows.slice(1).reduce((a, tr) => a + num(tr), 0).toFixed(2);
+               return { tot, sum };
+             })() };
+  }, YEAR);
+  // the induced shape has to have been the thing it says it was
+  check(bad.wasNumber, '8i: PRECONDITION — the row really did carry a numeric date',
+    String(bad.wasNumber));
+  check(bad.repaired === YEAR + '-01-15',
+    '8i: it is repaired to a real date in the year it named, mid-month',
+    JSON.stringify(bad.repaired));
+  check(bad.end === '$750',
+    '8i: and the tab still paints — End counts the row rather than freezing',
+    bad.end);
+  check(bad.snapErr === null && bad.snap && bad.snap.end === 750,
+    '8i: arcSnapshot does not throw either, so the rollover still seals',
+    JSON.stringify([bad.snapErr, bad.snap && bad.snap.end]));
+  /* The repair has to land it in a MONTH as well as a year: the month buckets
+     are what End and the Totals row are summed from, while the category rows
+     are summed from the list, so a row in no month would split the two. */
+  check(bad.sumsAgree.tot === 250 && bad.sumsAgree.sum === 250,
+    '8i: and the Totals row and the category rows still agree about it',
+    JSON.stringify(bad.sumsAgree));
+
   check(perr6.length === 0, '8g: no page errors', perr6.join(' | '));
   await c6.close();
 

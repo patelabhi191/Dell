@@ -7302,6 +7302,52 @@ function normalizeYF(){
      trade. Zeroed, it shows as $0 in the list where it can be seen and fixed;
      left alone, one of them made every figure on two tabs read $NaN. */
   y.txns.forEach(t=>{ t.amt=fin(t.amt); });
+  /* THE DATE IS A YYYY-MM-DD STRING, and every reader trusts that without
+     asking: yfTxns() opens with `t.date.slice(0,4)`, the transaction list sorts
+     on `b.date.localeCompare`, both month loops do
+     `parseInt(t.date.slice(5,7))` and Monthly's meMonthOf() slices it as well.
+     A row whose date is the NUMBER 2026 threw "t.date.slice is not a function"
+     at the first of them.
+     WHAT THE THROW DOES is why this belongs here rather than in a guard inside
+     yfTxns. renderYF() wraps its whole body in a try/catch, so the Yearly tab
+     rendered NOTHING -- every figure left at whatever it last said, and only a
+     console line to show for it. arcSnapshot() has no catch of its own, so the
+     same throw travelled up into the rollover's try/catch and silently skipped
+     the SEAL as well: the identical swallowed-rollover failure the prev.stats
+     guard was added for.
+     Repaired, not dropped, wherever the value says what it means -- an unpadded
+     '2026-2-5', a missing day, an ISO timestamp from a cloud record, a numeric
+     year. An unknown day becomes the 15th, which is the day meSaveTx already
+     writes for a month-only entry.
+     A year with no month becomes January, and that is a guess, made for a
+     stated reason: the row's YEAR is legible, so it is already inside
+     state.yfYear's filter and inside the category tables -- but a month that
+     does not parse is skipped by the `m>=0&&m<12` test the month buckets use,
+     and Start/End/Saved/Growth and the Totals row are all summed from those
+     buckets. Left alone it would be money in the category table and in no
+     total, which is the exact fault the category-table union fixed from the
+     other side. January the 15th keeps every figure reconciling, in the right
+     year, in a row the user can see and correct.
+     Anything with no legible year is left EXACTLY as it is. It matched no year
+     before and still does not, so no figure moves; deleting a row to tidy that
+     up is the trade normalizeYF already refuses to make for a bad `amt`. The
+     point of this pass is that it can no longer take a render down with it. */
+  const yfYMD=v=>{
+    if(typeof v==='number'&&isFinite(v)) v=String(v);
+    if(typeof v!=='string') return '';
+    // (?!\d) so a compact 20260205 is NOT read as the year 2026 and then given
+    // a month nobody wrote -- it has no separators, so it is not this app's
+    // date and is better left in no total than filed under a guessed January
+    const m=v.trim().match(/^(\d{4})(?!\d)(?:-(\d{1,2})(?:-(\d{1,2}))?)?/);
+    if(!m) return v;                             // no year at the front: untouched
+    const mo=+(m[2]||1), d=+(m[3]||15);
+    // an impossible month or day is not a date at all; meParseDate refuses the
+    // same two ranges rather than guessing which field was meant
+    if(!(mo>=1&&mo<=12)||!(d>=1&&d<=31)) return v;
+    return m[1]+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  };
+  y.txns.forEach(t=>{ t.date=yfYMD(t.date); });
+  y.txns=y.txns.filter(t=>t.date);               // a date that coerced to nothing
   /* THE OPENING BALANCE AND THE BUDGET ARE MONEY TOO, and nothing coerced them.
      `start[year]` is the Start tile and the base of End, Saved and Growth, and
      every one of those is computed with `start + totInc - totExp`. Hand a
