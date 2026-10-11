@@ -418,6 +418,65 @@ const section = t => console.log(`\n── ${t} ──`);
   check(await page.evaluate(() => window.scrollY) === yBefore,
     'and Space does not scroll the page instead');
 
+  /* ── the running balance is the one figure here that ACCUMULATES ─────────
+     Binary floating point cannot hold $0.10, so a chain of ordinary amounts
+     drifts off the exact figure. plMoney rounds to whole dollars, so the drift
+     is never visible as a NUMBER -- but two places compare rather than print,
+     and both of them say something to the user:
+
+       `end<seg.start` paints the ending balance in the fell-below colour, so a
+       plan that ends exactly where it started read as having lost money;
+       plMoney took its sign from the raw value, so a balance of -$0.40 -- and a
+       balance of -5.66e-15, which is zero -- printed as "-$0".
+
+     Both fixtures are ordinary money. The first is a $100.40 charge against a
+     $100 balance with a $0.40 refund after it; the second is three small
+     amounts that cancel exactly. */
+  section('the running balance is kept in cents, not in float noise');
+  const drift = await page.evaluate(() => ({ a: 100 - 100.40 + 0.40, b: 1000 - 0.1 - 0.2 + 0.3 }));
+  /* Without this the section can pass on a fixture that never drifts at all --
+     and the first shape tried here did not: 100 - 0.1 - 0.2 + 0.3 comes out as
+     exactly 100, so the "ends level" check was proving nothing until this
+     assertion failed and said so. The second fixture has to land BELOW its
+     start as well as off it, since that is what trips `end<seg.start`. */
+  check(drift.a !== 0 && drift.b < 1000,
+    'PRECONDITION: these amounts really do drift in raw float arithmetic',
+    JSON.stringify(drift));
+
+  const cents = await page.evaluate(() => {
+    state.plan = { segments: [{ id: 'c1', name: 'Cents', start: 100, open: true, items: [
+      { id: 'a', date: '2026-01-10', type: 'expense', name: 'Charge', amt: 100.40, notes: '' },
+      { id: 'b', date: '2026-01-20', type: 'income',  name: 'Refund', amt: 0.40,  notes: '' }] }] };
+    normalizePlan(); renderPlan();
+    const r = plRun(state.plan.segments[0]);
+    const el = document.querySelector('.pl-seg[data-id="c1"]');
+    return { end: r.end, low: r.low, lowDate: r.lowDate,
+             bals: [...el.querySelectorAll('.pl-bal')].map(n => n.textContent),
+             foot: el.querySelector('.pl-foot').textContent };
+  });
+  check(cents.end === 0, 'a refund that exactly cancels its charge ends on 0, not on 5.66e-15',
+    String(cents.end));
+  check(cents.low === -0.4, 'and the lowest point is the cent figure it really reached',
+    String(cents.low));
+  check(JSON.stringify(cents.bals) === JSON.stringify(['$0', '$0']),
+    'neither balance prints as "-$0"', JSON.stringify(cents.bals));
+  check(!/-\$0/.test(cents.foot), 'and neither does the foot', cents.foot.trim());
+
+  const level = await page.evaluate(() => {
+    state.plan = { segments: [{ id: 'c2', name: 'Level', start: 1000, open: true, items: [
+      { id: 'a', date: '2026-02-01', type: 'expense', name: 'a', amt: 0.1, notes: '' },
+      { id: 'b', date: '2026-02-02', type: 'expense', name: 'b', amt: 0.2, notes: '' },
+      { id: 'c', date: '2026-02-03', type: 'income',  name: 'c', amt: 0.3, notes: '' }] }] };
+    normalizePlan(); renderPlan();
+    const el = document.querySelector('.pl-seg[data-id="c2"]');
+    return { end: plRun(state.plan.segments[0]).end,
+             dn: !!el.querySelector('.pl-segsum b.dn'),
+             sum: el.querySelector('.pl-segsum').textContent };
+  });
+  check(level.end === 1000, 'amounts that cancel exactly land back on the start', String(level.end));
+  check(!level.dn,
+    'so a plan that ends level is not painted as having fallen below its start', level.sum.trim());
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nPLAN: ${pass} passed, ${fail} failed`);
