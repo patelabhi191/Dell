@@ -7975,7 +7975,16 @@ function yfDeleteCat(type,name){
   // Monthly rows sharing the name are not this category and must not block it
   const used=state.yf.txns.filter(t=>t.tab!=='me'&&t.type===type&&t.cat===name);
   if(used.length){
-    toast(`Cannot delete "${name}" \u2014 ${used.length} transaction${used.length>1?'s':''} use it. Its amount must be $0 first.`);
+    /* THE COUNT IS WHAT BLOCKS THIS, NOT THE AMOUNT. The message used to end
+       "Its amount must be $0 first", and a user who did exactly that was
+       refused again: a $0 row is still a row, so `used.length` is still 1.
+       Say what the code checks. (Zeroing the rows as a route to deleting the
+       category would be a product decision, and the wrong one by default --
+       a category with rows against it is far more likely a misclick than a
+       cleanup.) */
+    const n=used.length;
+    toast(`Cannot delete "${name}" \u2014 ${n} transaction${n>1?'s':''} use${n>1?'':'s'} it. `+
+      `Move or delete ${n>1?'those rows':'that row'} first.`);
     return;
   }
   if(!confirm(`Delete the ${type} category "${name}"? Any planned amounts for it are removed too.`)) return;
@@ -8059,12 +8068,18 @@ function yfDelete(id){
 }
 function yfFillTxMonth(){
   const sel=$('yfTxMonth'); if(!sel) return;
-  const yr=String(state.yfYear);
-  // only months that actually have records in the selected year
-  // always list all twelve; months holding records are marked so empties are obvious
-  const have=new Set((state.yf.txns||[])
-    .filter(t=>t.tab!=='me' && t.date && t.date.slice(0,4)===yr)
-    .map(t=>t.date.slice(5,7)));
+  /* ALL TWELVE MONTHS, ALWAYS, whether they hold records or not -- picking an
+     empty month and reading "Nothing matches this filter" is a clearer answer
+     than a picker that quietly has no February in it.
+     Two stale comments and a dead `have` set lived here, left over from the
+     version that listed only the months with records and then from a version
+     that was going to mark them: one said "only months that actually have
+     records", which is the opposite of the loop below it, and the other claimed
+     the months holding records "are marked", which nothing did. The set they
+     described was computed on every render and read nowhere.
+     yfTxCat, ten lines down, really does narrow itself to what exists, and for
+     its own stated reason -- offering a category that cannot appear would just
+     render an empty table. A month that cannot appear is still a month. */
   sel.innerHTML='<option value="all">All months</option>'+
     YF_MONTHS.map((nm,i)=>{
       const mm=String(i+1).padStart(2,'0');

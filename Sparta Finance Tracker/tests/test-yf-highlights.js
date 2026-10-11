@@ -822,6 +822,42 @@ const cards = page => page.evaluate(() =>
      does on Monthly: the bar says nothing rather than something false. */
   check((await p6.evaluate(() => document.getElementById('yfExpAct').textContent)).startsWith('−'),
     '8g: and the signed figure beside it still reads as negative');
+  /* ── 8h. the two controls under the tables say what they do ────────────
+     The refusal on a category that is in use ended "Its amount must be $0
+     first", and a user who did exactly that was refused again: the guard counts
+     ROWS, and a $0 row is still a row. An instruction that does not work is
+     worse than no instruction, because it is followed.
+     The month picker is the other half: it always offers twelve, and the two
+     comments above it claimed otherwise -- one said it listed only the months
+     holding records, which is what it used to do. */
+  console.log('\n── 8h. the category refusal and the month picker ──');
+  const del = await p6.evaluate(y => {
+    state.yfYear = y;
+    state.yf.txns = [{ id: 'z1', type: 'expense', date: y + '-04-04', amt: 0,
+                       desc: 'zeroed', cat: 'Home', who: 'ABI', tab: 'yf' }];
+    if (!state.yf.cats.exp.includes('Home')) state.yf.cats.exp.push('Home');
+    renderYF();
+    const zero = state.yf.txns[0].amt === 0;
+    yfDeleteCat('expense', 'Home');          // refuses before any confirm()
+    return { zero, msg: document.getElementById('toast').textContent,
+             stillThere: state.yf.cats.exp.includes('Home') };
+  }, YEAR);
+  // the whole point is that the row's amount is ALREADY zero
+  check(del.zero, '8h: PRECONDITION — the only row against the category is $0',
+    String(del.zero));
+  check(del.stillThere && /1 transaction uses it/.test(del.msg),
+    '8h: a $0 row still blocks the delete, and the count is what it names', del.msg);
+  check(!/\$0/.test(del.msg),
+    '8h: and it no longer tells the user to do the thing that does not work', del.msg);
+
+  const months = await p6.evaluate(() => {
+    const opts = [...document.getElementById('yfTxMonth').options].map(o => o.value);
+    return { n: opts.length, first: opts[0], hasFeb: opts.includes('02') };
+  });
+  check(months.n === 13 && months.first === 'all' && months.hasFeb,
+    '8h: the month picker offers all twelve plus All, on a year with one record',
+    JSON.stringify(months));
+
   check(perr6.length === 0, '8g: no page errors', perr6.join(' | '));
   await c6.close();
 
