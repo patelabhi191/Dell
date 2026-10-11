@@ -7302,6 +7302,19 @@ function normalizeYF(){
      trade. Zeroed, it shows as $0 in the list where it can be seen and fixed;
      left alone, one of them made every figure on two tabs read $NaN. */
   y.txns.forEach(t=>{ t.amt=fin(t.amt); });
+  /* INCOME OR EXPENSE, AND NOTHING ELSE -- the same fold normalizePlan already
+     applies to a plan item's type, and for a sharper reason here. Three figures
+     test for 'expense' and one for 'income', so a row carrying NEITHER was in
+     no total at all: not in yfSpendOf, not in a month bucket, not in a category
+     row -- while the transaction list prints its amount under the EXP tag,
+     because that cell reads `t.type==='income'?'IN':'EXP'` and anything that is
+     not income reads as an expense. Money on screen, in nothing that adds up,
+     which is the state this file consistently treats as the worst one.
+     Folded to what the row was already being LABELLED, so the figure starts
+     counting where the user has been reading it. Case-insensitive: 'Income'
+     from an older build or a hand-edited record must not become an expense and
+     move money across the year. */
+  y.txns.forEach(t=>{ t.type=String(t.type||'').trim().toLowerCase()==='income'?'income':'expense'; });
   /* THE DATE IS A YYYY-MM-DD STRING, and every reader trusts that without
      asking: yfTxns() opens with `t.date.slice(0,4)`, the transaction list sorts
      on `b.date.localeCompare`, both month loops do

@@ -924,6 +924,44 @@ const cards = page => page.evaluate(() =>
     '8i: and the Totals row and the category rows still agree about it',
     JSON.stringify(bad.sumsAgree));
 
+  /* ── 8j. a row carrying neither 'income' nor 'expense' ───────────────
+     Three figures test for 'expense' and one for 'income', so a row with
+     neither counted in nothing -- not in yfSpendOf, not in a month bucket, not
+     in a category row. The transaction list showed it anyway, under the EXP
+     tag, because that cell reads `t.type==='income'?'IN':'EXP'`: money on
+     screen, in no total. normalizePlan folds a plan item's type the same way. */
+  console.log('\n── 8j. a row with no type at all ──');
+  const noType = await p6.evaluate(y => {
+    state.yfYear = y;
+    state.yf.txns = [
+      { id: 'n1', type: 'income', date: y + '-01-10', amt: 1000, desc: 'Pay', cat: 'Paycheck', who: 'ABI', tab: 'yf' },
+      { id: 'n2',                 date: y + '-02-10', amt:  100, desc: 'no type', cat: 'Home', who: 'ABI', tab: 'yf' },
+      { id: 'n3', type: 'Income', date: y + '-03-10', amt:  200, desc: 'capital I', cat: 'Paycheck', who: 'ABI', tab: 'yf' },
+    ];
+    state.yf.start = { [y]: 0 };
+    state.yf.planned = { [y]: {} };
+    const before = { two: state.yf.txns[1].type, three: state.yf.txns[2].type };
+    renderYF();
+    const t = id => (document.getElementById(id).textContent || '').trim();
+    const tags = [...document.querySelectorAll('#yfTxBody tr')]
+      .map(tr => tr.children[1].textContent.trim());
+    return { before, types: state.yf.txns.map(x => x.type), tags,
+             end: t('yfEndVal'), saved: t('yfSaved') };
+  }, YEAR);
+  check(noType.before.two === undefined && noType.before.three === 'Income',
+    "8j: PRECONDITION — one row had no type and one had 'Income'",
+    JSON.stringify(noType.before));
+  check(JSON.stringify(noType.types) === JSON.stringify(['income', 'expense', 'income']),
+    '8j: a missing type folds to expense, which is how the list already labelled it',
+    JSON.stringify(noType.types));
+  /* 1,000 in + 200 in − 100 out = 1,100. Before, the 100 was in no figure and
+     the 200 was an EXPENSE, so End read 800 on the same three rows. */
+  check(noType.end === '$1,100' && noType.saved === '$1,100',
+    '8j: and every row now counts — in the direction it was labelled',
+    JSON.stringify([noType.end, noType.saved]));
+  check(JSON.stringify(noType.tags) === JSON.stringify(['IN', 'EXP', 'IN']),
+    "8j: 'Income' stays income rather than crossing the year", JSON.stringify(noType.tags));
+
   check(perr6.length === 0, '8g: no page errors', perr6.join(' | '));
   await c6.close();
 
