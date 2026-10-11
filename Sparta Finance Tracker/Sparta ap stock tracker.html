@@ -7792,10 +7792,24 @@ function renderYF(){
   const paMax=Math.max(expPlanY,totExp,incPlanY,totInc,1);
   $('yfExpPlan').textContent=yf$(expPlanY); $('yfExpAct').textContent=yf$(totExp);
   $('yfIncPlan').textContent=yf$(incPlanY); $('yfIncAct').textContent=yf$(totInc);
-  $('yfExpPlanBar').style.width=(expPlanY/paMax*100)+'%';
-  $('yfExpActBar').style.width=(totExp/paMax*100)+'%';
-  $('yfIncPlanBar').style.width=(incPlanY/paMax*100)+'%';
-  $('yfIncActBar').style.width=(totInc/paMax*100)+'%';
+  /* A WIDTH THE BROWSER REFUSES LEAVES THE LAST ONE IN PLACE, which is worse
+     than drawing nothing. A year whose refunds outweigh its charges has a
+     NEGATIVE Spend -- an ordinary, documented row shape -- and `width:-8.33%`
+     is invalid, so the declaration is dropped and the element keeps whatever it
+     was given last time. Measured: switching the year selector from a year of
+     $9,000 spending to one netting -$500 left the Spend bar at a full 100%
+     beside a figure reading "−$500". Nothing threw and nothing was logged; the
+     bar simply described the previous year.
+     Clamped at zero, so a negative total draws no bar and the signed figure
+     beside it carries the meaning -- which is how renderME's category bars were
+     settled for the same reason, and how a single negative category already
+     reads there. The maximum needs no clamp: paMax is at least 1 and at least
+     every value above it. */
+  const paW=v=>Math.max(0,v/paMax*100)+'%';
+  $('yfExpPlanBar').style.width=paW(expPlanY);
+  $('yfExpActBar').style.width=paW(totExp);
+  $('yfIncPlanBar').style.width=paW(incPlanY);
+  $('yfIncActBar').style.width=paW(totInc);
 
   // ----- category tables -----
   const nowM=(yr===new Date().getFullYear())?(new Date().getMonth()+1):12;

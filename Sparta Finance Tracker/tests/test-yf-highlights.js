@@ -766,6 +766,65 @@ const cards = page => page.evaluate(() =>
     await c5.close();
   }
 
+  /* ── 8g. a Spend that nets below zero draws no bar ───────────────────
+     A year whose refunds outweigh its charges has a negative Spend, which is an
+     ordinary documented row shape. `width:-8.33%` is invalid CSS, so the
+     declaration is DROPPED and the element keeps the width it was last given --
+     the bar goes on describing the previous year rather than this one. That is
+     the same shape as the all-refund month that painted a bar five times its
+     track on Monthly, and it is asserted the same way: by driving an ordinary
+     year first, so there is a stale width in place to notice. */
+  console.log('\n── 8g. a negative Spend clears its bar instead of keeping the last one ──');
+  const c6 = await browser.newContext();
+  const p6 = await c6.newPage();
+  await stub(p6);
+  const perr6 = [];
+  p6.on('pageerror', e => perr6.push(e.message));
+  await p6.goto(url, { waitUntil: 'load' });
+  await p6.waitForTimeout(300);
+  const barOf = () => p6.evaluate(() => ({
+    w: document.getElementById('yfExpActBar').style.width,
+    fig: (document.getElementById('yfExpAct').textContent || '').trim(),
+  }));
+  await p6.evaluate(y => {
+    state.yfYear = y;
+    state.yf.txns = [
+      { id: 'h1', type: 'expense', date: y + '-01-10', amt: 9000, desc: 'Reno', cat: 'Home',     who: 'ABI', tab: 'yf' },
+      { id: 'h2', type: 'income',  date: y + '-01-01', amt: 9000, desc: 'Pay',  cat: 'Paycheck', who: 'ABI', tab: 'yf' },
+    ];
+    state.yf.start = { [y]: 1000 };
+    state.yf.planned = { [y]: { Home: 500 } };
+    if (!state.yf.cats.exp.includes('Home')) state.yf.cats.exp.push('Home');
+    renderYF();
+  }, YEAR);
+  await goYearly(p6);
+  const heavy = await barOf();
+  // without a width already in place, "0%" below would prove nothing
+  check(heavy.w === '100%',
+    '8g: PRECONDITION — an ordinary year leaves the Spend bar at a real width',
+    JSON.stringify(heavy));
+
+  await p6.evaluate(y => {
+    state.yf.txns = [
+      { id: 'f1', type: 'expense', date: y + '-02-05', amt:  200, desc: 'Jacket',   cat: 'Home',     who: 'ABI', tab: 'yf' },
+      { id: 'f2', type: 'expense', date: y + '-02-20', amt: -700, desc: 'Returned', cat: 'Home',     who: 'ABI', tab: 'yf' },
+      { id: 'f3', type: 'income',  date: y + '-02-01', amt: 3000, desc: 'Pay',      cat: 'Paycheck', who: 'ABI', tab: 'yf' },
+    ];
+    renderYF();
+  }, YEAR);
+  await p6.waitForTimeout(150);
+  const refund = await barOf();
+  check(refund.fig === '−$500',
+    "8g: PRECONDITION — the year's Spend really does come out below zero", refund.fig);
+  check(refund.w === '0%',
+    '8g: so the bar is cleared, not left at the previous year\'s length', refund.w);
+  /* The figure beside it carries the meaning, exactly as a negative category
+     does on Monthly: the bar says nothing rather than something false. */
+  check((await p6.evaluate(() => document.getElementById('yfExpAct').textContent)).startsWith('−'),
+    '8g: and the signed figure beside it still reads as negative');
+  check(perr6.length === 0, '8g: no page errors', perr6.join(' | '));
+  await c6.close();
+
   await browser.close(); srv.close();
   console.log(`\nYF HIGHLIGHTS: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
