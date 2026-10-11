@@ -9718,9 +9718,32 @@ function normalizePlan(){
 normalizePlan();
 let plEditId=null;                       // one row at a time, across all segments
 let plSaveTimer=null;
+/* A PLAN EDIT IS A USER EDIT, and saying so is what lets it reach the cloud.
+   cloudSaveDebounced() opens with `if(!fbUserEdited) return` -- nothing is
+   pushed until the app knows a person edited something, so that merely opening
+   the file on a new device cannot overwrite what is already stored. Every other
+   tab says so: the Yearly, Monthly and Contributions handlers each call
+   markUserEdit() themselves, and arcPersist() does it inside the persist with
+   exactly this guard. Plan did NEITHER, from any of its five mutations -- an
+   item added or deleted, a segment created, its name or its starting balance
+   edited -- so a session spent building a plan wrote to this device's disk,
+   stamped state.updatedAt as the freshest copy anywhere, and pushed nothing.
+   The plan then existed on one device while that device's stamp claimed
+   authority, which is the worst of both: not synced, and in the way.
+   Guarded like arcPersist's rather than added to five call sites, because
+   planPersistSoon() debounces two of them and would need it twice over. */
 function planPersist(){ store.set('sparta.plan', state.plan); touchUpdatedAt();
+  if(typeof fbBooting!=='undefined' && !fbBooting && !fbApplying && !fbAutomated) markUserEdit();
   if(typeof cloudSaveDebounced==='function') cloudSaveDebounced() }
-function planPersistSoon(){ clearTimeout(plSaveTimer); plSaveTimer=setTimeout(planPersist,400) }
+/* The debounced path marks the edit NOW rather than in 400ms. The flag is only
+   a flag, and the two callers are both a person typing -- the segment's name and
+   its starting balance. Deferring it meant the two edits a user is most likely
+   to make and then immediately switch away from were the two that had not yet
+   admitted to being edits. */
+function planPersistSoon(){
+  if(typeof fbBooting!=='undefined' && !fbBooting && !fbApplying && !fbAutomated) markUserEdit();
+  clearTimeout(plSaveTimer); plSaveTimer=setTimeout(planPersist,400);
+}
 
 const plSeg=id=>state.plan.segments.find(s=>s.id===id);
 const plNum=v=>{ const n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:0 };

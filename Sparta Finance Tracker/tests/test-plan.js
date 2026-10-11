@@ -549,6 +549,62 @@ const section = t => console.log(`\n── ${t} ──`);
     'pressing a second pencil moves the edit rather than leaving two forms open',
     JSON.stringify(moved));
 
+  /* ── a plan edit has to COUNT as a user edit ───────────────────────
+     cloudSaveDebounced() opens with `if(!fbUserEdited) return`: nothing reaches
+     the cloud until the app knows a person edited something, so that opening the
+     file on a new device cannot overwrite what is already stored. Every other
+     tab sets that flag -- the Yearly, Monthly and Contributions handlers call
+     markUserEdit() themselves, arcPersist() does it inside the persist. Plan did
+     neither, so a session spent building a plan saved to this device's disk,
+     stamped state.updatedAt as the freshest copy anywhere, and pushed nothing.
+     Five mutations, each checked from a cleared flag. */
+  section('a plan edit counts as a user edit, or it never reaches the cloud');
+  await page.evaluate(() => {
+    state.plan = { segments: [{ id: 'U', name: 'u', start: 100, open: true, items: [
+      { id: 'u1', date: '2026-12-01', type: 'expense', name: 'a', amt: 10, notes: '' }] }] };
+    normalizePlan(); renderPlan();
+  });
+  await page.waitForTimeout(200);
+  const gate = await page.evaluate(() => {
+    const out = {};
+    const clear = () => { window.fbUserEdited = false; return window.fbUserEdited === false };
+    out.clears = clear();                       // the flag is writable from here at all
+    const seg = () => document.querySelector('.pl-seg[data-id="U"]');
+
+    clear();
+    seg().querySelector('.pl-f-name').value = 'New';
+    seg().querySelector('.pl-f-amt').value = '50';
+    seg().querySelector('.pl-addbtn').click();
+    out.addItem = window.fbUserEdited;
+
+    clear();
+    const nm = seg().querySelector('.pl-segname');
+    nm.value = 'renamed'; nm.dispatchEvent(new Event('input', { bubbles: true }));
+    out.rename = window.fbUserEdited;
+
+    clear();
+    const st = seg().querySelector('.pl-start');
+    st.value = '999'; st.dispatchEvent(new Event('input', { bubbles: true }));
+    out.startBal = window.fbUserEdited;
+
+    clear();
+    seg().querySelector('.pl-row .pl-act.del').click();
+    out.delItem = window.fbUserEdited;
+
+    clear();
+    document.getElementById('plNewSeg').click();
+    out.newSeg = window.fbUserEdited;
+    return out;
+  });
+  // if the flag could not be cleared, every check below would pass on a stale true
+  check(gate.clears === true,
+    'PRECONDITION: the user-edit flag can be cleared from the test', String(gate.clears));
+  check(gate.addItem === true, 'adding an item marks a user edit', String(gate.addItem));
+  check(gate.delItem === true, 'deleting one does too', String(gate.delItem));
+  check(gate.rename === true, 'renaming a segment does too', String(gate.rename));
+  check(gate.startBal === true, 'editing the starting balance does too', String(gate.startBal));
+  check(gate.newSeg === true, 'and so does creating a segment', String(gate.newSeg));
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nPLAN: ${pass} passed, ${fail} failed`);
