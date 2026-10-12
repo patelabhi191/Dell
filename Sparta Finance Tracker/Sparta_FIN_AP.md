@@ -1934,6 +1934,95 @@ Every surface here is translucent glass over an animated decorative field, often
 *and gradients* down, reading `background-clip:text` as ink rather than backdrop, and freezing
 transitions, which matters because a mid-transition read differs from the settled one.
 
+## 9a. WHERE THIS WAS PAUSED — read this first if you are picking the work back up
+
+Paused 2026-10-12, mid-way through a pre-deployment review. **Everything done is committed and
+pushed**; nothing of value lives only in a container. Build stamp `2026-10-11`, suite
+**1,956 passed / 0 failed across 18 files** (`tests/run-all.sh`), verified on the pushed tree.
+
+**Branches on origin:**
+
+| branch | what it holds |
+|---|---|
+| `claude/sparta-finance-tracker-setup-raxi7z` | the work. 43 commits of review. This is the live branch. |
+| `claude/sparta-contrast-tokens-HELD` | **one commit deliberately NOT merged** — see decision 2 below. Do not delete it. |
+
+### What the review covered
+
+All six tabs were audited for correctness, one or two at a time, each by a reviewer briefed to fix
+only clear defects and to propose anything discretionary. Dashboard, Archives, Contributions,
+Monthly Expense, Yearly Finance and Plan are all done. 273 checks were added, and **every fix was
+verified by breaking it again and watching its test fail with the old value printed** — that
+discipline caught several tests in this repo that were passing vacuously, including one that was
+certifying a contrast failure as a pass.
+
+The defects worth knowing about, because they say where this file is weak:
+
+- **Data from outside the form is the recurring gap** (the file's own section 8.3 names it). Five
+  separate defects arrived through a cloud pull, an older build or a hand-edited record: a string
+  opening balance printing End as **$80,002,450**; a non-string date freezing the Yearly tab *and*
+  silently skipping the year seal; `$NaN` sealed permanently into an archive; a string `year`
+  creating a duplicate archive card; a legacy history shape throwing at `drawChart`.
+  `normalizeYF` and `histPts` are now the choke points — **add new coercions there, not in readers.**
+- **Refunds are the second recurring gap.** Six defects were a negative amount meeting code written
+  for positives: a dash where a figure belonged, a bar five times its track, a guard refusing to
+  save a refund, a Spend bar left describing the previous year, `−$0` in the over-spent colour.
+  **Any new display branch keyed on `v > 0` is suspect.**
+- **Stored XSS** via a Yearly category name, which rides in `corePayload()` and so executed on every
+  synced device. All 34 interpolation sites are now escaped; keep it that way.
+- **A silent data-loss path** on a full `localStorage` drawer — rows held in memory, drawn on
+  screen, never written, gone on reload, nothing thrown or logged.
+
+### FOUR DECISIONS WAITING ON THE OWNER — none of them blocked on more work
+
+1. **`Invested` and `Moved else` are keyed to the literal category names** `'Investment'` and
+   `'Other Bank'` (`renderYF`, and `arcSnapshot`). Renaming either category is one click with no
+   warning and silently zeroes that tile **and Off-paper**, on the tab and in every future archive,
+   while already-sealed cards keep the old figure. Same class as the `allot`-by-name bug this
+   project already fixed, with the identity hard-coded instead of stored. Either refuse the rename
+   with a toast, or store the two keys in state and follow the rename. **The auditor's recommendation
+   was to settle this before release.**
+2. **The two dim ink tokens** (`claude/sparta-contrast-tokens-HELD`). `--text-faint` at alpha .35
+   measures **2.71–2.97:1** composited, against a 4.5:1 bar, and it carries every form `label`,
+   every `.htable th`, and every empty state — so on a tab with no data the sentence explaining why
+   it is empty is the least readable thing on screen. Raising both tokens takes the six tabs from
+   **65 failing specs to 20**, and 15 of the remaining 20 are Plan. The decisive evidence is
+   internal: **Monthly had already escaped the token by hand**, hardcoding `#93A2B8`/`#8695AB`
+   (≈ α .64/.58, measuring 5.4–7.1:1) — five tabs were failing a bar the sixth had already met.
+   Held only because it is the one change that alters how every tab looks, against the standing
+   "UI remains constant" rule. **Decide against `preview-contrast-tokens.html`**, which shows eight
+   affected roles current-vs-proposed with ratios, plus two whole tabs.
+3. **Print is unusable.** **0 `@media print` rules** out of ~890. Chrome leaves "Background graphics"
+   off by default, so the backgrounds go and the text colours stay: `#EAF0FA` is **1.14:1 on white
+   paper**. A year's finances print as a near-blank page on which the decorative `aria-hidden`
+   artwork comes out *stronger than the data*. See `screens/print/yearly-as-printed.png`. ~15 lines
+   would fix it; left alone because nobody has said they print this.
+4. **The quota toast is new user-facing copy.** The `localStorage`-full fix reports once per session
+   via the existing toast. Justified (an error path that previously lied by omission) but it does add
+   a string to the UI, which the standing rule discourages. Accept, or reduce it to console-only.
+
+### THE ONE PIECE OF WORK LEFT
+
+**A large-ledger boot profile**, never completed — its agent was interrupted. A realistic
+five-years-of-use fixture (several thousand Yearly/Monthly rows, ~4,000 history points, a few
+hundred contributions, five or six archives, a full Plan), then: cold boot to interactive and where
+the time goes (parse, the load-time migrations and normalisers, `compactHistory`, `arcAutoSeal`,
+first `render()`), tab-switch and typing latency, the 60-second `snapshot()` + `persist()` cost, and
+the total `localStorage` footprint against the quota the app now reports on.
+
+**Lower priority than it looks**, because scale was measured incidentally three times and came back
+clean: 3,000 Yearly rows render in 374 ms, 2,000 Plan items in 105 ms, 4,001 Monthly rows in 47 ms.
+What is unmeasured is the *whole* app loaded at once.
+
+### Two process notes that cost real work here
+
+- **Agents share one session rate limit with the main session.** Three run in parallel exhausted it
+  in minutes and produced one commit between them; one run alone completed in 50–85 minutes with a
+  full report. **Run them one at a time.**
+- **Brief every agent to commit as it confirms each finding**, not to batch to the end. One agent
+  lost four proven defects to a mid-task interruption because they were unwritten; another came one
+  tool call from losing the single best finding on its tabs.
+
 ## 10. Known Gaps / Next Steps (as of this handoff)
 
 - **Archives is built** (build 2026-10-01B): one card per sealed year, on iOS-style glass,
