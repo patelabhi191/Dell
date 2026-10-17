@@ -6217,8 +6217,17 @@ function spartaReset(ids, alsoCloud){
   try{ picked.forEach(r=>RESET_CLEAR[r.id]()) }
   finally{ if(alsoCloud) fbLocalOnly=false }
   if(alsoCloud && typeof cloudPushAll==='function' && fbDB) cloudPushAll().catch(()=>{});
+  /* SHORT ON PURPOSE. This string lands in #fbStatus, which sits inline in the
+     Cloud sync card's heading row, and the drawer's whole content has a 660px
+     budget (test-storage section 2c) so it needs no scrollbar on a laptop. At 82
+     characters the first version of this wrapped that heading from 19px to 41px
+     and put the drawer 17px over -- and it did so only on some font metrics, so
+     it passed in one container and failed in the next. Every other status here
+     is 8 to 43 characters; keep this one in that range. The route back is
+     already in the confirm the user just agreed to ("a reconnect will pull them
+     back"), which is the right place for an instruction. */
   if(!alsoCloud && state.fbOn && typeof fbSetStatus==='function')
-    fbSetStatus('cleared here only \u2014 cloud untouched; Pull from cloud or reload to get it back');
+    fbSetStatus('cleared here only \u2014 cloud untouched');
   render();
   if(typeof renderYF==='function') renderYF();
   if(typeof renderME==='function') renderME();

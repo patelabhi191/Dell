@@ -1921,6 +1921,17 @@ Every surface here is translucent glass over an animated decorative field, often
   below the fold, so take ONE `fullPage` capture and index it by page-relative coordinates; and the
   app sets `scroll-behavior:smooth`, so a rect read straight after `scrollIntoView()` is still the
   pre-scroll rect.
+- **A LAYOUT BUDGET WITH A FEW PIXELS OF HEADROOM IS NOT ENVIRONMENT-PORTABLE**, and this cost a
+  real debugging session. `test-storage` section 2c caps the Settings drawer's content at 660px so
+  it needs no scrollbar on a laptop. The suite passed at 655px in one cloud container and failed at
+  **677px in the next, with byte-identical code** — proven by checking out the passing commit and
+  watching it fail. The cause was an 82-character string in `#fbStatus` (every other status there is
+  8–43 characters): it fitted one line on one container's font metrics and wrapped on another's,
+  taking the Cloud sync card's heading from 19px to 41px. **A string that long in an inline status
+  slot is a layout risk, not just copy.** When a figure sits within ~20px of a layout budget, expect
+  it to flip between environments, and when it does flip, check the commit that passed before
+  assuming the code moved.
+
 - **The sampled backdrop is not one colour, so a thin margin is not a pass.** It is an animated
   field under glass and it varies with time *and* position: ten samples of one pixel over four
   seconds gave three distinct values, and across rows of the same table the backdrop ranged from
