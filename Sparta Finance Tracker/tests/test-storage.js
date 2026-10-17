@@ -212,6 +212,39 @@ const YEAR = 2026;
     JSON.stringify(ticks.labels));
   check(ticks.rowsUsed === 1, 'all six share a single row', String(ticks.rowsUsed));
 
+  /* ── 2b-ii. the Clear button looks as dead as it is ───────────────────── */
+  section('2b-ii. a disabled Clear button does not look pressable');
+  /* #resetGo ships `class="btn is-off" disabled`, and only `.skeu-btn.is-off`
+     was styled -- a plain `.btn` takes no user-agent disabled styling either,
+     because the .btn rule sets `color` itself. So the most destructive control
+     in the app rendered identically whether it was live or inert. Asserted as a
+     RELATIONSHIP rather than a number: dimmer than the same button once it is
+     enabled, which cannot drift the way a pinned opacity can. */
+  const offLook = await page.evaluate(() => {
+    const b = document.getElementById('resetGo');
+    const boxes = document.querySelectorAll('#resetRows input[type=checkbox]');
+    const read = () => { const c = getComputedStyle(b);
+      return { op: parseFloat(c.opacity), cur: c.cursor, disabled: b.disabled,
+               off: b.classList.contains('is-off') } };
+    const dead = read();
+    boxes[0].checked = true; boxes[0].dispatchEvent(new Event('change', { bubbles: true }));
+    const live = read();
+    boxes[0].checked = false; boxes[0].dispatchEvent(new Event('change', { bubbles: true }));
+    return { dead, live, ticks: boxes.length };
+  });
+  check(offLook.ticks > 0 && offLook.dead.disabled && offLook.dead.off,
+    'it really does ship disabled, so the rest of this means something',
+    JSON.stringify(offLook.dead));
+  check(offLook.dead.op < offLook.live.op,
+    'disabled renders dimmer than enabled rather than identically',
+    JSON.stringify([offLook.dead.op, offLook.live.op]));
+  check(offLook.dead.cur === 'not-allowed' && offLook.live.cur !== 'not-allowed',
+    'and the cursor says so too, only while it is dead',
+    JSON.stringify([offLook.dead.cur, offLook.live.cur]));
+  check(offLook.live.op === 1 && !offLook.live.disabled,
+    'ticking a box brings it fully back, so the dimming is not permanent',
+    JSON.stringify(offLook.live));
+
   section('2c. the drawer never exceeds 75% of the screen');
   const fit = await page.evaluate(() => {
     const d = document.getElementById('drawer');          // the frame

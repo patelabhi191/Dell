@@ -2063,6 +2063,14 @@ to shared primitives with a correctness risk that a performance rewrite was not 
 Do it when a real ledger makes it hurt, and re-run `test-yf-highlights` 8d–8l, which pin that
 agreement from three directions.
 
+**Console: clean.** Nothing is logged at warning or error on an empty ledger, on the standard
+fixture, or on five years of data — across all six tabs and through real interaction (Settings, a
+help toggle, both currency and account filters, the ALL chart range, the sell dialog, an Archives
+card). With **every** outbound request blocked, four entries appear and all four are the browser's
+own resource failures for Google Fonts and the Frankfurter FX call; the app logs nothing itself and
+handles both (the FX fetch falls back to the stored rate, the font to a system stack). Probe:
+`tests/perf/` has the pattern, and `test-mobile`/`test-ui` already fail on any page error.
+
 **`localStorage`: 1.49 MB of 5 MB (30%) — but only 0.50 MB of it is live.** The other **0.99 MB is
 the pre-namespace originals, which the adoption block copies and then never deletes.** The sharpest
 case is history: the live namespaced copy is folded to 92 points by `compactHistory`, while the
@@ -2136,11 +2144,6 @@ Left alone because deleting them removes the safety net that is their whole purp
   AA and a three-step dim ramp cannot coexist on those surfaces, so the "past row" de-emphasis has
   to be carried by the row background rather than by dimming text. That last part is a product
   call.
-- **`#resetGo` ships `disabled` but looks pressable.** Only `.skeu-btn.is-off` is styled, and a
-  plain `.btn` takes no UA disabled styling because the rule sets `color` itself — so the app's most
-  destructive control reads as live while inert. Moving `.is-off{opacity:.45;cursor:not-allowed}`
-  out of the `.skeu-btn` scope covers both families; WCAG exempts inactive controls, so there is no
-  contrast cost.
 - **Five empty-state implementations for one role**: `.empty` 13.5px, `.np-empty` 12.5px,
   `.chart-empty` 13px, `.pl-none` 12.5px on its own `rgba(255,255,255,.45)`, `.arc-none` 11.5px on
   `--text-dim`, plus an ad-hoc inline one. Four sizes, four colours, four paddings — in the one

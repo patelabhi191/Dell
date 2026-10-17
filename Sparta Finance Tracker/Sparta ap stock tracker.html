@@ -1329,7 +1329,16 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 @media(max-width:520px){.me-addform{grid-template-columns:1fr}}
 /* the reminder that holds the import shut until a bill is chosen */
 .me-impgate{margin:10px 0 0;color:var(--amber);font-weight:600}
-.skeu-btn.is-off{opacity:.45;cursor:not-allowed}
+/* `.btn` as well as `.skeu-btn`, because the plain family had NOTHING. #resetGo
+   ships `class="btn is-off" disabled` -- the Clear-data button, the most
+   destructive control in the app -- and a plain .btn takes no user-agent
+   disabled styling either, because the .btn rule sets `color` itself. So it
+   read as pressable while inert. Kept at (0,2,0) rather than written as a bare
+   `.is-off`: the scoped form wins ties that a single class would lose, and
+   lowering specificity to widen a selector is how a rule stops applying
+   somewhere nobody checked. WCAG exempts inactive controls, so dimming costs
+   no contrast. */
+.btn.is-off,.skeu-btn.is-off{opacity:.45;cursor:not-allowed}
 .me-yfonly{font-size:var(--fs-micro);letter-spacing:var(--ls-label);font-weight:var(--fw-label);color:#7C8BA3;
   border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:3px 8px;white-space:nowrap}
 /* the merged payment line belongs to the bill above it, so it is tinted rather
