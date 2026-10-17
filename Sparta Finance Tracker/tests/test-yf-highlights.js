@@ -1127,6 +1127,78 @@ const cards = page => page.evaluate(() =>
     await c7.close();
   }
 
+  /* ── 8n. growth with nothing to grow from ──────────────────────────────
+     `growth` was `start>0 ? (end/start-1)*100 : 0`, so a year with no opening
+     balance printed "+0.0%" in the green slot -- a year that went from $0 to
+     $12,000 reporting no growth at all, in the one figure that tile exists for.
+     Both tabs are asserted, because the expression served Yearly and Archives
+     alike and they must not disagree about one sealed year. */
+  console.log('\n── 8n. growth from a zero start is a dash, on both tabs ──');
+  {
+    const c8 = await browser.newContext();
+    const p8 = await c8.newPage(); await stub(p8);
+    const perr8 = []; p8.on('pageerror', e => perr8.push(e.message));
+    await p8.goto(url, { waitUntil: 'load' }); await p8.waitForTimeout(300);
+    const TX = [
+      { type: 'income',  date: `${YEAR}-02-01`, amt: 9000, desc: 'Pay', cat: 'Paycheck', who: 'ABI' },
+      { type: 'income',  date: `${YEAR}-05-01`, amt: 5000, desc: 'Pay', cat: 'Paycheck', who: 'ABI' },
+      { type: 'expense', date: `${YEAR}-03-05`, amt: 2000, desc: 'Mar', cat: 'Food', who: 'ABI' },
+    ];
+    await seed(p8, TX, { Food: 1000 });
+    const zero = await p8.evaluate(yr => {
+      delete state.yf.start[yr];                 // the ordinary case: never typed one
+      renderYF();
+      const el = document.getElementById('yfPct');
+      return { start: state.yf.start[yr], txt: el.textContent, cls: el.className,
+               end: document.getElementById('yfEndVal').textContent };
+    }, YEAR);
+    check(zero.start === undefined, '8n: the year genuinely has no opening balance',
+      String(zero.start));
+    check(/\d/.test(zero.end) && !/^\$0/.test(zero.end),
+      '8n: ...while it really did end with money in it, so growth is not trivially nothing',
+      zero.end);
+    check(zero.txt === '\u2014', '8n: Yearly shows a dash, not "+0.0%"', zero.txt);
+    check(/yf-na/.test(zero.cls) && !/sparkle-green|yf-neg/.test(zero.cls),
+      '8n: ...in neither the rose nor the green, because it is undefined not good',
+      zero.cls);
+
+    // a genuine 0% year must still read +0.0% -- the two cases are NOT the same
+    const real0 = await p8.evaluate(yr => {
+      state.yf.start[yr] = 7000;
+      state.yf.txns = [{ id: 'z1', type: 'income', date: yr + '-02-01', amt: 1000,
+                         desc: 'Pay', cat: 'Paycheck', who: 'ABI' },
+                       { id: 'z2', type: 'expense', date: yr + '-03-01', amt: 1000,
+                         desc: 'Out', cat: 'Food', who: 'ABI' }];
+      renderYF();
+      const el = document.getElementById('yfPct');
+      return { txt: el.textContent, cls: el.className };
+    }, YEAR);
+    check(real0.txt === '+0.0%' && !/yf-na/.test(real0.cls),
+      '8n: a year that genuinely grew 0% still reads +0.0%, so the dash means only "undefined"',
+      JSON.stringify(real0));
+
+    // and the Archives card for a zero-start year says the same thing
+    const arc = await p8.evaluate(() => {
+      state.archives = [{ id: 'z', year: 2024, sealed: true,
+        stats: { start: 0, end: 12000, invested: 0, moved: 0, saved: 12000,
+                 offPaper: 12000, growth: 0 },
+        entries: 3, entriesYf: 3, entriesMe: 0, exp: [], inc: [],
+        mInc: Array(12).fill(0), mExp: Array(12).fill(0), meInc: Array(12).fill(0),
+        contrib: { abiT: 0, abiF: 0, pooT: 0, pooF: 0 }, highlights: [], byCat: {} }];
+      normalizeArchives(); renderArchives();
+      const em = document.querySelector('#arcList .ay-gro em');
+      return em ? { txt: em.textContent, cls: em.className } : null;
+    });
+    check(arc && arc.txt === '\u2014',
+      '8n: the Archives card for the same shape shows a dash too, so the tabs agree',
+      arc ? arc.txt : '(no growth slot found)');
+    check(arc && /na/.test(arc.cls) && !/dn/.test(arc.cls),
+      '8n: ...and in the neutral colour rather than the green it hardcodes',
+      arc ? arc.cls : '');
+    check(perr8.length === 0, '8n: no page errors', perr8.join(' | '));
+    await c8.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nYF HIGHLIGHTS: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

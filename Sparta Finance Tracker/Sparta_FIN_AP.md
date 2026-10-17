@@ -2122,6 +2122,12 @@ Left alone because deleting them removes the safety net that is their whole purp
   where the live copy is folded to 92 points and the plain original keeps all 4,000 at 504 KB.
   Keeping them is the deliberate safety net for a wrong fingerprint guess (see the adoption block);
   the permanent doubling looks like an unconsidered side effect of it. Upgraders only.
+- **Highlights' savings-rate denominator counts a refund-only month.** Now that a month netting
+  below zero is no longer filtered out (it was dropping the leanest month and inflating every
+  "% above average"), `dataM` includes a month that holds only a refund, so `rate` divides by it
+  and "Best savings month" can name it with "you kept $X after expenses" on zero income. Both are
+  defensible — that month did carry data, and its net really is positive — but the wording was
+  written for a month with income in it.
 - **Typing latency is not measurable in the cloud sandbox.** A bare `requestAnimationFrame` with no
   work costs ~134 ms there, so any per-keystroke figure is the harness. One earlier reading of
   "126 ms per keystroke" was entirely that. Measure a frame of nothing and subtract it, or measure
@@ -2163,10 +2169,6 @@ Left alone because deleting them removes the safety net that is their whole purp
   an axis reading `$0 / $0.5 / $1`); making the line itself visible means giving both charts a
   negative axis, which is a change to two tabs and is **not** done. Left as parity rather than
   diverging for one tab.
-- **`growth` reads `+0.0%` when `start <= 0`**, on an Archives card and on the Yearly tab, which
-  share the expression. A year that went from `$0` to `$57,400` shows `+0.0%` in the one figure
-  the card's layout exists to surface. Division by zero is guarded; the fallback is a wrong
-  figure rather than a blank. Both would have to change together.
 - **Two currencies, unlabelled, in the sell confirm and toast.** `fmtNat(r.avg, r.ccy)` is the
   trade's native currency while `money(back)` is the display currency, adjacent in one
   sentence — `Sold 10 AAPL at $200.00 — C$2,740.00 to TFSA cash`. Each figure is correct for

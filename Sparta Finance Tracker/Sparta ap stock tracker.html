@@ -1214,6 +1214,10 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .yf-mtable th:first-child,.yf-mtable td:first-child{width:96px;letter-spacing:.02em}
 .yf-mtable td:first-child,.yf-mtable th:first-child{text-align:left;font-weight:600}
 .yf-neg{color:var(--yf-exp)} .yf-pos{color:var(--yf-inc)}
+/* Savings growth with no opening balance to grow FROM. Neither green nor rose,
+   because the figure is undefined rather than good or bad -- see the comment in
+   renderYF. */
+.yf-na{color:var(--text-dim)}
 .yf-plan-in{width:86px;text-align:right;padding:6px 8px;font-size:12.5px;margin-left:auto}
 #yfExpTable td,#yfIncTable td{padding:4px 7px;font-size:12px}
 #yfExpTable th,#yfIncTable th{padding:6px 7px}
@@ -1827,6 +1831,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .ay-gro em{font-style:normal;font-size:var(--fs-display);font-weight:800;line-height:1;letter-spacing:-.02em;
   font-variant-numeric:tabular-nums;color:#4ADE80}
 .ay-gro em.dn{color:#E55959}
+.ay-gro em.na{color:var(--text-dim)}       /* undefined growth: see arcCardHTML */
 .ay-gro span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-dim);font-weight:var(--fw-label)}
 /* chevron + the testing-phase actions, far right, small and quiet.
    #archiveView-scoped because the view's blanket `#archiveView button` rule is
@@ -5311,7 +5316,12 @@ function arcCardHTML(a){
     : a.sealed ? 'Sealed · <b>'+(a.entries||0).toLocaleString('en-CA')+' entries</b>'+
                  (a.entriesMe ? ' <span class="ay-split">'+a.entriesYf+' yearly · '+a.entriesMe+' monthly</span>' : '')
                : 'Preview · <b>sealed 31 Dec</b>';
-  const dn=(st.growth||0)<0;
+  /* Same rule as renderYF's growth tile, from the same field: a start of zero
+     or less means the percentage is undefined, not 0%, so the card shows a dash
+     in neither green nor rose. Both tabs must say the same thing about one
+     sealed year, which is the whole contract arcSnapshot exists to keep. */
+  const growable=(st.start||0)>0;
+  const dn=growable&&(st.growth||0)<0;
   return '<div class="ay'+(open?' open':'')+'" data-id="'+a.id+'">'+
     '<div class="ay-top">'+
       /* The whole point of this button is that it opens the card, and it is
@@ -5333,7 +5343,8 @@ function arcCardHTML(a){
           '<span class="ay-col">'+
             '<span class="ay-s"><span>Saved total</span><b class="sav">'+arc$(st.saved)+'</b></span>'+
             '<span class="ay-s"><span>Off paper sav</span><b class="off">'+arc$(st.offPaper)+'</b></span></span>'+
-          '<span class="ay-gro"><em'+(dn?' class="dn"':'')+'>'+arcPct(st.growth)+'</em>'+
+          '<span class="ay-gro"><em'+(dn?' class="dn"':growable?'':' class="na"')+'>'+
+            (growable?arcPct(st.growth):'\u2014')+'</em>'+
             '<span>Savings growth</span></span>'+
         '</span>'+
       '</button>'+
@@ -7811,8 +7822,24 @@ function renderYF(){
   const nowMo=(yr===new Date().getFullYear())?(new Date().getMonth()+1):12;
   $('yfAvgInc').textContent=yf$(totInc/nowMo);
   $('yfAvgExp').textContent=yf$(totExp/nowMo);
-  $('yfPct').textContent=(start>0?((end/start-1)*100):0).toFixed(1).replace(/^(-?)/,m=>m==='-'?'\u2212':'+')+'%';
-  $('yfPct').className='num '+(end>=start?'sparkle-green':'yf-neg');
+  /* GROWTH FROM A ZERO OR NEGATIVE START IS NOT 0%, IT IS UNDEFINED -- there is
+     nothing for the year to have grown from. The old expression forced it to 0
+     and printed "+0.0%" in the green slot, so a year that went from $0 to
+     $57,400 reported no growth at all, in the one figure this tile exists for.
+     Not a rare shape either: the oldest year a ledger holds usually has no
+     typed opening balance, and `start` comes from `state.yf.start[year]||0`.
+     A dash is what this app already shows for a figure it does not have -- the
+     unrealized P/L line and the Monthly matrix cells both do it.
+     Decided from `start`, which BOTH tabs hold next to `growth`, so nothing
+     stored changes shape and no sealed archive needs migrating -- which also
+     means a genuine 0% year still reads "+0.0%" rather than being confused with
+     this one. Archives makes the same call in arcCardHTML; the two must agree,
+     and test-yf-highlights 8n asserts that they do. */
+  const growable = start > 0;
+  $('yfPct').textContent = growable
+    ? ((end/start-1)*100).toFixed(1).replace(/^(-?)/,m=>m==='-'?'\u2212':'+')+'%'
+    : '\u2014';
+  $('yfPct').className = 'num ' + (!growable ? 'yf-na' : end>=start ? 'sparkle-green' : 'yf-neg');
   $('yfPct').style.fontSize='26px';
   $('yfSavedBig').textContent=yf$(saved);
   // balance mini-bars scaled against each other
