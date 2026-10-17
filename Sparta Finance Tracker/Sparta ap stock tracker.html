@@ -6979,7 +6979,25 @@ function renderContribChart(){
       ? `${per}: ABI ${fmtY('ABI')} · POO ${fmtY('POO')}`
       : `${per}: ${state.cWho} ${fmtY(state.cWho)}`;
   }
-  const xs=years.slice(-6);                       // keep it readable
+  /* SIX BARS ENDING AT THE YEAR BEING VIEWED, not simply the six newest.
+     `years.slice(-6)` ignored state.cYear, so with ten years logged and 2018
+     selected the chart drew 2021-2026: the year you were looking at had no bar
+     at all, the x-label highlight below (`y===state.cYear`) never fired, and the
+     hero card and the summary line directly above both described 2018.
+
+     The default state is byte-identical, which is what made this safe to change:
+     when cYear is the newest year holding data, a window ending at cYear IS
+     slice(-6). It differs only once the selector is pointed back.
+
+     Three cases, in one expression. Viewing the newest year or later -> `upto`
+     is years.length and this is slice(-6) as before. Viewing something earlier
+     -> the window ends at it, and is still filled to six by reaching FORWARD
+     when there is room, so the chart never shrinks to three bars just because
+     an early year was picked. Viewing a year before any data at all -> `upto`
+     is 0 and the earliest six are shown, which are the ones nearest it. */
+  const upto=years.filter(y=>y<=state.cYear).length;
+  const end=Math.max(upto, Math.min(6, years.length));
+  const xs=years.slice(Math.max(0,end-6), end);   // keep it readable
   const zeros=xs.map(()=>0);
   // In a single-person filtered view, the selected person's numbers always ride the
   // 'A'-slot (tA/fA) arrays regardless of who's actually selected, so the surviving

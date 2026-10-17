@@ -370,6 +370,56 @@ const YEAR = new Date().getFullYear();
     await ctx.close();
   }
 
+
+  /* ── the chart follows the year being viewed ───────────────────────────────
+     `years.slice(-6)` ignored state.cYear, so with ten years logged and an
+     early one selected the chart drew the six NEWEST: the viewed year had no
+     bar, its x-label highlight never fired, and the hero card and summary line
+     above it both described a year absent from the chart. */
+  console.log('\n── Check 9: the chart window follows state.cYear ──');
+  {
+    const ctx9 = await browser.newContext();
+    const p9 = await ctx9.newPage(); await stub(p9);
+    const perr9 = []; p9.on('pageerror', e => perr9.push(e.message));
+    await p9.goto(url, { waitUntil: 'load' }); await p9.waitForTimeout(300);
+    // ten years of contributions, 2017..2026
+    await p9.evaluate(() => {
+      state.contribs = [];
+      for (let y = 2017; y <= 2026; y++)
+        state.contribs.push({ id: 'k' + y, t: Date.UTC(y, 5, 1), acct: 'TFSA',
+          amt: 1000 + y, y, who: 'ABI', cad: true });
+      state.cYear = 2026; renderContribs();
+    });
+    const labels = () => p9.evaluate(() => {
+      const t = [...document.querySelectorAll('#cChart text')].map(e => e.textContent.trim());
+      const yrs = t.filter(x => /^20\d\d$/.test(x));
+      const lit = [...document.querySelectorAll('#cChart text')]
+        .filter(e => /^20\d\d$/.test(e.textContent.trim()) &&
+                     /\.9\)$/.test(e.getAttribute('fill') || ''))
+        .map(e => e.textContent.trim());
+      return { yrs, lit };
+    });
+    const newest = await labels();
+    check(newest.yrs.length === 6 && newest.yrs[5] === '2026',
+      'Check 9: viewing the newest year draws the six newest — unchanged from before',
+      JSON.stringify(newest.yrs));
+    check(newest.lit.join() === '2026',
+      'Check 9: ...with that year the one highlighted', JSON.stringify(newest.lit));
+
+    await p9.evaluate(() => { state.cYear = 2018; renderContribs() });
+    const early = await labels();
+    check(early.yrs.includes('2018'),
+      'Check 9: viewing 2018 of ten puts 2018 IN the chart — it used to draw 2021–2026',
+      JSON.stringify(early.yrs));
+    check(early.lit.join() === '2018',
+      'Check 9: ...and its label is the highlighted one, which could never fire before',
+      JSON.stringify(early.lit));
+    check(early.yrs.length === 6,
+      'Check 9: ...and the chart is still six bars wide, filled forward rather than shrunk',
+      String(early.yrs.length));
+    check(perr9.length === 0, 'Check 9: no page errors', perr9.join(' | '));
+    await ctx9.close();
+  }
   await browser.close(); srv.close();
   console.log(`\nCONTRIB FEATURE VERIFICATION: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
