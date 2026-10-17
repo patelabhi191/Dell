@@ -2001,18 +2001,66 @@ The defects worth knowing about, because they say where this file is weak:
    via the existing toast. Justified (an error path that previously lied by omission) but it does add
    a string to the UI, which the standing rule discourages. Accept, or reduce it to console-only.
 
-### THE ONE PIECE OF WORK LEFT
+### THE LARGE-LEDGER PROFILE — DONE, 2026-10-17
 
-**A large-ledger boot profile**, never completed — its agent was interrupted. A realistic
-five-years-of-use fixture (several thousand Yearly/Monthly rows, ~4,000 history points, a few
-hundred contributions, five or six archives, a full Plan), then: cold boot to interactive and where
-the time goes (parse, the load-time migrations and normalisers, `compactHistory`, `arcAutoSeal`,
-first `render()`), tab-switch and typing latency, the 60-second `snapshot()` + `persist()` cost, and
-the total `localStorage` footprint against the quota the app now reports on.
+Measured against a deterministic five-years-of-use fixture: **3,441 ledger rows** (986 Yearly,
+2,455 Monthly, including a quarterly refund), **4,000 history points** (the cap `snapshot()`
+enforces), 260 contributions, 5 sealed archives, 25 holdings, 60 sells, 150 Plan items across 6
+segments, a 40-stock watchlist, 40 notepad points and 120 import rules — about **1 MB of seed**.
 
-**Lower priority than it looks**, because scale was measured incidentally three times and came back
-clean: 3,000 Yearly rows render in 374 ms, 2,000 Plan items in 105 ms, 4,001 Monthly rows in 47 ms.
-What is unmeasured is the *whole* app loaded at once.
+**Verdict: no performance problem at realistic scale.** Nothing needed fixing.
+
+| | |
+|---|---|
+| Cold boot to fully booted (`domContentLoaded`) | **~405 ms** (one cold run 1,005 ms, then 352–407) |
+| of which network + parse of the 560 KB file | **10 ms** — file size is not the cost |
+| `normalizeYF()` on 3,441 rows | 4.3 ms |
+| `normalizeME / Plan / Notes / Archives` | ≤ 0.2 ms each |
+| `histPts()` on 4,000 raw points | 2.1 ms |
+| `compactHistory()` first run, 4,000 raw points | **13.2 ms**, folds 4,000 → 92 |
+| `arcAutoSeal()` first run | 15.5 ms, seals 4 years |
+| `render()` (Dashboard) | 17.7 ms |
+| **`renderYF()`** | **55 ms** — the heaviest thing in the app |
+| `renderME()` | 51 ms |
+| `renderContribs()` / `renderNotes()` | ~15 ms each |
+| `renderArchives()` / `renderPlan()` | 1.0 / 4.4 ms |
+| **`snapshot()` + `persist()`** (the 60-second timer) | **0.9 ms** |
+| Tab switch, handler + its render | dash 16 · contrib 18 · **yearly 54** · monthly 46 · archive 13 · plan 17 ms |
+
+Every tab switch is inside the 100 ms budget, and the 60-second background timer costs under a
+millisecond, so the thing that runs most often is free.
+
+**Typing latency could NOT be measured in the sandbox, and an earlier figure of "126 ms per
+keystroke" was the instrument, not the app.** A bare `requestAnimationFrame` doing no work at all
+costs **134 ms** in this container — roughly 7 fps when idle. Any per-keystroke figure includes one
+of those, so the app's own contribution is below the noise floor (notepad measured 131 ms against a
+134 ms floor, i.e. zero). **Measure a frame of nothing first and subtract it, or do not report
+typing latency from here at all.** The two real input surfaces, for whoever tries on a real machine,
+are the delegated `input` on `#npPoints` and `#sellQty`/`#sellPrice`.
+
+**What would bite first — `renderYF` scales with ROWS × CATEGORIES.** `yfActual(type,cat)`
+(`:7541`) calls `yfTxns()` (`:7502`), which filters the **whole** ledger, and `yfActual` is called
+once per configured category. Counted, not inferred: one `renderYF()` on the 3,441-row fixture calls
+`yfTxns()` **25 times and re-filters 86,025 rows where 3,441 would do — a 25× waste**. The factor is
+the category count, which the user can grow without limit: adding 26 categories took it to 51 calls,
+175,491 rows and **71–107 ms** (two runs; the higher one had the suite competing for CPU — quote the range, this container is contended). Measured growth of `renderYF` across 860 → 6,882 rows was 4.2 → 84.5 ms
+(20× for 8× the rows — super-linear, not quadratic).
+**Not fixed, deliberately.** At realistic scale it is 55 ms and causes no symptom, and `yfActual`
+/ `yfTxns` are the primitives `arcSnapshot` reuses so that a sealed card cannot disagree with the
+year it came from. Hoisting the filter out of the per-category loop is the fix, and it is a change
+to shared primitives with a correctness risk that a performance rewrite was not in scope to take.
+Do it when a real ledger makes it hurt, and re-run `test-yf-highlights` 8d–8l, which pin that
+agreement from three directions.
+
+**`localStorage`: 1.49 MB of 5 MB (30%) — but only 0.50 MB of it is live.** The other **0.99 MB is
+the pre-namespace originals, which the adoption block copies and then never deletes.** The sharpest
+case is history: the live namespaced copy is folded to 92 points by `compactHistory`, while the
+plain `sparta.dash.history` keeps all **4,000 raw points at 504 KB** forever. Keeping the originals
+is deliberate — the comment at the adoption block explains they are the safety net if the
+fingerprint guess was wrong, so a bad guess costs a pull rather than the cloud — but the permanent
+doubling, and an uncompacted history inside it, look like an unconsidered cost rather than an
+intended one. **Affects upgraders only**; a ledger that started on a namespaced build has one copy.
+Left alone because deleting them removes the safety net that is their whole purpose.
 
 ### Two process notes that cost real work here
 
@@ -2043,6 +2091,22 @@ What is unmeasured is the *whole* app loaded at once.
   back means clearing `sparta.arcDeleted` by hand. Before the tombstone the "undo" was
   accidental and destructive, so this is the better of the two, but a "restore deleted year"
   route is the obvious follow-up.
+- **`renderYF` costs ROWS × CATEGORIES.** `yfActual` (`:7541`) calls `yfTxns()` (`:7502`), which
+  filters the whole ledger, once per configured category: 25 calls and 86,025 row visits for one
+  render of a 3,441-row ledger, where 3,441 visits would do. 55 ms today, 71–107 ms with 26 extra
+  categories, and the multiplier is user-controlled. The fix is to hoist the filtered list out of
+  the per-category loop — but these are the primitives `arcSnapshot` reuses so a sealed card cannot
+  disagree with its year, so it needs `test-yf-highlights` 8d–8l re-run against it. Measured in
+  full in section 9a.
+- **The pre-namespace originals are never deleted**, so an upgraded ledger carries two copies
+  permanently: 0.99 MB of 1.49 MB in the profile fixture. Worst case is `sparta.dash.history`,
+  where the live copy is folded to 92 points and the plain original keeps all 4,000 at 504 KB.
+  Keeping them is the deliberate safety net for a wrong fingerprint guess (see the adoption block);
+  the permanent doubling looks like an unconsidered side effect of it. Upgraders only.
+- **Typing latency is not measurable in the cloud sandbox.** A bare `requestAnimationFrame` with no
+  work costs ~134 ms there, so any per-keystroke figure is the harness. One earlier reading of
+  "126 ms per keystroke" was entirely that. Measure a frame of nothing and subtract it, or measure
+  on a real machine.
 - **Print is unusable.** There are **0 `@media print` rules** in 887. Chrome leaves "Background
   graphics" off by default, so the backgrounds go and the text colours stay: `#EAF0FA` is
   **1.14:1 on white paper**, `--text-faint` 1.08:1, `--text-dim` 1.10:1. A year's finances print
