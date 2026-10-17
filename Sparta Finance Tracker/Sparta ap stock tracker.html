@@ -7570,8 +7570,23 @@ function yfHighlights(d){
   const {mInc,mExp,totInc,totExp,txns,planned,expCats}=d;
   const out=[];
   const all=[...Array(12).keys()];
-  const expM=all.filter(i=>mExp[i]>0), incM=all.filter(i=>mInc[i]>0);
-  const dataM=all.filter(i=>mInc[i]>0||mExp[i]>0);
+  /* A MONTH THAT NETS BELOW ZERO STILL HAPPENED. These three lists used to test
+     `>0`, which threw away any month whose refunds outweighed its charges -- and
+     refunds are ordinary signed rows here, not an exotic case. Two figures came
+     out wrong because of it, and neither looked wrong:
+
+       - the month could never be the "Leanest month", though it is by definition
+         the leanest one in the year;
+       - avgOf() averaged over the OTHER months only, so "your $X average month"
+         excluded the cheapest month in the year and every "% above average"
+         figure on the card was inflated against it.
+
+     `Math.abs(...) >= 0.005` rather than `!== 0`, for the same reason the matrix
+     cells use it: a month that nets to float dust is not a month with activity,
+     and the old `>0` test actually counted a stray 0.001 as one. */
+  const had=v=>Math.abs(v)>=0.005;
+  const expM=all.filter(i=>had(mExp[i])), incM=all.filter(i=>had(mInc[i]));
+  const dataM=all.filter(i=>had(mInc[i])||had(mExp[i]));
   const avgOf=(a,ix)=>ix.length?ix.reduce((s,i)=>s+a[i],0)/ix.length:0;
   const mo=i=>YF_MONTHS[i];
   const over=(v,avg)=>avg>0?Math.round((v/avg-1)*100):0;
@@ -7596,7 +7611,13 @@ function yfHighlights(d){
   }
   if(expM.length>=3&&varied(mExp,expM)){
     const low=expM.reduce((a,b)=>mExp[b]<mExp[a]?b:a);
-    push('lowExp','inc','Leanest month',mo(low)+' — you spent just '+yf$2(mExp[low])+'.');
+    /* The negative branch is reachable only now that a refund month is no longer
+       filtered out above, so no existing card's wording changes -- this case
+       previously rendered nothing at all. It needs its own sentence because
+       "you spent just −$45.20" reads as a bug rather than as a refund. */
+    push('lowExp','inc','Leanest month', had(mExp[low]) && mExp[low]<0
+      ? mo(low)+' — refunds outran spending by '+yf$2(Math.abs(mExp[low]))+'.'
+      : mo(low)+' — you spent just '+yf$2(mExp[low])+'.');
   }
   if(dataM.length>=2){
     const best=dataM.reduce((a,b)=>(mInc[b]-mExp[b])>(mInc[a]-mExp[a])?b:a);

@@ -1061,6 +1061,72 @@ const cards = page => page.evaluate(() =>
   check(perr6.length === 0, '8g: no page errors', perr6.join(' | '));
   await c6.close();
 
+  /* ── 8m. a refund month is a month ─────────────────────────────────────
+     expM/incM/dataM used to test `>0`, so a month whose refunds outweighed its
+     charges was dropped from the Highlights entirely. Two figures came out
+     wrong and neither looked wrong: the month could not be named the leanest
+     though it is by definition the leanest, and the "average month" was
+     averaged over the OTHER months, inflating every "% above average" line
+     against it. Four cheap months + one refund month gives both a leanest
+     candidate and an average that visibly moves. */
+  console.log('\n── 8m. a month whose refunds outran its charges ──');
+  {
+    const c7 = await browser.newContext();
+    const p7 = await c7.newPage(); await stub(p7);
+    const perr7 = []; p7.on('pageerror', e => perr7.push(e.message));
+    await p7.goto(url, { waitUntil: 'load' }); await p7.waitForTimeout(300);
+    const TX = [
+      { type: 'income',  date: `${YEAR}-01-01`, amt: 4000, desc: 'Pay', cat: 'Paycheck', who: 'ABI' },
+      { type: 'expense', date: `${YEAR}-01-05`, amt: 1000, desc: 'Jan', cat: 'Food', who: 'ABI' },
+      { type: 'income',  date: `${YEAR}-02-01`, amt: 4000, desc: 'Pay', cat: 'Paycheck', who: 'ABI' },
+      { type: 'expense', date: `${YEAR}-02-05`, amt: 1200, desc: 'Feb', cat: 'Food', who: 'ABI' },
+      { type: 'income',  date: `${YEAR}-03-01`, amt: 4000, desc: 'Pay', cat: 'Paycheck', who: 'ABI' },
+      { type: 'expense', date: `${YEAR}-03-05`, amt: 1400, desc: 'Mar', cat: 'Food', who: 'ABI' },
+      { type: 'income',  date: `${YEAR}-04-01`, amt: 4000, desc: 'Pay', cat: 'Paycheck', who: 'ABI' },
+      { type: 'expense', date: `${YEAR}-04-05`, amt: 3000, desc: 'Apr', cat: 'Food', who: 'ABI' },
+      // May: one small charge and a bigger refund, so the month nets to -400
+      { type: 'income',  date: `${YEAR}-05-01`, amt: 4000, desc: 'Pay', cat: 'Paycheck', who: 'ABI' },
+      { type: 'expense', date: `${YEAR}-05-05`, amt: 100,  desc: 'May', cat: 'Food', who: 'ABI' },
+      { type: 'expense', date: `${YEAR}-05-20`, amt: -500, desc: 'Refund', cat: 'Food', who: 'ABI' },
+    ];
+    await seed(p7, TX, { Food: 3000 });
+    await goYearly(p7);
+    const c = await cards(p7);
+    const find = re => c.find(x => re.test(x.title) || re.test(x.line));
+
+    // the precondition: May really does net below zero, or the rest proves nothing
+    const may = await p7.evaluate(() => {
+      const d = [...Array(12).keys()].map(i => 0);
+      state.yf.txns.filter(t => t.type === 'expense' && t.date.slice(0, 4) === String(state.yfYear))
+        .forEach(t => { d[+t.date.slice(5, 7) - 1] += t.amt });
+      return { may: Math.round(d[4] * 100) / 100, months: d.map(v => Math.round(v)) };
+    });
+    check(may.may < 0, '8m: the fixture really has a month that nets below zero',
+      JSON.stringify(may.may));
+
+    const lean = find(/Leanest month/);
+    check(!!lean && /MAY/i.test(lean.line),
+      '8m: the refund month IS the leanest month, rather than being skipped',
+      lean ? lean.line : '(no Leanest card at all)');
+    check(!!lean && /refunds outran spending/.test(lean.line),
+      '8m: ...and it says so, instead of "you spent just \u2212$400.00"',
+      lean ? lean.line : '');
+
+    /* The average is the half that is easy to miss. Charges are
+       1000+1200+1400+3000-400 = 6200 over FIVE months = $1,240. Excluding May it
+       would be 6600/4 = $1,650, and the peak's "% above average" would be
+       computed against that inflated figure. */
+    const peak = find(/Biggest spending month/);
+    check(!!peak && /1,240/.test(peak.line),
+      '8m: the average month counts the refund month, so it reads $1,240 not $1,650',
+      peak ? peak.line : '(no peak card)');
+    check(!!peak && /142% above/.test(peak.line),
+      '8m: and the "% above average" follows from it (3000 vs 1240 = 142%)',
+      peak ? peak.line : '');
+    check(perr7.length === 0, '8m: no page errors', perr7.join(' | '));
+    await c7.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nYF HIGHLIGHTS: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
