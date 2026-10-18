@@ -1642,9 +1642,28 @@ const section = t => console.log(`\n── ${t} ──`);
   section('dashboard chart: every history shape the app can be handed');
   {
     const H = 3600e3, now = Date.now();
-    // dated INSIDE the default 1D span -- otherwise the span filter removes the
-    // point before the map and no shape is exercised at all
-    const mk = f => [0, 1, 2, 3, 4].map(i => f(now - (5 - i) * H, i));
+    /* DATED INSIDE THE 1D SPAN **AND** INSIDE ONE AMERICA/TORONTO DAY.
+       The span was the only thing accounted for here, and it is not the only
+       filter these points pass through: compactHistory() runs on boot and folds
+       every PAST calendar day down to a single closing point, where the day it
+       means is Toronto's (dayKey uses _dayFmt). Five points spread an hour apart
+       therefore straddled ET midnight whenever the suite ran between 00:00 and
+       05:00 ET, three of them were legitimately compacted away, and the mixed
+       -history check read 3 points instead of 5. It failed on the HOUR IT WAS
+       RUN, with nothing in the file changed -- the same shape of trap as a
+       layout budget that only holds on one machine.
+       The step shrinks to whatever is left of today, so the five points are
+       always distinct, always in the same Toronto day, and always in the span. */
+    const etNow = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Toronto',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+      .formatToParts(new Date(now)).reduce((o, x) => (o[x.type] = +x.value, o), {});
+    // hour12:false reports midnight as 24 in some ICU builds, hence the modulo
+    const msToday = (((etNow.hour || 0) % 24) * 3600 + (etNow.minute || 0) * 60
+      + (etNow.second || 0)) * 1000;
+    const etMid = now - msToday;                        // Toronto midnight
+    const last = Math.max(now, etMid + 6000);           // room for 5 inside the day
+    const STEP = Math.max(1000, Math.min(H, Math.floor((last - etMid - 1000) / 5)));
+    const mk = f => [0, 1, 2, 3, 4].map(i => f(last - (4 - i) * STEP, i));
     const SHAPES = [
       ['current {v:{ALL..}}', mk((t, i) => ({ t, k: 'k' + i, v: { ALL: 20000 + i * 900, TFSA: 5000 + i * 100, FHSA: 3000, Other: 1000 } })), true, true],
       ['legacy number v', mk((t, i) => ({ t, k: 'k' + i, v: 20000 + i * 900 })), true, false],

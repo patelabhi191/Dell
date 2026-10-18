@@ -1011,7 +1011,12 @@ const load = (page, txns) => page.evaluate(([t, y]) => {
   }, [YEAR]);
   check(!sep.offered.some(c => ['Rent', 'Food', 'Credit Bill'].includes(c)),
     "Yearly's categories are never offered on Monthly", JSON.stringify(sep.offered.slice(0, 3)));
-  check(JSON.stringify(sep.yfList) === JSON.stringify(['Rent', 'Food', 'Credit Bill']),
+  /* The three it was handed, plus the two names the Invested and Moved-else
+     tiles read by name -- normalizeYF puts those back on any list that is
+     missing one, so a hand-set list of three comes back as five. The claim here
+     is that MONTHLY's category did not leak in, which is asserted directly
+     below rather than as a by-product of an exact-match on the whole list. */
+  check(JSON.stringify(sep.yfList) === JSON.stringify(['Rent', 'Food', 'Credit Bill', 'Investment', 'Other Bank']),
     "and saving a Monthly expense does not add its category to Yearly's list",
     JSON.stringify(sep.yfList));
   check(!sep.rows.some(r => r.name === 'Fees/Subscription'),

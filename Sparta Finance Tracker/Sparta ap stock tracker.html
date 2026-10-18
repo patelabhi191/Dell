@@ -1224,6 +1224,10 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .yf-catbtn{border:none;background:transparent;color:var(--text-faint);font-size:12px;padding:2px 5px;border-radius:6px;cursor:pointer}
 .yf-catbtn:hover{color:var(--teal);background:rgba(94,234,212,.1)}
 .yf-catbtn.del:hover{color:var(--rose);background:rgba(251,113,133,.1)}
+/* Same .45 the Clear-data button uses. The hover tints are undone as well, so a
+   control that is going to refuse does not light up as though it will not. */
+.yf-catbtn.is-off{opacity:.45;cursor:not-allowed}
+.yf-catbtn.is-off:hover,.yf-catbtn.del.is-off:hover{color:var(--text-faint);background:transparent}
 /* Highlights slideshow. Every slide sits in the SAME grid cell, so the panel
    is as tall as the tallest card and its height never jumps mid-rotation. */
 .yf-hi-stage{display:grid}
@@ -3813,7 +3817,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-11</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-18</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -7332,6 +7336,23 @@ window.__sparta=()=>state;   // debug/inspection hook
 /* ============ Yearly Finance ============ */
 const YF_EXP=['Food','Credit Bill','Health/medical','Home','Transportation','Personal','Grocery','Misc','Travel','Debt','Other','Education\\Tuition','Custom category 2','Investment','Other Bank'];
 const YF_INC=['Gift/Stocks','Paycheck','Bonus','Temp','US/CA Support','Other'];
+/* TWO EXPENSE CATEGORIES ARE READ BY NAME, not by the list. The Invested and
+   Moved-else tiles are `yfActual('expense','Investment')` and
+   `yfActual('expense','Other Bank')`, and Off-paper is built from both of them
+   -- in renderYF, and again in arcSnapshot, which seals the three figures into
+   the archive card. So a rename took the name with it and left every one of
+   those lookups pointing at a category that no longer existed: three tiles read
+   $0 on the tab and in every year sealed afterwards, while the money sat in the
+   rows and the category table went on reporting it under its new name. Nothing
+   said why, and an archive cannot be re-sealed.
+   The two names are therefore FIXED. The alternative was to store the keys and
+   follow the rename, but the archives have already copied the old key into
+   sealed cards that must keep adding up, so that is a migration with no safe
+   answer for the records already on disk -- and a user who wants their own
+   wording can add a category and leave these two to the tiles. */
+const YF_WIRED_EXP=['Investment','Other Bank'];
+const YF_WIRED_TILE={'Investment':'Invested','Other Bank':'Moved else'};
+const yfWired=(type,name)=>type==='expense'&&YF_WIRED_EXP.includes(name);
 const YF_MONTHS=['JAN','FEB','MAR','APR','MAY','JUNE','JULY','AUG','SEPT','OCT','NOV','DEC'];
 state.yf = store.get('sparta.yf.data', {});
 function normalizeYF(){
@@ -7341,6 +7362,13 @@ function normalizeYF(){
   if(!y.start   || typeof y.start!=='object')   y.start={};
   if(!y.cats    || typeof y.cats!=='object')    y.cats={};
   if(!Array.isArray(y.cats.exp)) y.cats.exp=YF_EXP.slice();
+  /* A record saved before the two wired names were protected can be missing one
+     -- renamed, or deleted while it had no rows -- and the tile that reads it
+     then has no category to file anything into, so it is stuck at $0 for good.
+     Put the name back. It adds no visible row (the table drops a category worth
+     $0) and it moves no money: whatever was filed under the new name stays
+     there, on its own line, where it can be seen and moved back. */
+  YF_WIRED_EXP.forEach(c=>{ if(!y.cats.exp.includes(c)) y.cats.exp.push(c); });
   if(!Array.isArray(y.cats.inc)) y.cats.inc=YF_INC.slice();
   y.txns=y.txns.filter(t=>t && typeof t==='object' && t.date);   // drop corrupt rows
   /* A row with no usable `amt` is NOT dropped, unlike one with no date: it
@@ -8002,7 +8030,19 @@ function renderYF(){
       <td><input class="yf-plan-in" data-cat="${esc(cat)}" type="number" step="1" min="0" value="${plan||''}" placeholder="0"></td>
       ${diffCell(diff)}
       ${withMonthly?`<td>${yf$(mo)}</td>`:''}
-      ${offList?'<td></td>':`<td style="white-space:nowrap"><button class="yf-catbtn" data-ren="${esc(cat)}" data-t="${type}" title="Rename">\u270e</button><button class="yf-catbtn del" data-del="${esc(cat)}" data-t="${type}" title="Delete">\u2715</button></td>`}
+      ${offList?'<td></td>':(()=>{
+        /* The two wired names keep their buttons -- dimmed, with the reason in
+           the tooltip, and still clickable so the toast can say it out loud.
+           Removing them would read as a rendering gap rather than a rule. */
+        const w=yfWired(type,cat), off=w?' is-off':'',
+              /* Curly quotes, because these two strings go INTO an attribute:
+                 with straight ones the opening quote closed title="" and the
+                 whole sentence fell out of the tag. esc() escapes the category
+                 name, not the punctuation around it. */
+              rt=w?`\u201c${esc(cat)}\u201d feeds the ${YF_WIRED_TILE[cat]} tile \u2014 its name is fixed`:'Rename',
+              dt=w?`\u201c${esc(cat)}\u201d feeds the ${YF_WIRED_TILE[cat]} tile \u2014 it cannot be deleted`:'Delete';
+        return `<td style="white-space:nowrap"><button class="yf-catbtn${off}" data-ren="${esc(cat)}" data-t="${type}" title="${rt}">\u270e</button><button class="yf-catbtn del${off}" data-del="${esc(cat)}" data-t="${type}" title="${dt}">\u2715</button></td>`;
+      })()}
     </tr>`;
   };
   /* THE CONFIGURED LIST IS NOT THE WHOLE STORY, and the Totals row above these
@@ -8103,6 +8143,12 @@ function yfAddCat(type,inputId){
   toast(`Category "${name}" added`);
 }
 function yfRenameCat(type,oldName){
+  // Before markUserEdit: a refused rename changed nothing and must not dirty the record.
+  if(yfWired(type,oldName)){
+    toast(`"${oldName}" is read by name by the ${YF_WIRED_TILE[oldName]} and Off-paper tiles, `+
+      `so its name is fixed. Add a category of your own instead.`);
+    return;
+  }
   markUserEdit();
   const next=prompt(`Rename "${oldName}" to:`, oldName);
   if(next==null) return;
@@ -8130,6 +8176,15 @@ function yfRenameCat(type,oldName){
   toast(`Renamed to "${name}"`+(moved?` \u2014 ${moved} transaction${moved>1?'s':''} updated`:''));
 }
 function yfDeleteCat(type,name){
+  /* Same two names, same reason -- and deleting is the quieter half of it: the
+     rename at least leaves a row carrying the money, while a delete (allowed
+     whenever the category has no rows yet) removes the only name those tiles
+     will ever count, so the year it is spent in reports nothing. */
+  if(yfWired(type,name)){
+    toast(`"${name}" is read by name by the ${YF_WIRED_TILE[name]} and Off-paper tiles, `+
+      `so it cannot be deleted. Leave it at $0 if you do not use it.`);
+    return;
+  }
   markUserEdit();
   // Monthly rows sharing the name are not this category and must not block it
   const used=state.yf.txns.filter(t=>t.tab!=='me'&&t.type===type&&t.cat===name);

@@ -1199,6 +1199,127 @@ const cards = page => page.evaluate(() =>
     await c8.close();
   }
 
+  /* ── 8o. the two category names the tiles read by name ────────────────
+     Invested, Moved else and Off-paper are `yfActual('expense','Investment')`
+     and `yfActual('expense','Other Bank')` -- literals, in renderYF and again
+     in arcSnapshot. Renaming either category left those lookups pointing at a
+     name that no longer existed, so three tiles read $0 while the money stayed
+     in the rows, on the tab AND in every archive sealed from then on. The names
+     are fixed now; what follows asserts the refusal, that it is visible before
+     it is clicked, that it costs the ordinary categories nothing, and that the
+     tiles still read the money. */
+  console.log('\n── 8o. Invested/Moved else are keyed to names that cannot move ──');
+  {
+    const c9 = await browser.newContext();
+    const p9 = await c9.newPage(); await stub(p9);
+    const perr9 = []; p9.on('pageerror', e => perr9.push(e.message));
+    await p9.goto(url, { waitUntil: 'load' }); await p9.waitForTimeout(300);
+    const TX = [
+      { type: 'income',  date: `${YEAR}-01-01`, amt: 40000, desc: 'Pay',   cat: 'Paycheck',   who: 'ABI' },
+      { type: 'expense', date: `${YEAR}-02-05`, amt: 6000,  desc: 'TFSA',  cat: 'Investment', who: 'ABI' },
+      { type: 'expense', date: `${YEAR}-03-05`, amt: 2500,  desc: 'xfer',  cat: 'Other Bank', who: 'ABI' },
+      { type: 'expense', date: `${YEAR}-04-05`, amt: 1200,  desc: 'Food',  cat: 'Food',       who: 'ABI' },
+    ];
+    await seed(p9, TX, {});
+    await goYearly(p9);
+
+    // the precondition: the tiles are reading the two categories to begin with
+    const before = await p9.evaluate(() => ({
+      inv: $('yfInvested').textContent, mov: $('yfMoved').textContent,
+      off: $('yfOffPaper').textContent,
+    }));
+    check(/6,000/.test(before.inv) && /2,500/.test(before.mov),
+      '8o: the fixture really has money in both wired categories',
+      JSON.stringify(before));
+
+    // 1. the rename is refused, by name, and nothing in the record moves
+    const ren = await p9.evaluate(() => {
+      let asked = false;
+      const realPrompt = window.prompt;
+      window.prompt = (...a) => { asked = true; return realPrompt.apply(window, a) };
+      const before = JSON.stringify(state.yf.cats.exp);
+      yfRenameCat('expense', 'Investment');
+      const t = document.querySelector('#toastWrap .toast, .toast');
+      window.prompt = realPrompt;
+      return { asked, same: JSON.stringify(state.yf.cats.exp) === before,
+               toast: t ? t.textContent : '' };
+    });
+    check(ren.asked === false,
+      '8o: renaming Investment never even opens the prompt', JSON.stringify(ren.asked));
+    check(ren.same, '8o: ...and the category list is untouched');
+    check(/Invested/.test(ren.toast) && /fixed/.test(ren.toast),
+      '8o: ...and the toast names the tile that depends on it, not just "no"',
+      ren.toast);
+
+    // 2. the delete is refused too -- the quieter half: allowed whenever the
+    //    category has no rows yet, and it removes the only name those tiles read
+    const del = await p9.evaluate(() => {
+      let confirmed = false;
+      const realConfirm = window.confirm;
+      window.confirm = () => { confirmed = true; return true };
+      state.yf.txns = state.yf.txns.filter(t => t.cat !== 'Other Bank');  // no rows left
+      yfDeleteCat('expense', 'Other Bank');
+      window.confirm = realConfirm;
+      const t = document.querySelector('#toastWrap .toast, .toast');
+      return { confirmed, still: state.yf.cats.exp.includes('Other Bank'),
+               toast: t ? t.textContent : '' };
+    });
+    check(del.confirmed === false,
+      '8o: deleting an empty Other Bank never reaches the confirm',
+      JSON.stringify(del.confirmed));
+    check(del.still, '8o: ...and the name is still on the list');
+    check(/Moved else/.test(del.toast),
+      '8o: ...and the toast names the Moved else tile', del.toast);
+
+    // 3. an ordinary category is unaffected -- the guard is two names, not a freeze
+    const ord = await p9.evaluate(() => {
+      window.prompt = () => 'Groceries';
+      yfRenameCat('expense', 'Food');
+      return { has: state.yf.cats.exp.includes('Groceries'),
+               gone: !state.yf.cats.exp.includes('Food'),
+               moved: state.yf.txns.filter(t => t.cat === 'Groceries').length };
+    });
+    check(ord.has && ord.gone && ord.moved === 1,
+      '8o: renaming Food still works and still carries its row', JSON.stringify(ord));
+
+    // 4. the table says so before it is clicked, rather than only after
+    const btns = await p9.evaluate(() => {
+      renderYF();
+      const row = [...document.querySelectorAll('#yfExpTable tr, #yfExpBody tr')]
+        .find(tr => tr.cells[0] && tr.cells[0].textContent.trim() === 'Investment');
+      if (!row) return null;
+      const b = [...row.querySelectorAll('.yf-catbtn')];
+      return { n: b.length, off: b.every(x => x.classList.contains('is-off')),
+               titles: b.map(x => x.title).join(' | ') };
+    });
+    check(btns && btns.n === 2,
+      '8o: the wired row keeps both controls -- a missing cell reads as a bug, not a rule',
+      btns ? JSON.stringify(btns.n) : '(row not found)');
+    check(btns && btns.off,
+      '8o: ...dimmed with the same token the disabled Clear button uses',
+      btns ? JSON.stringify(btns.off) : '');
+    check(btns && /Invested/.test(btns.titles) && /fixed/.test(btns.titles),
+      '8o: ...and the reason is in the tooltip', btns ? btns.titles : '');
+
+    // 5. a record that already lost a wired name gets it back, without moving money
+    const rep = await p9.evaluate(() => {
+      state.yf.cats.exp = state.yf.cats.exp.filter(c => c !== 'Investment');
+      state.yf.txns.push({ id: 'legacy', type: 'expense', date: '2026-05-05',
+                           amt: 999, desc: 'renamed away', cat: 'Stocks', tab: 'yf' });
+      normalizeYF();
+      return { back: state.yf.cats.exp.includes('Investment'),
+               kept: state.yf.txns.some(t => t.cat === 'Stocks' && t.amt === 999) };
+    });
+    check(rep.back,
+      '8o: normalizeYF puts a missing wired name back, so the tile is not dead for good',
+      JSON.stringify(rep.back));
+    check(rep.kept,
+      '8o: ...and it moves nothing -- the rows filed under the new name stay there',
+      JSON.stringify(rep.kept));
+    check(perr9.length === 0, '8o: no page errors', perr9.join(' | '));
+    await c9.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nYF HIGHLIGHTS: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
