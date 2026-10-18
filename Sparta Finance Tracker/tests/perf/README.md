@@ -36,4 +36,30 @@ number first:
   what the app costs. The frame wait is what the user feels, but at a 134 ms floor
   it tells you nothing about the code.
 
-Results as of 2026-10-17 are written up in `Sparta_FIN_AP.md` section 9a.
+## Time the work you removed, not the function you removed it from
+
+`yfCatIndex()` took `renderYF`'s ledger scans from 27 per render to 3. A straight
+before/after of `renderYF` in this container could not see it, and worse, it lied
+about the direction: **46.8–79.4 ms before at 20 categories, 34.2–38.7 ms before
+at 46** — faster with more categories, which cannot be true. One contended run is
+wider than the whole effect.
+
+Timing the removed work directly is stable and honest: 24 `yfTxns()` calls cost
+**2.6 ms** on the 3,441-row fixture and 50 cost **5.0 ms** (linear, as it should
+be), against a whole `renderYF` of 29–50 ms dominated by the transaction list's
+per-row `createElement`. Two conditions matter:
+
+- **Consume the result**, or V8 removes the loop. The first attempt measured
+  5.40 ms for 24 calls and 5.30 ms for 50 — which is not a measurement — and an
+  index build reported a flat `0.000 ms`. Accumulating `.length` into a sink made
+  both scale properly.
+- **Take a median of ~31**, not of 5, and never a mean: one scheduling hiccup in
+  this container moves a mean by more than the thing being measured.
+
+A count is worth more than a millisecond here. `profile-ledger-scans.js` reports
+the scan count and whether it is FLAT in the category count, because that is the
+property that was wrong and the one that must stay fixed; `test-yf-highlights` 8r
+asserts the same shape, so it cannot silently regress.
+
+Results as of 2026-10-17 are written up in `Sparta_FIN_AP.md` section 9a, with
+the `yfCatIndex` figures (2026-10-18) beside them.
