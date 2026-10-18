@@ -5034,6 +5034,7 @@ function arcSnapshot(year){
   state.yfYear=year;
   try{
     const txns=yfTxns();
+    const ix=yfCatIndex(txns);      // the same one pass the tab makes
     const mInc=Array(12).fill(0), mExp=Array(12).fill(0);
     txns.forEach(t=>{
       const m=parseInt((t.date||'').slice(5,7),10)-1;
@@ -5044,16 +5045,17 @@ function arcSnapshot(year){
     // still in the year, and still in the table below
     const totInc=txns.reduce((a,t)=>a+(t.type==='income'?t.amt:0),0), totExp=yfSpendOf(txns);
     const start=state.yf.start[year]||0, end=start+totInc-totExp, saved=end-start;
-    const invested=yfActual('expense','Investment'), moved=yfActual('expense','Other Bank');
+    const invested=yfIdx(ix,'expense','Investment'), moved=yfIdx(ix,'expense','Other Bank');
     const cat=(type)=>{
       /* The configured list is not the whole story: a row can carry a category
          that was renamed or removed from the list afterwards, and leaving it
          out would make the table disagree with the End figure above it. */
-      const used=txns.filter(t=>t.type===type).map(t=>t.cat).filter(Boolean);
+      // the index's keys are the names the rows carry, in first-seen order --
+      // the same list the filter(Boolean) pass over txns was producing
       // YF_NOCAT appended for the same reason the live tab appends it; the
       // v!==0 filter below drops it again for every year that has no such row
-      return [...new Set(yfCats(type).concat(used)), YF_NOCAT]
-        .map(c=>({c,v:yfActual(type,c)}))
+      return [...new Set(yfCats(type).concat(yfIdxNames(ix,type))), YF_NOCAT]
+        .map(c=>({c,v:yfIdx(ix,type,c)}))
         .filter(r=>r.v!==0).sort((a,b)=>b.v-a.v);
     };
     const hl=yfHighlights({mInc,mExp,totInc,totExp,txns,
@@ -7515,6 +7517,13 @@ const YF_INC=['Gift/Stocks','Paycheck','Bonus','Temp','US/CA Support','Other'];
    answer for the records already on disk -- and a user who wants their own
    wording can add a category and leave these two to the tiles. */
 const YF_WIRED_EXP=['Investment','Other Bank'];
+/* The heading the category tables use for rows carrying no category. Declared
+   HERE rather than beside yfCatOf, which is where it is read, because
+   normalizeYF() filters it off the configured lists and there is a top-level
+   normalizeYF() call on load -- a `const` further down the file is still in its
+   temporal dead zone at that point, and the whole app dies on a ReferenceError
+   before anything renders. */
+const YF_NOCAT='(no category)';
 const YF_WIRED_TILE={'Investment':'Invested','Other Bank':'Moved else'};
 const yfWired=(type,name)=>type==='expense'&&YF_WIRED_EXP.includes(name);
 const YF_MONTHS=['JAN','FEB','MAR','APR','MAY','JUNE','JULY','AUG','SEPT','OCT','NOV','DEC'];
@@ -7534,6 +7543,14 @@ function normalizeYF(){
      there, on its own line, where it can be seen and moved back. */
   YF_WIRED_EXP.forEach(c=>{ if(!y.cats.exp.includes(c)) y.cats.exp.push(c); });
   if(!Array.isArray(y.cats.inc)) y.cats.inc=YF_INC.slice();
+  /* YF_NOCAT is the heading the tables use for rows with no category, so it
+     cannot also be a category. Both editors refuse it now; a record written
+     before they did can still carry it, and left on the list it would render a
+     second "(no category)" row with rename and delete buttons on it.
+     AFTER both list guards above, not between them -- read `y.cats.inc` before
+     the line that guarantees it is an array and normalizeYF throws on load, at
+     which point the rest of the script never runs and the app is blank. */
+  ['exp','inc'].forEach(k=>{ y.cats[k]=y.cats[k].filter(c=>c!==YF_NOCAT); });
   y.txns=y.txns.filter(t=>t && typeof t==='object' && t.date);   // drop corrupt rows
   /* A row with no usable `amt` is NOT dropped, unlike one with no date: it
      still carries a date, a description and a category, so it is a record the
@@ -7787,20 +7804,83 @@ const yfSpendOf=list=>list.reduce((s,t)=>s+(t.type==='expense'&&!t.allot?t.amt:0
    see test-yf-highlights 8l); it takes an import, a hand-edited cloud record or
    a build from before the picker was mandatory. The name is reserved so a real
    category cannot collide with it. */
-const YF_NOCAT='(no category)';
-const yfNoCat=t=>!t.cat;
+/* A ROW CARRYING THE RESERVED STRING IS TREATED AS CARRYING NOTHING, which is
+   what the name says, and it is the only reading that keeps the table honest.
+   yfAddCat and yfRenameCat both refuse the name now, so this takes an import or
+   a hand-edited record -- but when it happens the alternative is two rows
+   labelled "(no category)" side by side with different figures, one for the
+   literal category and one for the nameless bucket, which is worse than either
+   figure being wrong. Folded here, in the predicate both yfActual and
+   yfCatIndex read, so the two cannot disagree about it. */
+const yfNoCat=t=>!t.cat || t.cat===YF_NOCAT;
+/* An EMPTY cat means the same thing as YF_NOCAT here. `cat==null` is already
+   taken, above, for "every category", so the only falsy value that reaches
+   this point is '' -- which is exactly what a nameless row carries, and asking
+   for it should give the nameless figure rather than a near-miss that counts
+   `cat===''` rows and skips the ones with no `cat` key at all. Folded so that
+   yfCatIndex, which has one bucket for all of them, cannot disagree with this
+   for any input (test-yf-highlights 8r sweeps every name in both tables). */
+const yfCatWant=cat=>(!cat||cat===YF_NOCAT)?yfNoCat:(t=>t.cat===cat);
 function yfCatOf(list,cat){
-  const want = cat===YF_NOCAT ? yfNoCat : (t=>t.cat===cat);
+  const want=yfCatWant(cat);
   return list.reduce((s,t)=>t.type!=='expense'?s:s+(want(t)?t.amt:0),0);
 }
 function yfActual(type,cat){
   const list=yfTxns().filter(t=>t.type===type);
   if(type!=='expense'){
-    const pick = cat==null ? list : cat===YF_NOCAT ? list.filter(yfNoCat) : list.filter(t=>t.cat===cat);
+    const pick = cat==null ? list : list.filter(yfCatWant(cat));
     return pick.reduce((s,t)=>s+t.amt,0);
   }
   return cat==null?yfSpendOf(list):yfCatOf(list,cat);
 }
+/* ONE PASS INSTEAD OF ONE PER CATEGORY. yfActual(type,cat) re-filters the whole
+   ledger on every call -- yfTxns() first, then by type -- and the category
+   tables call it once per configured category, on the tab and again in every
+   seal. Measured on a 3,441-row ledger with 20 categories: **27 yfTxns() calls
+   and 92,907 rows re-filtered for ONE renderYF**, where 3,441 would do. The
+   multiplier is the CATEGORY COUNT, which the user can grow without limit --
+   at 46 categories it is 53 calls, 182,373 rows and 42.5 ms.
+
+   The index is built from the array the caller already holds and answers the
+   same question for every category at once. IT IS NOT A CACHE: nothing is kept
+   between renders, so there is no invalidation to get wrong, which is the whole
+   reason this is not a memoised yfTxns(). Staleness here would mean wrong money
+   on screen, and 40 ms is not worth buying that risk.
+
+   FAITHFUL TO yfActual, including the two things that look like oversights and
+   are not:
+     - an expense ALLOCATION is counted in its own category. yfCatOf has no
+       `!t.allot` test, and the file's own note explains why the question is
+       moot (yfTxns() is scoped by tab, so it can never hand one over). The
+       index must not start answering it differently.
+     - a row whose `type` is neither word lands in NO bucket, the same way
+       yfActual's `t.type===type` filter leaves it out of both.
+   Rows with no category are held in `bare`, apart from any category literally
+   named YF_NOCAT, so a legacy row carrying that string cannot merge with them.
+
+   yfActual stays exactly as it is. It is the REFERENCE that test-yf-highlights
+   section 8r measures this against, category by category, on a fixture built
+   out of the shapes most likely to pull the two apart. */
+function yfCatIndex(list){
+  const income=new Map(), expense=new Map(), bare={income:0,expense:0};
+  (list||[]).forEach(t=>{
+    const ty = t.type==='income' ? 'income' : t.type==='expense' ? 'expense' : null;
+    if(!ty) return;
+    if(yfNoCat(t)){ bare[ty]+=t.amt; return }
+    const m = ty==='income' ? income : expense;
+    m.set(t.cat, (m.get(t.cat)||0) + t.amt);
+  });
+  return {income, expense, bare};
+}
+const yfIdxType=type=>type==='income'?'income':'expense';
+const yfIdx=(ix,type,cat)=>{
+  const ty=yfIdxType(type);
+  // the same fold yfCatWant applies, so the two agree for every input
+  return (!cat||cat===YF_NOCAT) ? ix.bare[ty] : (ix[ty].get(cat)||0);
+};
+/* The categories the YEAR'S ROWS actually carry, in the order they first appear
+   -- which is what both callers were building with their own pass over txns. */
+const yfIdxNames=(ix,type)=>[...ix[yfIdxType(type)].keys()];
 /* ---------- Yearly Finance highlights ---------- */
 const YF_HI_MAX=8;               // more dots than this stops being scannable
 /* Pure: turn one year's aggregates into the insight cards worth showing.
@@ -7978,7 +8058,12 @@ function yfHiBuild(){
     const m=parseInt((t.date||'').slice(5,7),10)-1;
     if(m>=0&&m<12){ if(t.type==='income') mInc[m]+=t.amt; else if(!t.allot) mExp[m]+=t.amt; }
   });
-  const totInc=mInc.reduce((a,b)=>a+b,0), totExp=mExp.reduce((a,b)=>a+b,0);
+  /* The same two figures renderYF and arcSnapshot take, and for the same
+     reason -- this was the third site summing the twelve months and calling the
+     answer the year's total. It feeds yfHighlights, whose savings-rate card
+     divides by totInc, so a row the month loop cannot place made the card
+     disagree with the End tile three inches above it. */
+  const totInc=txns.reduce((a,t)=>a+(t.type==='income'?t.amt:0),0), totExp=yfSpendOf(txns);
   const cards=yfHighlights({mInc,mExp,totInc,totExp,txns,
     planned:(state.yf.planned||{})[yr]||{}, expCats:yfCats('expense')});
   yfHiN=cards.length;
@@ -8029,6 +8114,7 @@ function renderYF(){
   if(typeof yfFillStartYear==='function') yfFillStartYear();
 
   const txns=yfTxns();
+  const ix=yfCatIndex(txns);        // every category's total, in one pass
   const mInc=Array(12).fill(0), mExp=Array(12).fill(0);
   txns.forEach(t=>{
     const m=parseInt(t.date.slice(5,7),10)-1;
@@ -8064,8 +8150,8 @@ function renderYF(){
   const start=state.yf.start[yr]||0;
   const end=start+totInc-totExp;
   const saved=end-start;
-  const invested=yfActual('expense','Investment');
-  const moved=yfActual('expense','Other Bank');
+  const invested=yfIdx(ix,'expense','Investment');
+  const moved=yfIdx(ix,'expense','Other Bank');
 
   $('yfStartVal').textContent=yf$(start);
   $('yfEndVal').textContent=yf$(end);
@@ -8221,7 +8307,7 @@ function renderYF(){
     return `<td class="${r<0?'yf-neg':r>0?'yf-pos':''}">`+
       `${r>0?'+':''}${yf$(Math.abs(r)).replace('$',r<0?'\u2212$':'$')}</td>`; };
   const catRow=(cat,type,withMonthly,offList)=>{
-    const plan=yfPlanned(cat), act=yfActual(type,cat), mo=act/nowM;
+    const plan=yfPlanned(cat), act=yfIdx(ix,type,cat), mo=act/nowM;
     /* Expenses ask "is my monthly rate off the plan"; Income still asks the
        year-to-date question, so the two tables compute Diff differently. */
     const diff = withMonthly ? plan-mo : plan-act;
@@ -8274,13 +8360,14 @@ function renderYF(){
      the earlier note was waiting for. It is marked off-list, so it carries no
      rename or delete button: there is no category there to rename. */
   const catList=type=>{
-    const cfg=yfCats(type), extra=[];
-    txns.forEach(t=>{ if(t.type===type && t.cat && cfg.indexOf(t.cat)<0 && extra.indexOf(t.cat)<0)
-      extra.push(t.cat) });
-    extra.sort((a,b)=>String(a).localeCompare(String(b)));
+    const cfg=yfCats(type);
+    // the index already knows which names the rows carry, in first-seen order,
+    // which is exactly what the pass this replaced was collecting
+    const extra=yfIdxNames(ix,type).filter(c=>cfg.indexOf(c)<0)
+      .sort((a,b)=>String(a).localeCompare(String(b)));
     const out=cfg.map(c=>[c,false]).concat(extra.map(c=>[c,true]));
     // only when there is money in it: an ordinary year's table is unchanged
-    if(Math.abs(yfActual(type,YF_NOCAT))>=0.005) out.push([YF_NOCAT,true]);
+    if(Math.abs(yfIdx(ix,type,YF_NOCAT))>=0.005) out.push([YF_NOCAT,true]);
     return out;
   };
   /* Yearly's own categories, and nothing else. Monthly's names must never appear

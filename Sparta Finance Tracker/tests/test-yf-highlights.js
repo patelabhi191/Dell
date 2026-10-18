@@ -1,6 +1,7 @@
 /* Yearly Finance HIGHLIGHTS: generator correctness, guards, rotation,
    and the timer-leak risk that comes from renderYF()'s many callers. */
 const { serve, stub, launch } = require('./lib');
+const YF_NOCAT_LABEL = '(no category)';   // mirrors the app's YF_NOCAT
 const { APP } = require('./paths');
 
 let pass = 0, fail = 0;
@@ -1474,6 +1475,138 @@ const cards = page => page.evaluate(() =>
       JSON.stringify(raw.growth));
     check(perr11.length === 0, '8q: no page errors', perr11.join(' | '));
     await c11.close();
+  }
+
+  /* ── 8r. yfCatIndex answers exactly what yfActual answers ──────────────
+     yfActual(type,cat) re-filters the whole ledger on every call, and the
+     category tables called it once per configured category -- 27 yfTxns()
+     calls and 92,907 re-filtered rows for ONE renderYF on a 3,441-row ledger,
+     rising with the CATEGORY COUNT, which a user can grow without limit.
+     yfCatIndex does it in one pass. yfActual is kept as the REFERENCE, and
+     what follows measures the index against it name by name, on a fixture
+     built out of the shapes most likely to pull the two apart: an allocation
+     (yfCatOf has no !t.allot test and the index must not invent one), a row
+     with no category, a row carrying the reserved name itself, a category in
+     the rows but not on the list, and a configured category with no rows.
+     The last check is the one that stops the fix quietly reverting: the number
+     of ledger scans per render must not grow when categories are added. */
+  console.log('\n── 8r. the category index agrees with yfActual, name by name ──');
+  {
+    const c12 = await browser.newContext();
+    const p12 = await c12.newPage(); await stub(p12);
+    const perr12 = []; p12.on('pageerror', e => perr12.push(e.message));
+    await p12.goto(url, { waitUntil: 'load' }); await p12.waitForTimeout(300);
+    const TX = [
+      { type: 'income',  date: `${YEAR}-01-01`, amt: 9000,  desc: 'Pay',    cat: 'Paycheck' },
+      { type: 'income',  date: `${YEAR}-02-01`, amt: 1200,  desc: 'Side',   cat: 'Freelance' },   // not on the list
+      { type: 'income',  date: `${YEAR}-03-01`, amt: 400,   desc: 'Cash',   cat: '' },            // nameless
+      { type: 'expense', date: `${YEAR}-01-05`, amt: 1450,  desc: 'Rent',   cat: 'Home' },
+      { type: 'expense', date: `${YEAR}-02-05`, amt: 1991,  desc: 'Card',   cat: 'Credit Bill' },
+      { type: 'expense', date: `${YEAR}-02-06`, amt: -120,  desc: 'Refund', cat: 'Home' },        // signed
+      { type: 'expense', date: `${YEAR}-03-05`, amt: 310,   desc: 'Odd',    cat: 'Dog walking' }, // not on the list
+      { type: 'expense', date: `${YEAR}-04-05`, amt: 275,   desc: 'Bare',   cat: '' },            // nameless
+      { type: 'expense', date: `${YEAR}-05-05`, amt: 60,    desc: 'Legacy', cat: '(no category)' },
+    ];
+    await seed(p12, TX, { Home: 1450 });
+    const eq = await p12.evaluate(() => {
+      // the allocation is added here because seed() cannot: it needs a bill id
+      const bill = state.yf.txns.find(t => t.cat === 'Credit Bill');
+      state.yf.txns.push({ id: 'al1', type: 'expense', date: bill.date, amt: 33,
+        desc: 'Transit share', cat: 'Transportation', allot: bill.id, allotM: bill.date.slice(0, 7) });
+      renderYF();
+      const txns = yfTxns(), ix = yfCatIndex(txns);
+      const names = type => [...new Set(
+        yfCats(type).concat(txns.filter(t => t.type === type).map(t => t.cat)))]
+        .concat([YF_NOCAT, 'Never used at all']);
+      const rows = [];
+      ['income', 'expense'].forEach(type => names(type).forEach(c => {
+        rows.push({ type, cat: String(c), ref: yfActual(type, c), idx: yfIdx(ix, type, c) });
+      }));
+      return { rows,
+        bare: { inc: ix.bare.income, exp: ix.bare.expense },
+        allot: { ref: yfActual('expense', 'Transportation'), idx: yfIdx(ix, 'expense', 'Transportation') },
+        allotTabbed: (state.yf.txns.find(t => t.id === 'al1') || {}).tab,
+        allotDirect: (() => { const one = [{ type: 'expense', cat: 'Transportation', amt: 33, allot: 'b1' }];
+          return { ref: yfCatOf(one, 'Transportation'),
+                   idx: yfCatIndex(one).expense.get('Transportation') || 0 } })(),
+        // a type that is neither word is in no bucket, the same as yfActual's filter
+        weird: (() => { const w = yfCatIndex([{ type: 'xx', cat: 'Home', amt: 999 }]);
+          return { exp: w.expense.get('Home') || 0, inc: w.income.get('Home') || 0 } })(),
+        // the names the index reports are the ones the rows carry, in first-seen order
+        namesIdx: yfIdxNames(ix, 'expense'),
+        /* The one DELIBERATE difference: the old pass kept a row carrying the
+           literal reserved string as a category of its own, which would now
+           render a second "(no category)" row beside the nameless bucket. */
+        namesOld: [...new Set(txns.filter(t => t.type === 'expense').map(t => t.cat)
+          .filter(c => c && c !== YF_NOCAT))],
+      };
+    });
+
+    check(eq.rows.length >= 24,
+      '8r: PRECONDITION -- the sweep really covers both tables and every name in them',
+      `${eq.rows.length} comparisons`);
+    const off = eq.rows.filter(r => Math.abs(r.ref - r.idx) > 1e-9);
+    check(off.length === 0,
+      '8r: the index gives yfActual\'s answer for every category, on both tables',
+      JSON.stringify(off).slice(0, 400));
+    /* Without this the sweep could pass on a fixture of all zeroes. */
+    check(eq.rows.filter(r => r.ref !== 0).length >= 6,
+      '8r: ...and at least six of those comparisons are of a non-zero figure',
+      JSON.stringify(eq.rows.filter(r => r.ref !== 0).length));
+
+    /* THE ALLOCATION. yfCatOf has no `!t.allot` test and the index must not
+       invent one -- but neither can be handed an allocation in the first place:
+       normalizeYF stamps every allotted row `tab:'me'` and yfTxns() drops
+       Monthly's rows, which is the "the question is moot" the file claims.
+       Both halves are pinned: the claim, and the predicate on its own. */
+    check(eq.allot.ref === 0 && eq.allot.idx === 0,
+      '8r: an allocation reaches neither, because yfTxns() is scoped by tab',
+      JSON.stringify(eq.allot));
+    check(eq.allotTabbed === 'me',
+      '8r: ...and that is enforced by normalizeYF stamping it, not by luck',
+      JSON.stringify(eq.allotTabbed));
+    check(eq.allotDirect.ref === 33 && eq.allotDirect.idx === 33,
+      '8r: handed one directly, both count it in its own category -- no invented allot test',
+      JSON.stringify(eq.allotDirect));
+
+    // the nameless bucket, and the row that carries the reserved name itself
+    check(eq.bare.exp === 335 && eq.bare.inc === 400,
+      '8r: the nameless rows and the one carrying "(no category)" are one bucket (275+60)',
+      JSON.stringify(eq.bare));
+    const resv = eq.rows.find(r => r.type === 'expense' && r.cat === YF_NOCAT_LABEL);
+    check(!resv || Math.abs(resv.ref - resv.idx) < 1e-9,
+      '8r: ...and asking for that name gives the same figure through either route',
+      JSON.stringify(resv));
+
+    check(eq.weird.exp === 0 && eq.weird.inc === 0,
+      '8r: a row whose type is neither word is in no bucket, as yfActual leaves it',
+      JSON.stringify(eq.weird));
+    check(JSON.stringify(eq.namesIdx) === JSON.stringify(eq.namesOld),
+      '8r: the index reports the same names, in the same order, as the pass it replaced',
+      JSON.stringify({ idx: eq.namesIdx, old: eq.namesOld }));
+
+    /* THE REGRESSION GUARD. The fix is structural, so what has to be pinned is
+       the SHAPE: one render costs the same number of ledger scans whether there
+       are 20 categories or 46. Before yfCatIndex it was 27 and 53. */
+    const scans = await p12.evaluate(() => {
+      const real = yfTxns;
+      const count = () => { let n = 0;
+        window.yfTxns = yfTxns = function () { n++; return real.apply(this, arguments) };
+        renderYF(); yfTxns = real; return n };
+      const few = count();
+      state.yf.cats.exp = state.yf.cats.exp.concat(
+        Array.from({ length: 26 }, (_, i) => 'Extra ' + i));
+      const many = count();
+      return { few, many, cats: state.yf.cats.exp.length + state.yf.cats.inc.length };
+    });
+    check(scans.many === scans.few,
+      '8r: one render costs the same ledger scans at 46 categories as at 20 (was 27 -> 53)',
+      JSON.stringify(scans));
+    check(scans.few <= 6,
+      '8r: ...and that figure is a handful, not one per category',
+      JSON.stringify(scans.few));
+    check(perr12.length === 0, '8r: no page errors', perr12.join(' | '));
+    await c12.close();
   }
 
   await browser.close(); srv.close();

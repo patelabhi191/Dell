@@ -25,8 +25,13 @@ const { APP } = require('../paths');
   console.log('  rows that would suffice:', r.ledger.toLocaleString());
   console.log('  wasted factor:         ', (r.rowsVisited / r.ledger).toFixed(1) + '×');
 
-  // and the thing that makes it matter: the factor is the CATEGORY count, which
-  // the user can grow without limit.
+  /* THE POINT OF THIS SECOND MEASUREMENT IS THE SHAPE, NOT THE MILLISECONDS.
+     It used to show the factor growing with the CATEGORY count, which a user
+     can add to without limit: 20 categories cost 27 yfTxns() calls and 92,907
+     re-filtered rows, 46 cost 53 calls and 182,373 rows at 42.5 ms. Since
+     yfCatIndex() the per-category calls are gone, so this run should print the
+     SAME call count at 46 categories as at 20 -- if it ever starts rising with
+     them again, a per-category yfActual() has come back. */
   const grown = await page.evaluate(() => {
     state.yf.cats.exp = state.yf.cats.exp.concat(
       Array.from({ length: 26 }, (_, i) => 'Extra category ' + i));
@@ -39,6 +44,11 @@ const { APP } = require('../paths');
   console.log('\nSame ledger, categories grown from ' + r.cats + ' to ' + grown.cats + ' (a user can add these freely):');
   console.log('  yfTxns() calls:  ', grown.calls, '  rows re-filtered:', grown.rows.toLocaleString());
   console.log('  renderYF():      ', grown.ms.toFixed(1), 'ms');
-  console.log('  -> cost scales with ROWS × CATEGORIES, not rows alone.');
+  const flat = grown.calls === r.calls;
+  console.log('  -> ' + (flat
+    ? 'FLAT in the category count (' + r.calls + ' calls either way). '
+      + 'Was 27 -> 53 before yfCatIndex().'
+    : 'RISING with the category count: ' + r.calls + ' -> ' + grown.calls
+      + ' calls. A per-category ledger scan is back.'));
   await ctx.close(); await browser.close(); srv.close();
 })();

@@ -1977,8 +1977,13 @@ inside the query.
 
 Paused 2026-10-12, mid-way through a pre-deployment review; resumed and extended since.
 **Everything done is committed and pushed**; nothing of value lives only in a container. Build
-stamp `2026-10-18`, suite **2,057 passed / 0 failed across 19 files** (`tests/run-all.sh`),
+stamp `2026-10-18`, suite **2,070 passed / 0 failed across 19 files** (`tests/run-all.sh`),
 verified on the pushed tree.
+
+**`tests/run-all.sh` now fails loudly when a suite does not finish.** It used to read the summary
+line each suite prints and add nothing when there wasn't one, so a startup error that took the
+whole app down came back as **"1,236 passed, 1 failed"** — six suites had silently stopped counting
+and the single failure read like a detail. A missing summary line is now named and counted.
 
 **Two of the four owner decisions below are now settled** (1 and 3) — see *SETTLED SINCE THE
 PAUSE*. Decisions 2 and 4 are still open, and neither is blocked on work.
@@ -2110,7 +2115,7 @@ segments, a 40-stock watchlist, 40 notepad points and 120 import rules — about
 | `compactHistory()` first run, 4,000 raw points | **13.2 ms**, folds 4,000 → 92 |
 | `arcAutoSeal()` first run | 15.5 ms, seals 4 years |
 | `render()` (Dashboard) | 17.7 ms |
-| **`renderYF()`** | **55 ms** — the heaviest thing in the app |
+| **`renderYF()`** | **55 ms** at the time — the heaviest thing in the app (29–50 ms since `yfCatIndex`) |
 | `renderME()` | 51 ms |
 | `renderContribs()` / `renderNotes()` | ~15 ms each |
 | `renderArchives()` / `renderPlan()` | 1.0 / 4.4 ms |
@@ -2135,12 +2140,32 @@ once per configured category. Counted, not inferred: one `renderYF()` on the 3,4
 the category count, which the user can grow without limit: adding 26 categories took it to 51 calls,
 175,491 rows and **71–107 ms** (two runs; the higher one had the suite competing for CPU — quote the range, this container is contended). Measured growth of `renderYF` across 860 → 6,882 rows was 4.2 → 84.5 ms
 (20× for 8× the rows — super-linear, not quadratic).
-**Not fixed, deliberately.** At realistic scale it is 55 ms and causes no symptom, and `yfActual`
-/ `yfTxns` are the primitives `arcSnapshot` reuses so that a sealed card cannot disagree with the
-year it came from. Hoisting the filter out of the per-category loop is the fix, and it is a change
-to shared primitives with a correctness risk that a performance rewrite was not in scope to take.
-Do it when a real ledger makes it hurt, and re-run `test-yf-highlights` 8d–8l, which pin that
-agreement from three directions.
+**FIXED, 2026-10-18 — `yfCatIndex()`.** It was held back because `yfActual`/`yfTxns` are the
+primitives `arcSnapshot` reuses so a sealed card cannot disagree with the year it came from, and
+that risk was the right one to respect; the answer was to make the risk measurable rather than to
+accept it. `yfActual` is untouched and became the REFERENCE: `test-yf-highlights` 8r sweeps every
+name in both tables and asserts the index gives the same figure, on a fixture holding an
+allocation, a nameless row, a row carrying the reserved name, a category in the rows but not on the
+list, a signed refund and a configured category with no rows. 8d–8l were re-run and pass, as does
+the whole suite (2,070 / 0).
+
+One pass now answers for every category: **27 ledger scans → 3, and flat in the category count**
+(it was 53 at 46 categories; 8r fails if it ever rises with them again, and reverting one call site
+puts it at 28 → 54).
+
+**The wall-clock saving is small, and the claim should stay that size.** The removed scans cost
+**2.6 ms per render at 20 categories and 5.0 ms at 46** — median of 31, with the results consumed
+so nothing is optimised away — against a whole `renderYF` of 29–50 ms. The earlier "71–107 ms"
+range was two contended runs of the whole render, not the cost of the scans, and a straight
+before/after of `renderYF` in this container is useless: it measured 46.8–79.4 ms before at 20
+categories and 34.2–38.7 ms before at 46, i.e. *faster with more categories*, which cannot be true.
+**Time the work you removed, not the function you removed it from.** What actually dominates
+`renderYF` is the transaction list's per-row `createElement`; the scan was simply the only part of
+it that grew with something a user can add to without limit.
+
+**It is not a cache**, and that was the point: nothing is kept between renders, so there is no
+invalidation to get wrong. A memoised `yfTxns()` would have bought the same few milliseconds at the
+price of stale money on screen, and 5 ms is not worth that.
 
 **Console: clean.** Nothing is logged at warning or error on an empty ledger, on the standard
 fixture, or on five years of data — across all six tabs and through real interaction (Settings, a
@@ -2197,13 +2222,29 @@ Left alone because deleting them removes the safety net that is their whole purp
   back means clearing `sparta.arcDeleted` by hand. Before the tombstone the "undo" was
   accidental and destructive, so this is the better of the two, but a "restore deleted year"
   route is the obvious follow-up.
-- **`renderYF` costs ROWS × CATEGORIES.** `yfActual` (`:7541`) calls `yfTxns()` (`:7502`), which
-  filters the whole ledger, once per configured category: 25 calls and 86,025 row visits for one
-  render of a 3,441-row ledger, where 3,441 visits would do. 55 ms today, 71–107 ms with 26 extra
-  categories, and the multiplier is user-controlled. The fix is to hoist the filtered list out of
-  the per-category loop — but these are the primitives `arcSnapshot` reuses so a sealed card cannot
-  disagree with its year, so it needs `test-yf-highlights` 8d–8l re-run against it. Measured in
-  full in section 9a.
+- ~~**`renderYF` costs ROWS × CATEGORIES.**~~ **FIXED** — `yfCatIndex()`. `yfActual(type,cat)`
+  calls `yfTxns()`, which filters the whole ledger, and the category tables called it once per
+  configured category: **27 calls and 92,907 row visits for one render** of a 3,441-row ledger
+  where 3,441 would do, rising to 53 calls and 182,373 rows at 46 categories — a multiplier the
+  user controls. One pass now builds every category's total, and the scan count is **3, flat in the
+  category count**.
+  **The measured saving is small and the claim should stay that size:** the removed scans cost
+  **2.6 ms per render at 20 categories and 5.0 ms at 46** (median of 31, with the results consumed
+  so nothing is optimised away), against a whole `renderYF` of 29–50 ms. It was never what makes
+  the tab slow — it was the only part of it that grew with something a user can add to without
+  limit. The replacement costs ~0.008 ms, because it indexes the YEAR's rows (170 of the 3,441)
+  rather than re-filtering all of them.
+  **It is not a cache.** Nothing is kept between renders, so there is no invalidation to get wrong;
+  a memoised `yfTxns()` would have bought the same milliseconds at the price of stale money on
+  screen. `yfActual` is untouched and is the reference `test-yf-highlights` 8r measures the index
+  against, name by name, on a fixture of the shapes most likely to pull them apart. 8r also pins
+  the SHAPE — one render must cost the same scans at 46 categories as at 20 — and reverting a
+  single call site puts it back to 28 → 54 and fails.
+  Two things the equivalence sweep turned up on the way: `yfActual(type,'')` counted `cat===''`
+  rows and skipped rows with no `cat` key at all, which is neither answer anyone wants, and a row
+  carrying the literal string `(no category)` would have rendered a **second** row with that
+  heading beside the nameless bucket. Both are folded into one predicate (`yfCatWant`) that the
+  index and `yfActual` share, so they cannot disagree for any input.
 - **The pre-namespace originals are never deleted**, so an upgraded ledger carries two copies
   permanently: 0.99 MB of 1.49 MB in the profile fixture. Worst case is `sparta.dash.history`,
   where the live copy is folded to 92 points and the plain original keeps all 4,000 at 504 KB.
