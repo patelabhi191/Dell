@@ -1945,11 +1945,43 @@ Every surface here is translucent glass over an animated decorative field, often
 *and gradients* down, reading `background-clip:text` as ink rather than backdrop, and freezing
 transitions, which matters because a mid-transition read differs from the settled one.
 
+### For PAPER, sampling a screenshot is not enough — rasterise the real PDF
+
+A screenshot always paints backgrounds. **A printer does not**: Chromium's own default is
+background graphics OFF, and that single difference is the entire print defect — the dark page
+every figure is legible against is CSS, so it goes, and `--text` #EAF0FA lands on a white sheet at
+1.14:1. `emulateMedia({media:'print'})` plus a screenshot will not show you that; it hands back the
+dark app and a comfortable ratio, the same way the derived-background instrument did.
+
+So `tests/test-print.js` does both, and each covers what the other cannot:
+
+- **Per-element contrast** comes from the emulated screenshot, which is the only way to read the
+  pixel under one specific figure. It is valid **only because the suite also asserts every sampled
+  surface is white** (`r,g,b ≥ 245`): once that holds, ink-against-sampled *is* ink-against-paper.
+  If a future change lets the decorative field or the glass paint again, that check fails first and
+  says so, before the ratios go comfortable and meaningless.
+- **The whole-document claim** comes from `page.pdf({format:'Letter'})` at Chromium's defaults,
+  rasterised with `pdftoppm -r 72` and counted by luminance bucket. No DOM-to-page coordinate
+  mapping is involved, so nothing in it breaks when the content repaginates. Yearly as it ships:
+  **14,971 pixels of readable ink (L < 0.25) across three pages; 1,910 with the `@media print`
+  block deleted at runtime** — and the ink does not disappear, it washes out, 10,592 mid-tone
+  pixels becoming 51,296. That is why this was easy to miss: the page looks printed.
+
+Two things the per-element probe found that no contrast number would have: `background-clip:text`
+with a transparent fill prints **blank**, because the gradient doing the painting is a background;
+and a palette declared on a VIEW rather than on `:root` (`#archiveView{--arc:…}`,
+`#monthlyView{--sk-ink:…}`) is not reached by redefining the root tokens, so it has to be restated
+inside the query.
+
 ## 9a. WHERE THIS WAS PAUSED — read this first if you are picking the work back up
 
-Paused 2026-10-12, mid-way through a pre-deployment review. **Everything done is committed and
-pushed**; nothing of value lives only in a container. Build stamp `2026-10-11`, suite
-**1,956 passed / 0 failed across 18 files** (`tests/run-all.sh`), verified on the pushed tree.
+Paused 2026-10-12, mid-way through a pre-deployment review; resumed and extended since.
+**Everything done is committed and pushed**; nothing of value lives only in a container. Build
+stamp `2026-10-18`, suite **2,040 passed / 0 failed across 19 files** (`tests/run-all.sh`),
+verified on the pushed tree.
+
+**Two of the four owner decisions below are now settled** (1 and 3) — see *SETTLED SINCE THE
+PAUSE*. Decisions 2 and 4 are still open, and neither is blocked on work.
 
 **Branches on origin:**
 
@@ -1984,15 +2016,41 @@ The defects worth knowing about, because they say where this file is weak:
 - **A silent data-loss path** on a full `localStorage` drawer — rows held in memory, drawn on
   screen, never written, gone on reload, nothing thrown or logged.
 
-### FOUR DECISIONS WAITING ON THE OWNER — none of them blocked on more work
+### SETTLED SINCE THE PAUSE
 
-1. **`Invested` and `Moved else` are keyed to the literal category names** `'Investment'` and
+**Decision 1 — the two wired category names — settled by fixing the names in place** (`515a622`).
+The rename and the delete both refuse, before `markUserEdit`, with a toast naming the tile that
+depends on the category; the table's pencil and cross are dimmed on those two rows with the same
+`.is-off` token the disabled Clear button uses and carry the reason in their tooltip, and they stay
+clickable so the toast can say it out loud. `normalizeYF` puts a missing wired name back, so a
+record that already lost one is not stuck at $0 for good — and it moves no money, so rows filed
+under the new name stay where they are. Storing the keys and following the rename was the
+alternative and was rejected on one ground: **the archives have already copied the old key into
+sealed cards that must keep adding up**, so that is a migration with no safe answer for the records
+already on disk. Covered by `test-yf-highlights.js` §8o (13 checks).
+
+**Decision 3 — print — settled by writing the stylesheet** (`4e6127d`), and it was worse than the
+audit said. Three roles print *blank*, not faint: `.sparkle`, `.sparkle-green` and `.ay-yr` paint
+their glyphs by clipping a gradient to the text with a transparent fill, and a gradient is a
+background, so the savings-growth figure, the saved-this-year figure and **the year on every
+archive card** came out with no ink at all. Two further findings were the same shape as decision 2:
+the Archives card had re-typed four of its six money colours as hex literals directly under a
+comment promising they were the shared ones (aliased to the tokens, identical values, nothing on
+screen moved), and `#93A2B8` was Monthly's dim label grey typed in seven places — a token nobody
+had written down, now `--sk-dim`. `tests/test-print.js` (46 checks) covers all five views; its
+§3 is the one that keeps the rest honest — it deletes the `@media print` block at runtime and
+re-measures the **real PDF**, so a change that breaks the block cannot leave the suite passing on
+the screen styles alone.
+
+### TWO DECISIONS STILL WAITING ON THE OWNER — neither blocked on more work
+
+1. ~~**`Invested` and `Moved else` are keyed to the literal category names**~~ `'Investment'` and
    `'Other Bank'` (`renderYF`, and `arcSnapshot`). Renaming either category is one click with no
    warning and silently zeroes that tile **and Off-paper**, on the tab and in every future archive,
    while already-sealed cards keep the old figure. Same class as the `allot`-by-name bug this
    project already fixed, with the identity hard-coded instead of stored. Either refuse the rename
    with a toast, or store the two keys in state and follow the rename. **The auditor's recommendation
-   was to settle this before release.**
+   was to settle this before release.** — **SETTLED, see above.**
 2. **The two dim ink tokens** (`claude/sparta-contrast-tokens-HELD`). `--text-faint` at alpha .35
    measures **2.71–2.97:1** composited, against a 4.5:1 bar, and it carries every form `label`,
    every `.htable th`, and every empty state — so on a tab with no data the sentence explaining why
@@ -2000,10 +2058,12 @@ The defects worth knowing about, because they say where this file is weak:
    **65 failing specs to 20**, and 15 of the remaining 20 are Plan. The decisive evidence is
    internal: **Monthly had already escaped the token by hand**, hardcoding `#93A2B8`/`#8695AB`
    (≈ α .64/.58, measuring 5.4–7.1:1) — five tabs were failing a bar the sixth had already met.
+   (`#93A2B8` is now the `--sk-dim` token and `#8695AB` is still four hardcoded rules; **the values
+   are unchanged**, so this argument is exactly as it was.)
    Held only because it is the one change that alters how every tab looks, against the standing
    "UI remains constant" rule. **Decide against `preview-contrast-tokens.html`**, which shows eight
    affected roles current-vs-proposed with ratios, plus two whole tabs.
-3. **Print is unusable.** **0 `@media print` rules** out of ~890. Chrome leaves "Background graphics"
+3. ~~**Print is unusable.**~~ **SETTLED, see above.** **0 `@media print` rules** out of ~890. Chrome leaves "Background graphics"
    off by default, so the backgrounds go and the text colours stay: `#EAF0FA` is **1.14:1 on white
    paper**. A year's finances print as a near-blank page on which the decorative `aria-hidden`
    artwork comes out *stronger than the data*. See `screens/print/yearly-as-printed.png`. ~15 lines
@@ -2104,6 +2164,14 @@ Left alone because deleting them removes the safety net that is their whole purp
 - **Plan tab** exists and is built out (segments, dated items, running balance, lowest
   point) — see `tests/test-plan.js` for the behaviour it guarantees.
 - No live Firebase listener (§4) — acceptable per user, don't add without asking.
+- **Print now has a stylesheet** (§9a, `4e6127d`): ink and the whole accent palette remapped for
+  white paper at 4.5:1 with hues kept recognisable, glass flattened, both charts' hardcoded white
+  gridlines recoloured, headings repeating across pages, panels not split, and everything that
+  cannot be acted on left off the page. Two things are deliberately NOT handled: the **PIN lock
+  screen** (`.pin-title` / `.pin-sub` are gradient-clipped text and would print blank, but a locked
+  app has nothing worth printing anyway), and the **"IMPORT STATEMENT" / "Import holdings"
+  headings**, which stay on the page after their drop zones are hidden — a heading for nothing.
+  Both are cosmetic; neither loses a figure.
 - **A past archive, once deleted, has no UI route back.** The tombstone is what stops the
   rollover rebuilding it (and clobbering hand corrections doing so), but **+ Add year** only
   ever seals the CURRENT year, so it can only lift the current year's stone. Getting 2025
