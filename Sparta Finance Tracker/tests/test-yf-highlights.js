@@ -1320,6 +1320,162 @@ const cards = page => page.evaluate(() =>
     await c9.close();
   }
 
+  /* ── 8p. money in a total with no row, and a row in no total ───────────
+     Two inversions of the same rule, and this file names that rule repeatedly:
+     a figure on screen must be in something that adds up.
+
+       - a row the MONTH loop cannot place (date 2026-13-05) was in the year, in
+         yfTxns() and in its category's row, and in neither totExp nor End,
+         because both were mInc/mExp.reduce(). Reverting the fix prints it:
+         Food $1,500 under a Totals line reading $1,300, a total smaller than
+         one of its own rows, and End $500 adrift of the table. normalizeYF
+         leaves an impossible month alone on purpose, so the row is here to stay
+       - a row with NO CATEGORY was the reverse: counted by yfSpendOf into
+         Totals, dropped from both category tables by a .filter(Boolean)
+
+     Both are asserted on the live tab AND on the sealed card, because the whole
+     reason the first was left alone was that fixing one side only would put the
+     two out of step about the same year. */
+  console.log('\n── 8p. a row with no month, and a row with no category ──');
+  {
+    const c10 = await browser.newContext();
+    const p10 = await c10.newPage(); await stub(p10);
+    const perr10 = []; p10.on('pageerror', e => perr10.push(e.message));
+    await p10.goto(url, { waitUntil: 'load' }); await p10.waitForTimeout(300);
+    const TX = [
+      { type: 'income',  date: `${YEAR}-01-01`, amt: 20000, desc: 'Pay',  cat: 'Paycheck', who: 'ABI' },
+      { type: 'expense', date: `${YEAR}-02-05`, amt: 1000,  desc: 'Feb',  cat: 'Food',     who: 'ABI' },
+      // in the year by every reader that asks, in no month the loop will take
+      { type: 'expense', date: `${YEAR}-13-05`, amt: 500,   desc: 'Bad month', cat: 'Food', who: 'ABI' },
+      // in Totals, and in no row of the table under it
+      { type: 'expense', date: `${YEAR}-04-05`, amt: 300,   desc: 'Nameless',  cat: '',     who: 'ABI' },
+    ];
+    await seed(p10, TX, {});
+    const inv = await p10.evaluate(yr => {
+      const mExp = Array(12).fill(0);
+      yfTxns().forEach(t => { const m = parseInt((t.date || '').slice(5, 7), 10) - 1;
+        if (m >= 0 && m < 12 && t.type === 'expense' && !t.allot) mExp[m] += t.amt });
+      const rows = [...document.querySelectorAll('#yfExpBody tr')].map(tr => ({
+        name: tr.children[0].textContent.trim(),
+        act: parseFloat(tr.children[1].textContent.replace(/[^0-9.-]/g, '')) || 0,
+        btns: tr.querySelectorAll('.yf-catbtn').length }));
+      return { inYear: yfTxns().length,
+        // 1300: the nameless row has a perfectly good April date, so it IS in a
+        // month bucket -- only the 13th-month row is missing from the twelve
+        months: mExp.reduce((a, b) => a + b, 0),
+        totExp: yfActual('expense'),                  // 1800
+        end: document.getElementById('yfEndVal').textContent,
+        rows, arc: arcSnapshot(yr) };
+    }, YEAR);
+
+    // ---- the row with an impossible month ----
+    check(inv.inYear === 4,
+      '8p: PRECONDITION -- all four rows are in the year, the bad date included',
+      JSON.stringify(inv.inYear));
+    check(inv.months === 1300 && inv.totExp === 1800,
+      '8p: PRECONDITION -- the twelve months hold $1,300 of the $1,800 that was spent',
+      JSON.stringify({ months: inv.months, totExp: inv.totExp }));
+    const totalsRow = inv.rows[0];
+    check(totalsRow && totalsRow.name === 'Totals' && totalsRow.act === 1800,
+      '8p: the Totals line summed from the rows reads $1,800', JSON.stringify(totalsRow));
+    /* The figure that was wrong: with no opening balance typed, End was
+       0 + 20000 - 1300 = $18,700, over a table adding to 1,800. It is the tile
+       the whole tab is read for. */
+    check(/18,?200/.test(inv.end.replace(/\s/g, '')),
+      '8p: ...and End agrees with it -- it used to drop the unplaceable row and read $18,700',
+      inv.end);
+
+    // ---- the row with no category ----
+    const noCat = inv.rows.filter(r => r.name === '(no category)');
+    check(noCat.length === 1 && noCat[0].act === 300,
+      '8p: the nameless $300 has a row of its own instead of only being in Totals',
+      JSON.stringify(noCat));
+    check(noCat.length === 1 && noCat[0].btns === 0,
+      '8p: ...with no rename or delete on it, because there is no category there to rename',
+      JSON.stringify(noCat.map(r => r.btns)));
+    check(inv.rows.filter(r => r.name === 'Food')[0].act === 1500,
+      '8p: and Food still carries both of its rows, the badly dated one included',
+      JSON.stringify(inv.rows.filter(r => r.name === 'Food')));
+
+    // ---- the sealed card says the same thing about the same year ----
+    const arcExp = inv.arc.exp;
+    check(inv.arc.stats.end === 18200 && inv.arc.stats.start + 20000 - 1800 === 18200,
+      '8p: the archive seals the same End, so the tab and the card cannot disagree',
+      JSON.stringify(inv.arc.stats));
+    check(arcExp.some(r => r.c === '(no category)' && r.v === 300),
+      '8p: ...and the same nameless row -- this is why the live-tab fix alone was refused',
+      JSON.stringify(arcExp));
+    check(arcExp.some(r => r.c === 'Food' && r.v === 1500),
+      '8p: ...and the same Food figure', JSON.stringify(arcExp.filter(r => r.c === 'Food')));
+
+    // ---- an ordinary year gains nothing ----
+    const clean = await p10.evaluate(() => {
+      state.yf.txns = state.yf.txns.filter(t => t.cat && /-(0[1-9]|1[0-2])-/.test(t.date));
+      renderYF();
+      return { rows: [...document.querySelectorAll('#yfExpBody tr')]
+        .map(tr => tr.children[0].textContent.trim()),
+        arc: arcSnapshot(state.yfYear).exp.map(r => r.c) };
+    });
+    check(!clean.rows.includes('(no category)') && !clean.arc.includes('(no category)'),
+      '8p: a year with nothing wrong in it has no such row, on either side',
+      JSON.stringify({ tab: clean.rows, arc: clean.arc }));
+
+    // ---- and the name cannot be taken by a real category ----
+    const reserved = await p10.evaluate(() => {
+      const el = document.getElementById('yfNewExp');
+      if (el) { el.value = '(no category)'; yfAddCat('expense', 'yfNewExp') }
+      const added = state.yf.cats.exp.filter(c => c === '(no category)').length;
+      window.prompt = () => '(no category)';
+      yfRenameCat('expense', 'Food');
+      return { added, renamed: state.yf.cats.exp.includes('(no category)'),
+        foodKept: state.yf.cats.exp.includes('Food') };
+    });
+    check(reserved.added === 0 && !reserved.renamed && reserved.foodKept,
+      '8p: the reserved name is refused to both add and rename, so nothing can double-count',
+      JSON.stringify(reserved));
+    check(perr10.length === 0, '8p: no page errors', perr10.join(' | '));
+    await c10.close();
+  }
+
+  /* ── 8q. arcSnapshot coerces its own input ─────────────────────────────
+     renderYF calls normalizeYF before it reads anything, so the Yearly tab is
+     always computed from coerced data. The ROLLOVER is not: it can seal a year
+     on the first load of the app, with the Yearly tab never rendered, straight
+     from whatever arrived from the cloud. And the sealed card is the one record
+     meant to be final -- a string start that prints End as $80,002,450 is worse
+     in an archive than on a tab that can be re-rendered. */
+  console.log('\n── 8q. the rollover seals coerced figures, not raw cloud data ──');
+  {
+    const c11 = await browser.newContext();
+    const p11 = await c11.newPage(); await stub(p11);
+    const perr11 = []; p11.on('pageerror', e => perr11.push(e.message));
+    await p11.goto(url, { waitUntil: 'load' }); await p11.waitForTimeout(300);
+    const raw = await p11.evaluate(yr => {
+      /* the shape a half-written cloud record arrives in: every money figure a
+         string, and a date that is a number. Written straight into state, with
+         no render in between -- which is the rollover's position exactly. */
+      state.yfYear = yr;
+      state.yf.txns = [
+        { id: 'r1', type: 'income',  date: `${yr}-02-01`, amt: '4200', desc: 'Pay', cat: 'Paycheck' },
+        { id: 'r2', type: 'expense', date: `${yr}-03-01`, amt: '1750', desc: 'Rent', cat: 'Home' },
+      ];
+      state.yf.start = { [yr]: '8000' };
+      state.yf.planned = { [yr]: { Home: '1450' } };
+      return arcSnapshot(yr).stats;
+    }, YEAR);
+    check(raw.start === 8000,
+      '8q: the sealed start is the number 8000, not the string that was handed in',
+      JSON.stringify(raw.start));
+    check(raw.end === 10450,
+      '8q: ...so End is 8000 + 4200 - 1750 and not the $80,002,450 that `+` on a string gives',
+      JSON.stringify(raw.end));
+    check(Number.isFinite(raw.growth) && Math.abs(raw.growth - 30.625) < 0.01,
+      '8q: and growth is a real percentage rather than NaN or +999930.6%',
+      JSON.stringify(raw.growth));
+    check(perr11.length === 0, '8q: no page errors', perr11.join(' | '));
+    await c11.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nYF HIGHLIGHTS: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

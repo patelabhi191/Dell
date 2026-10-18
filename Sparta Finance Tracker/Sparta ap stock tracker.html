@@ -5021,6 +5021,15 @@ function normalizeArchives(){
    filters here -- two copies of "which rows belong to this year" is exactly how
    an archive ends up disagreeing with the tab it came from. */
 function arcSnapshot(year){
+  /* NORMALISED HERE AS WELL, and not because a caller forgot. renderYF() calls
+     normalizeYF() before it reads anything, so every figure on the Yearly tab
+     is computed from coerced data -- but the rollover can seal a year on the
+     first load of the app without the Yearly tab ever having been rendered, and
+     then the archive is built from whatever arrived from the cloud. The whole
+     point of the coercions is that the sealed card is the one record meant to
+     be final: a string start printing End as $80,002,450, or a NaN reading as
+     $0 forever, is worse in an archive than on a tab that can be re-rendered. */
+  normalizeYF();
   const keep=state.yfYear;
   state.yfYear=year;
   try{
@@ -5030,7 +5039,9 @@ function arcSnapshot(year){
       const m=parseInt((t.date||'').slice(5,7),10)-1;
       if(m>=0&&m<12){ if(t.type==='income') mInc[m]+=t.amt; else if(!t.allot) mExp[m]+=t.amt; }
     });
-    const totInc=mInc.reduce((a,b)=>a+b,0), totExp=mExp.reduce((a,b)=>a+b,0);
+    // the same two figures renderYF now takes, for the same reason: a row the
+    // month loop cannot place is still in the year, and in the table below
+    const totInc=yfActual('income'), totExp=yfActual('expense');
     const start=state.yf.start[year]||0, end=start+totInc-totExp, saved=end-start;
     const invested=yfActual('expense','Investment'), moved=yfActual('expense','Other Bank');
     const cat=(type)=>{
@@ -5038,7 +5049,9 @@ function arcSnapshot(year){
          that was renamed or removed from the list afterwards, and leaving it
          out would make the table disagree with the End figure above it. */
       const used=txns.filter(t=>t.type===type).map(t=>t.cat).filter(Boolean);
-      return [...new Set(yfCats(type).concat(used))]
+      // YF_NOCAT appended for the same reason the live tab appends it; the
+      // v!==0 filter below drops it again for every year that has no such row
+      return [...new Set(yfCats(type).concat(used)), YF_NOCAT]
         .map(c=>({c,v:yfActual(type,c)}))
         .filter(r=>r.v!==0).sort((a,b)=>b.v-a.v);
     };
@@ -7760,12 +7773,31 @@ function yfPlanned(cat){ const p=state.yf.planned[state.yfYear]||{}; return p[ca
    Either way the Yearly category table reports the detail as
    "billed / itemised / over" beside the bill. */
 const yfSpendOf=list=>list.reduce((s,t)=>s+(t.type==='expense'&&!t.allot?t.amt:0),0);
+/* A ROW WITH NO CATEGORY AT ALL used to be in the Totals row and in no row of
+   the table under it -- yfSpendOf counts every expense, and both category
+   tables dropped the nameless ones with a `.filter(Boolean)`. That is the one
+   shape this file keeps calling the worst: money in a total, with nothing on
+   screen to say where it went. It was left alone deliberately, and the reason
+   given was sound as far as it went -- inventing a "(none)" row on the live tab
+   alone would have put Yearly and a sealed archive card out of step about the
+   same year, which is a worse fault than the first. The answer is to do it on
+   BOTH sides, through the primitive they share, so there is one definition.
+   New rows cannot reach this state (yfSaveTx refuses a row with no category,
+   see test-yf-highlights 8l); it takes an import, a hand-edited cloud record or
+   a build from before the picker was mandatory. The name is reserved so a real
+   category cannot collide with it. */
+const YF_NOCAT='(no category)';
+const yfNoCat=t=>!t.cat;
 function yfCatOf(list,cat){
-  return list.reduce((s,t)=>t.type!=='expense'?s:s+(t.cat===cat?t.amt:0),0);
+  const want = cat===YF_NOCAT ? yfNoCat : (t=>t.cat===cat);
+  return list.reduce((s,t)=>t.type!=='expense'?s:s+(want(t)?t.amt:0),0);
 }
 function yfActual(type,cat){
   const list=yfTxns().filter(t=>t.type===type);
-  if(type!=='expense') return (cat==null?list:list.filter(t=>t.cat===cat)).reduce((s,t)=>s+t.amt,0);
+  if(type!=='expense'){
+    const pick = cat==null ? list : cat===YF_NOCAT ? list.filter(yfNoCat) : list.filter(t=>t.cat===cat);
+    return pick.reduce((s,t)=>s+t.amt,0);
+  }
   return cat==null?yfSpendOf(list):yfCatOf(list,cat);
 }
 /* ---------- Yearly Finance highlights ---------- */
@@ -8002,7 +8034,26 @@ function renderYF(){
     // allocations are skipped: their money is already inside the bill they itemise
     if(m>=0&&m<12){ if(t.type==='income') mInc[m]+=t.amt; else if(!t.allot) mExp[m]+=t.amt; }
   });
-  const totInc=mInc.reduce((a,b)=>a+b,0), totExp=mExp.reduce((a,b)=>a+b,0);
+  /* THE YEAR'S TOTALS ARE NOT THE SUM OF ITS TWELVE MONTHS, and the difference
+     is a row the month loop cannot place. The loop above takes the month from
+     `date.slice(5,7)` and keeps `m>=0&&m<12`, while every other reader asks
+     only `date.slice(0,4)` for the year -- so a row dated 2026-13-05 is IN the
+     year, in yfTxns() and in its category's row, and was in neither totExp nor
+     End. Measured: $1,000 in February and $500 on the bad date put $1,500
+     against Food, under a TOTALS LINE READING $1,300 -- a total smaller than
+     one of the rows it is the total of -- and End $500 adrift of its own table.
+     normalizeYF leaves that date exactly as it is on purpose (an impossible
+     month is not a date, and guessing which field was meant is the worse
+     trade), so the row is here to stay and the only question is which figures
+     own it.
+     Taken from yfActual, which is the same primitive the category table and
+     arcSnapshot use, so End, Saved, Growth, Off-paper and the itemised table
+     now agree to the cent. The twelve bars are still short by that row -- it
+     has no month to be drawn in -- and that is the one disagreement that cannot
+     be designed away. For an ordinary year, where every row has a real month,
+     this is the identical figure: the only rows the two expressions differ
+     about are the ones the loop drops. */
+  const totInc=yfActual('income'), totExp=yfActual('expense');
   const start=state.yf.start[yr]||0;
   const end=start+totInc-totExp;
   const saved=end-start;
@@ -8211,15 +8262,19 @@ function renderYF(){
      these functions exists to prevent.
      Configured names keep their order; the recovered ones are appended A-Z, so
      an ordinary year's table is byte-for-byte what it was.
-     Still left out, on purpose and on BOTH sides: a row with no category at all.
-     arcSnapshot drops it with the same `.filter(Boolean)`, and inventing a
-     "(none)" row here alone would put the two tabs back out of step. */
+     A row with NO category at all now gets a row too, last, under the reserved
+     YF_NOCAT name -- on both sides, through the shared primitive, which is what
+     the earlier note was waiting for. It is marked off-list, so it carries no
+     rename or delete button: there is no category there to rename. */
   const catList=type=>{
     const cfg=yfCats(type), extra=[];
     txns.forEach(t=>{ if(t.type===type && t.cat && cfg.indexOf(t.cat)<0 && extra.indexOf(t.cat)<0)
       extra.push(t.cat) });
     extra.sort((a,b)=>String(a).localeCompare(String(b)));
-    return cfg.map(c=>[c,false]).concat(extra.map(c=>[c,true]));
+    const out=cfg.map(c=>[c,false]).concat(extra.map(c=>[c,true]));
+    // only when there is money in it: an ordinary year's table is unchanged
+    if(Math.abs(yfActual(type,YF_NOCAT))>=0.005) out.push([YF_NOCAT,true]);
+    return out;
   };
   /* Yearly's own categories, and nothing else. Monthly's names must never appear
      here -- they were briefly added as extra rows to keep the totals reconciling,
@@ -8287,6 +8342,9 @@ function yfAddCat(type,inputId){
   if(!name){ toast('Type a category name first'); return }
   if(name.length>30){ toast('Keep the name under 30 characters'); return }
   if(yfCatExists(type,name)){ toast(`"${name}" already exists`); return }
+  // reserved: the category tables use it as the heading for rows carrying no
+  // category, and a real one under the same name would add its money twice
+  if(name===YF_NOCAT){ toast(`"${YF_NOCAT}" is reserved \u2014 pick another name`); return }
   yfCats(type).push(name);
   el.value='';
   yfPersist(); renderYF(); yfFillCats();
@@ -8307,6 +8365,7 @@ function yfRenameCat(type,oldName){
   if(name===oldName) return;
   if(name.length>30){ toast('Keep the name under 30 characters'); return }
   if(yfCatExists(type,name)){ toast(`"${name}" already exists`); return }
+  if(name===YF_NOCAT){ toast(`"${YF_NOCAT}" is reserved \u2014 pick another name`); return }
   const list=yfCats(type), i=list.indexOf(oldName);
   if(i<0) return;
   list[i]=name;
