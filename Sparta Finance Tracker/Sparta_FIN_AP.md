@@ -1977,7 +1977,7 @@ inside the query.
 
 Paused 2026-10-12, mid-way through a pre-deployment review; resumed and extended since.
 **Everything done is committed and pushed**; nothing of value lives only in a container. Build
-stamp `2026-10-18`, suite **2,040 passed / 0 failed across 19 files** (`tests/run-all.sh`),
+stamp `2026-10-18`, suite **2,057 passed / 0 failed across 19 files** (`tests/run-all.sh`),
 verified on the pushed tree.
 
 **Two of the four owner decisions below are now settled** (1 and 3) — see *SETTLED SINCE THE
@@ -2041,6 +2041,25 @@ had written down, now `--sk-dim`. `tests/test-print.js` (46 checks) covers all f
 §3 is the one that keeps the rest honest — it deletes the `@media print` block at runtime and
 re-measures the **real PDF**, so a change that breaks the block cannot leave the suite passing on
 the screen styles alone.
+
+**The three audit leftovers are done too** (`31d9daa`, `11ee720`), and two of them were the same
+rule broken in opposite directions — a figure on screen has to be in something that adds up:
+
+- a row the **month loop cannot place** (date `2026-13-05`) was in the year, in `yfTxns()` and in
+  its category's row, and in neither `totExp` nor End, because both were `mInc/mExp.reduce()`.
+  Reverting the fix prints it: **Food $1,500 under a Totals line reading $1,300**, a total smaller
+  than one of the rows it is the total of. `normalizeYF` leaves an impossible month alone on
+  purpose, so `totInc`/`totExp` are now summed over the year's rows by the same two definitions
+  `yfActual` uses — over the array already in hand, **not** through `yfActual`, which would have
+  added two more full-ledger scans per render to the 25 section 10 already complains about.
+- a row with **no category** was the reverse: into Totals via `yfSpendOf`, out of both tables via
+  `.filter(Boolean)`. Now `YF_NOCAT`, one definition shared by the tab and `arcSnapshot`, appended
+  only when there is money in it, off-list so it has no rename or delete, and reserved against both
+  add and rename so a real category cannot collide and double-count. Doing it on both sides at once
+  is what the old comment was waiting for.
+- `arcSnapshot` now calls `normalizeYF()` itself. `renderYF` always did; the rollover does not, and
+  it can seal a year on first load with the Yearly tab never rendered. Without it a string start of
+  `"8000"` seals **End $800,002,450 and growth +9999930.6%** into the one record meant to be final.
 
 ### TWO DECISIONS STILL WAITING ON THE OWNER — neither blocked on more work
 
