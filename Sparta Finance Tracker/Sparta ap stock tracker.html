@@ -5039,9 +5039,10 @@ function arcSnapshot(year){
       const m=parseInt((t.date||'').slice(5,7),10)-1;
       if(m>=0&&m<12){ if(t.type==='income') mInc[m]+=t.amt; else if(!t.allot) mExp[m]+=t.amt; }
     });
-    // the same two figures renderYF now takes, for the same reason: a row the
-    // month loop cannot place is still in the year, and in the table below
-    const totInc=yfActual('income'), totExp=yfActual('expense');
+    // the same two figures renderYF now takes, by the same two definitions and
+    // over the array already in hand: a row the month loop cannot place is
+    // still in the year, and still in the table below
+    const totInc=txns.reduce((a,t)=>a+(t.type==='income'?t.amt:0),0), totExp=yfSpendOf(txns);
     const start=state.yf.start[year]||0, end=start+totInc-totExp, saved=end-start;
     const invested=yfActual('expense','Investment'), moved=yfActual('expense','Other Bank');
     const cat=(type)=>{
@@ -8046,14 +8047,20 @@ function renderYF(){
      month is not a date, and guessing which field was meant is the worse
      trade), so the row is here to stay and the only question is which figures
      own it.
-     Taken from yfActual, which is the same primitive the category table and
-     arcSnapshot use, so End, Saved, Growth, Off-paper and the itemised table
-     now agree to the cent. The twelve bars are still short by that row -- it
+     Summed over `txns`, which is the yfTxns() array this function already
+     holds, by the same two definitions yfActual uses for a null category --
+     `yfSpendOf` is literally the one it calls -- so End, Saved, Growth,
+     Off-paper and the itemised table now agree to the cent. Written this way
+     rather than as two yfActual() calls ON PURPOSE: yfActual re-filters the
+     whole ledger every time it is called, and renderYF already makes 25 of
+     those (section 10's rows x categories scan). Two more per render would
+     have made that measurably worse to fix a correctness fault; one pass over
+     an array that is already in hand costs nothing. The twelve bars are still short by that row -- it
      has no month to be drawn in -- and that is the one disagreement that cannot
      be designed away. For an ordinary year, where every row has a real month,
      this is the identical figure: the only rows the two expressions differ
      about are the ones the loop drops. */
-  const totInc=yfActual('income'), totExp=yfActual('expense');
+  const totInc=txns.reduce((a,t)=>a+(t.type==='income'?t.amt:0),0), totExp=yfSpendOf(txns);
   const start=state.yf.start[yr]||0;
   const end=start+totInc-totExp;
   const saved=end-start;
