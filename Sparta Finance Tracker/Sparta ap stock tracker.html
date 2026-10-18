@@ -111,6 +111,12 @@
   --text:#EAF0FA;
   --text-dim:rgba(234,240,250,0.55);
   --text-faint:rgba(234,240,250,0.35);
+  /* Monthly's dim label grey. It was the same hex typed in seven places -- six
+     rules and one inline style -- which is a token that had not been written
+     down yet, and the first theme to redefine the ink (print) left all seven
+     behind at about 2.6:1 on white. Declared on :root rather than on
+     #monthlyView so the inline one resolves too. */
+  --sk-dim:#93A2B8;
   --teal:#5EEAD4;      /* TFSA + gains */
   --violet:#A78BFA;    /* FHSA */
   --rose:#FB7185;      /* losses */
@@ -1321,7 +1327,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .skeu-panel>.skeu-h{z-index:5}
 .skeu-h{font-family:var(--font-display);font-size:var(--fs-eyebrow);letter-spacing:var(--ls-label);font-weight:var(--fw-label);
   color:var(--text);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.skeu-label{font-size:var(--fs-label);letter-spacing:var(--ls-label);color:#93A2B8;font-weight:var(--fw-label)}
+.skeu-label{font-size:var(--fs-label);letter-spacing:var(--ls-label);color:var(--sk-dim);font-weight:var(--fw-label)}
 .skeu-sub{font-size:11px;color:#8695AB}
 .skeu-chip{font-size:10px;letter-spacing:.1em;padding:3px 9px;border-radius:999px;
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#B9C6D8;
@@ -1404,24 +1410,24 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   box-shadow:0 0 12px rgba(94,234,212,.35);
   transition:width .45s cubic-bezier(.2,.8,.2,1)}
 .me-bar-amt{text-align:right;font-variant-numeric:tabular-nums;color:var(--sk-ink)}
-#monthlyView .htable th{color:#93A2B8;border-bottom:1px solid rgba(255,255,255,.10)}
+#monthlyView .htable th{color:var(--sk-dim);border-bottom:1px solid rgba(255,255,255,.10)}
 #monthlyView .htable td{border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;padding:6px 8px}
 #monthlyView input,#monthlyView select{color:var(--text);
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-#monthlyView label{color:#93A2B8}
+#monthlyView label{color:var(--sk-dim)}
 #monthlyView .empty{color:#8695AB}
 .me-detect{display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px}
 .me-detect span{padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.07);
   border:1px solid rgba(255,255,255,.14);color:#C0CCDD}
 .me-detect span b{color:var(--sk-amber);font-weight:600}
 .me-why{font-size:10px;letter-spacing:.05em;padding:2px 8px;border-radius:999px;
-  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#93A2B8;white-space:nowrap}
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:var(--sk-dim);white-space:nowrap}
 .me-why.rule{color:var(--sk-green);border-color:rgba(74,222,128,.4)}
 .me-why.file{color:#7FB6D9;border-color:rgba(127,182,217,.4)}
 .me-why.kw{color:var(--sk-amber);border-color:rgba(94,234,212,.4)}
-.me-why.none{color:#93A2B8}
+.me-why.none{color:var(--sk-dim)}
 .me-why.pay{color:var(--sk-green);border-color:rgba(74,222,128,.4)}
 
 
@@ -1440,7 +1446,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .me-poplist input{width:auto;margin:0;box-shadow:none;padding:0}
 .me-poplist .dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 6px currentColor}
 /* legend */
-.me-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:11.5px;color:#93A2B8}
+.me-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:11.5px;color:var(--sk-dim)}
 .me-legend span{display:flex;align-items:center;gap:6px}
 .me-legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
 /* matrix */
@@ -1827,14 +1833,19 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 /* the same money colours the rest of the app uses, so a figure means the same
    thing wherever it is read. Start/End are Yearly Finance's amethyst and olive. */
 .ay-s b.sta{color:var(--yf-start)}.ay-s b.end{color:var(--yf-end)}
-.ay-s b.inv{color:#4ADE80}.ay-s b.mov{color:#E55959}
-.ay-s b.sav{color:#06B6D4}.ay-s b.off{color:#D98D4C}
+/* ALIASED, not copied -- the line above promises these are the same colours
+   the rest of the app uses, and four of the six were the hex typed again. The
+   token holds the identical value, so nothing on screen moves; what changes is
+   that a theme which redefines the palette, print being the first one, carries
+   Archives with it instead of leaving these four figures behind. */
+.ay-s b.inv{color:var(--yf-c-inv)}.ay-s b.mov{color:var(--yf-c-mov)}
+.ay-s b.sav{color:var(--yf-c-sav)}.ay-s b.off{color:var(--yf-c-off)}
 /* full height, both rows -- it is one figure, not a pair */
 .ay-gro{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:4px;
   padding:0 20px;border-left:1px solid rgba(255,255,255,.07);min-width:0}
 .ay-gro em{font-style:normal;font-size:var(--fs-display);font-weight:800;line-height:1;letter-spacing:-.02em;
-  font-variant-numeric:tabular-nums;color:#4ADE80}
-.ay-gro em.dn{color:#E55959}
+  font-variant-numeric:tabular-nums;color:var(--yf-c-inv)}
+.ay-gro em.dn{color:var(--yf-c-mov)}
 .ay-gro em.na{color:var(--text-dim)}       /* undefined growth: see arcCardHTML */
 .ay-gro span{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-dim);font-weight:var(--fw-label)}
 /* chevron + the testing-phase actions, far right, small and quiet.
@@ -2492,6 +2503,145 @@ select{color-scheme:dark}
    under 16px) and is not addressed here. */
 html{touch-action:manipulation}
 a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipulation}
+
+/* ══════════════ PAPER ══════════════════════════════════════════════════════
+   There were no print rules at all, and this is a finance tracker: a year's
+   summary and its category tables are the two things a person prints, and a tax
+   preparer or a partner asks for them on paper. What came out was unusable, and
+   not subtly -- EVERY FIGURE WAS INVISIBLE. --text is #EAF0FA, which is 1.14:1
+   on white; the body background is painted by a fixed decorative layer the
+   print engine drops, so the ink arrived on white paper at a contrast a
+   sighted reader cannot resolve, and the one thing a printout is for -- the
+   numbers -- was the first thing lost. Several of the accents were worse
+   (--teal #5EEAD4 is 1.4:1), and the dashed rules, the plan track and the
+   chart's gridlines are all white-on-white by construction.
+
+   So the ink is remapped rather than the markup rewritten. Nearly every
+   coloured figure on Yearly reads its colour from a token through an inline
+   `color:var(--yf-start)`, so redefining the tokens inside the query carries
+   the whole tab, Archives with it, and leaves the screen untouched. Hues are
+   kept recognisable -- income still blue, expense still orange, losses still
+   red -- at a darkness that holds on paper; a printout that recolours the
+   categories would not match the screen anyone is reading it beside.
+
+   Two rules of thumb this follows: nothing that cannot be ACTED ON goes on
+   paper (segmented controls, the settings drawer, buttons, the live-price
+   pill), and nothing that is only decoration does either (the animated
+   fields, the aurora, glass, blur, shadows, the chart's glow). What remains
+   is the figures, their labels and their tables.
+
+   Asserted in tests/test-print.js by sampling the printed pixels under
+   emulateMedia({media:'print'}), for the same reason the screen contrast
+   checks sample rather than derive: a value computed from the tokens would
+   agree with itself and tell us nothing about what the paper gets. */
+@media print{
+  @page{ margin:12mm }
+  :root{
+    /* ink: near-black body, a grey that is still a legible secondary */
+    --text:#10161F;
+    --text-dim:rgba(16,22,31,0.78);
+    --text-faint:rgba(16,22,31,0.62);
+    --sk-dim:rgba(16,22,31,0.78);
+    /* the semantic accents, darkened to hold on white but kept the same hue */
+    --teal:#0F6F62;  --violet:#4C35A8;  --rose:#B3263C;  --amber:#8A6400;
+    /* Yearly's palette */
+    --yf-inc:#0B5F8A;  --yf-exp:#A14705;
+    --yf-start:#4A2FA6; --yf-end:#4F6410;
+    --yf-c-inv:#166534; --yf-c-mov:#A32020;
+    --yf-growth:#2F6B16;
+    --yf-c-sav:#055E6B; --yf-c-off:#8A5118;
+    /* surfaces stop being glass: there is no backdrop to borrow from */
+    --glass:#FFFFFF; --glass-strong:#FFFFFF;
+    --stroke:#C7CCD4; --stroke-top:#C7CCD4;
+  }
+  /* Two palettes live on a VIEW rather than on :root, so redefining the root
+     tokens does not reach them. Archives' accent is a periwinkle at 2.75:1 on
+     white and Monthly's skeuomorphic ink is #EAF0FA, the same near-white as the
+     body text it was derived from. Both are restated here. */
+  #archiveView{--arc:#3F46A8}
+  #monthlyView{--sk-ink:var(--text); --sk-amber:var(--teal);
+    --sk-green:var(--yf-c-inv); --sk-red:var(--rose)}
+  html,body{background:#FFFFFF!important;color:var(--text)!important}
+  /* print the width of the paper, not of the window it happened to be sized to */
+  body{max-width:none!important;padding:0!important;margin:0!important}
+  /* Decoration. These are fixed, animated layers behind the content; on paper
+     they are at best a grey wash on page one and at worst a solid block. */
+  .financefield,.monthlyfield,.planfield,.archivefield,.cashfield,.tickerfield,
+  .aurora,.orb,.pin-orb{display:none!important}
+  /* Chrome that cannot be operated on paper. The view's own heading stays. */
+  .topctl,.tabbar,#drawer,.seg,.yearbar,#toast,.modal,.ctip,
+  .btn,.skeu-btn,.yf-catbtn,.rm,.mv,.yf-edit,.me-why,.yf-hi-dots,
+  #chartEmpty,.sec-i,.qlink{display:none!important}
+  /* A file picker cannot be used on paper, so BOTH CSV drop zones go with the
+     buttons -- Monthly's and the Dashboard's. Each is a control, their copy is
+     instructions for an action the reader cannot take, and .dropzone carries a
+     rgba(0,0,0,.2) fill that is the one surface on the page that did not come
+     out white. */
+  .skeu-drop,.dropzone{display:none!important}
+  /* The last two secondary greys, both enumerable rather than tokenised: the
+     sub-label under a panel heading, and the pill beside it. Left at their
+     screen values and remapped here, because unlike --sk-dim they are not one
+     repeated colour -- #8695AB and #B9C6D8 are two, and folding them together
+     would move what is on screen. */
+  .skeu-sub,.skeu-drop-sub{color:var(--text-dim)!important}
+  .skeu-chip{color:var(--text)!important; background:none!important;
+    border-color:#C7CCD4!important; box-shadow:none!important}
+  /* Glass → paper. The blur is the expensive half and prints as a grey haze. */
+  .panel,.card,section.panel,.set-card,.modal-card,.stat,.cash{
+    background:#FFFFFF!important; backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    border:1px solid #C7CCD4!important; box-shadow:none!important;
+    transform:none!important
+  }
+  /* A panel split across a page break loses the label its figure belongs to. */
+  .panel,.card,section,tr{break-inside:avoid; page-break-inside:avoid}
+  thead{display:table-header-group}          /* repeat headings on every page */
+  /* White-on-white by construction: inline rgba(255,255,255,..) rules and the
+     unfilled half of a planned-vs-actual track. An inline style needs the
+     !important to lose. */
+  hr{border-top:1px dashed #C7CCD4!important}
+  .yf-patrack{background:#EDEFF2!important}
+  #yfExpPlanBar,#yfIncPlanBar{background:#9AA3AE!important}
+  table,th,td{border-color:#C7CCD4!important}
+  /* An input is a value on paper, not a field. Keep the number, drop the box. */
+  input,select,textarea{
+    background:transparent!important; color:var(--text)!important;
+    border:none!important; border-bottom:1px solid #C7CCD4!important;
+    box-shadow:none!important; -webkit-appearance:none; appearance:none}
+  /* SVG presentation attributes lose to any CSS rule, so the charts' hardcoded
+     white gridlines and dim labels can be recoloured from here. */
+  #yfChart line,#meChart line{stroke:#C7CCD4!important}
+  #yfChart text,#meChart text{fill:#3A424E!important}
+  /* The dashboard line: its glow prints as a smear and its gradient is two
+     light tints. One dark stroke, and the area becomes a flat pale wash. The
+     colour was carrying rise-or-fall, which the signed figure above the chart
+     already says in words -- the SHAPE is what the chart is for. */
+  #chart path{filter:none!important}
+  #chart path[fill^="url"]{fill:#EDEFF2!important}
+  #chart path[stroke]{stroke:#2B3440!important}
+  /* GRADIENT-FILLED TEXT IS A BACKGROUND, and a background is the first thing
+     a print engine drops. These three paint their glyphs by clipping a gradient
+     to the text and setting the fill transparent, so on paper they came out
+     BLANK rather than merely faint: the savings-growth figure, the saved-this
+     -year figure, and the YEAR on every archive card -- the one thing an
+     archive printout has to be identifiable by. Give the glyphs their own ink
+     back and drop the drop-shadow with it. */
+  .sparkle,.sparkle-green,.ay-yr{
+    background:none!important; background-image:none!important;
+    -webkit-text-fill-color:currentColor!important; filter:none!important}
+  .sparkle{color:var(--amber)!important}
+  .sparkle-green{color:var(--yf-growth)!important}
+  .ay-yr{color:var(--text)!important}
+  /* The empty states carry their own hardcoded greys -- #8695AB and #7F8C9C --
+     which are about 3:1 on white. They are a sentence the reader needs when the
+     table is blank, so they follow the dim token like everything else. */
+  .empty{color:var(--text-dim)!important}
+  /* Backgrounds that carry meaning must survive the browser's default of
+     dropping them: the bar charts, and the filled half of every track. */
+  .yf-pafill,.yfb,.bar,.barfill,rect{-webkit-print-color-adjust:exact;
+    print-color-adjust:exact}
+  *{animation:none!important; transition:none!important; text-shadow:none!important}
+}
 </style>
 </head>
 <body>
@@ -5232,7 +5382,7 @@ function arcTrend(a){
         (c===pick?' checked':'')+'>'+
         '<span class="dot" style="background:'+meColor(c)+';color:'+meColor(c)+'"></span>'+
         arcEsc(c)+'</label>').join('')
-        :'<span style="font-size:11.5px;color:#93A2B8">No Monthly categories in this year</span>')+
+        :'<span style="font-size:11.5px;color:var(--sk-dim)">No Monthly categories in this year</span>')+
       '</div></div></span>';
   /* The legend sits in the heading row beside the gear, not under the chart:
      it names what the gear selected, so the two belong together — and the row
@@ -9031,7 +9181,7 @@ function renderMEChart(){
     h.addEventListener('mouseleave',()=>tip.style.opacity='0');
   });
   $('meLegend').innerHTML=chosen.map(c=>`<span><i style="background:${meColor(c)}"></i>${c}</span>`).join('')
-    || '<span style="color:#7F8C9C">No categories selected</span>';
+    || '<span style="color:var(--text-dim)">No categories selected</span>';
 }
 function renderMEMatrix(){
   const year=meYear();
@@ -9063,7 +9213,7 @@ function renderMEMatrix(){
   // the `v>0` test, so it hid a negative column total too
   body+=`<tr class="tot"><td>TOTAL</td>`+colTot.map(cell).join('')+
     `<td class="col-tot">${Math.round(grand).toLocaleString('en-CA')}</td></tr>`;
-  $('meMatrixBody').innerHTML=cats.length?body:'<tr><td colspan="14" style="text-align:center;color:#7F8C9C;padding:14px">No expenses recorded for '+year+'</td></tr>';
+  $('meMatrixBody').innerHTML=cats.length?body:'<tr><td colspan="14" style="text-align:center;color:var(--text-dim);padding:14px">No expenses recorded for '+year+'</td></tr>';
 }
 function renderMEGear(){
   const list=$('mePopList'); if(!list) return;
