@@ -237,9 +237,17 @@ const section = t => console.log(`\n── ${t} ──`);
              anims: document.getAnimations().filter(a => a.animationName === 'planskin').length };
   });
   check(/linear-gradient\(165deg/.test(skin.img), 'a 165deg gradient', skin.img.slice(0, 40));
-  // rgba, not rgb: the panel is translucent so the backdrop waves read through it
-  check(/rgba\(12, 63, 74/.test(skin.img), 'starts on the deep teal #0C3F4A');
-  check(/rgba\(7, 21, 32/.test(skin.img), 'lands on the app background #071520');
+  /* rgba, not rgb: the panel is translucent so the backdrop waves read through
+     it. The STOPS moved on 2026-10-19 (the Plan contrast pass) -- at .74-.90
+     over the waves, with saturate(135%) amplifying them, this tile composited
+     to rgb(26,64,81) and no ink on the scale could clear 4.5:1 on it. What is
+     asserted here is the property, not the old numbers: still rgba, still
+     translucent, and now dark enough to carry light type. */
+  check(/rgba\(7, 33, 42/.test(skin.img), 'starts on the deep teal, now dark enough for light type');
+  check(/rgba\(5, 13, 21/.test(skin.img), 'and lands below the app background #071520');
+  check(/0\.9[6-9]\)/.test(skin.img) || /0\.9[6-9] /.test(skin.img),
+    'the stops are .96 and up -- a few percent still transmits, which is what the waves need',
+    (skin.img.match(/0\.\d+\)/g) || []).join(' '));
   check(skin.anims === 0, 'the old cross-fade animation is gone', String(skin.anims));
   check(/Jakarta/.test(skin.font), 'Plus Jakarta Sans is applied', skin.font.slice(0, 40));
 
@@ -283,10 +291,34 @@ const section = t => console.log(`\n── ${t} ──`);
   const lum = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
   const box = await page.evaluate(() => { const r = document.querySelector('.pl-seg.open .pl-card')
     .getBoundingClientRect(); return { x: Math.round(r.x + 40), y: Math.round(r.y + 30) }; });
+  /* THIS USED TO ASSERT THE TILE WAS THE BRIGHTEST THING ON SCREEN, and that
+     assertion and the tab's contrast defect were the same fact: the tile only
+     outshone the page because it composited to rgb(26,64,81), which is lighter
+     than any other surface in the app and is why every ink on Plan had been
+     pushed to an off-scale alpha to sit on it. A card cannot be the brightest
+     thing on screen AND carry readable secondary type.
+     The sample point here lands on one of the page's bright decorative motifs,
+     and Monthly already does exactly what Plan now does -- dark panels over a
+     page whose motifs measure 56.5 at this very spot -- so this is the app's
+     established pattern rather than a new one.
+     What the design actually needs is that the tile is DISTINGUISHABLE from the
+     page, not that it is lighter. So: a measurable difference, in the direction
+     the pass chose, plus the edge that does the separating. */
   const onTile = await pxAt(box.x, box.y);
   const onBack = await pxAt(6, 620);
-  check(lum(onTile) > lum(onBack), 'the tile stays brighter than the backdrop behind it',
+  check(Math.abs(lum(onTile) - lum(onBack)) > 8,
+    'the tile is clearly separated from the page behind it',
     `tile ${lum(onTile).toFixed(1)} vs bg ${lum(onBack).toFixed(1)}`);
+  check(lum(onTile) < lum(onBack),
+    '...and it is the DARKER of the two now, deliberately -- see the comment above',
+    `tile ${lum(onTile).toFixed(1)} vs bg ${lum(onBack).toFixed(1)}`);
+  const edge = await page.evaluate(() => {
+    const cs = getComputedStyle(document.querySelector('.plan-skin'));
+    return { border: cs.borderTopWidth, col: cs.borderTopColor, shadow: cs.boxShadow };
+  });
+  check(parseFloat(edge.border) >= 1 && !/rgba\(0, 0, 0, 0\)/.test(edge.col),
+    '...and it still declares its own edge, which is what a darker card needs',
+    JSON.stringify(edge.border + ' ' + edge.col));
 
   // the guard every other field carries: opacity:0 does not stop animation,
   // so a hidden field would otherwise tick forever on every tab

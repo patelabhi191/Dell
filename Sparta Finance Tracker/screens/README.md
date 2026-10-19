@@ -1,9 +1,11 @@
 # screens/ — what the design review looked at
 
-> **These are a record of the review, not of the app as it is now.** Both
-> findings they were captured to show have since been fixed: the two ink tokens
-> are merged (`--text-dim` .74, `--text-faint` .58) and print has a stylesheet,
-> so `print/yearly-as-printed.png` in particular shows the OLD, broken output.
+> **These are a record of the review, not of the app as it is now.** Every
+> finding they were captured to show has since been fixed: the two ink tokens
+> are merged (`--text-dim` .74, `--text-faint` .58), print has a stylesheet, and
+> Plan has had its per-tab restyle — so `print/yearly-as-printed.png` shows the
+> OLD, broken output, and `tabs/plan-*.png` show the old light skin and its
+> nine-alpha ramp.
 > They are kept because they are the evidence the measurements were made from.
 > Re-capture before quoting any of them as current.
 

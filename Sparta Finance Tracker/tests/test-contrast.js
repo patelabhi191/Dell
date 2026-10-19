@@ -171,14 +171,20 @@ const CONTRAST = () => {
        [JS]  an inline style inside a render function's template literal.
              Not editable from the stylesheet; written up for the reviewer who
              owns the JS, with the exact replacement.
-       [TAB] Plan's neutral ramp. Fourteen hardcoded rgba(255,255,255,a) inks
-             at NINE alphas -- .3 .45 .46 .48 .5 .55 .6 .68 .7 -- none of them
-             on the scale, over surfaces that stack three translucent whites and so
-             sit lighter than any other tab (rgb(51,75,84) and rgb(60,83,92)
-             against the usual rgb(21,34,44)). Even --text-faint at its new
-             .58 only reaches 3.59 there, so this is not reachable by pointing
-             the rules at a token: it is the dedicated per-tab audit Archives
-             got on 2026-10-01, and it restyles a whole tab. Written up. */
+       [TAB] Plan's neutral ramp -- DONE 2026-10-19, and the entries are gone
+             from the list below rather than relaxed. Fifteen hardcoded
+             rgba(255,255,255,a) inks at NINE alphas (.3 .45 .46 .48 .5 .55 .6
+             .68 .7) over surfaces that stacked three translucent whites on a
+             tile that composited to rgb(26,64,81) -- lighter than any other
+             surface in the app. Sampled rather than derived, 30 of Plan's 47
+             text nodes were under their bar, not 12. The skin was the root
+             cause: --text-faint reached only 4.40:1 on it with every white
+             layer removed, so the ramp had been pushed off-scale to compensate.
+             The skin moved (still rgba, 1-4% transmits, blur kept), the three
+             whites were cut to about one white's worth of lift, and the fifteen
+             inks went onto --text / --text-dim / --text-faint. 0 of 47 under
+             bar at 1440, 390, 375 and 320, worst 4.82:1. Section 4 below is the
+             ratchet that keeps the alphas from coming back. */
   const KNOWN = [
     { tab: 'dash', sel: 'span', text: '-6.08%', floor: 3.92, who: 'JS',
       why: 'renderHoldings emits style="opacity:.75" over --rose' },
@@ -201,18 +207,8 @@ const CONTRAST = () => {
        change to --yf-exp or to the tint is worth making for 0.01, and the
        floor here will catch it if it ever drifts further. */
     { tab: 'yearly', sel: 'span.acct-tag.tag-exp', floor: 4.49, who: 'ACCENT' },
-    { tab: 'plan', sel: 'span.pl-yr', floor: 2.28, who: 'TAB' },
-    { tab: 'plan', sel: 'div.pl-nt', floor: 2.28, who: 'TAB' },
-    { tab: 'plan', sel: 'div.pl-bal', floor: 2.28, who: 'TAB' },
-    { tab: 'plan', sel: 'div.pl-amt.inc', floor: 3.07, who: 'TAB' },
-    { tab: 'plan', sel: 'div.pl-amt.exp', floor: 4.24, who: 'TAB' },
-    { tab: 'plan', sel: 'button.pl-t-exp.on', floor: 3.08, who: 'TAB' },
-    { tab: 'plan', sel: 'button.pl-t-inc', floor: 4.22, who: 'TAB' },
-    { tab: 'plan', sel: 'span.pl-day', floor: 3.66, who: 'TAB' },
-    { tab: 'plan', sel: 'span.pl-nm', floor: 3.66, who: 'TAB' },
-    { tab: 'plan', sel: 'span', text: 'soonest first', floor: 3.42, who: 'TAB' },
-    { tab: 'plan', sel: 'span', text: 'Start', floor: 4.24, who: 'TAB' },
-    { tab: 'plan', sel: 'label', floor: 4.30, who: 'TAB' },
+    /* Plan's twelve entries were here. They are REMOVED, not relaxed -- the
+       list only ever shrinks, and nothing on Plan is under its bar any more. */
   ];
   const excuse = (tab, f) => KNOWN.find(k => k.tab === tab && k.sel === f.sel &&
     (k.text === undefined || f.text.indexOf(k.text) === 0 || f.text === k.text));
@@ -391,6 +387,76 @@ const CONTRAST = () => {
   check(mx && mx.pos === 'sticky' && mx.bg,
     'the category matrix still declares its edge with sticky chrome, so its inset is allowed',
     mx && JSON.stringify(mx));
+
+  /* ── 6. Plan's ramp stays on the scale ──────────────────────────────────
+     Section 2 catches a Plan ink that falls under the bar, but only once it is
+     ALREADY failing, and only at the one surface the fixture happens to put it
+     on. This catches the cause instead: a hand-picked rgba(255,255,255,a).
+     Fifteen of them at nine alphas were how this tab ended up with 30 of its 47
+     text nodes under bar, and each one looked reasonable where it was written.
+     The rule is the one section 5a of the handoff states for everything else --
+     snap to the scale, do not style beside it. */
+  section('6. no Plan ink is a hand-picked white rather than a token');
+  await go('plan');
+  const offScale = await page.evaluate(() => {
+    const seen = [];
+    document.querySelectorAll('#planView *').forEach(el => {
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden') return;
+      let txt = ''; for (const n of el.childNodes) if (n.nodeType === 3) txt += n.nodeValue;
+      if (!txt.trim()) return;
+      /* BOTH KINDS. A translucent white is a level invented on the spot; an
+         OPAQUE one is #fff where the primary ink is --text (#EAF0FA), and that
+         is not cosmetic -- the print block remaps tokens and cannot reach a
+         literal, so Plan's six #fff declarations printed WHITE ON WHITE. */
+      const m = /^rgba?\(255,\s*255,\s*255(?:,\s*([\d.]+))?\)$/.exec(cs.color);
+      if (m && (m[1] === undefined || parseFloat(m[1]) <= 1)) seen.push({
+        alpha: m[1] === undefined ? 1 : +m[1], text: txt.trim().slice(0, 16),
+        sel: el.tagName.toLowerCase() + (typeof el.className === 'string' && el.className.trim()
+          ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : ''),
+      });
+    });
+    return seen;
+  });
+  check(offScale.length === 0,
+    'every text ink on Plan is a token or an accent, not a translucent white',
+    JSON.stringify(offScale).slice(0, 360));
+  /* And the surface, because the inks only work while it holds. The tile was
+     rgb(26,64,81) -- lighter than every other surface in the app -- and that
+     alone put --text-faint at 4.40:1 with no white layers at all. */
+  const lum = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const pxAt = async (x, y) => {
+    const buf = await page.screenshot({ clip: { x, y, width: 2, height: 2 } });
+    return page.evaluate(async b => { const i = new Image();
+      i.src = 'data:image/png;base64,' + b; await i.decode();
+      const c = document.createElement('canvas'); c.width = c.height = 2;
+      const g = c.getContext('2d'); g.drawImage(i, 0, 0);
+      return [...g.getImageData(0, 0, 1, 1).data].slice(0, 3); }, buf.toString('base64'));
+  };
+  const skinLum = await page.evaluate(() => {
+    const el = document.querySelector('.pl-seg.open .pl-card');
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { x: Math.round(r.x + 40), y: Math.round(r.y + 30) };
+  });
+  const onCard = skinLum ? await pxAt(skinLum.x, skinLum.y) : null;
+  /* THE REQUIREMENT, NOT A LUMINANCE I PICKED. A first attempt here asserted
+     `lum < 60`, which the OLD skin passed at 55.1 -- a threshold invented to
+     separate two numbers I happened to have, and it separated them wrongly.
+     What actually has to hold is that the faintest token on the lightest Plan
+     surface clears the bar with headroom, so that is what is measured: it comes
+     out 5.3:1 as it ships and 4.4:1 with the old skin restored, and it fails on
+     a lighter surface OR a weakened token rather than only on one of them. */
+  const lin1 = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4) };
+  const rl = ([r, g, b]) => 0.2126 * lin1(r) + 0.7152 * lin1(g) + 0.0722 * lin1(b);
+  const cr = (a, b) => { const x = rl(a), y = rl(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05) };
+  const faintA = tokens.faint;
+  const faintOn = onCard
+    ? +cr([234, 240, 250].map((v, i) => v * faintA + onCard[i] * (1 - faintA)), onCard).toFixed(2)
+    : 0;
+  check(faintOn >= 4.7,
+    '--text-faint on the lightest Plan surface clears the bar with headroom',
+    onCard ? `${faintOn}:1 on rgb(${onCard.join(',')}) (L ${lum(onCard).toFixed(1)})` : '(no card)');
 
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();

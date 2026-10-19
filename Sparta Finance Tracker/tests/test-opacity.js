@@ -220,24 +220,37 @@ const show = r => JSON.stringify(r.map(x => ({ t: x.text, op: x.op, bg: x.bg, ef
   check(futureUnt.length > 0 && futureUnt.every(r => r.eff >= BAR),
     `"Untitled" on an ordinary row composites to at least ${BAR}:1`, show(futureUnt));
 
-  /* WHY THE PAST ROW IS EXCLUDED, asserted rather than asserted-around. CSS
-     gives .pl-row.past .pl-nm an ink of rgba(255,255,255,.5), which halves the
-     colour before any opacity applies -- so the past row cannot be brought over
-     the bar from the render function, and the figure is not about this
-     placeholder at all. The proof is that a NAMED past row, which carries no
-     inline opacity whatsoever, reads the same. If the CSS is ever fixed these
-     two checks fail, which is the signal to fold the past row into the check
-     above. */
+  /* THE PAST ROW USED TO BE EXCLUDED HERE, and the exclusion was asserted
+     rather than asserted-around: CSS gave .pl-row.past .pl-nm an ink of
+     rgba(255,255,255,.5), which halved the colour before any opacity applied,
+     so the past row could not be brought over the bar from the render function
+     at all. Those two checks said so and left an instruction -- "if the CSS is
+     ever fixed these two checks fail, which is the signal to fold the past row
+     into the check above."
+     The Plan contrast pass (2026-10-19) fixed it: the past row's primary ink is
+     now --text-dim, one step down from --text rather than a second dimming on
+     top of an already-dim value, and the amount's opacity:.55 is gone with it.
+     So the fold is done, and what was the exclusion is now the ratchet -- an
+     off-scale white here fails the suite instead of being recorded. */
   const pastNamed = await probe(page, '#planSegs .pl-row.past .pl-nm');
   const nmInk = await page.evaluate(() => {
     const el = document.querySelector('#planSegs .pl-row.past .pl-nm');
     return el ? getComputedStyle(el).color : null;
   });
-  check(nmInk === 'rgba(255, 255, 255, 0.5)',
-    'the past row\'s name ink is CSS-dimmed to .5 before any opacity applies', String(nmInk));
-  check(pastNamed.length > 0 && pastNamed.every(r => r.eff < 4.5),
-    'so EVERY past row name is under the bar, named or untitled — a style-block fault, not this one',
-    show(pastNamed));
+  check(!/^rgba\(255, 255, 255/.test(String(nmInk)),
+    'the past row\'s name ink is a token, not another hand-picked white', String(nmInk));
+  check(pastNamed.length > 0 && pastNamed.every(r => r.eff >= BAR),
+    `every NAMED past row clears ${BAR}:1 as well`, show(pastNamed));
+  check(pastUnt.length > 0 && pastUnt.every(r => r.eff >= BAR),
+    `and so does "Untitled" on a past row — the fold those two checks asked for`,
+    show(pastUnt));
+  /* The other half of that fault: the amount was an accent colour multiplied by
+     opacity:.55, which is the "dimmed twice" pattern this review kept finding. */
+  const pastAmt = await page.evaluate(() => {
+    const el = document.querySelector('#planSegs .pl-row.past .pl-amt');
+    return el ? getComputedStyle(el).opacity : null;
+  });
+  check(pastAmt === '1', 'and a past amount is no longer dimmed on top of its colour', String(pastAmt));
 
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();

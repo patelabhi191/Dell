@@ -342,6 +342,14 @@ const YF_INK = ['#yfStartVal', '#yfEndVal', '#yfInvested', '#yfMoved', '#yfSaved
      and the section asserts nothing -- which is how it first passed. The card
      carries .ay-yr, the gradient-filled year, so this is also the only place
      that bug can be caught. */
+  /* Plan is empty unless it is seeded, and an empty tab asserts nothing. */
+  await P.page.evaluate(() => {
+    state.plan = { segments: [{ id: 's', name: 'Runway', start: 13632, open: true, items: [
+      { id: 'i1', date: '2026-12-01', type: 'expense', name: 'Credit Bill', amt: 1910, notes: 'statement due' },
+      { id: 'i2', date: '2026-12-20', type: 'income',  name: 'Paycheque',   amt: 4200, notes: 'DVS' },
+      { id: 'i3', date: '2026-08-01', type: 'expense', name: 'Past rent',   amt: 1450, notes: 'already gone' }] }] };
+    planPersist(); renderPlan();          // persist alone leaves the DOM empty
+  });
   const arcN = await P.page.evaluate(() => {
     state.archives = [{ id: 'p1', year: 2025, sealed: true,
       stats: { start: 8000, end: 21400, invested: 4000, moved: 1500, saved: 13400,
@@ -372,6 +380,13 @@ const YF_INK = ['#yfStartVal', '#yfEndVal', '#yfInvested', '#yfMoved', '#yfSaved
       '#dashView b', '#dashView h3', '#dashView span', '#dashView .foot']],
     ['contrib', ['#contribView .label', '#contribView .num', '#contribView td',
       '#contribView th', '#contribView b', '#contribView h3', '#contribView span']],
+    /* Plan was the one tab this loop never covered, and it is the tab whose
+       skin is NOT in the print block's glass-flattening list -- so it had its
+       own gradient and its own ink rules going to paper unchecked. */
+    ['plan', ['#planView .pl-day', '#planView .pl-nm', '#planView .pl-nt',
+      '#planView .pl-bal', '#planView .pl-amt', '#planView .pl-yr',
+      '#planView .pl-segsum', '#planView label', '#planView h4', '#planView h3',
+      '#planView .pl-foot', '#planView .pl-foot b', '#planView span']],
   ]) {
     await P.page.evaluate(v => applyView(v), view);
     await P.page.waitForTimeout(300);

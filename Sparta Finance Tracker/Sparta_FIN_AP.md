@@ -1977,7 +1977,7 @@ inside the query.
 
 Paused 2026-10-12, mid-way through a pre-deployment review; resumed and extended since.
 **Everything done is committed and pushed**; nothing of value lives only in a container. Build
-stamp `2026-10-18`, suite **2,084 passed / 0 failed across 19 files** (`tests/run-all.sh`),
+stamp `2026-10-19`, suite **2,094 passed / 0 failed across 19 files** (`tests/run-all.sh`),
 verified on the pushed tree.
 
 **`tests/run-all.sh` now fails loudly when a suite does not finish.** It used to read the summary
@@ -2083,13 +2083,55 @@ comparable** — it counted differently, on a tree two weeks older, before the p
 `--sk-dim`, the Archives literal aliasing and the branch's own four UI commits. The direction and
 the magnitude hold; the exact figures do not transfer.
 
-`test-contrast.js` is **45 / 45, no novel failures on any of the six tabs.** What is left is its
-`KNOWN` record: 17 accepted entries, each with a measured floor and a written reason. **12 of them
-are Plan**, marked `who: 'TAB'` — Plan stacks three translucent whites, so its surfaces sit at
-rgb(51,75,84) and rgb(60,83,92) against the usual rgb(21,34,44), and `--text-faint` reaches only
-3.59 there even at .58. That is not reachable by pointing rules at a token; it is a per-tab restyle
-of the kind Archives got on 2026-10-01, and the reviewer wrote it up rather than doing it. **It is
-the one piece of the design review still outstanding.**
+**Plan's per-tab restyle — the last piece of the design review — DONE 2026-10-19.** The record is
+down from 17 accepted entries to **5**, and the twelve Plan entries were removed rather than
+relaxed. `test-contrast.js` is 47 / 47.
+
+The reviewer's own write-up had the diagnosis right, and the implementation followed it: *the root
+cause is the surfaces, not the inks*, and *the "past row" de-emphasis has to be carried by the row
+background rather than by dimming text.* Both held up under measurement.
+
+**Sampled, the tab was much worse than the derived figure said: 30 of Plan's 47 text nodes were
+under their bar, not 12.** The skin was the cause. At `.74–.90` over the waves with
+`saturate(135%)` amplifying them it composited to **rgb(26,64,81)** — lighter than any other
+surface in the app — and `--text-faint` reaches only **4.40:1 on it with every white layer
+removed**, so no ink on the scale could ever clear 4.5 there. That is why the ramp had been pushed
+to nine off-scale alphas in the first place: each was chosen to look right against a surface that
+was too light.
+
+What changed:
+
+- **the skin**, to `rgba(7,33,42,.96)` → `rgba(5,13,21,.99)` with `saturate(108%)`. Still `rgba`,
+  1–4% still transmits and the blur still carries the drift; it is now a dark card rather than a
+  mid-tone one.
+- **the three stacked whites** — `.pl-seg` + `.pl-card` + `.pl-row`, which compounded `.10`, `.055`
+  and `.07` where every other tab lifts a panel once by `.055` — cut to about one white's worth of
+  total lift. The nesting is the design and stays.
+- **twenty-one inks onto the scale**: fifteen translucent whites at nine alphas, and six literal
+  `#fff` which were a sixteenth hand-picked value *and* the reason Plan printed white-on-white.
+- **a past row is one step, not a second dimming**: its day and name go `--text` → `--text-dim`,
+  the quiet inks stay put, `opacity:.55` on the amount is gone, and the row's own background
+  carries the rest. There is no room under `--text-faint`, so the step is taken at the top.
+- **Plan's four accents are tokens on `#planView`** (`--pl-inc/-exp/-pos/-warn`), same hexes, for
+  the same reason `#archiveView{--arc}` and `#monthlyView{--sk-ink}` became tokens: as literals
+  they printed at 1.48:1 and 1.92:1 because the print block remaps tokens and cannot reach a hex.
+
+**0 of 47 under bar at 1440, 390, 375 and 320, worst 4.85:1**, and Plan is now covered by
+`test-print.js` too — it was the one tab that loop never visited, and the only one whose skin the
+print block does not flatten.
+
+Two guards were added, because section 2's sweep only catches an ink *after* it is already failing
+and only on the one surface the fixture puts it on. Section 6 rejects any hand-picked white on Plan
+— translucent or opaque — and asserts `--text-faint` on the lightest Plan surface clears the bar
+with headroom (5.33:1 as it ships, 4.54:1 with the old skin restored). The first version of that
+second guard asserted `lum < 60`, **a threshold invented to separate two numbers I happened to
+have, which the old skin passed at 55.1**. Assert the property, not a number you picked.
+
+**Instrument asymmetry worth knowing:** restoring the old skin makes section 2's derived sweep
+report **one** failure. Sampling found **thirty**. The derived background does not include the
+decorative field painted behind the glass, and on this tab that field is most of the problem — so
+`test-contrast` alone will not catch a Plan surface regression broadly. Section 6's sampled check
+is what does.
 
 One thing the merge turned up, fixed with it: `.yf-catbtn.is-off` dimmed the two wired-category
 buttons with `opacity:.45`, which is right for the solid Clear-data button and wrong on a 12px
@@ -2305,7 +2347,12 @@ Left alone because deleting them removes the safety net that is their whole purp
   as a near-blank page on which the decorative `aria-hidden` artwork comes out *stronger than the
   data*. See `screens/print/yearly-as-printed.png`. Roughly fifteen lines would fix it; not done
   because nobody has said they print this.
-- **The Plan tab re-invents the dim ramp.** 14 hardcoded `color:rgba(255,255,255,a)` at **9
+- ~~**The Plan tab re-invents the dim ramp.**~~ **FIXED 2026-10-19 — see 9a.** The analysis below
+  is kept because it was right, including the two calls the implementation followed: the root cause
+  is the surfaces, and the past-row de-emphasis had to move off the text. One correction from
+  measurement: sampled, it was 30 of 47 text nodes under bar rather than 15 specs, and
+  `--text-dim` would NOT have cleared the twelve neutral whites — on the old skin the surface was
+  the binding constraint, not the ink. 14 hardcoded `color:rgba(255,255,255,a)` at **9
   distinct alphas** (.3 .45 .46 .48 .5 .55 .6 .68 .7), none on the scale, giving 15 specs under
   the bar — the worst at **2.28:1** (`.pl-yr`, `.pl-nt`, `.pl-bal` on a past row). 12 of the 15
   are neutral whites whose highest requirement is alpha .71, so pointing them at `--text-dim`
@@ -2318,8 +2365,8 @@ Left alone because deleting them removes the safety net that is their whole purp
   to be carried by the row background rather than by dimming text. That last part is a product
   call.
 - **Five empty-state implementations for one role**: `.empty` 13.5px, `.np-empty` 12.5px,
-  `.chart-empty` 13px, `.pl-none` 12.5px on its own `rgba(255,255,255,.45)`, `.arc-none` 11.5px on
-  `--text-dim`, plus an ad-hoc inline one. Four sizes, four colours, four paddings — in the one
+  `.chart-empty` 13px, `.pl-none` 12.5px (**now on `--text-faint`**, 2026-10-19), `.arc-none`
+  11.5px on `--text-dim`, plus an ad-hoc inline one. Four sizes, four colours, four paddings — in the one
   role a user sees when they have no data yet.
 - **Off-scale display figures on five tabs.** Archives is clean; Dashboard has 19 kinds,
   Contributions 11, Yearly 13, Monthly 6, Plan 4 — hero values at 54/34/26/22/19/17/16px, and
