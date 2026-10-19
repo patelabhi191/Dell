@@ -2341,12 +2341,17 @@ Left alone because deleting them removes the safety net that is their whole purp
   work costs ~134 ms there, so any per-keystroke figure is the harness. One earlier reading of
   "126 ms per keystroke" was entirely that. Measure a frame of nothing and subtract it, or measure
   on a real machine.
-- **Print is unusable.** There are **0 `@media print` rules** in 887. Chrome leaves "Background
-  graphics" off by default, so the backgrounds go and the text colours stay: `#EAF0FA` is
-  **1.14:1 on white paper**, `--text-faint` 1.08:1, `--text-dim` 1.10:1. A year's finances print
-  as a near-blank page on which the decorative `aria-hidden` artwork comes out *stronger than the
-  data*. See `screens/print/yearly-as-printed.png`. Roughly fifteen lines would fix it; not done
-  because nobody has said they print this.
+- ~~**Print is unusable.**~~ **FIXED 2026-10-18 (`4e6127d`) — see the entry higher up this list
+  and §9a.** This was a SECOND, stale copy of the print gap: the fix landed and was recorded above
+  while this one went on saying "0 `@media print` rules in 887" and "not done". Kept, struck
+  through, because the diagnosis is the clearest statement of why it mattered — Chrome leaves
+  "Background graphics" off by default, so the backgrounds go and the text colours stay: `#EAF0FA`
+  is **1.14:1 on white paper**, `--text-faint` 1.08:1, `--text-dim` 1.10:1, and a year's finances
+  printed as a near-blank page on which the decorative `aria-hidden` artwork came out *stronger
+  than the data*. `screens/print/yearly-as-printed.png` is that page. The estimate of "roughly
+  fifteen lines" was low: it took the ink and the whole accent palette remapped, the glass
+  flattened, three gradient-clipped roles given real ink, two per-view palettes restated, and both
+  CSV drop zones hidden.
 - ~~**The Plan tab re-invents the dim ramp.**~~ **FIXED 2026-10-19 — see 9a.** The analysis below
   is kept because it was right, including the two calls the implementation followed: the root cause
   is the surfaces, and the past-row de-emphasis had to move off the text. One correction from
