@@ -1977,7 +1977,7 @@ inside the query.
 
 Paused 2026-10-12, mid-way through a pre-deployment review; resumed and extended since.
 **Everything done is committed and pushed**; nothing of value lives only in a container. Build
-stamp `2026-10-18`, suite **2,070 passed / 0 failed across 19 files** (`tests/run-all.sh`),
+stamp `2026-10-18`, suite **2,084 passed / 0 failed across 19 files** (`tests/run-all.sh`),
 verified on the pushed tree.
 
 **`tests/run-all.sh` now fails loudly when a suite does not finish.** It used to read the summary
@@ -1985,8 +1985,8 @@ line each suite prints and add nothing when there wasn't one, so a startup error
 whole app down came back as **"1,236 passed, 1 failed"** — six suites had silently stopped counting
 and the single failure read like a detail. A missing summary line is now named and counted.
 
-**Two of the four owner decisions below are now settled** (1 and 3) — see *SETTLED SINCE THE
-PAUSE*. Decisions 2 and 4 are still open, and neither is blocked on work.
+**Three of the four owner decisions below are now settled** (1, 2 and 3) — see *SETTLED SINCE THE
+PAUSE*. Only decision 4, the quota toast, is still open, and it is not blocked on work.
 
 **Branches on origin:**
 
@@ -2066,7 +2066,46 @@ rule broken in opposite directions — a figure on screen has to be in something
   it can seal a year on first load with the Yearly tab never rendered. Without it a string start of
   `"8000"` seals **End $800,002,450 and growth +9999930.6%** into the one record meant to be final.
 
-### TWO DECISIONS STILL WAITING ON THE OWNER — neither blocked on more work
+**Decision 2 — the two dim ink tokens — APPROVED by the owner 2026-10-19 and merged** (`36972cd`).
+`--text-dim` .55 → **.74**, `--text-faint` .35 → **.58**. The branch
+`claude/sparta-contrast-tokens-HELD` is now merged history; `preview-contrast-tokens.html` and
+`screens/` came with it, which also resolves the dangling reference this file had to
+`screens/print/yearly-as-printed.png`. That folder is a record of the review, **not of the app** —
+both findings it was captured to show are fixed, so its print shot is the old broken output, and
+its README now says so.
+
+Measured on today's code, not taken from the branch: with the change reverted, a sweep of the six
+tabs counts **150 failing elements** (dash 49, contrib 28, yearly 63, monthly 6, archive 2, plan 2);
+with it, **2** — and one of those two is an artefact of the simpler collector used for the sweep
+(it folds `backgroundColor` only, so a gradient-filled `.skeu-btn.primary` reads 1.08:1; the real
+instrument in `test-contrast.js` handles gradients and passes). **The branch's "65 → 20" is not
+comparable** — it counted differently, on a tree two weeks older, before the print-token work,
+`--sk-dim`, the Archives literal aliasing and the branch's own four UI commits. The direction and
+the magnitude hold; the exact figures do not transfer.
+
+`test-contrast.js` is **45 / 45, no novel failures on any of the six tabs.** What is left is its
+`KNOWN` record: 17 accepted entries, each with a measured floor and a written reason. **12 of them
+are Plan**, marked `who: 'TAB'` — Plan stacks three translucent whites, so its surfaces sit at
+rgb(51,75,84) and rgb(60,83,92) against the usual rgb(21,34,44), and `--text-faint` reaches only
+3.59 there even at .58. That is not reachable by pointing rules at a token; it is a per-tab restyle
+of the kind Archives got on 2026-10-01, and the reviewer wrote it up rather than doing it. **It is
+the one piece of the design review still outstanding.**
+
+One thing the merge turned up, fixed with it: `.yf-catbtn.is-off` dimmed the two wired-category
+buttons with `opacity:.45`, which is right for the solid Clear-data button and wrong on a 12px
+glyph whose ink is already a dim token — it multiplied them to **3.96:1 sampled**. That is the
+"dimmed twice" fault this same review fixed on Monthly's "(optional)" hint, in a second place, and
+those buttons are not actually disabled: they still take the click so the toast can explain. They
+now step one place down the ink scale instead (active `--text-dim`, refusing `--text-faint`), which
+is visibly different, clear of the bar, and invents no level.
+
+**Instrument note.** `test-contrast`'s derived folding read those buttons at 2.21:1 where pixel
+sampling read 3.96:1 — the two disagree by ~1.8× because the derived background does not include
+the decorative field actually painted behind the glass. Both agreed it failed, so nothing turned on
+it here, but **do not quote one instrument's number as the other's**: section 9's rule stands, the
+sampled pixel is ground truth and the derived figure is the conservative screen.
+
+### ONE DECISION STILL WAITING ON THE OWNER — not blocked on more work
 
 1. ~~**`Invested` and `Moved else` are keyed to the literal category names**~~ `'Investment'` and
    `'Other Bank'` (`renderYF`, and `arcSnapshot`). Renaming either category is one click with no
@@ -2075,7 +2114,7 @@ rule broken in opposite directions — a figure on screen has to be in something
    project already fixed, with the identity hard-coded instead of stored. Either refuse the rename
    with a toast, or store the two keys in state and follow the rename. **The auditor's recommendation
    was to settle this before release.** — **SETTLED, see above.**
-2. **The two dim ink tokens** (`claude/sparta-contrast-tokens-HELD`). `--text-faint` at alpha .35
+2. ~~**The two dim ink tokens**~~ **APPROVED AND MERGED, see above.** `--text-faint` at alpha .35
    measures **2.71–2.97:1** composited, against a 4.5:1 bar, and it carries every form `label`,
    every `.htable th`, and every empty state — so on a tab with no data the sentence explaining why
    it is empty is the least readable thing on screen. Raising both tokens takes the six tabs from
