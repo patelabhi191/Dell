@@ -1,5 +1,12 @@
 # screens/ — what the design review looked at
 
+> **These are a record of the review, not of the app as it is now.** Both
+> findings they were captured to show have since been fixed: the two ink tokens
+> are merged (`--text-dim` .74, `--text-faint` .58) and print has a stylesheet,
+> so `print/yearly-as-printed.png` in particular shows the OLD, broken output.
+> They are kept because they are the evidence the measurements were made from.
+> Re-capture before quoting any of them as current.
+
 Everything here was captured from the app as it stands on this branch, with a
 Playwright harness that freezes transitions and animations first. Nothing in
 the app was edited to produce any of it.
@@ -26,8 +33,10 @@ The three things that are not a tab:
 | `pin-1440.png` | The PIN gate. |
 
 ## print/
-`yearly-as-printed.png` — Yearly Finance as Chrome actually prints it. The app
-has **no `@media print` rules at all** (0 of 887 rules), and Chrome's
+`yearly-as-printed.png` — Yearly Finance as Chrome printed it **before the
+print stylesheet landed**; this is the defect, not the current output. At the
+time the app had **no `@media print` rules at all** (0 of 887 rules), and
+Chrome's
 "Background graphics" checkbox is off by default, so every background is
 dropped and every text colour is kept. `--text` #EAF0FA measures **1.14:1
 against white paper**, `--text-faint` 1.08:1, `--text-dim` 1.10:1. The
@@ -36,4 +45,6 @@ decorative `aria-hidden` artwork prints more strongly than the data does.
 ## Not here
 The before/after pair for the two ink tokens is not a screenshot folder — it is
 `../preview-contrast-tokens.html`, which carries both states of eight separate
-roles plus two whole tabs, each with its measured ratio printed underneath.
+roles plus two whole tabs, each with its measured ratio printed underneath. It
+is now a record of a decision taken rather than one pending: the owner approved
+the change on 2026-10-19 and the "after" column is what ships.

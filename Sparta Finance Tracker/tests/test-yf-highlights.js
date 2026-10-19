@@ -1297,7 +1297,7 @@ const cards = page => page.evaluate(() =>
       '8o: the wired row keeps both controls -- a missing cell reads as a bug, not a rule',
       btns ? JSON.stringify(btns.n) : '(row not found)');
     check(btns && btns.off,
-      '8o: ...dimmed with the same token the disabled Clear button uses',
+      '8o: ...marked is-off, which steps their ink one down the scale',
       btns ? JSON.stringify(btns.off) : '');
     check(btns && /Invested/.test(btns.titles) && /fixed/.test(btns.titles),
       '8o: ...and the reason is in the tooltip', btns ? btns.titles : '');

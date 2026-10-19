@@ -109,13 +109,47 @@
   --stroke:rgba(255,255,255,0.12);
   --stroke-top:rgba(255,255,255,0.28);
   --text:#EAF0FA;
-  --text-dim:rgba(234,240,250,0.55);
-  --text-faint:rgba(234,240,250,0.35);
+  /* The two dim inks are alphas, so what they actually measure depends on the
+     glass under them. At .35, --text-faint came out between 2.71:1 and 2.97:1
+     against the real composited backgrounds of the six tabs -- under the 4.5:1
+     body bar, and under even the 3:1 UI bar on the lighter panels. It is not a
+     decorative token: it carries every form label, every .htable th, and the
+     whole of .empty / .np-empty / .chart-empty, so on a tab with no data the
+     only sentence on screen was the least readable thing on it.
+
+     The app already contained the evidence that the value, not the usage, was
+     wrong: Monthly had quietly escaped the token by hardcoding #93A2B8 and
+     #8695AB for its own labels, th and empty states -- which are #EAF0FA at
+     roughly alpha .64 and .58, and measure 5.4:1 to 7.1:1. Five tabs were
+     failing a bar the sixth had already met by hand. These alphas bring the
+     other five up to Monthly rather than inventing a level. (#93A2B8 is the
+     --sk-dim token below now, and #8695AB is still four hardcoded rules; the
+     VALUES are unchanged, so the measurement that argued this still holds.)
+
+     Both had to move. --text-faint's floor is .555 -- the figure it needs to
+     clear 4.5:1 on the lightest background it lands on, the deposit-log row --
+     and it ships at .58 rather than at that floor on purpose: the backdrop is
+     an animated field under glass and varies by ~0.15 with time and position,
+     so a token sitting four hundredths over the bar is not actually over it
+     (see section 9a). --text-dim has to stay clear of --text-faint or the two
+     invert and and "dim" paints fainter than "faint"; .74 also lifts the Other
+     account tag, which measured 4.44:1.
+
+     Rejected: repointing the ~30 failing rules at --text-dim one by one. That
+     leaves --text-faint naming nothing, is thirty chances to miss one, and
+     still forces --text-dim up for the tag. One value each is the smaller
+     change and the one that cannot drift apart later. */
+  --text-dim:rgba(234,240,250,0.74);
+  --text-faint:rgba(234,240,250,0.58);
   /* Monthly's dim label grey. It was the same hex typed in seven places -- six
      rules and one inline style -- which is a token that had not been written
      down yet, and the first theme to redefine the ink (print) left all seven
      behind at about 2.6:1 on white. Declared on :root rather than on
-     #monthlyView so the inline one resolves too. */
+     #monthlyView so the inline one resolves too.
+     KEPT at its own value rather than pointed at --text-faint: Monthly's theme
+     is deliberately its own (section 5), the two are within six hundredths of
+     each other, and #93A2B8 measures 5.4:1 -- so there is nothing to fix here,
+     only a choice about whether the tab keeps its own grey. */
   --sk-dim:#93A2B8;
   --teal:#5EEAD4;      /* TFSA + gains */
   --violet:#A78BFA;    /* FHSA */
@@ -1227,12 +1261,22 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .yf-plan-in{width:86px;text-align:right;padding:6px 8px;font-size:12.5px;margin-left:auto}
 #yfExpTable td,#yfIncTable td{padding:4px 7px;font-size:12px}
 #yfExpTable th,#yfIncTable th{padding:6px 7px}
-.yf-catbtn{border:none;background:transparent;color:var(--text-faint);font-size:12px;padding:2px 5px;border-radius:6px;cursor:pointer}
+.yf-catbtn{border:none;background:transparent;color:var(--text-dim);font-size:12px;padding:2px 5px;border-radius:6px;cursor:pointer}
 .yf-catbtn:hover{color:var(--teal);background:rgba(94,234,212,.1)}
 .yf-catbtn.del:hover{color:var(--rose);background:rgba(251,113,133,.1)}
-/* Same .45 the Clear-data button uses. The hover tints are undone as well, so a
-   control that is going to refuse does not light up as though it will not. */
-.yf-catbtn.is-off{opacity:.45;cursor:not-allowed}
+/* ONE STEP DOWN THE INK SCALE, NOT A SECOND DIMMING ON TOP OF IT. This was the
+   .45 opacity the Clear-data button uses, which is right for a solid filled
+   button and wrong here: .yf-catbtn's ink is already a dim token, so the
+   opacity multiplied it and a 12px glyph came out at 3.96:1 sampled -- the
+   "dimmed twice" fault this review fixed on Monthly's "(optional)" hint, in a
+   second place. And these buttons are not actually disabled: they still take
+   the click so the toast can say why, so painting them as fully inert was
+   overstating it.
+   The active pair is --text-dim and the refusing pair --text-faint: one visible
+   step apart on the scale (.74 against .58), both clear of the bar, and no
+   invented level. The hover tints are undone as well, so a control that is
+   going to refuse does not light up as though it will not. */
+.yf-catbtn.is-off{color:var(--text-faint);cursor:not-allowed}
 .yf-catbtn.is-off:hover,.yf-catbtn.del.is-off:hover{color:var(--text-faint);background:transparent}
 /* Highlights slideshow. Every slide sits in the SAME grid cell, so the panel
    is as tall as the tallest card and its height never jumps mid-rotation. */
