@@ -1977,7 +1977,7 @@ inside the query.
 
 Paused 2026-10-12, mid-way through a pre-deployment review; resumed and extended since.
 **Everything done is committed and pushed**; nothing of value lives only in a container. Build
-stamp `2026-10-19`, suite **2,094 passed / 0 failed across 19 files** (`tests/run-all.sh`),
+stamp `2026-10-21`, suite **2,105 passed / 0 failed across 19 files** (`tests/run-all.sh`),
 verified on the pushed tree.
 
 **`tests/run-all.sh` now fails loudly when a suite does not finish.** It used to read the summary
@@ -1999,7 +1999,32 @@ PAUSE*. Only decision 4, the quota toast, is still open, and it is not blocked o
 
 All six tabs were audited for correctness, one or two at a time, each by a reviewer briefed to fix
 only clear defects and to propose anything discretionary. Dashboard, Archives, Contributions,
-Monthly Expense, Yearly Finance and Plan are all done. 273 checks were added, and **every fix was
+Monthly Expense, Yearly Finance and Plan are all done.
+
+**Plus the four surfaces that are not a tab, swept 2026-10-21** — the Settings drawer, the sell
+dialog, the edit-deposit dialog and the PIN gate. Each was already covered functionally (`test-ui`
+opens all four; `test-mobile` covers the keypad) and each was screenshotted for the design review,
+but **the measured ink sweep had only ever visited the six tabs**: those four are hidden until
+something opens them, so `go(view)` never reached them and nothing failed to notice. A dialog is
+the worst place for that to hide — it is the one surface a user cannot look away from, and the sell
+dialog is where money leaves the account. `test-contrast` section 2b now opens each one, sweeps it
+**scoped to its own subtree** (unscoped, opening the sell dialog reported the drawer's buttons as
+the dialog's faults), and closes it again. Both dialogs and the PIN gate were clean. The drawer
+held two findings, both on genuinely disabled controls:
+
+- **the tab-reorder arrows at 1.52:1** — `--text-faint` multiplied by `opacity:.25`, the FOURTH
+  instance of the "dimmed twice" fault after Monthly's "(optional)" hint, the wired-category
+  buttons and a past Plan row. WCAG 1.4.3 exempts inactive components, but exempt is not invisible:
+  a user could not see that reordering stops at the ends, only that two buttons were missing. Now
+  `.75` → **3.42:1**, over the 3:1 bar for a UI component and still plainly dimmer than the 4.86:1
+  enabled pair.
+- **the disabled Clear-data button at 3.39:1** — the house disabled fill on a solid button, legible
+  and conventional. Left as it is.
+
+Both are now in `KNOWN` under `who:'DISABLED'` **with their measured floors**, so they are recorded
+rather than waved through and the suite fails if either drifts back down. Section 2b applies the
+same ratchet section 2 does — which is how it caught my own first attempt at the arrow fix failing
+to apply. 273 checks were added, and **every fix was
 verified by breaking it again and watching its test fail with the old value printed** — that
 discipline caught several tests in this repo that were passing vacuously, including one that was
 certifying a contrast failure as a pass.

@@ -2251,7 +2251,14 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .taborder-row .mv{border:none;background:transparent;color:var(--text-faint);cursor:pointer;
   padding:2px 5px;border-radius:6px;font-size:11px;line-height:1}
 .taborder-row .mv:hover{color:var(--teal);background:rgba(94,234,212,.1)}
-.taborder-row .mv:disabled{opacity:.25;cursor:default}
+/* .25 ON AN ALREADY-DIM TOKEN IS NOT DE-EMPHASIS, IT IS ABSENCE. --text-faint
+   times .25 measured 1.52:1 on the drawer, so the first row's left arrow and the
+   last row's right arrow were invisible -- a user could not see that reordering
+   stops at the ends, only that two buttons were missing. Fourth instance of the
+   same "dimmed twice" fault (Monthly's "(optional)" hint, the wired-category
+   buttons, a past Plan row). .75 reads 3.42:1, over the 3:1 bar that applies to
+   an inactive control, and still plainly dimmer than the 4.86:1 enabled pair. */
+.taborder-row .mv:disabled{opacity:.75;cursor:default}
 @media(max-width:560px){.taborder-row{font-size:12px;padding:6px 6px 6px 10px}}
 
 /* Native <option> lists inherit OS colours and render white-on-white in places.
@@ -4061,7 +4068,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-19</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-21</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">

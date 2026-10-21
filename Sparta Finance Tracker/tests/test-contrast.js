@@ -23,7 +23,7 @@
 
    Decoration is excluded throughout: every animated backdrop field in this app
    is inside an aria-hidden container, and WCAG exempts decorative text. */
-const { serve, open, launch } = require('./lib');
+const { serve, open, launch, stub, SEED } = require('./lib');
 const { APP } = require('./paths');
 
 let pass = 0, fail = 0;
@@ -35,7 +35,12 @@ const section = t => console.log(`\n── ${t} ──`);
 const VIEWS = ['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan'];
 
 /* ── the compositor, run in the page ─────────────────────────────────────── */
-const CONTRAST = () => {
+/* `root` scopes the sweep to one subtree. Section 2 passes nothing and gets the
+   whole page, exactly as before; section 2b passes a dialog or the drawer, so
+   its findings are that surface's own and not something else still on screen
+   behind it -- without this, opening the sell dialog reported the drawer's
+   Clear button and the tab-reorder arrows as the dialog's faults. */
+const CONTRAST = (root) => {
   const parse = c => {
     const m = /rgba?\(([^)]+)\)/.exec(c); if (!m) return null;
     const p = m[1].split(/[,\s/]+/).filter(Boolean).map(Number);
@@ -84,7 +89,10 @@ const CONTRAST = () => {
   };
 
   const worst = [];
-  document.querySelectorAll('*').forEach(el => {
+  const scope = root ? document.querySelector(root) : document;
+  if (!scope) return [{ ratio: 0, need: 4.5, size: 0, weight: 0, color: '', bg: '',
+    sel: 'MISSING:' + root, text: 'scope not found', inlineOpacity: false }];
+  scope.querySelectorAll('*').forEach(el => {
     const cs = getComputedStyle(el);
     if (!el.offsetParent && cs.position !== 'fixed') return;
     if (cs.visibility === 'hidden' || cs.display === 'none') return;
@@ -202,6 +210,19 @@ const CONTRAST = () => {
        FHSA. Left as measured, written up for the owner. The text is also
        redundant -- the row it sits in already reads "FHSA cash". */
     { tab: 'contrib', sel: 'span.acct-tag.tag-fhsa', floor: 4.07, who: 'ACCENT' },
+    /* TWO GENUINELY DISABLED CONTROLS, both in the Settings drawer, both found
+       by section 2b when it first swept a surface the tab loop never reached.
+       WCAG 1.4.3 exempts inactive components, so neither needs 4.5:1 -- but
+       exempt is not the same as invisible, and the reorder arrows were at
+       1.52:1 before this pass (--text-faint multiplied by opacity .25). They
+       are recorded at their measured floors rather than waved through: both now
+       clear the 3:1 bar for a UI component, and the floors fail the suite if
+       either drifts back down. `disabled` is on the element in both cases, so a
+       screen reader announces the state the colour is only hinting at. */
+    { tab: 'drawer', sel: 'button.mv', floor: 3.42, who: 'DISABLED',
+      why: 'the reorder arrow at the end of the list; disabled, over the 3:1 UI bar' },
+    { tab: 'drawer', sel: 'button#resetGo.btn.is-off', floor: 3.39, who: 'DISABLED',
+      why: 'Clear-data stays disabled until the confirmation is typed; .45 is the house disabled fill' },
     /* 4.49:1 -- one hundredth under the bar, on a 9.5px chip whose row already
        names the sign in words and in colour. Recorded rather than chased: no
        change to --yf-exp or to the tint is worth making for 0.01, and the
@@ -232,8 +253,92 @@ const CONTRAST = () => {
   }
   console.log(`      (${recorded} recorded exclusions still present: ` +
     `${KNOWN.filter(k => k.who === 'JS').length} JS-owned, ` +
-    `${KNOWN.filter(k => k.who === 'TAB').length} in Plan's un-audited ramp, ` +
-    `${KNOWN.filter(k => k.who === 'ACCENT').length} semantic accent)`);
+    `${KNOWN.filter(k => k.who === 'TAB').length} in Plan's ramp, ` +
+    `${KNOWN.filter(k => k.who === 'ACCENT').length} semantic accent, ` +
+    `${KNOWN.filter(k => k.who === 'DISABLED').length} disabled control)`);
+
+  /* ── 2b. the four surfaces that are not a tab ──────────────────────────
+     THE LOOP ABOVE ONLY EVER VISITED THE SIX TABS, and the brief was all pages
+     and elements. The Settings drawer, both dialogs and the PIN gate are each
+     functionally tested elsewhere and were each screenshotted for the design
+     review, but none of them had ever been through a measured ink sweep -- they
+     are hidden until something opens them, so `go(view)` never reaches them and
+     nothing failed to notice. A dialog is also the worst place for this to
+     hide: it is the one surface a user cannot look away from, and the sell
+     dialog is where money leaves the account. */
+  section('2b. the drawer, both dialogs and the PIN gate, which the tab loop never reached');
+  const surfaces = [
+    ['drawer', '#drawer',
+      async () => { await go('dash');
+        await page.evaluate(() => { const d = document.getElementById('drawer');
+          if (d && !d.classList.contains('open')) document.getElementById('settingsBtn').click() });
+        await page.waitForTimeout(320); return page.isVisible('#drawer'); },
+      async () => { await page.evaluate(() => { const d = document.getElementById('drawer');
+        if (d && d.classList.contains('open')) document.getElementById('settingsBtn').click() });
+        await page.waitForTimeout(220); }],
+    ['sell dialog', '#sellModal',
+      async () => { await go('dash');
+        await page.evaluate(() => { const b = document.querySelector('#hbody tr .rm.sell'); if (b) b.click() });
+        await page.waitForTimeout(280); return page.isVisible('#sellModal'); },
+      async () => { await page.evaluate(() => { const c = document.getElementById('sellCancel'); if (c) c.click() });
+        await page.waitForTimeout(220); }],
+    ['deposit dialog', '#cedModal',
+      async () => { await go('contrib');
+        await page.evaluate(() => { const t = document.getElementById('logToggle'); if (t) t.click() });
+        await page.waitForTimeout(220);
+        await page.evaluate(() => { const b = document.querySelector('#cbody tr .yf-edit'); if (b) b.click() });
+        await page.waitForTimeout(280); return page.isVisible('#cedModal'); },
+      async () => { await page.evaluate(() => { const c = document.getElementById('cedCancel'); if (c) c.click() });
+        await page.waitForTimeout(220); }],
+  ];
+  for (const [name, sel, open_, close_] of surfaces) {
+    const shown = await open_();
+    /* THE PRECONDITION IS THE POINT. A surface that did not open sweeps zero
+       elements and passes, which is exactly how this gap stayed invisible. */
+    check(shown === true, `2b: PRECONDITION -- the ${name} is actually on screen`, String(shown));
+    if (shown) {
+      const bad = await page.evaluate(CONTRAST, sel);
+      const hit = f => KNOWN.find(k => k.sel === f.sel &&
+        (k.text === undefined || f.text.indexOf(k.text) === 0));
+      const novel = bad.filter(f => !hit(f));
+      // the same ratchet section 2 applies: a recorded one may not get worse
+      const worse = bad.filter(f => { const k = hit(f); return k && f.ratio < k.floor - 0.05; })
+        .map(f => `${f.sel} "${f.text}" ${f.ratio} < ${hit(f).floor}`);
+      check(novel.length === 0, `2b: no text on the ${name} falls under its bar`,
+        novel.slice(0, 4).map(b => `${b.ratio}:1 ${b.size}px ${b.sel} "${b.text}"`).join(' | '));
+      check(worse.length === 0, `2b: and nothing recorded on the ${name} got worse`,
+        worse.join(' | '));
+    }
+    // closed again, or the next surface opens behind this one and blocks it
+    await close_();
+  }
+
+  /* The PIN gate needs its own context: it is only painted when pinOn and a
+     code are both set, and unlocking it is what the rest of the suite assumes
+     has already happened. */
+  {
+    const pinCtx = await browser.newContext();
+    const pp = await pinCtx.newPage();
+    await stub(pp);
+    await pp.addInitScript(sd => { try { localStorage.clear();
+      for (const [k, v] of Object.entries(sd)) localStorage.setItem(k, v) } catch (e) {} },
+      Object.assign({}, SEED, { 'sparta.pinOn': 'true', 'sparta.pinCode': '"246813"' }));
+    await pp.goto(url, { waitUntil: 'load' });
+    await pp.setViewportSize({ width: 1440, height: 1000 });
+    await pp.addStyleTag({ content:
+      '*,*::before,*::after{transition:none !important;animation:none !important}' });
+    await pp.waitForTimeout(400);
+    const up = await pp.isVisible('#pinGate');
+    check(up === true, '2b: PRECONDITION -- the PIN gate is up', String(up));
+    if (up) {
+      const bad = await pp.evaluate(CONTRAST, '#pinGate');
+      const novel = bad.filter(f => !KNOWN.some(k => k.sel === f.sel &&
+        (k.text === undefined || f.text.indexOf(k.text) === 0)));
+      check(novel.length === 0, '2b: no text on the PIN gate falls under its bar',
+        novel.slice(0, 4).map(b => `${b.ratio}:1 ${b.size}px ${b.sel} "${b.text}"`).join(' | '));
+    }
+    await pinCtx.close();
+  }
 
   /* ── 2c. the statement-source hint ────────────────────────────────────── */
   section('2c. the "(optional)" hint is not dimmed a second time');
