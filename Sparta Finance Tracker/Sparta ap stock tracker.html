@@ -1250,7 +1250,8 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   .yf-mtable th:first-child,.yf-mtable td:first-child{width:auto;position:sticky;left:0;
     background:linear-gradient(90deg,rgba(12,24,34,.97),rgba(12,24,34,.92));z-index:2}
 }
-.yf-mtable th,.yf-mtable td{padding:6px 4px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.yf-mtable th,.yf-mtable td{padding:6px 4px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.yf-mtable th:first-child,.yf-mtable td:first-child{text-align:left}
 .yf-mtable th:first-child,.yf-mtable td:first-child{width:96px;letter-spacing:.02em}
 .yf-mtable td:first-child,.yf-mtable th:first-child{text-align:left;font-weight:600}
 .yf-neg{color:var(--yf-exp)} .yf-pos{color:var(--yf-inc)}
@@ -1258,7 +1259,21 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
    because the figure is undefined rather than good or bad -- see the comment in
    renderYF. */
 .yf-na{color:var(--text-dim)}
-.yf-plan-in{width:86px;text-align:right;padding:6px 8px;font-size:12.5px;margin-left:auto}
+/* CENTRED, not right-aligned, on the Yearly tab's three tables. .htable's own
+   default is right -- correct for a ledger column you scan for magnitude -- but
+   these read as a grid of cells rather than a column of figures, and the
+   Planned cell holds an INPUT whose box was already centre-ish while the
+   figures beside it hung off the right edge. The heading goes with its column
+   or the two disagree. The first column is a category NAME, not a number, and
+   stays left; every other .htable in the app is untouched. */
+#yfExpTable th,#yfExpTable td,#yfIncTable th,#yfIncTable td,
+.yf-mtable th,.yf-mtable td{text-align:center}
+#yfExpTable th:first-child,#yfExpTable td:first-child,
+#yfIncTable th:first-child,#yfIncTable td:first-child,
+.yf-mtable th:first-child,.yf-mtable td:first-child{text-align:left}
+/* the input is the cell's content now, so it centres with it */
+#yfExpTable .yf-plan-in,#yfIncTable .yf-plan-in{margin-left:auto;margin-right:auto}
+.yf-plan-in{width:86px;text-align:center;padding:6px 8px;font-size:12.5px;margin-left:auto}
 #yfExpTable td,#yfIncTable td{padding:4px 7px;font-size:12px}
 #yfExpTable th,#yfIncTable th{padding:6px 7px}
 .yf-catbtn{border:none;background:transparent;color:var(--text-dim);font-size:12px;padding:2px 5px;border-radius:6px;cursor:pointer}
@@ -3714,15 +3729,6 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
           </table>
         </div>
       </section>
-      <!-- highlights, with a reserved slot alongside -->
-      <div class="yf-toprow">
-        <section class="panel cash" id="yfHiPanel" style="display:none">
-          <h3 class="yf-h-neutral" style="margin-bottom:16px">HIGHLIGHTS</h3>
-          <div class="yf-hi-stage" id="yfHiSlides"></div>
-          <div class="yf-hi-dots" id="yfHiDots"></div>
-        </section>
-        <section class="panel cash" id="yfBlankPanel"></section>
-      </div>
       <div class="yf-row2">
       <section class="panel stat yf-card-bars">
         <div class="yf-two">
@@ -3765,8 +3771,19 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
           </div>
         </section>
       </div>
+      <!-- highlights, with a reserved slot alongside. It sits BELOW the four
+           stat cards: the figures are what the tab is opened for, and a card
+           that hides itself on a quiet year should not be what pushes them
+           down the page. -->
+      <div class="yf-toprow">
+        <section class="panel cash" id="yfHiPanel" style="display:none">
+          <h3 class="yf-h-neutral" style="margin-bottom:16px">HIGHLIGHTS</h3>
+          <div class="yf-hi-stage" id="yfHiSlides"></div>
+          <div class="yf-hi-dots" id="yfHiDots"></div>
+        </section>
+        <section class="panel cash" id="yfBlankPanel"></section>
+      </div>
     </div>
-
     <!-- planned vs actual overview -->
     <div class="statrow">
       <section class="panel stat">

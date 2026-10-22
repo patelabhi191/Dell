@@ -137,7 +137,8 @@ const CONTRAST = (root) => {
      -- dark #0a0f1c ink over a background that has not finished becoming white
      yet, which reports as 1.22:1 and is a measurement of nothing. */
   await page.addStyleTag({ content:
-    '*,*::before,*::after{transition:none !important;animation:none !important}' });
+    '*,*::before,*::after{transition:none !important;animation:none !important}' +
+    'html{scroll-behavior:auto !important}' });
   await page.evaluate(() => {
     state.plan = { segments: [{ id: 's', name: 'Runway', start: 13632, open: true,
       items: [{ id: 'i', date: '2026-12-01', type: 'expense', name: 'Credit Bill', amt: 1910, notes: 'x' }] }] };
@@ -356,9 +357,24 @@ const CONTRAST = (root) => {
   for (const w of [1440, 375, 320]) {
     await page.setViewportSize({ width: w, height: 1000 });
     await go('yearly');
+    /* SCROLLED INTO VIEW FIRST, because the probe below is elementFromPoint and
+       elementFromPoint is VIEWPORT-RELATIVE: it returns null for any coordinate
+       off screen, so an element below the fold measures a 0x0 hit area and the
+       check fails with nothing wrong with it. That is exactly what happened
+       when Highlights moved below the four stat cards -- at 375px and 320px
+       those stack, and the dots left the 1000px viewport. Nothing about the
+       dots changed. Same family as the screenshot({clip}) trap in section 1. */
+    await page.evaluate(() => {
+      const d0 = document.querySelector('.yf-hi-dot');
+      if (d0) d0.scrollIntoView({ block: 'center', behavior: 'instant' });
+    });
+    await page.waitForTimeout(180);
     const d = await page.evaluate(() => {
       const dots = [...document.querySelectorAll('.yf-hi-dot')];
       if (dots.length < 2) return null;
+      // and prove the probe can actually see them, rather than reporting 0
+      const b0 = dots[0].getBoundingClientRect();
+      if (b0.top < 0 || b0.bottom > innerHeight) return { offscreen: true };
       // hit area read back off the hit-test chain, not off the declaration
       const hit = el => {
         const b = el.getBoundingClientRect();
@@ -383,10 +399,12 @@ const CONTRAST = (root) => {
         overlap, paintedW: Math.min(...dots.map(d => d.getBoundingClientRect().width)),
       };
     });
-    check(d && d.minW >= 11.5, `${w}px: every dot's hit area is at least 12px wide`, d && `${d.minW.toFixed(1)}px`);
-    check(d && d.minH >= 23.5, `${w}px: every dot's hit area is at least 24px tall`, d && `${d.minH.toFixed(1)}px`);
-    check(d && d.overlap === 0, `${w}px: no dot's hit area overlaps its neighbour`, d && `${d.overlap}px`);
-    check(d && Math.abs(d.paintedW - 7) < 0.6, `${w}px: the PAINTED dot is still 7px — only the target grew`,
+    check(d && !d.offscreen, `${w}px: PRECONDITION -- the dots are inside the viewport to be probed`,
+      d && d.offscreen ? 'still off screen after scrollIntoView' : 'in view');
+    check(d && !d.offscreen && d.minW >= 11.5, `${w}px: every dot's hit area is at least 12px wide`, d && d.minW && `${d.minW.toFixed(1)}px`);
+    check(d && !d.offscreen && d.minH >= 23.5, `${w}px: every dot's hit area is at least 24px tall`, d && `${d.minH.toFixed(1)}px`);
+    check(d && !d.offscreen && d.overlap === 0, `${w}px: no dot's hit area overlaps its neighbour`, d && `${d.overlap}px`);
+    check(d && !d.offscreen && Math.abs(d.paintedW - 7) < 0.6, `${w}px: the PAINTED dot is still 7px — only the target grew`,
       d && `${d.paintedW.toFixed(2)}px`);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
