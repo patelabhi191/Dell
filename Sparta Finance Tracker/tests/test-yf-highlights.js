@@ -388,9 +388,15 @@ const cards = page => page.evaluate(() =>
     'Expenses reads Category, Spend, Planned, Diff, Monthly', JSON.stringify(pa.expHead));
   check(JSON.stringify(pa.incHead) === JSON.stringify(['Category','Earned','Planned','Diff.']),
     'Income reads Category, Earned, Planned, Diff', JSON.stringify(pa.incHead));
-  /* Expenses compares the monthly RATE against the plan; Income is still the
-     year-to-date question. The two tables deliberately differ, so both are
-     pinned -- otherwise one silently adopting the other's formula looks fine. */
+  /* THE TWO TABLES DELIBERATELY DIFFER, so both are pinned -- otherwise one
+     silently adopting the other's formula looks fine. Expenses converts the
+     ACTUAL down to a monthly rate and compares it against the monthly plan;
+     Income converts the PLAN up by the months elapsed and compares it against
+     the year to date. Income used to do `plan - act` raw, a monthly figure
+     minus a year-to-date one, which is why earning MORE than planned printed a
+     minus in the over-spent colour. Section 8s covers the sign and the basis
+     in both directions; what is pinned here is that the two formulas stay
+     different from each other. */
   {
     const mo = 13847 / pa.nowM;
     const want = 14000 - mo;
@@ -401,8 +407,14 @@ const cards = page => page.evaluate(() =>
     check(Math.abs(parseFloat(pa.expMonthly.replace(/[^0-9.]/g, '')) - mo) < 1.5,
       'and Monthly is the year-to-date spend over the months elapsed', pa.expMonthly);
   }
-  check(pa.incDiff.replace(/[^0-9]/g, '') === '2200' && pa.incDiff.startsWith('\u2212'),
-    'an income Diff is still Planned minus Earned', pa.incDiff);
+  {
+    // 41,800 earned against a 39,600/month plan: genuinely far behind by now
+    const want = 41800 - 39600 * pa.nowM;
+    check(pa.incDiff.replace(/[^0-9]/g, '') === String(Math.abs(want)) &&
+          pa.incDiff.startsWith('\u2212'),
+      'an income Diff is Earned minus Planned x months, not Planned minus Earned',
+      `${pa.incDiff} (expected ${want})`);
+  }
   /* The totals row used to build its own Diff cell and printed "$-7,200" the
      moment that number could go negative. One renderer for both now. */
   const totals = await page.evaluate(() => {
@@ -1607,6 +1619,92 @@ const cards = page => page.evaluate(() =>
       JSON.stringify(scans.few));
     check(perr12.length === 0, '8r: no page errors', perr12.join(' | '));
     await c12.close();
+  }
+
+  /* ── 8s. the Income table's Diff compares like with like ───────────────
+     `plan` is a MONTHLY figure in both tables -- it is the number typed into
+     the input on the row -- while the actual is the year to date. Expenses
+     converted the actual down (plan - act/nowM); Income subtracted one from
+     the other raw, `plan - act`, which is not a quantity at all. A $4,400/month
+     plan against $39,350 earned by October printed "-$34,950" in the over-spent
+     colour for a year that was $5,350 AHEAD.
+     Two things are asserted: the BASIS (planned x months elapsed) and the SIGN
+     (over plan is good on income, so it is the positive, blue side -- the
+     mirror of under budget being good on expenses). */
+  console.log('\n── 8s. Income Diff: planned x months, and ahead reads positive ──');
+  {
+    const c13 = await browser.newContext();
+    const p13 = await c13.newPage(); await stub(p13);
+    const perr13 = []; p13.on('pageerror', e => perr13.push(e.message));
+    await p13.goto(url, { waitUntil: 'load' }); await p13.waitForTimeout(300);
+    const read = (page, yr, planned) => page.evaluate(([y, pl]) => {
+      state.yfYear = y;
+      state.yf.txns = [
+        { id: 'a', type: 'income',  date: `${y}-01-05`, amt: 39350, desc: 'Pay', cat: 'Paycheck', tab: 'yf' },
+        { id: 'b', type: 'income',  date: `${y}-01-06`, amt: 750,   desc: 'Sup', cat: 'US/CA Support', tab: 'yf' },
+        { id: 'c', type: 'expense', date: `${y}-01-07`, amt: 12000, desc: 'Rent', cat: 'Home', tab: 'yf' },
+      ];
+      state.yf.planned = { [y]: pl };
+      renderYF();
+      const grab = sel => [...document.querySelectorAll(sel)].map(tr => ({
+        name: tr.children[0].textContent.trim(),
+        diff: tr.children[3].textContent.trim(),
+        cls: tr.children[3].className }));
+      return { nowM: (y === new Date().getFullYear()) ? new Date().getMonth() + 1 : 12,
+        inc: grab('#yfIncBody tr'), exp: grab('#yfExpBody tr') };
+    }, [yr, planned]);
+
+    // ── ahead of plan: 1,000/mo against 39,350 earned ──
+    const ahead = await read(p13, YEAR, { Paycheck: 1000, 'US/CA Support': 1000, Home: 2000 });
+    const nowM = ahead.nowM;
+    check(nowM >= 1 && nowM <= 12, '8s: PRECONDITION -- the year under test is the current one',
+      `${nowM} months elapsed`);
+    const pay = ahead.inc.find(r => r.name === 'Paycheck');
+    /* The figure only comes out this way on the new basis: planned x months.
+       On the old one it was 1000 - 39350 = -38,350, and on a naive act - plan
+       it would be +38,350. 39,350 - 1,000*nowM is neither. */
+    const wantAhead = 39350 - 1000 * nowM;
+    check(pay && pay.diff.replace(/[^0-9]/g, '') === String(wantAhead),
+      `8s: earning over plan reads the gap against planned x ${nowM} months, not against one month`,
+      pay ? `${pay.diff} (want ${wantAhead})` : '(no Paycheck row)');
+    check(pay && /\+/.test(pay.diff) && /yf-pos/.test(pay.cls),
+      '8s: ...and it is a PLUS in the positive colour, because earning more is good',
+      pay ? `${pay.diff} ${pay.cls}` : '');
+
+    // ── behind plan, in the same table, same render ──
+    const sup = ahead.inc.find(r => r.name === 'US/CA Support');
+    const wantBehind = 1000 * nowM - 750;
+    check(sup && sup.diff.replace(/[^0-9]/g, '') === String(wantBehind),
+      '8s: a category behind its plan shows the shortfall on the same basis',
+      sup ? `${sup.diff} (want ${wantBehind})` : '');
+    check(sup && /\u2212/.test(sup.diff) && /yf-neg/.test(sup.cls),
+      '8s: ...as a minus in the negative colour', sup ? `${sup.diff} ${sup.cls}` : '');
+
+    // ── Totals on the same basis as its rows ──
+    const tot = ahead.inc.find(r => r.name === 'Totals');
+    const wantTot = (39350 + 750) - 2000 * nowM;
+    check(tot && tot.diff.replace(/[^0-9]/g, '') === String(Math.abs(wantTot)),
+      '8s: the Totals row uses the same basis, so it agrees with the rows under it',
+      tot ? `${tot.diff} (want ${wantTot})` : '');
+
+    /* EXPENSES ARE UNCHANGED, and that is the half most at risk from this: they
+       convert the ACTUAL down rather than the plan up, and under budget stays
+       the positive side. 12,000 spent over nowM months against a 2,000 plan. */
+    const home = ahead.exp.find(r => r.name === 'Home');
+    const wantExp = Math.round(2000 - 12000 / nowM);
+    check(home && home.diff.replace(/[^0-9]/g, '') === String(Math.abs(wantExp)),
+      '8s: the Expenses table still compares the monthly plan against the monthly rate',
+      home ? `${home.diff} (want ${wantExp})` : '');
+
+    // ── a closed year counts twelve months, not today's ──
+    const past = await read(p13, YEAR - 1, { Paycheck: 1000 });
+    check(past.nowM === 12, '8s: PRECONDITION -- a past year counts twelve months', String(past.nowM));
+    const payPast = past.inc.find(r => r.name === 'Paycheck');
+    check(payPast && payPast.diff.replace(/[^0-9]/g, '') === String(Math.abs(39350 - 12000)),
+      '8s: a closed year measures against the whole twelve, not against today',
+      payPast ? payPast.diff : '');
+    check(perr13.length === 0, '8s: no page errors', perr13.join(' | '));
+    await c13.close();
   }
 
   await browser.close(); srv.close();
