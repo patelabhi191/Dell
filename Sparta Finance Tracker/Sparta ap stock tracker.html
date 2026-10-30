@@ -1094,6 +1094,21 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 @media(max-width:1000px){.yf-row2{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.yf-row2{grid-template-columns:1fr}}
 .yf-toprow{display:grid;grid-template-columns:60% 1fr;gap:8px;align-items:stretch}
+/* Highlights hides itself on a quiet year. Without this the 40% column stayed
+   reserved and Ask sat in a 60% box with a hole beside it. */
+.yf-toprow.solo{grid-template-columns:1fr}
+/* The (i) button is taller than the 12.5px eyebrow beside it, so the heading
+   row in Ask was 19px and the one in Highlights 15px -- enough to sit the two
+   titles on different baselines across an 8px gutter. A floor the button's own
+   height puts both cards' first line in the same place. */
+.yf-toprow .sec-head{margin-bottom:16px;min-height:19px}
+/* .sec-head h3 is the DRAWER'S eyebrow -- dimmer ink, wider tracking. Every
+   other heading on this tab is `#yearlyView h3` plus a .yf-h-* colour, so Ask
+   was the one card wearing a different heading, which read as a different kind
+   of card rather than a sibling of Highlights. Same size, weight, tracking and
+   ink as the rest of Yearly; the drawer keeps its own. */
+#yearlyView .sec-head h3{letter-spacing:var(--ls-label)}
+#yearlyView .sec-head h3.yf-h-neutral{color:var(--text)}
 /* Highlights hides itself on a year with too little to say; without a floor
    the reserved panel would then collapse to a sliver instead of an empty slot. */
 /* The reserved slot now holds Ask. The floor stays: Highlights hides itself on
@@ -1106,6 +1121,9 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .ask-form{display:flex;gap:6px;margin-bottom:10px}
 .ask-form input{flex:1 1 auto;min-width:0}
 .ask-out{margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}
+/* Before the first question there is nothing under the rule, and a rule with
+   nothing under it reads as a cut-off card rather than a divider. */
+.ask-out:empty{border-top:none;padding-top:0}
 .ask-head{font-family:var(--font-display);font-size:24px;font-weight:700;
   line-height:1.15;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--text)}
 .ask-line{font-size:12.5px;color:var(--text-dim);margin-top:4px;line-height:1.5}
@@ -1114,17 +1132,33 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    would be the double-count this file keeps warning about. */
 .ask-src{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
   color:var(--text-faint);font-weight:var(--fw-label);margin-top:8px}
-/* The two calculators under Eye on Stocks. No state, nothing persisted --
-   they answer a question and forget it, so there is no store, no sync and
-   nothing to normalise. */
-.calc-block + .calc-block{margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07)}
-.calc-sub{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;
-  color:var(--text-dim);font-weight:var(--fw-label);margin-bottom:10px}
-.calc-out{margin-top:12px;min-height:1px}
-.calc-head{font-family:var(--font-display);font-size:25px;font-weight:700;line-height:1.15;
-  letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.calc-line{font-size:12.5px;color:var(--text-dim);margin-top:5px;line-height:1.55}
-.calc-err{font-size:12.5px;color:var(--amber);line-height:1.55}
+/* Stock Calculator. Two blocks, ONE Calculate: whichever block you start
+   typing in locks the other, so the single button is never ambiguous about
+   which sum it is doing. Stateless -- it reads its inputs, prints an answer
+   and keeps nothing, so there is no store, no sync and nothing to normalise. */
+.calc-block{margin-bottom:12px}
+.calc-sub{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
+  color:var(--text-dim);font-weight:var(--fw-label);margin-bottom:7px}
+#calcPanel .hform{gap:8px}
+#calcPanel label{margin-bottom:4px}
+#calcPanel input{padding:8px 11px;font-size:13px}
+/* The locked half. `disabled` is on each input, so it is announced and not
+   merely dimmed; the tint is the visible half of the same fact. Kept well
+   clear of the .25 that made the drawer's reorder arrows invisible -- an
+   inactive control is exempt from the contrast floor, but exempt is not the
+   same as gone, and you still have to see which half you are not using. */
+.calc-block.locked{opacity:.5}
+.calc-block.locked input{cursor:not-allowed}
+/* Clear, Calculate, and the answer all on one line, so the figure lands
+   where the eye already is rather than below the fold. It wraps to its own
+   row on a phone, where three things will not fit across. */
+.calc-actions{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:4px}
+.calc-out{flex:1 1 0;min-width:0;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.calc-head{font-family:var(--font-display);font-size:21px;font-weight:700;line-height:1.1;
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.calc-line{font-size:12px;color:var(--text-dim);line-height:1.45}
+.calc-err{font-size:12px;color:var(--amber);line-height:1.45}
+@media(max-width:560px){ .calc-out{flex:1 0 100%} }
 .modal-card.wide{max-width:560px;max-height:80vh;overflow:auto}
 .ask-help h4{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--text-dim);margin:16px 0 6px}
@@ -3630,16 +3664,17 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
       <div class="np-stocks" id="npStocks"></div>
     </section>
 
-    <!-- Calculators. Deliberately stateless: they read their inputs, print an
-         answer and keep nothing, so there is no store to normalise, nothing to
-         sync and no way for them to disagree with the ledger -- they are not
-         connected to it at all. Unit-free on purpose: the arithmetic is the
-         same whatever currency you are thinking in, and inventing a $ here
-         would be the one place in the app a figure carried no account. -->
+    <!-- Stock Calculator. Not connected to the ledger at all: it reads its
+         inputs, prints an answer and keeps nothing, so there is no store to
+         normalise, nothing to sync and no way for it to disagree with your
+         holdings. Unit-free on purpose -- the arithmetic is the same whatever
+         currency you hold the stock in, and this app's $ already means
+         "converted by the CAD/USD toggle", so printing one here would attach
+         an account to a figure that has none. -->
     <section class="panel cash" id="calcPanel">
-      <h3>Calculators</h3>
+      <h3>Stock Calculator</h3>
 
-      <div class="calc-block">
+      <div class="calc-block" id="calcBlockAvg">
         <div class="calc-sub">Average buying price</div>
         <div class="hform">
           <div><label for="cavPrice">Current avg price</label>
@@ -3650,21 +3685,23 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
             <input id="cavAddPrice" type="number" step="any" min="0" inputmode="decimal" placeholder="0.00"></div>
           <div><label for="cavAddQty">Buying how many</label>
             <input id="cavAddQty" type="number" step="any" min="0" inputmode="decimal" placeholder="0"></div>
-          <div class="full"><button class="btn" id="cavGo" type="button">Calculate</button></div>
         </div>
-        <div class="calc-out" id="cavOut" role="status" aria-live="polite"></div>
       </div>
 
-      <div class="calc-block">
+      <div class="calc-block" id="calcBlockGrow">
         <div class="calc-sub">Growth or decline</div>
         <div class="hform">
           <div><label for="cgBuy">Buying price</label>
             <input id="cgBuy" type="number" step="any" inputmode="decimal" placeholder="0.00"></div>
           <div><label for="cgSell">Selling price</label>
             <input id="cgSell" type="number" step="any" inputmode="decimal" placeholder="0.00"></div>
-          <div class="full"><button class="btn" id="cgGo" type="button">Calculate</button></div>
         </div>
-        <div class="calc-out" id="cgOut" role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="calc-actions">
+        <button class="btn ghost" id="calcClear" type="button">Clear</button>
+        <button class="btn" id="calcGo" type="button">Calculate</button>
+        <div class="calc-out" id="calcOut" role="status" aria-live="polite"></div>
       </div>
     </section>
   </div>
@@ -3842,30 +3879,38 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
           </div>
         </section>
       </div>
-      <!-- highlights, with a reserved slot alongside. It sits BELOW the four
-           stat cards: the figures are what the tab is opened for, and a card
-           that hides itself on a quiet year should not be what pushes them
-           down the page. -->
-      <div class="yf-toprow">
+      <!-- Ask, with Highlights alongside. The row sits BELOW the four stat
+           cards: the figures are what the tab is opened for, and a card that
+           hides itself on a quiet year should not be what pushes them down
+           the page.
+
+           ASK HAS THE WIDE HALF. It carries a row of suggestion chips, an
+           input and an answer of two or three lines; Highlights carries one
+           short slide at a time. The 60% belongs to the one that fills it,
+           and `align-items:stretch` keeps the pair level -- a third line of
+           chips grows Highlights to match rather than leaving a step. -->
+      <div class="yf-toprow" id="yfTopRow">
+        <section class="panel cash" id="yfBlankPanel">
+          <div class="sec-head">
+            <h3 class="yf-h-neutral">ASK</h3>
+            <button class="sec-i" data-dialog="askHelpModal" aria-expanded="false"
+                    aria-label="What can I ask?">i</button>
+          </div>
+          <div class="ask-chips" id="askChips"></div>
+          <form class="ask-form" id="askForm" autocomplete="off">
+            <input id="askInput" placeholder="Ask about this year…" maxlength="80"
+                   aria-label="Ask a question about your figures">
+            <button class="btn ask-chip" type="submit">Ask</button>
+          </form>
+          <div class="ask-out" id="askOut" role="status" aria-live="polite"></div>
+        </section>
         <section class="panel cash" id="yfHiPanel" style="display:none">
-          <h3 class="yf-h-neutral" style="margin-bottom:16px">HIGHLIGHTS</h3>
+          <div class="sec-head">
+            <h3 class="yf-h-neutral">HIGHLIGHTS</h3>
+          </div>
           <div class="yf-hi-stage" id="yfHiSlides"></div>
           <div class="yf-hi-dots" id="yfHiDots"></div>
         </section>
-        <section class="panel cash" id="yfBlankPanel">
-        <div class="sec-head" style="margin-bottom:10px">
-          <h3 class="yf-h-neutral" style="margin:0">ASK</h3>
-          <button class="sec-i" data-dialog="askHelpModal" aria-expanded="false"
-                  aria-label="What can I ask?">i</button>
-        </div>
-        <div class="ask-chips" id="askChips"></div>
-        <form class="ask-form" id="askForm" autocomplete="off">
-          <input id="askInput" placeholder="Ask about this year…" maxlength="80"
-                 aria-label="Ask a question about your figures">
-          <button class="btn ask-chip" type="submit">Ask</button>
-        </form>
-        <div class="ask-out" id="askOut" role="status" aria-live="polite"></div>
-      </section>
       </div>
     </div>
     <!-- planned vs actual overview -->
@@ -6056,7 +6101,7 @@ function snapshot(force){
 function place(col,list){
   list.forEach((e,i)=>{ if(col.children[i]!==e) col.insertBefore(e, col.children[i]||null) });
 }
-const DASH_LEFT =['heroCard','holdingsCard','eyePanel'];
+const DASH_LEFT =['heroCard','holdingsCard','eyePanel','calcPanel'];
 const DASH_RIGHT=['statRow','cashCard','addCard','sellsPanel','notepadPanel','importCard'];
 let dashLaying=false, dashRaf=0;
 
@@ -8136,23 +8181,27 @@ const yfIdx=(ix,type,cat)=>{
 /* The categories the YEAR'S ROWS actually carry, in the order they first appear
    -- which is what both callers were building with their own pass over txns. */
 const yfIdxNames=(ix,type)=>[...ix[yfIdxType(type)].keys()];
-/* ---------- Calculators (Dashboard, under Eye on Stocks) -------------------
-   Stateless and ledger-free: they read four inputs, print an answer and keep
-   nothing. Nothing is persisted, nothing syncs, and they never touch
-   state.holdings -- so they cannot drift out of step with anything.
+/* ---------- Stock Calculator (Dashboard, under Eye on Stocks) --------------
+   Two sums, one button. Whichever block you type in first locks the other, so
+   Calculate is never ambiguous about which one it is doing and there is no
+   third state where both hold half an answer.
 
-   Unit-free on purpose. The arithmetic is identical whatever currency you hold
-   the stock in, and the app's $ already means "converted by the CAD/USD
-   toggle"; printing one here would attach an account to a figure that has
-   none. The numbers come back plain. */
+   Stateless and ledger-free: it reads its inputs, prints an answer and keeps
+   nothing. Nothing persists, nothing syncs, state.holdings is never touched --
+   and in particular sparta.updatedAt is never stamped, since that decides
+   which device wins a reconnect and a calculator has no business claiming it.
+
+   Unit-free too: the arithmetic is identical in any currency. */
+const CALC_AVG=['cavPrice','cavQty','cavAddPrice','cavAddQty'];
+const CALC_GROW=['cgBuy','cgSell'];
 const calcNum = id => { const el=$(id); if(!el) return NaN;
   const v=String(el.value).trim(); if(!v) return NaN;
   const n=Number(v); return isFinite(n) ? n : NaN; };
+const calcFilled = ids => ids.some(id=>{ const el=$(id); return el && String(el.value).trim()!=='' });
 /* A price carries more than two decimals often enough to matter (191.1333),
-   and a share count can be fractional (0.75). So: up to four decimals with
-   trailing zeros trimmed -- but never BELOW two for a price, because 180.5 and
-   150 read as sloppy where 180.50 and 150.00 read as money. A quantity has no
-   such floor, so 15 stays 15 rather than becoming 15.00. */
+   and a share count can be fractional (0.75). Up to four decimals, trailing
+   zeros trimmed -- but never BELOW two for a price, because 180.5 reads as
+   sloppy where 180.50 reads as money. A quantity has no such floor. */
 const calcFmt = (n, min) => { if(!isFinite(n)) return '—';
   const lo = (min===undefined) ? 2 : min;
   let s = n.toFixed(4).replace(/0+$/,'');
@@ -8161,83 +8210,111 @@ const calcFmt = (n, min) => { if(!isFinite(n)) return '—';
   while(dec < lo){ s += '0'; dec++ }
   return s.replace(/\.$/,''); };
 const calcQty = n => calcFmt(n, 0);
-function calcSay(id, head, line, cls){
-  const el=$(id); if(!el) return;
+
+/* The figure first and its sentence to the right of it, on the same baseline
+   as the two buttons, so Clear / Calculate / answer read as one line. */
+function calcSay(head, line, cls){
+  const el=$('calcOut'); if(!el) return;
   const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   el.innerHTML = head===null
-    ? `<div class="calc-err">${esc(line)}</div>`
-    : `<div class="calc-head${cls?' '+cls:''}">${esc(head)}</div><div class="calc-line">${esc(line)}</div>`;
+    ? '<span class="calc-err">'+esc(line)+'</span>'
+    : '<span class="calc-head'+(cls?' '+cls:'')+'">'+esc(head)+'</span>'+
+      '<span class="calc-line">'+esc(line)+'</span>';
+}
+/* Which block is in play: the one with anything typed in it. Neither, and
+   both stay open. */
+function calcWhich(){
+  if(calcFilled(CALC_AVG))  return 'avg';
+  if(calcFilled(CALC_GROW)) return 'grow';
+  return null;
+}
+function calcLock(){
+  const w=calcWhich();
+  [['calcBlockAvg', CALC_AVG, 'avg'], ['calcBlockGrow', CALC_GROW, 'grow']]
+    .forEach(([id, ids, mine])=>{
+      const off = w!==null && w!==mine;
+      const el=$(id); if(el) el.classList.toggle('locked', off);
+      ids.forEach(f=>{ const i=$(f); if(i) i.disabled=off });
+    });
+}
+function calcClear(){
+  CALC_AVG.concat(CALC_GROW).forEach(id=>{ const el=$(id); if(el){ el.disabled=false; el.value='' } });
+  calcLock();
+  const out=$('calcOut'); if(out) out.innerHTML='';
 }
 
-/* 1. The new average after buying more.
-      newAvg = (held*avg + buying*price) / (held + buying)            */
+/* newAvg = (held*avg + buying*price) / (held + buying) */
 function calcAvg(){
   const avg=calcNum('cavPrice'), qty=calcNum('cavQty'),
         px =calcNum('cavAddPrice'), add=calcNum('cavAddQty');
   if([avg,qty,px,add].some(n=>!isFinite(n)))
-    return calcSay('cavOut', null, 'Fill all four boxes with numbers.');
+    return calcSay(null, 'Fill all four boxes with numbers.');
   if(qty<0||add<0||avg<0||px<0)
-    return calcSay('cavOut', null, 'Prices and share counts cannot be negative.');
+    return calcSay(null, 'Prices and share counts cannot be negative.');
   const total=qty+add;
   /* Nothing held and nothing bought is not an average of zero -- there is no
-     position to take an average OF. Same rule as savings growth from a zero
-     start: undefined is said, not rounded to a number. */
+     position to take an average OF. Said, not rounded to a number. */
   if(total<=0)
-    return calcSay('cavOut', null, 'Enter at least one share, or there is no position to average.');
+    return calcSay(null, 'Enter at least one share, or there is no position to average.');
   if(add<=0)
-    return calcSay('cavOut', null, 'Buying zero shares leaves the average where it is.');
+    return calcSay(null, 'Buying zero shares leaves the average where it is.');
   const cost=qty*avg + add*px;
   const na=cost/total;
   const moved=qty>0 ? na-avg : 0;
-  const dir = !qty ? 'is your opening average'
-    : moved>0 ? `averaged UP by ${calcFmt(moved)}`
-    : moved<0 ? `averaged DOWN by ${calcFmt(-moved)}`
-    : 'left your average unchanged';
-  /* NOT COLOURED. A new average is a fact, not good news: pairing the word
-     "UP" with the gain colour (or the loss one) states an opinion the figure
-     does not carry, and whichever way round it went it read as a verdict.
-     The direction is in the words, where it belongs. */
-  calcSay('cavOut', calcFmt(na),
-    `new average over ${calcQty(total)} shares — ${dir}. Total cost ${calcFmt(cost,2)}.`);
+  const dir = !qty ? 'opening average'
+    : moved>0 ? 'avg UP '+calcFmt(moved)
+    : moved<0 ? 'avg DOWN '+calcFmt(-moved)
+    : 'avg unchanged';
+  /* NOT COLOURED. A new average is a fact, not good news: tinting it by
+     direction paired the word "UP" with the loss colour and read as a verdict
+     the figure does not carry. The direction is in the words. */
+  /* Three facts, middots, no sentence. The wording was a full sentence until
+     the answer moved onto the button row, where it has about half the panel
+     to live in -- and a second line under the buttons is exactly the stacking
+     this layout was rebuilt to get rid of. */
+  calcSay(calcFmt(na),
+    'new avg \u00b7 '+calcQty(total)+' shares \u00b7 '+dir+' \u00b7 cost '+calcFmt(cost,2));
 }
 
-/* 2. Growth or decline between two prices.                              */
 function calcGrow(){
   const buy=calcNum('cgBuy'), sell=calcNum('cgSell');
   if(!isFinite(buy)||!isFinite(sell))
-    return calcSay('cgOut', null, 'Fill both boxes with numbers.');
+    return calcSay(null, 'Fill both boxes with numbers.');
   if(buy<0||sell<0)
-    return calcSay('cgOut', null, 'Prices cannot be negative.');
+    return calcSay(null, 'Prices cannot be negative.');
   const diff=sell-buy;
   /* A PERCENTAGE OF ZERO IS NOT ZERO PER CENT, and it is not infinity either
-     -- there is nothing for the price to have grown FROM. The Yearly tab
-     prints a dash in exactly this case; so does this. The cash difference is
-     still real, so it is still shown. */
+     -- there is nothing for the price to have grown FROM. Yearly prints a dash
+     in exactly this case; so does this. The cash difference is still real, so
+     it is still shown. */
   if(buy===0)
-    return calcSay('cgOut', '—',
-      `up ${calcFmt(diff)} per share, but a percentage needs something to grow from and the buying price is zero.`,
+    return calcSay('—',
+      'up '+calcFmt(diff)+' a share \u00b7 a percentage needs something to grow from',
       diff>0?'up':diff<0?'down':'');
   const pct=diff/buy*100;
   const sign=diff>0?'+':diff<0?'−':'';
   const word=diff>0?'growth':diff<0?'decline':'no change';
-  /* A percentage is two decimals, exactly -- calcFmt's second argument is a
+  /* A percentage is two decimals exactly -- calcFmt's second argument is a
      MINIMUM, so passing 2 there left 17.6731%. */
-  calcSay('cgOut', `${sign}${Math.abs(pct).toFixed(2)}%`,
-    diff===0 ? `— ${word}; it sold for what it cost.`
-      : `${word}, ${sign}${calcFmt(Math.abs(diff))} per share (${calcFmt(buy)} → ${calcFmt(sell)}).`,
+  calcSay(sign+Math.abs(pct).toFixed(2)+'%',
+    diff===0 ? word+' \u00b7 it sold for what it cost'
+      : word+' \u00b7 '+sign+calcFmt(Math.abs(diff))+' a share \u00b7 '+calcFmt(buy)+' \u2192 '+calcFmt(sell),
     diff>0?'up':diff<0?'down':'flat');
 }
 
-if($('cavGo')){
-  $('cavGo').onclick=calcAvg;
-  $('cgGo').onclick=calcGrow;
-  /* Enter inside either block runs that block's Calculate, which is what a
-     four-field form invites you to press. */
-  ['cavPrice','cavQty','cavAddPrice','cavAddQty'].forEach(id=>{
-    const el=$(id); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); calcAvg() } });
-  });
-  ['cgBuy','cgSell'].forEach(id=>{
-    const el=$(id); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); calcGrow() } });
+function calcRun(){
+  const w=calcWhich();
+  if(!w) return calcSay(null, 'Fill one of the two sets of boxes, then press Calculate.');
+  (w==='avg' ? calcAvg : calcGrow)();
+}
+
+if($('calcGo')){
+  $('calcGo').onclick=calcRun;
+  $('calcClear').onclick=calcClear;
+  CALC_AVG.concat(CALC_GROW).forEach(id=>{
+    const el=$(id); if(!el) return;
+    el.addEventListener('input', calcLock);
+    el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); calcRun() } });
   });
 }
 
@@ -8712,6 +8789,7 @@ function yfHiBuild(){
     planned:(state.yf.planned||{})[yr]||{}, expCats:yfCats('expense')});
   yfHiN=cards.length;
   panel.style.display=cards.length?'':'none';
+  const row=$('yfTopRow'); if(row) row.classList.toggle('solo', !cards.length);
   if(!cards.length){ yfHiStop(); wrap.innerHTML=''; dots.innerHTML=''; return 0; }
   if(yfHiIdx>=cards.length) yfHiIdx=0;      // keep the reader's place, clamped
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');

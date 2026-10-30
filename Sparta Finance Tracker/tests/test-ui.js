@@ -1563,7 +1563,7 @@ const section = t => console.log(`\n── ${t} ──`);
   {
     const L = await open(browser, url, Object.assign({}, SEED, {
       'sparta.notes': JSON.stringify({ points: [{ id: 'p', text: 'Hold' }], text: '', stocks: ['NVDA'] }) }));
-    const LEFT = 'heroCard,holdingsCard,eyePanel';
+    const LEFT = 'heroCard,holdingsCard,eyePanel,calcPanel';
     const RIGHT = 'statRow,cashCard,addCard,sellsPanel,notepadPanel,importCard';
     const cols = () => L.page.evaluate(() => [...document.querySelectorAll('#dashView > .col')]
       .map(c => [...c.children].map(e => e.id || e.className.split(' ')[0]).join(',')));

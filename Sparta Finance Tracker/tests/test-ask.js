@@ -212,6 +212,78 @@ const digits = s => String(s).replace(/[^0-9]/g, '');
     "7: the drawer's own info buttons still work after the listener moved to the document",
     JSON.stringify(drawerHelp));
 
+  /* ── 8. where Ask sits, and that it looks like the tab it is on ──────── */
+  section('8. the top row: Ask on the wide side, level with Highlights');
+  await O.page.evaluate(() => { const d = document.getElementById('drawer');
+    if (d) d.classList.remove('open'); });
+  await O.page.evaluate(() => applyView('yearly'));
+  await O.page.waitForTimeout(300);
+
+  const row = await O.page.evaluate(() => {
+    const r = document.getElementById('yfTopRow');
+    const ask = document.getElementById('yfBlankPanel'), hi = document.getElementById('yfHiPanel');
+    const box = e => e.getBoundingClientRect();
+    return { order: [...r.children].map(e => e.id),
+      askW: Math.round(box(ask).width), hiW: Math.round(box(hi).width),
+      askH: Math.round(box(ask).height), hiH: Math.round(box(hi).height),
+      askT: Math.round(box(ask).top), hiT: Math.round(box(hi).top),
+      hiShown: getComputedStyle(hi).display !== 'none' };
+  });
+  check(row.hiShown, '8: (Highlights is on screen for this fixture)', String(row.hiShown));
+  check(row.order[0] === 'yfBlankPanel' && row.order[1] === 'yfHiPanel',
+    '8: Ask comes first, so it takes the 60% column', JSON.stringify(row.order));
+  check(row.askW > row.hiW,
+    '8: ...and is the wider of the two -- chips, an input and an answer need the room',
+    `${row.askW} vs ${row.hiW}`);
+  /* The pair is a row, not two cards that happen to be adjacent: a third line
+     of chips has to grow Highlights with it rather than leave a step. */
+  check(row.askH === row.hiH && row.askT === row.hiT,
+    '8: both panels are the same height and start on the same line',
+    `${row.askH}/${row.hiH} at ${row.askT}/${row.hiT}`);
+
+  /* ASK wore .sec-head h3 -- the DRAWER'S eyebrow, which is dimmer and wider
+     tracked than every other heading on this tab. Side by side with
+     HIGHLIGHTS that read as a different kind of card. */
+  const heads = await O.page.evaluate(() => {
+    const g = sel => { const e = document.querySelector(sel), c = getComputedStyle(e);
+      return [c.fontSize, c.fontWeight, c.letterSpacing, c.color, c.textTransform,
+        c.fontFamily.split(',')[0]].join('|') };
+    return { ask: g('#yfBlankPanel h3'), hi: g('#yfHiPanel h3'),
+      exp: g('#yearlyView .statrow .panel.cash h3'),
+      askTop: Math.round(document.querySelector('#yfBlankPanel h3').getBoundingClientRect().top),
+      hiTop: Math.round(document.querySelector('#yfHiPanel h3').getBoundingClientRect().top) };
+  });
+  check(heads.ask === heads.hi,
+    '8: the two headings are identical in size, weight, tracking, ink and face',
+    `${heads.ask}  vs  ${heads.hi}`);
+  check(heads.ask.split('|').slice(0, 3).join('|') === heads.exp.split('|').slice(0, 3).join('|'),
+    "8: ...and match the rest of Yearly's headings, which only differ in colour",
+    `${heads.ask}  vs  ${heads.exp}`);
+  check(Math.abs(heads.askTop - heads.hiTop) <= 1,
+    '8: the (i) button does not push its own title off the other card\'s baseline',
+    `${heads.askTop} vs ${heads.hiTop}`);
+
+  /* Highlights hides itself on a year with too little to say. The 40% column
+     must go with it, or Ask sits in a 60% box with a hole beside it. */
+  const solo = await O.page.evaluate(() => {
+    const yr = state.yfYear;
+    state.yfYear = 2099;            // a year with no rows at all
+    renderYF();
+    const r = document.getElementById('yfTopRow');
+    const out = { solo: r.classList.contains('solo'),
+      hidden: getComputedStyle(document.getElementById('yfHiPanel')).display === 'none',
+      askW: Math.round(document.getElementById('yfBlankPanel').getBoundingClientRect().width),
+      rowW: Math.round(r.getBoundingClientRect().width) };
+    state.yfYear = yr; renderYF();
+    return out;
+  });
+  check(solo.hidden && solo.solo,
+    '8: a year with nothing to highlight drops the Highlights card AND its column',
+    JSON.stringify(solo));
+  check(Math.abs(solo.askW - solo.rowW) <= 2,
+    '8: ...so Ask takes the whole row rather than leaving 40% empty',
+    `${solo.askW} of ${solo.rowW}`);
+
   check(O.errs.length === 0, 'no page errors', O.errs.join(' | '));
   await O.ctx.close();
   await browser.close(); srv.close();

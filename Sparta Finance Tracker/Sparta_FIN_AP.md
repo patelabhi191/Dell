@@ -2341,11 +2341,40 @@ Left alone because deleting them removes the safety net that is their whole purp
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
-- **Calculators under Eye on Stocks** (2026-10-31): a new-average-price calculator and a
-  growth/decline calculator, on the Dashboard. **Stateless and ledger-free on purpose** — they read
-  their inputs, print an answer and keep nothing, so there is no store to normalise, nothing to
-  sync, and no way for them to disagree with the ledger; they are not connected to it. `test-calc.js`
-  §6 pins that: no key written, the user-edited flag untouched, `sparta.updatedAt` unmoved.
+- **The Ask / Highlights row swapped sides** (2026-10-31). Ask now holds the 60% column and
+  Highlights the 40%: Ask carries ten chips, an input and a two-or-three-line answer, Highlights
+  carries one short slide at a time, so the wide half belongs to the one that fills it.
+  `align-items:stretch` keeps the pair level — a third row of chips grows Highlights to match
+  rather than leaving a step. Highlights hides itself on a quiet year, so `yfHiBuild()` now also
+  toggles `.solo` on the row, which collapses the grid to one column; without it Ask sat in a 60%
+  box with a 40% hole beside it.
+  **The ASK heading was wearing the drawer's eyebrow.** `.sec-head h3` is dimmer ink and wider
+  tracking than `#yearlyView h3`, and `.sec-head h3` (0,1,1) outranks `.yf-h-neutral` (0,1,0), so
+  the one card on the tab that used the `.sec-head` markup also looked like a different kind of
+  card. Scoped overrides put it back on Yearly's own heading; the drawer keeps its own. The
+  `(i)` button is 19px against a 12.5px eyebrow, so `.yf-toprow .sec-head` has a `min-height`
+  floor — otherwise the two titles sat on different baselines across the gutter. `test-ask.js`
+  §8 pins the order, the widths, the equal heights, the heading parity and the solo collapse.
+- **Stock Calculator, under Eye on Stocks** (2026-10-31): average buying price and
+  growth/decline, on the Dashboard. **Stateless and ledger-free on purpose** — it reads
+  its inputs, prints an answer and keeps nothing, so there is no store to normalise, nothing to
+  sync, and no way for it to disagree with the ledger; it is not connected to it. `test-calc.js`
+  §9 pins that: no key written, the user-edited flag untouched, `sparta.updatedAt` unmoved.
+  **Two blocks, ONE Calculate.** Whichever block you type in first greys out the other and
+  `disabled`s its inputs, so the single button is never ambiguous about which sum it is doing and
+  there is no third state where both hold half an answer. The lock is a consequence of what is
+  typed, not a latch: delete what you typed and the other block re-opens. Clear sits to the left
+  of Calculate and reaches the text boxes only.
+  **The answer is on the button line** — figure, then its sentence, both to the right of
+  Calculate on one baseline. That is what drove the wording down to middot-separated facts
+  (`new avg · 15 shares · avg UP 10.6333 · cost 2867.00`): the answer has about half the panel
+  to live in, and a second line under the buttons is the stacking the layout was rebuilt to get
+  rid of.
+  **The panel has to be in `DASH_LEFT`.** A Dashboard panel that is in neither column list stays
+  a direct child of `#dashView`, which puts it on a grid ROW of its own — below BOTH stretched
+  columns. That is what opened ~800px of dead space under Eye on Stocks when it was first added.
+  `test-calc.js` §8 pins the placement and the 20px gap; `test-ui.js`'s column-order check pins
+  the list itself.
   **Unit-free on purpose too.** The arithmetic is the same in any currency, and the app's `$`
   already means "converted by the CAD/USD toggle", so printing one here would attach an account to
   a figure that has none.
