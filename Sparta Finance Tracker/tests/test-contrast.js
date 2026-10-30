@@ -283,6 +283,12 @@ const CONTRAST = (root) => {
         await page.waitForTimeout(280); return page.isVisible('#sellModal'); },
       async () => { await page.evaluate(() => { const c = document.getElementById('sellCancel'); if (c) c.click() });
         await page.waitForTimeout(220); }],
+    ['ask help dialog', '#askHelpModal',
+      async () => { await go('yearly');
+        await page.evaluate(() => { const b=document.querySelector('.sec-i[data-dialog]'); if(b) b.click() });
+        await page.waitForTimeout(260); return page.isVisible('#askHelpModal'); },
+      async () => { await page.evaluate(() => { const c=document.getElementById('askHelpClose'); if(c) c.click() });
+        await page.waitForTimeout(220); }],
     ['deposit dialog', '#cedModal',
       async () => { await go('contrib');
         await page.evaluate(() => { const t = document.getElementById('logToggle'); if (t) t.click() });

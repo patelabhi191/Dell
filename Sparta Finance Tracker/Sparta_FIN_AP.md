@@ -1977,7 +1977,7 @@ inside the query.
 
 Paused 2026-10-12, mid-way through a pre-deployment review; resumed and extended since.
 **Everything done is committed and pushed**; nothing of value lives only in a container. Build
-stamp `2026-10-21`, suite **2,105 passed / 0 failed across 19 files** (`tests/run-all.sh`),
+stamp `2026-10-30`, suite **2,157 passed / 0 failed across 20 files** (`tests/run-all.sh`),
 verified on the pushed tree.
 
 **`tests/run-all.sh` now fails loudly when a suite does not finish.** It used to read the summary
@@ -2313,6 +2313,34 @@ Left alone because deleting them removes the safety net that is their whole purp
   year, and accepted as-is for the current-year preview.
 - **Plan tab** exists and is built out (segments, dated items, running balance, lowest
   point) — see `tests/test-plan.js` for the behaviour it guarantees.
+- **Ask — the question panel in Yearly's reserved slot** (2026-10-30). `#yfBlankPanel` was a
+  deliberate empty slot; it now holds a question panel with chips, a free-text box and an `(i)`
+  that opens a help dialog listing everything answerable.
+  **It is deliberately not a language model.** "What did I spend on groceries" is a query over a
+  few thousand local rows: a model would answer it slower, cost money, need the ledger shipped off
+  the device, put an API key in client-side HTML, and could get the sum wrong. The matching is a
+  bounded grammar (`ASK_INTENTS`), and **the arithmetic is never done in the panel** — every figure
+  comes back from `yfSpendOf` / `yfCatIndex` / `yfIdx` / `yfCatOf`, each of which already takes a
+  LIST, so a three-month window reuses them unchanged. If the panel and the table beside it could
+  disagree, the panel would be worthless.
+  Three things the design turns on:
+  - **`ORDER IS BEHAVIOUR`.** First match wins, so specific intents precede general ones —
+    "biggest single **expense**" would otherwise be answered as the year's total, and "at this rate
+    … **end** the year" as the balance. An intent that matches but is not really the question
+    returns `undefined` and the search continues; `null` means "this IS the question and there is
+    nothing to say". Two outcomes were not enough.
+  - **Every answer names its source.** Yearly is *money that left the bank*, Monthly is *where it
+    went*, and an answer that mixed them would be the double count §8 keeps warning about.
+  - **No data is said, never printed as `$0`.** A guard returning a figure would be an answer, and
+    a wrong one.
+  `yfPlanned()` reads the global `state.yfYear`, so the budget intent reads
+  `state.yf.planned[askedYear]` directly — otherwise a question about 2025 is answered against the
+  plan of the year on screen. Pinned by `test-ask.js` §6.
+- **The `.sec-i` listener was bound to `#drawer`, not the document.** Every info button in the app
+  happened to live in the Settings drawer, so the next one added anywhere else would have rendered
+  correctly and done nothing at all, with no error to find it by. Now delegated from the document
+  and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
+  `data-dialog` opens a modal. `test-ask.js` §7 pins both.
 - No live Firebase listener (§4) — acceptable per user, don't add without asking.
 - **Print now has a stylesheet** (§9a, `4e6127d`): ink and the whole accent palette remapped for
   white paper at 4.5:1 with hues kept recognisable, glass flattened, both charts' hardcoded white

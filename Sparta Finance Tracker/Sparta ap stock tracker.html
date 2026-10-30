@@ -1096,7 +1096,29 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .yf-toprow{display:grid;grid-template-columns:60% 1fr;gap:8px;align-items:stretch}
 /* Highlights hides itself on a year with too little to say; without a floor
    the reserved panel would then collapse to a sliver instead of an empty slot. */
-.yf-toprow>#yfBlankPanel{min-height:145px}
+/* The reserved slot now holds Ask. The floor stays: Highlights hides itself on
+   a quiet year and the two panels are a pair. */
+.yf-toprow>#yfBlankPanel{min-height:145px;display:flex;flex-direction:column}
+.ask-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+/* .btn so the focus ring, the print rule and the 560px tap-target floor all
+   already apply -- a bespoke chip class would have had to re-earn each. */
+.btn.ask-chip{padding:6px 12px;font-size:12px;font-weight:600}
+.ask-form{display:flex;gap:6px;margin-bottom:10px}
+.ask-form input{flex:1 1 auto;min-width:0}
+.ask-out{margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}
+.ask-head{font-family:var(--font-display);font-size:24px;font-weight:700;
+  line-height:1.15;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--text)}
+.ask-line{font-size:12.5px;color:var(--text-dim);margin-top:4px;line-height:1.5}
+/* The provenance line is the point of the panel, not decoration: Yearly and
+   Monthly count different things and an answer that did not say which it used
+   would be the double-count this file keeps warning about. */
+.ask-src{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
+  color:var(--text-faint);font-weight:var(--fw-label);margin-top:8px}
+.modal-card.wide{max-width:560px;max-height:80vh;overflow:auto}
+.ask-help h4{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-dim);margin:16px 0 6px}
+.ask-help ul{margin:0;padding-left:18px}
+.ask-help li{font-size:12.5px;color:var(--text-dim);line-height:1.7}
 @media(max-width:900px){.yf-toprow{grid-template-columns:1fr}}
 .yf-two{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end}
 .yf-two>div{display:flex;flex-direction:column;align-items:center;text-align:center}
@@ -3781,7 +3803,20 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
           <div class="yf-hi-stage" id="yfHiSlides"></div>
           <div class="yf-hi-dots" id="yfHiDots"></div>
         </section>
-        <section class="panel cash" id="yfBlankPanel"></section>
+        <section class="panel cash" id="yfBlankPanel">
+        <div class="sec-head" style="margin-bottom:10px">
+          <h3 class="yf-h-neutral" style="margin:0">ASK</h3>
+          <button class="sec-i" data-dialog="askHelpModal" aria-expanded="false"
+                  aria-label="What can I ask?">i</button>
+        </div>
+        <div class="ask-chips" id="askChips"></div>
+        <form class="ask-form" id="askForm" autocomplete="off">
+          <input id="askInput" placeholder="Ask about this year…" maxlength="80"
+                 aria-label="Ask a question about your figures">
+          <button class="btn ask-chip" type="submit">Ask</button>
+        </form>
+        <div class="ask-out" id="askOut" role="status" aria-live="polite"></div>
+      </section>
       </div>
     </div>
     <!-- planned vs actual overview -->
@@ -4085,7 +4120,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-21</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-30</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -4147,6 +4182,47 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
   </div>
 </div>
 
+<div class="modal" id="askHelpModal">
+  <div class="modal-card wide ask-help">
+    <h3>What you can ask</h3>
+    <p class="note" style="margin:0 0 4px">Every answer is computed from your own rows by the
+      same code that draws the tables — nothing is sent anywhere, and nothing is guessed.</p>
+    <h4>Totals and balances</h4>
+    <ul><li>What did I spend this year / last 3 months / in July?</li>
+      <li>What did I earn? What have I saved?</li>
+      <li>What is my balance? How many transactions this month?</li></ul>
+    <h4>By category</h4>
+    <ul><li>What did I spend on Groceries? (any category name)</li>
+      <li>Top categories</li></ul>
+    <h4>Across time</h4>
+    <ul><li>Which month was dearest? Which was leanest?</li></ul>
+    <h4>Budget</h4>
+    <ul><li>Am I over budget on anything?</li></ul>
+    <h4>Individual transactions</h4>
+    <ul><li>Biggest single expense</li>
+      <li>Anything over $500</li>
+      <li>Have I had any refunds?</li></ul>
+    <h4>Between ABI and POO</h4>
+    <ul><li>What is the split between us?</li></ul>
+    <h4>Projection — run rate only</h4>
+    <ul><li>At this rate, what do I end the year with?</li></ul>
+    <h4>Not answerable yet</h4>
+    <ul><li><b>Year over year</b> — needs a second closed year, so January 2027 at the earliest.</li>
+      <li><b>Seasonality</b> (“do I always spend more in December”) — needs two to three closed years.</li>
+      <li><b>Why</b> anything happened. A ledger records what, never why.</li></ul>
+    <h4>Two things to know about the answers</h4>
+    <ul><li><b>The split between us is only as good as the data entry.</b> The statement importer
+        files every row it creates under ABI, because a CSV has no contributor column. Rows typed
+        in by hand carry the right person; imported ones say so in the answer.</li>
+      <li><b>Yearly and Monthly count different things,</b> so every answer names the one it used.
+        A $1,991 credit-card bill on Yearly, itemised into $33 of Transit on Monthly, is one amount
+        of money described twice — Yearly is money that left the bank, Monthly is where it went.
+        An answer that mixed them would double count.</li></ul>
+    <div class="duo" style="margin-top:18px">
+      <button class="btn ghost" id="askHelpClose">Close</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -6402,6 +6478,10 @@ if($('sellQty')){
   $('sellModal').addEventListener('click',e=>{ if(e.target===$('sellModal')) closeSell() });
 }
 document.addEventListener('keydown',e=>{
+  /* Checked FIRST and returning, the way cedModal is checked before sellModal:
+     a dialog that does not answer Escape is a trap. */
+  const ah=$('askHelpModal');
+  if(ah&&ah.classList.contains('open')){ if(e.key==='Escape') askHelpClose(); return }
   const ced=$('cedModal');
   if(ced&&ced.classList.contains('open')){
     if(e.key==='Escape') closeContribEdit();
@@ -6563,8 +6643,16 @@ if($('resetRows')){
 }
 /* Every instruction in the drawer folds away behind the "i" beside its heading.
    One delegated listener, so sections can be added without wiring anything. */
-if($('drawer')) $('drawer').addEventListener('click',e=>{
+/* BOUND TO THE DOCUMENT, NOT TO #drawer. Every .sec-i in the app used to be
+     inside the Settings drawer, so the listener was bound there -- which meant
+   the next one added anywhere else would render fine and do nothing at all,
+   with no error to find it by. Two behaviours now, both announced:
+     data-help   -> toggle the sibling .sec-help disclosure (the drawer's six)
+     data-dialog -> open that .modal (Ask's help, which is far too long to
+                    fold into a panel with a 145px floor) */
+document.addEventListener('click',e=>{
   const b=e.target.closest('.sec-i'); if(!b) return;
+  if(b.dataset.dialog){ askHelpOpen(b); return }
   const p=$(b.dataset.help); if(!p) return;
   p.hidden=!p.hidden;
   b.setAttribute('aria-expanded', p.hidden?'false':'true');
@@ -7999,6 +8087,290 @@ const yfIdx=(ix,type,cat)=>{
 /* The categories the YEAR'S ROWS actually carry, in the order they first appear
    -- which is what both callers were building with their own pass over txns. */
 const yfIdxNames=(ix,type)=>[...ix[yfIdxType(type)].keys()];
+/* ---------- Ask: answers read out of the ledger ----------------------------
+   THE ARITHMETIC IS NOT DONE HERE. Every figure below comes back from the same
+   primitives the tab itself is drawn from -- yfSpendOf, yfCatIndex/yfIdx,
+   yfCatOf, yfPlanned -- each of which already takes a LIST, so a question about
+   a three-month window reuses them unchanged rather than growing a second way
+   to add money up. That is the whole design rule: if the Ask panel and the
+   table beside it could ever disagree, the panel is worthless.
+
+   It is also deliberately NOT a language model. "What did I spend on groceries"
+   is a query over a few thousand local rows, and a model would answer it
+   slower, cost money, need the ledger shipped off the device, and could get the
+   sum wrong. The matching below is a bounded grammar; the chips in the panel
+   are the same intents offered as buttons, so the reader can see what is
+   answerable instead of discovering the edges by missing them. */
+const ASK_SRC_YF = 'Yearly — money that left the bank';
+const ASK_SRC_ME = 'Monthly — where it went';
+const askNorm = q => String(q||'').toLowerCase().replace(/[^a-z0-9$ .%-]/g,' ').replace(/\s+/g,' ').trim();
+
+/* The SAME predicate yfTxns() uses, over a date RANGE instead of the global
+   state.yfYear. Written out once, here, because yfTxns() is pinned to that
+   global and a question may name another year -- and setting the global behind
+   the renderer's back is how arcSnapshot had to do it, with a try/finally to
+   put it back. A read-only query has no business mutating it at all. */
+const askRows = (from, to) => (state.yf.txns||[]).filter(t =>
+  t && t.date && t.tab !== 'me' && t.date >= from && t.date <= to);
+
+/* Resolve the period and ALWAYS hand back the range that was used, so the
+   answer can print it. "Last 3 months" is ambiguous in English and precise
+   only once the months are named back to the reader. */
+function askPeriod(q, yr){
+  const now = new Date(), curY = now.getFullYear();
+  const cur = (yr === curY) ? now.getMonth()+1 : 12;
+  const pad = m => String(m).padStart(2,'0');
+  const last = m => String(new Date(yr, m, 0).getDate()).padStart(2,'0');
+  const span = (a,b) => ({ from:`${yr}-${pad(a)}-01`, to:`${yr}-${pad(b)}-${last(b)}`,
+    label: a===b ? `${YF_MONTHS[a-1]} ${yr}` : `${YF_MONTHS[a-1]}–${YF_MONTHS[b-1]} ${yr}`,
+    months: b-a+1 });
+  const yrM = q.match(/\b(20\d\d)\b/);
+  if(yrM && +yrM[1] !== yr){ const y=+yrM[1];
+    return { from:`${y}-01-01`, to:`${y}-12-31`, label:String(y), months:12, year:y }; }
+  const n = q.match(/last (\d+) month/);
+  if(n){ const k=Math.max(1,Math.min(12,+n[1])); return span(Math.max(1,cur-k+1), cur); }
+  if(/this month|current month/.test(q)) return span(cur,cur);
+  if(/last month/.test(q)) return cur>1 ? span(cur-1,cur-1) : span(1,1);
+  const names=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  for(let i=0;i<12;i++) if(new RegExp('\\b'+names[i]).test(q)) return span(i+1,i+1);
+  return { from:`${yr}-01-01`, to:`${yr}-12-31`, label:String(yr), months:cur };
+}
+
+/* Each intent: a chip label, a matcher, and a run() that returns
+   {head, line} or null when there is nothing to say. Returning null is how a
+   guard reports "no data" -- printing $0 for a year with no rows in it would be
+   an answer, and a wrong one. */
+const ASK_INTENTS = [
+  /* ORDER IS BEHAVIOUR: the first intent whose pattern matches wins, so the
+     specific ones are listed before the general. "biggest single expense"
+     contains "expense" and would otherwise be answered as the year's total;
+     "at this rate ... end the year" contains "end" and would be answered as
+     the balance. An intent that matches but is not really the question returns
+     undefined, and the search carries on. */
+  { id:'project', chip:'At this rate, year end?', src:ASK_SRC_YF,
+    re:/\b(at this rate|project|forecast|end of year|year.?end|will i|predict|on track)\b/,
+    run:(c)=>{ const yr=c.yr, now=new Date();
+      if(yr!==now.getFullYear()) return {head:'—', line:`${yr} is a closed year, so there is nothing left of it to project.`};
+      const m=now.getMonth()+1, left=12-m;
+      const all=askRows(`${yr}-01-01`,`${yr}-12-31`);
+      if(!all.length) return null;
+      const inc=all.reduce((s,t)=>s+(t.type==='income'?t.amt:0),0), out=yfSpendOf(all);
+      const st=state.yf.start[yr]||0, end=st+inc-out, rate=(inc-out)/m;
+      /* A run rate is this month times the months left, dressed up. Label it
+         as the projection it is, and show the rate it is built on, so it is
+         never mistaken for a figure that was measured. */
+      return {head:yf$(end+rate*left),
+        line:`projected for 31 Dec, if the last ${m} month${m>1?'s':''} repeat: ${yf$(end)} now, ${yf$(rate)}/month × ${left} to go. A run rate, not a measurement.`}; } },
+  { id:'single', chip:'Biggest single expense', src:ASK_SRC_YF,
+    re:/\b(single|one|largest|biggest) (expense|purchase|charge|payment|buy)|most expensive (thing|purchase|item)/,
+    run:(c)=>{ const ex=c.rows.filter(t=>t.type==='expense'&&!t.allot&&t.amt>0);
+      if(!ex.length) return null;
+      const top=Math.max(...ex.map(t=>t.amt));
+      const tied=ex.filter(t=>t.amt===top);
+      const t=tied[0];
+      /* A tie is real data -- two identical rents -- and picking one silently
+         would make the answer look more certain than it is. */
+      return {head:yf$2(top), line:tied.length>1
+        ? `— ${tied.length} entries tie at this amount, including "${t.desc||t.cat}" on ${t.date}.`
+        : `— "${t.desc||t.cat}" (${t.cat||'no category'}) on ${t.date}.`}; } },
+  { id:'over', chip:null, src:ASK_SRC_YF,
+    re:/\b(over|above|more than|bigger than) \$?([\d,]+)/,
+    run:(c)=>{ const m=c.q.match(/\b(?:over|above|more than|bigger than) \$?([\d,]+)/);
+      if(!m) return undefined; const lim=numify(m[1]); if(!isFinite(lim)) return undefined;
+      const hits=c.rows.filter(t=>t.type==='expense'&&!t.allot&&t.amt>lim).sort((a,b)=>b.amt-a.amt);
+      if(!hits.length) return {head:'None', line:`nothing over ${yf$(lim)} in ${c.p.label}.`};
+      return {head:`${hits.length} over ${yf$(lim)}`,
+        line:`in ${c.p.label}, totalling ${yf$(hits.reduce((s,t)=>s+t.amt,0))}. Largest: "${hits[0].desc||hits[0].cat}" at ${yf$2(hits[0].amt)}.`}; } },
+  { id:'cat', chip:null, src:ASK_SRC_YF,
+    re:/\bon ([a-z0-9/\\ ]+)/,
+    run:(c)=>{ const names=yfCats('expense').concat(yfIdxNames(yfCatIndex(c.rows),'expense'));
+      const hit=names.find(n=>c.q.includes(String(n).toLowerCase()));
+      if(!hit) return undefined;        // not a category question after all
+      const v=yfCatOf(c.rows.filter(t=>t.type==='expense'),hit);
+      if(!v) return {head:yf$(0), line:`on ${hit} over ${c.p.label} — nothing recorded.`};
+      const tot=yfSpendOf(c.rows);
+      return {head:yf$(v), line:`on ${hit} over ${c.p.label}`+
+        (tot?`, ${Math.round(v/tot*100)}% of everything spent.`:'.')}; } },
+  { id:'count', chip:null, src:ASK_SRC_YF,
+    re:/\bhow many (transactions?|entries|rows|purchases)/,
+    run:(c)=>c.rows.length
+      ? {head:String(c.rows.length), line:`entries over ${c.p.label} — ${c.rows.filter(t=>t.type==='income').length} in, ${c.rows.filter(t=>t.type!=='income').length} out.`}
+      : null },
+  { id:'refund', chip:null, src:ASK_SRC_YF,
+    re:/\brefund|credit back|money back|returned\b/,
+    run:(c)=>{ const r=c.rows.filter(t=>t.type==='expense'&&t.amt<0);
+      if(!r.length) return {head:'None', line:`no refunds recorded over ${c.p.label}.`};
+      const v=r.reduce((s,t)=>s+t.amt,0);
+      return {head:yf$(Math.abs(v)), line:`back over ${c.p.label}, across ${r.length} refund${r.length>1?'s':''}.`}; } },
+  { id:'month', chip:'Dearest and leanest month', src:ASK_SRC_YF,
+    re:/\b(which|what) month|dearest|leanest|cheapest month|most expensive month/,
+    run:(c)=>{ const by={};
+      c.rows.forEach(t=>{ if(t.type==='expense'&&!t.allot){ const m=+t.date.slice(5,7)-1;
+        by[m]=(by[m]||0)+t.amt; } });
+      const ks=Object.keys(by); if(!ks.length) return null;
+      const hi=ks.reduce((a,b)=>by[b]>by[a]?b:a), lo=ks.reduce((a,b)=>by[b]<by[a]?b:a);
+      return {head:`${YF_MONTHS[hi]} ${yf$(by[hi])}`, line:ks.length>1
+        ? `was the dearest over ${c.p.label}; ${YF_MONTHS[lo]} the leanest at ${yf$(by[lo])}.`
+        : `is the only month with spending in ${c.p.label}.`}; } },
+  { id:'budget', chip:'Am I over budget?', src:ASK_SRC_YF,
+    re:/\b(over|within|under) ?budget|budget|plan(ned)?\b/,
+    /* NOT yfPlanned(): that reads state.yfYear, so a question naming another
+       year would be answered against the plan of the year on screen. */
+    run:(c)=>{ const ix=yfCatIndex(c.rows), n=c.p.months||1;
+      const pl=(state.yf.planned||{})[c.yr]||{};
+      const plan=cat=>{ const v=+pl[cat]; return isFinite(v)?v:0 };
+      const over=yfCats('expense').map(cat=>({cat,
+        plan:plan(cat), act:yfIdx(ix,'expense',cat)}))
+        .filter(r=>r.plan>0 && r.act > r.plan*n)
+        .map(r=>Object.assign(r,{by:r.act-r.plan*n})).sort((a,b)=>b.by-a.by);
+      if(!yfCats('expense').some(cat=>plan(cat)>0))
+        return {head:'No budget set', line:`nothing is planned for ${c.yr} yet, so there is nothing to be over.`};
+      return over.length
+        ? {head:`${over.length} over`, line:`over ${c.p.label}: `+
+            over.slice(0,4).map(r=>`${r.cat} by ${yf$(r.by)}`).join(', ')+'.'}
+        : {head:'All within plan', line:`nothing is over its budget over ${c.p.label}.`}; } },
+  { id:'who', chip:'Split between us', src:ASK_SRC_YF,
+    re:/\b(who|poo|abi|split|between us|each of us)\b/,
+    run:(c)=>{ const ex=c.rows.filter(t=>t.type==='expense'&&!t.allot);
+      if(!ex.length) return null;
+      const a=ex.filter(t=>who2(t.who)==='ABI').reduce((s,t)=>s+t.amt,0);
+      const p=ex.filter(t=>who2(t.who)==='POO').reduce((s,t)=>s+t.amt,0);
+      /* The importer files every row it creates under ABI, so a split computed
+         from imported rows is not a split at all. Say so rather than print a
+         confident number built on a default. */
+      const imported=ex.filter(t=>t.src).length;
+      return {head:`ABI ${yf$(a)} · POO ${yf$(p)}`,
+        line:`over ${c.p.label}.`+(imported
+          ? ` Note: ${imported} imported row${imported>1?'s are':' is'} filed under ABI by default, so this split understates POO.`
+          : '')}; } },
+  { id:'top', chip:'Top categories', src:ASK_SRC_YF,
+    re:/\b(top|biggest|largest|most) (spend|spending|categor)|categor/,
+    run:(c)=>{ const ix=yfCatIndex(c.rows);
+      const rows=yfIdxNames(ix,'expense').map(n=>({n,v:yfIdx(ix,'expense',n)}))
+        .filter(r=>r.v>0).sort((a,b)=>b.v-a.v).slice(0,5);
+      if(!rows.length) return null;
+      return {head:`${rows[0].n} ${yf$(rows[0].v)}`,
+        line:`over ${c.p.label}. Then `+rows.slice(1).map(r=>`${r.n} ${yf$(r.v)}`).join(', ')+'.'}; } },
+  { id:'balance', chip:'What is my balance?', src:ASK_SRC_YF,
+    re:/\b(balance|end|how much do i have|end up with)\b/,
+    run:(c)=>{ const st=state.yf.start[c.yr]||0;
+      const all=askRows(`${c.yr}-01-01`,`${c.yr}-12-31`);
+      if(!all.length && !st) return null;
+      const inc=all.reduce((s,t)=>s+(t.type==='income'?t.amt:0),0);
+      return {head:yf$(st+inc-yfSpendOf(all)),
+        line:`on the books for ${c.yr}, from a ${yf$(st)} opening balance.`}; } },
+  { id:'saved', chip:'What have I saved?', src:ASK_SRC_YF,
+    re:/\b(saved?|savings?|net|left over|leftover|put away)\b/,
+    run:(c)=>{ const inc=c.rows.reduce((s,t)=>s+(t.type==='income'?t.amt:0),0);
+      const out=yfSpendOf(c.rows); if(!c.rows.length) return null;
+      const net=inc-out;
+      return {head:yf$(net), line:net>=0
+        ? `kept over ${c.p.label} — ${yf$(inc)} in, ${yf$(out)} out.`
+        : `short over ${c.p.label} — ${yf$(inc)} in against ${yf$(out)} out.`}; } },
+  { id:'earn', chip:'What did I earn?', src:ASK_SRC_YF,
+    re:/\b(earn|earned|income|made|salary|paid in)\b/,
+    run:(c)=>{ const v=c.rows.reduce((s,t)=>s+(t.type==='income'?t.amt:0),0);
+      return c.rows.length ? {head:yf$(v), line:`earned over ${c.p.label}.`} : null; } },
+  { id:'spend', chip:'What did I spend?', src:ASK_SRC_YF,
+    re:/\b(spend|spent|spending|outgoings?|expenses?)\b/,
+    run:(c)=>{ const v=yfSpendOf(c.rows); return c.rows.length ? {head:yf$(v),
+      line:`spent over ${c.p.label}, across ${c.rows.filter(t=>t.type==='expense'&&!t.allot).length} entries.`} : null; } },
+];
+
+/* The single entry point. Pure: it reads state and returns a result object,
+   and touches nothing. */
+function yfAsk(question){
+  const q = askNorm(question);
+  if(!q) return { ok:false, reason:'empty' };
+  const yr0 = state.yfYear;
+  const p = askPeriod(q, yr0);
+  const yr = p.year || yr0;
+  const rows = askRows(p.from, p.to);
+  const ctx = { q, p, yr, rows };
+  for(const it of ASK_INTENTS){
+    if(!it.re.test(q)) continue;
+    let out;
+    try { out = it.run(ctx); } catch(e){ return { ok:false, reason:'threw', intent:it.id }; }
+    /* THREE OUTCOMES, not two. `undefined` means the regex matched but this is
+       not really the question -- "spend on Grocery" trips the category matcher
+       whether or not Grocery exists -- so the loop must carry on rather than
+       report no data. `null` means this IS the question and there is nothing to
+       say, which is an answer and stops the search. */
+    if(out === undefined) continue;
+    if(out) return { ok:true, intent:it.id, head:out.head, line:out.line,
+                     src:it.src, range:p.label };
+    return { ok:false, reason:'nodata', intent:it.id, range:p.label };
+  }
+  return { ok:false, reason:'nomatch' };
+}
+
+/* ---------- Ask: the panel ------------------------------------------------- */
+function askRender(res){
+  const out=$('askOut'); if(!out) return;
+  if(!res){ out.innerHTML=''; return }
+  const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if(!res.ok){
+    /* A question it cannot answer gets a straight no and a pointer, never a
+       guess. The nearest-miss cases are worth distinguishing: "I understood you
+       and there is no data" is a different fact from "I did not understand". */
+    const msg = res.reason==='nodata'
+      ? `Nothing recorded for ${esc(res.range||'that period')}.`
+      : res.reason==='threw'
+        ? 'That went wrong on my side — nothing was changed.'
+        : 'Not something I can answer yet. Tap the i for the full list.';
+    out.innerHTML=`<div class="ask-line">${msg}</div>`;
+    return;
+  }
+  out.innerHTML=`<div class="ask-head">${esc(res.head)}</div>`+
+    `<div class="ask-line">${esc(res.line)}</div>`+
+    `<div class="ask-src">${esc(res.src)}</div>`;
+}
+function askRun(q){
+  const inp=$('askInput'); if(inp && q!==undefined) inp.value=q;
+  askRender(yfAsk(q!==undefined ? q : (inp?inp.value:'')));
+}
+/* ASK_INTENTS is ordered by MATCHING precedence -- specific before general --
+   which is the reverse of how useful each one is to press. "What did I spend?"
+   has to be matched last and offered first, so the chip row has its own order
+   and anything not named here falls to the end. */
+const ASK_CHIP_ORDER=['spend','earn','saved','balance','top','single','month','budget','who','project'];
+function askBuildChips(){
+  const wrap=$('askChips'); if(!wrap) return;
+  const rank=i=>{ const n=ASK_CHIP_ORDER.indexOf(i.id); return n<0?99:n };
+  wrap.innerHTML=ASK_INTENTS.filter(i=>i.chip).sort((a,b)=>rank(a)-rank(b))
+    .map(i=>`<button type="button" class="btn ghost ask-chip" data-ask="${i.chip
+      .replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${i.chip
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')}</button>`).join('');
+}
+/* The dialog, on the house pattern: remember focus before opening, put it back
+   on close, Escape handled in the shared keydown, backdrop click closes. */
+function askHelpOpen(btn){
+  const m=$('askHelpModal'); if(!m) return;
+  modalRemember('askHelpModal');
+  m.classList.add('open');
+  if(btn) btn.setAttribute('aria-expanded','true');
+  setTimeout(()=>{ const c=$('askHelpClose'); if(c) c.focus(); },50);
+}
+function askHelpClose(){
+  const m=$('askHelpModal'); if(!m) return;
+  m.classList.remove('open');
+  document.querySelectorAll('.sec-i[data-dialog="askHelpModal"]')
+    .forEach(b=>b.setAttribute('aria-expanded','false'));
+  modalRestore('askHelpModal');
+}
+if($('askChips')){
+  askBuildChips();
+  $('askChips').addEventListener('click',e=>{
+    const b=e.target.closest('[data-ask]'); if(!b) return;
+    askRun(b.dataset.ask);
+  });
+  $('askForm').addEventListener('submit',e=>{ e.preventDefault(); askRun(); });
+  $('askHelpClose').onclick=askHelpClose;
+  $('askHelpModal').addEventListener('click',e=>{
+    if(e.target===$('askHelpModal')) askHelpClose();
+  });
+}
+
 /* ---------- Yearly Finance highlights ---------- */
 const YF_HI_MAX=8;               // more dots than this stops being scannable
 /* Pure: turn one year's aggregates into the insight cards worth showing.
@@ -8233,6 +8605,11 @@ function renderYF(){
 
   const txns=yfTxns();
   const ix=yfCatIndex(txns);        // every category's total, in one pass
+  /* An answer names the period it was computed for, so leaving it on screen
+     through a year change would leave a true sentence about the wrong year. */
+  if(typeof askRender==='function' && state.yfYear!==askRender._yr){
+    askRender(null); askRender._yr=state.yfYear;
+  }
   const mInc=Array(12).fill(0), mExp=Array(12).fill(0);
   txns.forEach(t=>{
     const m=parseInt(t.date.slice(5,7),10)-1;
