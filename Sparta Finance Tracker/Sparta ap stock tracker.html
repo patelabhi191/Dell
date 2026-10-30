@@ -1114,6 +1114,17 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
    would be the double-count this file keeps warning about. */
 .ask-src{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
   color:var(--text-faint);font-weight:var(--fw-label);margin-top:8px}
+/* The two calculators under Eye on Stocks. No state, nothing persisted --
+   they answer a question and forget it, so there is no store, no sync and
+   nothing to normalise. */
+.calc-block + .calc-block{margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07)}
+.calc-sub{font-size:var(--fs-label);letter-spacing:var(--ls-label);text-transform:uppercase;
+  color:var(--text-dim);font-weight:var(--fw-label);margin-bottom:10px}
+.calc-out{margin-top:12px;min-height:1px}
+.calc-head{font-family:var(--font-display);font-size:25px;font-weight:700;line-height:1.15;
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.calc-line{font-size:12.5px;color:var(--text-dim);margin-top:5px;line-height:1.55}
+.calc-err{font-size:12.5px;color:var(--amber);line-height:1.55}
 .modal-card.wide{max-width:560px;max-height:80vh;overflow:auto}
 .ask-help h4{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--text-dim);margin:16px 0 6px}
@@ -3618,6 +3629,44 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
       <input id="npStockInput" type="text" placeholder="Add a stock, press Enter" autocomplete="off">
       <div class="np-stocks" id="npStocks"></div>
     </section>
+
+    <!-- Calculators. Deliberately stateless: they read their inputs, print an
+         answer and keep nothing, so there is no store to normalise, nothing to
+         sync and no way for them to disagree with the ledger -- they are not
+         connected to it at all. Unit-free on purpose: the arithmetic is the
+         same whatever currency you are thinking in, and inventing a $ here
+         would be the one place in the app a figure carried no account. -->
+    <section class="panel cash" id="calcPanel">
+      <h3>Calculators</h3>
+
+      <div class="calc-block">
+        <div class="calc-sub">Average buying price</div>
+        <div class="hform">
+          <div><label for="cavPrice">Current avg price</label>
+            <input id="cavPrice" type="number" step="any" min="0" inputmode="decimal" placeholder="0.00"></div>
+          <div><label for="cavQty">Shares held</label>
+            <input id="cavQty" type="number" step="any" min="0" inputmode="decimal" placeholder="0"></div>
+          <div><label for="cavAddPrice">Buying at</label>
+            <input id="cavAddPrice" type="number" step="any" min="0" inputmode="decimal" placeholder="0.00"></div>
+          <div><label for="cavAddQty">Buying how many</label>
+            <input id="cavAddQty" type="number" step="any" min="0" inputmode="decimal" placeholder="0"></div>
+          <div class="full"><button class="btn" id="cavGo" type="button">Calculate</button></div>
+        </div>
+        <div class="calc-out" id="cavOut" role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="calc-block">
+        <div class="calc-sub">Growth or decline</div>
+        <div class="hform">
+          <div><label for="cgBuy">Buying price</label>
+            <input id="cgBuy" type="number" step="any" inputmode="decimal" placeholder="0.00"></div>
+          <div><label for="cgSell">Selling price</label>
+            <input id="cgSell" type="number" step="any" inputmode="decimal" placeholder="0.00"></div>
+          <div class="full"><button class="btn" id="cgGo" type="button">Calculate</button></div>
+        </div>
+        <div class="calc-out" id="cgOut" role="status" aria-live="polite"></div>
+      </div>
+    </section>
   </div>
 
   <!-- CONTRIBUTIONS VIEW -->
@@ -4120,7 +4169,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-30</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-31</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -8087,6 +8136,111 @@ const yfIdx=(ix,type,cat)=>{
 /* The categories the YEAR'S ROWS actually carry, in the order they first appear
    -- which is what both callers were building with their own pass over txns. */
 const yfIdxNames=(ix,type)=>[...ix[yfIdxType(type)].keys()];
+/* ---------- Calculators (Dashboard, under Eye on Stocks) -------------------
+   Stateless and ledger-free: they read four inputs, print an answer and keep
+   nothing. Nothing is persisted, nothing syncs, and they never touch
+   state.holdings -- so they cannot drift out of step with anything.
+
+   Unit-free on purpose. The arithmetic is identical whatever currency you hold
+   the stock in, and the app's $ already means "converted by the CAD/USD
+   toggle"; printing one here would attach an account to a figure that has
+   none. The numbers come back plain. */
+const calcNum = id => { const el=$(id); if(!el) return NaN;
+  const v=String(el.value).trim(); if(!v) return NaN;
+  const n=Number(v); return isFinite(n) ? n : NaN; };
+/* A price carries more than two decimals often enough to matter (191.1333),
+   and a share count can be fractional (0.75). So: up to four decimals with
+   trailing zeros trimmed -- but never BELOW two for a price, because 180.5 and
+   150 read as sloppy where 180.50 and 150.00 read as money. A quantity has no
+   such floor, so 15 stays 15 rather than becoming 15.00. */
+const calcFmt = (n, min) => { if(!isFinite(n)) return '—';
+  const lo = (min===undefined) ? 2 : min;
+  let s = n.toFixed(4).replace(/0+$/,'');
+  if(s.indexOf('.')<0) s += '.';
+  let dec = s.length - s.indexOf('.') - 1;
+  while(dec < lo){ s += '0'; dec++ }
+  return s.replace(/\.$/,''); };
+const calcQty = n => calcFmt(n, 0);
+function calcSay(id, head, line, cls){
+  const el=$(id); if(!el) return;
+  const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  el.innerHTML = head===null
+    ? `<div class="calc-err">${esc(line)}</div>`
+    : `<div class="calc-head${cls?' '+cls:''}">${esc(head)}</div><div class="calc-line">${esc(line)}</div>`;
+}
+
+/* 1. The new average after buying more.
+      newAvg = (held*avg + buying*price) / (held + buying)            */
+function calcAvg(){
+  const avg=calcNum('cavPrice'), qty=calcNum('cavQty'),
+        px =calcNum('cavAddPrice'), add=calcNum('cavAddQty');
+  if([avg,qty,px,add].some(n=>!isFinite(n)))
+    return calcSay('cavOut', null, 'Fill all four boxes with numbers.');
+  if(qty<0||add<0||avg<0||px<0)
+    return calcSay('cavOut', null, 'Prices and share counts cannot be negative.');
+  const total=qty+add;
+  /* Nothing held and nothing bought is not an average of zero -- there is no
+     position to take an average OF. Same rule as savings growth from a zero
+     start: undefined is said, not rounded to a number. */
+  if(total<=0)
+    return calcSay('cavOut', null, 'Enter at least one share, or there is no position to average.');
+  if(add<=0)
+    return calcSay('cavOut', null, 'Buying zero shares leaves the average where it is.');
+  const cost=qty*avg + add*px;
+  const na=cost/total;
+  const moved=qty>0 ? na-avg : 0;
+  const dir = !qty ? 'is your opening average'
+    : moved>0 ? `averaged UP by ${calcFmt(moved)}`
+    : moved<0 ? `averaged DOWN by ${calcFmt(-moved)}`
+    : 'left your average unchanged';
+  /* NOT COLOURED. A new average is a fact, not good news: pairing the word
+     "UP" with the gain colour (or the loss one) states an opinion the figure
+     does not carry, and whichever way round it went it read as a verdict.
+     The direction is in the words, where it belongs. */
+  calcSay('cavOut', calcFmt(na),
+    `new average over ${calcQty(total)} shares — ${dir}. Total cost ${calcFmt(cost,2)}.`);
+}
+
+/* 2. Growth or decline between two prices.                              */
+function calcGrow(){
+  const buy=calcNum('cgBuy'), sell=calcNum('cgSell');
+  if(!isFinite(buy)||!isFinite(sell))
+    return calcSay('cgOut', null, 'Fill both boxes with numbers.');
+  if(buy<0||sell<0)
+    return calcSay('cgOut', null, 'Prices cannot be negative.');
+  const diff=sell-buy;
+  /* A PERCENTAGE OF ZERO IS NOT ZERO PER CENT, and it is not infinity either
+     -- there is nothing for the price to have grown FROM. The Yearly tab
+     prints a dash in exactly this case; so does this. The cash difference is
+     still real, so it is still shown. */
+  if(buy===0)
+    return calcSay('cgOut', '—',
+      `up ${calcFmt(diff)} per share, but a percentage needs something to grow from and the buying price is zero.`,
+      diff>0?'up':diff<0?'down':'');
+  const pct=diff/buy*100;
+  const sign=diff>0?'+':diff<0?'−':'';
+  const word=diff>0?'growth':diff<0?'decline':'no change';
+  /* A percentage is two decimals, exactly -- calcFmt's second argument is a
+     MINIMUM, so passing 2 there left 17.6731%. */
+  calcSay('cgOut', `${sign}${Math.abs(pct).toFixed(2)}%`,
+    diff===0 ? `— ${word}; it sold for what it cost.`
+      : `${word}, ${sign}${calcFmt(Math.abs(diff))} per share (${calcFmt(buy)} → ${calcFmt(sell)}).`,
+    diff>0?'up':diff<0?'down':'flat');
+}
+
+if($('cavGo')){
+  $('cavGo').onclick=calcAvg;
+  $('cgGo').onclick=calcGrow;
+  /* Enter inside either block runs that block's Calculate, which is what a
+     four-field form invites you to press. */
+  ['cavPrice','cavQty','cavAddPrice','cavAddQty'].forEach(id=>{
+    const el=$(id); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); calcAvg() } });
+  });
+  ['cgBuy','cgSell'].forEach(id=>{
+    const el=$(id); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); calcGrow() } });
+  });
+}
+
 /* ---------- Ask: answers read out of the ledger ----------------------------
    THE ARITHMETIC IS NOT DONE HERE. Every figure below comes back from the same
    primitives the tab itself is drawn from -- yfSpendOf, yfCatIndex/yfIdx,

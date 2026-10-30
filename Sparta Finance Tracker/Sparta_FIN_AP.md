@@ -1977,7 +1977,7 @@ inside the query.
 
 Paused 2026-10-12, mid-way through a pre-deployment review; resumed and extended since.
 **Everything done is committed and pushed**; nothing of value lives only in a container. Build
-stamp `2026-10-30`, suite **2,157 passed / 0 failed across 20 files** (`tests/run-all.sh`),
+stamp `2026-10-31`, suite **2,188 passed / 0 failed across 21 files** (`tests/run-all.sh`),
 verified on the pushed tree.
 
 **`tests/run-all.sh` now fails loudly when a suite does not finish.** It used to read the summary
@@ -2341,6 +2341,23 @@ Left alone because deleting them removes the safety net that is their whole purp
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Calculators under Eye on Stocks** (2026-10-31): a new-average-price calculator and a
+  growth/decline calculator, on the Dashboard. **Stateless and ledger-free on purpose** — they read
+  their inputs, print an answer and keep nothing, so there is no store to normalise, nothing to
+  sync, and no way for them to disagree with the ledger; they are not connected to it. `test-calc.js`
+  §6 pins that: no key written, the user-edited flag untouched, `sparta.updatedAt` unmoved.
+  **Unit-free on purpose too.** The arithmetic is the same in any currency, and the app's `$`
+  already means "converted by the CAD/USD toggle", so printing one here would attach an account to
+  a figure that has none.
+  Two presentation rules, both wrong on the first pass and now pinned:
+  - **A percentage off a zero buying price is a DASH**, not 0% and not infinity — the same rule
+    Yearly applies to savings growth from a zero start. The cash difference IS defined, so it is
+    still shown.
+  - **The new average is not coloured.** It was tinted by direction, which paired the word "UP"
+    with the loss colour and read as a verdict on a figure that carries none. A cost basis moving
+    is a fact; the direction is in the words.
+  One formatter note: `calcFmt(n, min)`'s second argument is a MINIMUM number of decimals, not a
+  maximum — passing 2 for a percentage left `17.6731%`. Percentages use `toFixed(2)` directly.
 - No live Firebase listener (§4) — acceptable per user, don't add without asking.
 - **Print now has a stylesheet** (§9a, `4e6127d`): ink and the whole accent palette remapped for
   white paper at 4.5:1 with hues kept recognisable, glass flattened, both charts' hardcoded white
