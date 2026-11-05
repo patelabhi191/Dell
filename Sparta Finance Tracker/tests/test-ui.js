@@ -1138,7 +1138,15 @@ const section = t => console.log(`\n── ${t} ──`);
           headerLines: Math.max(...th.map(t => t.getClientRects().length)),
           pctShown: getComputedStyle(pc).display !== 'none',
           subShown: getComputedStyle(sub).display !== 'none',
-          stacked: act.getBoundingClientRect().height > 36,
+          /* The two buttons sit on ONE line now. Measured off the buttons
+             themselves rather than the group's height: a group that happened to
+             be tall for another reason would pass a height test while the
+             glyphs were still stacked. */
+          sideBySide: (() => { const b = [...act.querySelectorAll('.rm')];
+            return b.length === 2 &&
+              Math.abs(b[0].getBoundingClientRect().top - b[1].getBoundingClientRect().top) <= 1 })(),
+          actH: Math.round(act.getBoundingClientRect().height),
+          rowH: Math.round(p.querySelector('#sellBody tr').getBoundingClientRect().height),
           dateOverYear: y.getBoundingClientRect().top > d.getBoundingClientRect().top + 4,
         };
       });
@@ -1146,7 +1154,18 @@ const section = t => console.log(`\n── ${t} ──`);
       /* "FHSA - 8888" used to wrap under the ticker and cost a third row. */
       check(r.smallLines === 1, `${w}px: the account and quantity stay on one line`, String(r.smallLines));
       check(r.headerLines === 1, `${w}px: "% profit" is on one line`, String(r.headerLines));
-      check(r.stacked, `${w}px: correct and undo are stacked, not side by side`);
+      /* They USED to stack, and the rule said so: side by side would cost width
+         the figures need. That was circular -- 28 + 4 + 28 is 60px and nothing
+         else in the row is taller than a two-line cell, so the stack was not
+         fitting into a tall row, it WAS the tall row. */
+      check(r.sideBySide && r.actH <= 36,
+        `${w}px: correct and undo sit side by side, on one line`,
+        `${r.sideBySide} / ${r.actH}px tall`);
+      /* The point of the change. 73px at the right-hand column before; the
+         ceiling is set above the measured 44 so a font metric cannot fail it,
+         and well under the 73 it is there to stop coming back. */
+      check(r.rowH <= 56, `${w}px: a sale is one compact row, not two button-tall ones`,
+        `${r.rowH}px`);
       check(r.dateOverYear, `${w}px: the day and month sit above the year`);
       /* Exactly one of the two is showing -- at phone width the percentage
          column folds under the amount, the way the holdings table does. */
@@ -1321,24 +1340,32 @@ const section = t => console.log(`\n── ${t} ──`);
           JSON.stringify({ L: g.noteL, R: g.noteR }));
         /* The buttons start on the LAST slot edge, not against the panel's
            right edge. That is the deliberate consequence of left-aligning the
-           whole grid: at a wide panel the 10% slot is far more than a glyph
-           needs, so they sit inside it. Asserted against the slot rather than
-           the panel so the number means something at every width. */
-        const lastEdge = Math.round(g.panelW * (g.starts.length >= 4 ? 0.90 : 0.867));
+           whole grid: at a wide panel the actions slot is more than two glyphs
+           need, so they sit inside it. Asserted against the slot rather than
+           the panel so the number means something at every width.
+           20 + 20 + 23.5 + 23.5 = 87%. Folded, the hidden 23.5% renormalises
+           what is left (20/20/23.5/13 over 76.5%) and 63.5/76.5 is 83%. */
+        const lastEdge = Math.round(g.panelW * (g.starts.length >= 4 ? 0.87 : 0.830));
         check(g.actLeft !== null && Math.abs(g.actLeft - lastEdge) <= 3,
           `${w}px (${name}): the row's buttons start on the last slot edge`,
           JSON.stringify({ at: g.actLeft, edge: lastEdge }));
-        /* ...and the tap target survives it. The <=560px block sets
-           min-width:28px on every .rm; min-width:0 in the slot rule is what
-           stops that re-introducing an offset, so the box must still be 28. */
-        check(g.actBox && g.actBox[0] >= 26 && g.actBox[1] >= 22,
-          `${w}px (${name}): and keep a 28px tap target`, JSON.stringify(g.actBox));
+        /* ...and the target stays usable. Side by side the two glyphs cannot
+           both be 28px wide in a 13% slot -- 23px, and 17px below the container
+           query, where the slot is 42px at a 282px panel. The <=560px block
+           still gives them 28px of HEIGHT, which is the dimension a thumb
+           actually has trouble with in a table of 44px rows. */
+        const phone = w <= 560;
+        check(g.actBox && g.actBox[0] >= 17 && g.actBox[1] >= (phone ? 26 : 20),
+          `${w}px (${name}): and the target stays usable${phone ? ', 28px tall on a phone' : ''}`,
+          JSON.stringify(g.actBox));
       }
     }
 
     /* ── THE FIVE SLOTS ──────────────────────────────────────────────────
-       20 / 20 / 25 / 25 / 10, chosen by hand. Every column's text starts on its
-       slot edge -- 0, 20%, 40%, 65% -- so the panel reads as one ruled grid.
+       20 / 20 / 23.5 / 23.5 / 13, chosen by hand. Every column's text starts on
+       its slot edge -- 0, 20%, 40%, 63.5% -- so the panel reads as one ruled
+       grid. The two money columns gave 1.5 points each to the actions column
+       when the row buttons stopped stacking; both still clear their content.
        Equal fifths were tried first and rejected by measurement: a fixed grid
        lets no column borrow from its neighbour, and the widest real row
        overflowed a fifth by 18px.
@@ -1354,7 +1381,7 @@ const section = t => console.log(`\n── ${t} ──`);
         await W.page.waitForTimeout(300);
         const g = await geom();
         if (g.starts.length < 4) continue;                 // folded; see above
-        const want = [0, 0.20, 0.40, 0.65].map(f => Math.round(g.panelW * f));
+        const want = [0, 0.20, 0.40, 0.635].map(f => Math.round(g.panelW * f));
         const off = g.starts.map((x, i) => Math.abs(x - want[i]));
         check(Math.max(...off) <= 3,
           `${w}px (${name}): every column starts on its slot edge`,

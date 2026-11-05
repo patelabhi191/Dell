@@ -2341,6 +2341,25 @@ Left alone because deleting them removes the safety net that is their whole purp
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Past sells: the row buttons stopped stacking** (2026-11-05). `.sl-act` was
+  `flex-direction:column` with a comment saying side by side would cost width the figures need and
+  the rows were tall enough to hold both. That was circular: 28 + 4 + 28 is **60px**, and nothing
+  else in the row is taller than a two-line cell at ~28px, so the stack was not fitting into a tall
+  row, **it was the tall row** — every sale paid ~30px for a column holding two glyphs.
+  Side by side, plus 23px buttons and 6px cell padding: **73px → 44px a row**, panel 927 → 695 over
+  eight sales. The actions column goes 10% → 13%, paid for 1.5 points each by the two money columns,
+  which still clear the widest real row (`BRK.B · Other · 12345`, seven figures).
+  **The narrow step is not optional.** Two 23px buttons and a 3px gap need 49px; the 13% slot is
+  42px at a 282px panel, and this table is `table-layout:fixed` inside `.tscroll`, so the 7px does
+  not wrap — it becomes a sideways scrollbar under four short rows. The existing
+  `@container (max-width:370px)` block narrows the glyphs to 17px.
+  Known cost, accepted: the target is 23×21 against the 28px floor kept elsewhere; the ≤560px rule
+  still gives it 28px of **height**, which is the dimension that matters in a table of 44px rows.
+  `test-ui.js` pins the row height, the side-by-side layout, the new slot edges (0 / 20 / 40 /
+  63.5%) and no sideways scroll at eight widths.
+  One thing checked and NOT a bug: `sparta.dash.sells` is absent from `STORE_DATA`, so a
+  pre-namespace copy would never be adopted — but Past sells (`2b89dd3`) landed after namespacing
+  (`3741fdf`), so no such key exists.
 - **The Ask / Highlights row swapped sides** (2026-10-31). Ask now holds the 60% column and
   Highlights the 40%: Ask carries ten chips, an input and a two-or-three-line answer, Highlights
   carries one short slide at a time, so the wide half belongs to the one that fills it.
