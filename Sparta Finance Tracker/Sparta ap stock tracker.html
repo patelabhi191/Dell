@@ -1120,11 +1120,19 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 /* Highlights hides itself on a quiet year. Without this the 40% column stayed
    reserved and Ask sat in a 60% box with a hole beside it. */
 .yf-toprow.solo{grid-template-columns:1fr}
-/* The (i) button is taller than the 12.5px eyebrow beside it, so the heading
-   row in Ask was 19px and the one in Highlights 15px -- enough to sit the two
-   titles on different baselines across an 8px gutter. A floor the button's own
-   height puts both cards' first line in the same place. */
-.yf-toprow .sec-head{margin-bottom:16px;min-height:19px}
+/* Ask's heading row carries controls and Highlights' carries none, so without
+   a floor the two titles sit on different baselines across an 8px gutter: the
+   bare eyebrow is 15px, the (i) button 19px, and the Frequent questions
+   disclosure 23px. The floor is the tallest of them, so both cards' first line
+   lands in the same place whatever the row holds. */
+.yf-toprow .sec-head{margin-bottom:16px;min-height:23px}
+/* Highlights is stretched to Ask's height, so its content has to answer for
+   the whole card rather than sit in the top third of it. The stage takes the
+   slack and the dots ride the bottom edge: one slide at a time means there is
+   no amount of content that fills this card, so what fills it is the layout. */
+.yf-toprow>#yfHiPanel{display:flex;flex-direction:column}
+#yfHiPanel .yf-hi-stage{flex:1 1 auto}
+#yfHiPanel .yf-hi-dots{margin-top:16px}
 /* .sec-head h3 is the DRAWER'S eyebrow -- dimmer ink, wider tracking. Every
    other heading on this tab is `#yearlyView h3` plus a .yf-h-* colour, so Ask
    was the one card wearing a different heading, which read as a different kind
@@ -1137,7 +1145,26 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 /* The reserved slot now holds Ask. The floor stays: Highlights hides itself on
    a quiet year and the two panels are a pair. */
 .yf-toprow>#yfBlankPanel{min-height:145px;display:flex;flex-direction:column}
+/* The chips are a menu, not the panel. Ten of them took three rows and most
+   of the card before you had typed anything, and they are suggestions you stop
+   needing once you know what it answers -- so they fold away behind a
+   disclosure and the input is what the card opens on.
+   .btn, like the chips themselves, so the focus ring, the print rule and the
+   560px tap-target floor all already apply. */
+.btn.ask-fq{margin-left:auto;display:inline-flex;align-items:center;gap:7px;
+  padding:5px 11px;font-size:var(--fs-micro);font-weight:var(--fw-label);
+  letter-spacing:var(--ls-label);text-transform:uppercase;
+  background:transparent;color:var(--text-dim)}
+.btn.ask-fq:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.btn.ask-fq[aria-expanded="true"]{color:var(--text)}
+.ask-fq-car{font-size:9px;line-height:1;transition:transform .18s ease}
+.btn.ask-fq[aria-expanded="true"] .ask-fq-car{transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce){.ask-fq-car{transition:none}}
 .ask-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+/* display:flex outranks the UA's [hidden]{display:none}, so the attribute was
+   set, announced to a screen reader, and visually ignored -- the chips stayed
+   on screen while the DOM said they were gone. */
+.ask-chips[hidden]{display:none}
 /* .btn so the focus ring, the print rule and the 560px tap-target floor all
    already apply -- a bespoke chip class would have had to re-earn each. */
 .btn.ask-chip{padding:6px 12px;font-size:12px;font-weight:600}
@@ -3918,8 +3945,12 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
             <h3 class="yf-h-neutral">ASK</h3>
             <button class="sec-i" data-dialog="askHelpModal" aria-expanded="false"
                     aria-label="What can I ask?">i</button>
+            <!-- hidden to start: the input is the panel, the chips are a menu -->
+            <button class="btn ask-fq" id="askChipsBtn" type="button"
+                    aria-expanded="false" aria-controls="askChips">Frequent questions<span
+                    class="ask-fq-car" aria-hidden="true">▾</span></button>
           </div>
-          <div class="ask-chips" id="askChips"></div>
+          <div class="ask-chips" id="askChips" hidden></div>
           <form class="ask-form" id="askForm" autocomplete="off">
             <input id="askInput" placeholder="Ask about this year…" maxlength="80"
                    aria-label="Ask a question about your figures">
@@ -8598,6 +8629,17 @@ function askBuildChips(){
 }
 /* The dialog, on the house pattern: remember focus before opening, put it back
    on close, Escape handled in the shared keydown, backdrop click closes. */
+/* Open state lives on the element, not in a variable: askBuildChips only ever
+   rewrites the container's contents, so a re-render cannot close a list the
+   reader opened. Nothing is persisted -- "hidden initially" is every load. */
+function askChipsToggle(){
+  const b=$('askChipsBtn'), p=$('askChips'); if(!b||!p) return;
+  const opening = p.hidden;
+  p.hidden = !opening;
+  b.setAttribute('aria-expanded', opening ? 'true' : 'false');
+}
+if($('askChipsBtn')) $('askChipsBtn').onclick = askChipsToggle;
+
 function askHelpOpen(btn){
   const m=$('askHelpModal'); if(!m) return;
   modalRemember('askHelpModal');

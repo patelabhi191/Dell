@@ -30,6 +30,17 @@ const digits = s => String(s).replace(/[^0-9]/g, '');
   await O.page.evaluate(() => applyView('yearly'));
   await O.page.waitForTimeout(400);
 
+  /* Taken BEFORE any section touches the DOM: "starts folded" is a claim about
+     a fresh load, and section 7 opens the disclosure to reach the chips. */
+  const askAtLoad = await O.page.evaluate(() => {
+    const p = document.getElementById('askChips'), b = document.getElementById('askChipsBtn');
+    return { attr: p.hidden, shown: getComputedStyle(p).display !== 'none',
+      painted: !!p.getClientRects().length,
+      expanded: b.getAttribute('aria-expanded'),
+      controls: b.getAttribute('aria-controls'),
+      chips: p.querySelectorAll('[data-ask]').length };
+  });
+
   /* ── 1. every intent answers, and answers the question asked ──────────── */
   section('1. each intent returns the figure the ledger holds');
   const got = await O.page.evaluate(() => {
@@ -162,6 +173,11 @@ const digits = s => String(s).replace(/[^0-9]/g, '');
   /* ── 7. the panel, the chips and the dialog ───────────────────────────── */
   section('7. the panel and its help dialog');
   const ui = await O.page.evaluate(async () => {
+    /* The chips are behind a disclosure now, so the reader's path opens it
+       first -- a test that clicked a hidden chip straight from the DOM would
+       pass on a build where the disclosure never opened. */
+    document.getElementById('askChipsBtn').click();
+    await new Promise(r => setTimeout(r, 60));
     const chips = [...document.querySelectorAll('[data-ask]')];
     chips[0].click();
     await new Promise(r => setTimeout(r, 80));
@@ -212,11 +228,75 @@ const digits = s => String(s).replace(/[^0-9]/g, '');
     "7: the drawer's own info buttons still work after the listener moved to the document",
     JSON.stringify(drawerHelp));
 
+  /* ── 7b. the Frequent questions disclosure ───────────────────────────── */
+  section('7b. the chips fold away');
+  await O.page.evaluate(() => applyView('yearly'));
+  await O.page.waitForTimeout(250);
+
+  /* PAINTED, not just attributed. .ask-chips carries display:flex, which
+     outranks the UA's [hidden]{display:none} -- the first build of this set
+     the attribute, announced it to a screen reader, and left the chips on
+     screen. Every check below reads the computed style, not the property. */
+  const vis = () => O.page.evaluate(() => {
+    const p = document.getElementById('askChips'), b = document.getElementById('askChipsBtn');
+    return { attr: p.hidden, shown: getComputedStyle(p).display !== 'none',
+      painted: !!p.getClientRects().length,
+      expanded: b.getAttribute('aria-expanded'),
+      controls: b.getAttribute('aria-controls'),
+      panelH: Math.round(document.getElementById('yfBlankPanel').getBoundingClientRect().height),
+      chips: p.querySelectorAll('[data-ask]').length };
+  });
+  check(askAtLoad.attr === true && askAtLoad.shown === false && askAtLoad.painted === false,
+    '7b: the chips start folded away, in pixels and not only in the DOM',
+    JSON.stringify(askAtLoad));
+  check(askAtLoad.expanded === 'false' && askAtLoad.controls === 'askChips',
+    '7b: ...and the button says so, pointing at what it controls',
+    `${askAtLoad.expanded} / ${askAtLoad.controls}`);
+  check(askAtLoad.chips >= 8,
+    '7b: the chips are built whether or not they are on screen -- folding is not emptying',
+    `${askAtLoad.chips} chips`);
+
+  /* Section 7 left them open. */
+  await O.page.evaluate(() => { const p = document.getElementById('askChips');
+    if (!p.hidden) document.getElementById('askChipsBtn').click() });
+  await O.page.waitForTimeout(150);
+  const shut = await vis();
+  check(!shut.shown, '7b: (folded again for the rest of this section)', JSON.stringify(shut));
+
+  await O.page.click('#askChipsBtn');
+  await O.page.waitForTimeout(200);
+  const opened = await vis();
+  check(opened.shown && opened.painted && opened.expanded === 'true',
+    '7b: pressing it shows them', JSON.stringify(opened));
+  check(opened.panelH > shut.panelH + 40,
+    '7b: ...and the card grows by the chips it just took on, rather than scrolling them',
+    `${shut.panelH} -> ${opened.panelH}`);
+
+  /* askBuildChips rewrites the container's CONTENTS on every render. If the
+     open state lived anywhere but the element, a re-render would shut a list
+     the reader had just opened. */
+  await O.page.evaluate(() => renderYF());
+  await O.page.waitForTimeout(200);
+  const survived = await vis();
+  check(survived.shown && survived.expanded === 'true',
+    '7b: a re-render does not shut a list the reader opened', JSON.stringify(survived));
+
+  await O.page.click('#askChipsBtn');
+  await O.page.waitForTimeout(200);
+  const reshut = await vis();
+  check(!reshut.shown && reshut.expanded === 'false',
+    '7b: and it folds back', JSON.stringify(reshut));
+
   /* ── 8. where Ask sits, and that it looks like the tab it is on ──────── */
   section('8. the top row: Ask on the wide side, level with Highlights');
   await O.page.evaluate(() => { const d = document.getElementById('drawer');
     if (d) d.classList.remove('open'); });
   await O.page.evaluate(() => applyView('yearly'));
+  /* .panel:hover lifts a card by 3px. Every click above was a REAL mouse
+     click, so the pointer is still inside whichever card it last pressed --
+     and the two panels then measure 3px apart for no reason the layout owns.
+     Park the mouse before taking any geometry. */
+  await O.page.mouse.move(0, 0);
   await O.page.waitForTimeout(300);
 
   const row = await O.page.evaluate(() => {
@@ -259,6 +339,23 @@ const digits = s => String(s).replace(/[^0-9]/g, '');
   check(heads.ask.split('|').slice(0, 3).join('|') === heads.exp.split('|').slice(0, 3).join('|'),
     "8: ...and match the rest of Yearly's headings, which only differ in colour",
     `${heads.ask}  vs  ${heads.exp}`);
+  /* Highlights is stretched to Ask's height and holds one slide at a time, so
+     nothing it contains can fill the card -- the layout has to. The dots ride
+     the bottom edge rather than sitting under the slide with the rest of the
+     card empty beneath them. */
+  const dots = await O.page.evaluate(() => {
+    const hi = document.getElementById('yfHiPanel');
+    const d = document.getElementById('yfHiDots');
+    const hr = hi.getBoundingClientRect(), cs = getComputedStyle(hi);
+    return { gap: Math.round(hr.bottom - parseFloat(cs.paddingBottom) - d.getBoundingClientRect().bottom),
+      cardH: Math.round(hr.height), dotsN: d.querySelectorAll('.yf-hi-dot').length };
+  });
+  check(dots.dotsN > 1, '8: (Highlights has more than one slide to page through)',
+    String(dots.dotsN));
+  check(Math.abs(dots.gap) <= 2,
+    '8: the dots sit on the bottom of the card, not under the slide with a hole below',
+    `${dots.gap}px from the content edge of a ${dots.cardH}px card`);
+
   check(Math.abs(heads.askTop - heads.hiTop) <= 1,
     '8: the (i) button does not push its own title off the other card\'s baseline',
     `${heads.askTop} vs ${heads.hiTop}`);

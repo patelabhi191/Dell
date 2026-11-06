@@ -2341,6 +2341,26 @@ Left alone because deleting them removes the safety net that is their whole purp
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Ask: the chips fold away, Highlights fills its card** (2026-11-06). Ten chips took three rows
+  and most of the card before anything had been typed, so they now sit behind a **Frequent
+  questions** disclosure at the right end of the heading row, folded on every load. The card opens
+  on the input: 248px → 171px closed. Nothing is persisted — "hidden initially" means every load —
+  and the open state lives on the element, so `askBuildChips` rewriting the container's contents
+  cannot shut a list the reader opened.
+  **`display:flex` outranks the UA's `[hidden]{display:none}`.** The first build set the attribute,
+  announced it to a screen reader and left the chips on screen; a test asserting `el.hidden` would
+  have passed on it. `.ask-chips[hidden]{display:none}` is the fix and `test-ask.js` §7b reads
+  computed style and client rects, never the property.
+  **Highlights now answers for the whole card.** It is stretched to Ask's height and shows one
+  slide at a time, so no amount of content fills it — the layout has to. The panel is a flex
+  column, the stage takes the slack, and the dots ride the bottom edge instead of sitting under the
+  slide with the card empty beneath them.
+  The heading floor went 19px → 23px: the bare eyebrow is 15px, the `(i)` button 19px and the
+  disclosure 23px, and the floor has to be the tallest or the two cards' titles sit on different
+  baselines across the gutter.
+  One test lesson worth keeping: **`.panel:hover` lifts a card 3px**, and Playwright leaves the
+  pointer where it last clicked, so two panels measured 3px apart for a reason the layout did not
+  own. Geometry checks park the mouse first.
 - **Past sells: the row buttons stopped stacking** (2026-11-05). `.sl-act` was
   `flex-direction:column` with a comment saying side by side would cost width the figures need and
   the rows were tall enough to hold both. That was circular: 28 + 4 + 28 is **60px**, and nothing
