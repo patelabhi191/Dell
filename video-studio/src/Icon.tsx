@@ -32,7 +32,7 @@ export const Icon: React.FC<{ name: IconName; size: number }> = ({ name, size })
     ),
     eye: (
       <>
-        <path d="M5 50 Q50 5 95 50 Q50 95 5 50Z" fill={theme.text} />
+        <path d="M5 50 Q50 5 95 50 Q50 95 5 50Z" fill={theme.ink} />
         <circle cx={50} cy={50} r={20} fill={b} />
         <circle cx={50} cy={50} r={9} fill={d} />
       </>
@@ -71,7 +71,7 @@ export const Icon: React.FC<{ name: IconName; size: number }> = ({ name, size })
     ),
     clock: (
       <>
-        <circle cx={50} cy={50} r={42} fill={theme.text} />
+        <circle cx={50} cy={50} r={42} fill={theme.ink} />
         <rect x={46} y={22} width={8} height={32} rx={4} fill={d} />
         <rect x={46} y={46} width={26} height={8} rx={4} fill={theme.palette[2]} />
       </>

@@ -1,6 +1,9 @@
-import "@fontsource/poppins/400.css";
-import "@fontsource/poppins/600.css";
-import "@fontsource/poppins/800.css";
+import "@fontsource/passion-one/400.css";
+import "@fontsource/passion-one/700.css";
+import "@fontsource/passion-one/900.css";
+import "@fontsource/nunito/700.css";
+import "@fontsource/nunito/800.css";
+import "@fontsource/nunito/900.css";
 import React from "react";
 import { Composition, Folder, continueRender, delayRender } from "remotion";
 import { EpisodeVideo, FPS, episodeFrames } from "./EpisodeVideo";
@@ -24,7 +27,10 @@ const captions: Record<string, CaptionWord[]> = Object.fromEntries(
 );
 
 const fontsReady = delayRender("Loading fonts");
-Promise.all([400, 600, 800].map((w) => document.fonts.load(`${w} 1em Poppins`)))
+Promise.all([
+  ...[400, 700, 900].map((w) => document.fonts.load(`${w} 1em "Passion One"`)),
+  ...[700, 800, 900].map((w) => document.fonts.load(`${w} 1em Nunito`)),
+])
   .catch(() => undefined)
   .then(() => continueRender(fontsReady));
 

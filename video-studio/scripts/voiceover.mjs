@@ -1,4 +1,4 @@
-// Usage: npm run voiceover -- <episode-id> [--voice af_heart] [--speed 1] [--provider kokoro]
+// Usage: npm run voiceover -- <episode-id> [--voice am_fenrir] [--speed 1] [--provider kokoro]
 //
 // Speaks every scene's "narration", stretches each scene's "seconds" to fit its line,
 // writes one audio track to public/audio/<id>.mp3 and points the episode at it.
@@ -6,9 +6,9 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 
-const LEAD = 0.3; // silence before a line, lets the scene animate in
-const TAIL = 0.5; // silence after a line, before the next scene
-const SENTENCE_GAP = 0.18;
+const LEAD = 0.2; // silence before a line, lets the scene animate in
+const TAIL = 0.35; // silence after a line, before the next scene
+const SENTENCE_GAP = 0.22;
 const MIN_SCENE = 2.5;
 
 /**
@@ -19,7 +19,7 @@ const MIN_SCENE = 2.5;
  */
 const providers = {
   /** Kokoro: free, open-source, runs locally. Downloads a ~90 MB model on first use. */
-  async kokoro({ voice = "af_heart", speed }) {
+  async kokoro({ voice = "am_fenrir", speed }) {
     const { KokoroTTS } = await import("kokoro-js");
     const tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", {
       dtype: "q8",
@@ -56,8 +56,11 @@ if (!providers[providerName]) {
   console.error(`Unknown provider "${providerName}". Available: ${Object.keys(providers).join(", ")}`);
   process.exit(1);
 }
+// House voice (see PLAYBOOK.md): am_fenrir, brisk for info videos, slower for stories.
 const voice = flag("voice", episode.voice);
-const tts = await providers[providerName]({ voice, speed: Number(flag("speed", "1")) });
+const defaultSpeed = episode.voiceSpeed ?? (episode.format === "story" ? 0.88 : 1.0);
+const speed = Number(flag("speed", defaultSpeed));
+const tts = await providers[providerName]({ voice, speed });
 
 if (listVoices) {
   console.log(tts.voices.join("\n"));
@@ -68,6 +71,16 @@ if (voice && !tts.voices.includes(voice)) {
   process.exit(1);
 }
 
+// Engines pad each clip with silence; cut it so pauses come only from the gaps set above.
+const trimSilence = (samples, sampleRate) => {
+  const keep = Math.round(0.03 * sampleRate);
+  let a = 0;
+  let b = samples.length - 1;
+  while (a < b && Math.abs(samples[a]) < 0.012) a++;
+  while (b > a && Math.abs(samples[b]) < 0.012) b--;
+  return samples.subarray(Math.max(0, a - keep), Math.min(samples.length, b + keep));
+};
+
 // Speak sentence by sentence: keeps each request short and gives natural pauses.
 const speakLine = async (text) => {
   const sentences = text.match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g).map((s) => s.trim());
@@ -76,7 +89,7 @@ const speakLine = async (text) => {
   for (const sentence of sentences.filter(Boolean)) {
     const out = await tts.speak(sentence);
     sampleRate = out.sampleRate;
-    parts.push(out.samples);
+    parts.push(trimSilence(out.samples, sampleRate));
   }
   const gap = Math.round(SENTENCE_GAP * sampleRate);
   const total = parts.reduce((n, p) => n + p.length, 0) + gap * (parts.length - 1);
@@ -152,4 +165,5 @@ if (spawnSync("ffmpeg", ["-version"]).status === 0) {
 
 episode.voiceover = output.replace("public/audio/", "");
 writeFileSync(file, JSON.stringify(episode, null, 2) + "\n");
-console.log(`\nWrote ${output} (${start.toFixed(1)}s) and updated ${file}`);
+const wordCount = episode.scenes.reduce((n, s) => n + (s.narration?.trim().split(/\s+/).length ?? 0), 0);
+console.log(`\nWrote ${output} (${start.toFixed(1)}s, ${Math.round((wordCount / start) * 60)} words/min) and updated ${file}`);

@@ -6,16 +6,19 @@ import {
   interpolate,
   staticFile,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
-import { Background } from "./Background";
+import { Backdrop } from "./Backdrop";
+import { BeatsContext } from "./beats";
 import { Captions, type CaptionWord } from "./Captions";
+import { Progress } from "./Progress";
 import { SceneView } from "./scenes";
-import { ThemeContext, themes, useTheme } from "./theme";
+import { stages } from "./stages";
+import { BODY, STAGE, ThemeContext, themes, useLayout, useTheme } from "./theme";
 import type { Episode } from "./types";
 
 export const FPS = 30;
-const FADE = 8; // frames of fade at each end of a scene
+const FADE = 7; // frames of fade at each end of a scene
+const STAGE_DIM = 0.14; // stage opacity behind scenes that are not "show"
 
 export const sceneFrames = (seconds: number) => Math.round(seconds * FPS);
 export const episodeFrames = (episode: Episode) =>
@@ -34,21 +37,42 @@ const SceneFade: React.FC<{ frames: number; last: boolean; children: React.React
   return <AbsoluteFill style={{ opacity: Math.min(fadeIn, fadeOut) }}>{children}</AbsoluteFill>;
 };
 
-const ProgressBar: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { durationInFrames, height } = useVideoConfig();
+/** Scales the 1000x900 stage canvas into its zone on screen. */
+const StageLayer: React.FC<{ name: string; opacity: number }> = ({ name, opacity }) => {
+  const { stage } = useLayout();
+  const Stage = stages[name];
+  if (!Stage) throw new Error(`Unknown stage "${name}". Register it in src/stages/index.ts`);
+  return (
+    <svg
+      width={STAGE.width * stage.scale}
+      height={STAGE.height * stage.scale}
+      viewBox={`0 0 ${STAGE.width} ${STAGE.height}`}
+      style={{ position: "absolute", left: stage.x, top: stage.y, overflow: "visible", opacity }}
+    >
+      <Stage />
+    </svg>
+  );
+};
+
+const Handle: React.FC<{ text: string }> = ({ text }) => {
+  const { u, captionCenter } = useLayout();
   const theme = useTheme();
   return (
     <div
       style={{
         position: "absolute",
         left: 0,
-        bottom: 0,
-        height: height * 0.006,
-        width: `${((frame + 1) / durationInFrames) * 100}%`,
-        background: theme.accent,
+        right: 0,
+        top: captionCenter + 62 * u,
+        textAlign: "center",
+        fontFamily: BODY,
+        fontWeight: 700,
+        fontSize: 26 * u,
+        color: theme.muted,
       }}
-    />
+    >
+      {text}
+    </div>
   );
 };
 
@@ -56,29 +80,49 @@ export const EpisodeVideo: React.FC<{ episode: Episode; words?: CaptionWord[] }>
   episode,
   words,
 }) => {
-  const theme = themes[episode.theme] ?? themes.midnight;
-  let from = 0;
+  const frame = useCurrentFrame();
+  const theme = themes[episode.theme ?? (episode.format === "story" ? "night" : "light")];
+
+  let cursor = 0;
+  const timeline = episode.scenes.map((scene) => {
+    const start = cursor;
+    cursor += sceneFrames(scene.seconds);
+    return { scene, start, frames: cursor - start };
+  });
+  const beats: Record<string, number> = {};
+  for (const { scene, start } of timeline) if (scene.beat) beats[scene.beat] = start;
+
+  const index = Math.max(0, timeline.findIndex((s) => frame < s.start + s.frames));
+  const current = timeline[index];
+  const previous = timeline[index - 1];
+  const local = frame - current.start;
+  const blend = interpolate(local, [0, 10], [0, 1], { extrapolateRight: "clamp" });
+  const stageLevel = (s?: (typeof timeline)[number]) => (!s || s.scene.type === "show" ? 1 : STAGE_DIM);
+  const stageOpacity = stageLevel(previous) + (stageLevel(current) - stageLevel(previous)) * blend;
+  const progressOpacity = previous?.scene.progress ? 1 : blend;
+
   return (
     <ThemeContext.Provider value={theme}>
-      <Background seed={episode.id} />
-      {episode.scenes.map((scene, i) => {
-        const frames = sceneFrames(scene.seconds);
-        const start = from;
-        from += frames;
-        return (
+      <BeatsContext.Provider value={beats}>
+        <Backdrop />
+        {episode.stage ? <StageLayer name={episode.stage} opacity={stageOpacity} /> : null}
+        {timeline.map(({ scene, start, frames }, i) => (
           <Sequence key={i} from={start} durationInFrames={frames}>
-            <SceneFade frames={frames} last={i === episode.scenes.length - 1}>
+            <SceneFade frames={frames} last={i === timeline.length - 1}>
               <SceneView scene={scene} />
             </SceneFade>
           </Sequence>
-        );
-      })}
-      {words && episode.captions ? <Captions words={words} /> : null}
-      <ProgressBar />
-      {episode.voiceover ? <Audio src={staticFile(`audio/${episode.voiceover}`)} /> : null}
-      {episode.music ? (
-        <Audio src={staticFile(`audio/${episode.music}`)} volume={episode.musicVolume} loop />
-      ) : null}
+        ))}
+        {current.scene.progress ? (
+          <Progress value={current.scene.progress} opacity={progressOpacity} />
+        ) : null}
+        {words && episode.captions ? <Captions words={words} /> : null}
+        {episode.handle ? <Handle text={episode.handle} /> : null}
+        {episode.voiceover ? <Audio src={staticFile(`audio/${episode.voiceover}`)} /> : null}
+        {episode.music ? (
+          <Audio src={staticFile(`audio/${episode.music}`)} volume={episode.musicVolume} loop />
+        ) : null}
+      </BeatsContext.Provider>
     </ThemeContext.Provider>
   );
 };

@@ -1,0 +1,68 @@
+{
+  "id": "002-the-man-who-sold-the-eiffel-tower",
+  "title": "The man who sold the Eiffel Tower",
+  "format": "story",
+  "theme": "night",
+  "stage": "eiffel",
+  "scenes": [
+    {
+      "type": "statement",
+      "seconds": 5.1,
+      "tag": "True story",
+      "tagTone": "accent",
+      "text": "He sold the *Eiffel Tower*",
+      "narration": "In 1925, a man sold the Eiffel Tower. He didn't own it."
+    },
+    {
+      "type": "show",
+      "seconds": 9.8,
+      "beat": "tower",
+      "tag": "Paris, 1925",
+      "narration": "Paris, 1925. The tower is rusting, and expensive to keep standing. Victor Lustig reads that in a newspaper, and sees an opportunity."
+    },
+    {
+      "type": "show",
+      "seconds": 6.9,
+      "beat": "meeting",
+      "tag": "The setup",
+      "narration": "He forges government letterhead, and invites six scrap dealers to a secret meeting at a luxury hotel."
+    },
+    {
+      "type": "show",
+      "seconds": 7.3,
+      "beat": "pitch",
+      "tag": "The pitch",
+      "narration": "The city, he says, is quietly selling the tower for scrap. Seven thousand tons of iron. And nobody can know."
+    },
+    {
+      "type": "show",
+      "seconds": 6.3,
+      "beat": "sold",
+      "tag": "The sale",
+      "tagTone": "alert",
+      "narration": "One dealer, Andre Poisson, pays. Lustig takes the money, and catches the next train to Vienna."
+    },
+    {
+      "type": "statement",
+      "seconds": 3.8,
+      "text": "He never called the *police*",
+      "narration": "And Poisson never calls the police. He's too embarrassed."
+    },
+    {
+      "type": "show",
+      "seconds": 4.7,
+      "beat": "again",
+      "tag": "One month later",
+      "narration": "So a month later, Lustig comes back. And tries to sell the tower again."
+    },
+    {
+      "type": "outro",
+      "seconds": 3.7,
+      "title": "Would you have *fallen* for it?",
+      "cta": "Follow",
+      "ctaNote": "for more true stories",
+      "narration": "Would you have fallen for it? Follow for more true stories."
+    }
+  ],
+  "voiceover": "002-the-man-who-sold-the-eiffel-tower.mp3"
+}

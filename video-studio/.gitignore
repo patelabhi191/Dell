@@ -3,3 +3,5 @@ out/
 .remotion/
 refs/
 hyperframes/renders/
+references/*.mp4
+references/*.mov

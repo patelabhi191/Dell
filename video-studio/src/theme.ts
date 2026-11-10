@@ -2,57 +2,123 @@ import { createContext, useContext } from "react";
 import { useVideoConfig } from "remotion";
 
 export type Theme = {
+  name: "light" | "night";
   bg: string;
-  bgAlt: string;
-  text: string;
+  bgEdge: string;
+  grid: string;
+  ink: string;
   muted: string;
   accent: string;
-  /** Palette cycled through for bars, bullets and background shapes. */
+  /** Darker accent: side faces, and the hard shadow under accent-coloured headline words. */
+  accentDeep: string;
+  /** Text colour on top of the accent. */
+  onAccent: string;
+  alert: string;
+  /** Neutral object colour (buildings, figures) with its darker and lighter faces. */
+  slate: string;
+  slateDark: string;
+  slateLight: string;
+  /** Tags and the caption pill. */
+  pill: string;
+  pillText: string;
+  pillMuted: string;
+  pillBorder: string;
+  card: string;
+  shadow: string;
+  /** Extra colours for bars and badges. */
   palette: string[];
 };
 
-/** Add a channel look here, then reference it by name in an episode's "theme". */
-export const themes: Record<string, Theme> = {
-  midnight: {
-    bg: "#14162B",
-    bgAlt: "#1E2142",
-    text: "#F6F4EC",
-    muted: "#A9ADCB",
-    accent: "#FFC857",
-    palette: ["#FFC857", "#4CC9F0", "#F2545B", "#7BD389", "#B388EB"],
+/** The channel look: white stage by default, black "night mode" for stories. */
+export const themes: Record<Theme["name"], Theme> = {
+  light: {
+    name: "light",
+    bg: "#F2F0EC",
+    bgEdge: "#DDDBD3",
+    grid: "rgba(20,20,20,0.075)",
+    ink: "#141414",
+    muted: "#6F6D67",
+    accent: "#C4E932",
+    accentDeep: "#9DBE1C",
+    onAccent: "#141414",
+    alert: "#F04E23",
+    slate: "#878796",
+    slateDark: "#6A6A78",
+    slateLight: "#A9A9B6",
+    pill: "#17181C",
+    pillText: "#FFFFFF",
+    pillMuted: "#85868C",
+    pillBorder: "transparent",
+    card: "#FFFFFF",
+    shadow: "rgba(20,20,20,0.16)",
+    palette: ["#C4E932", "#2F7BF6", "#F04E23", "#878796", "#141414"],
   },
-  paper: {
-    bg: "#F5EFE3",
-    bgAlt: "#EADFCB",
-    text: "#1F2233",
-    muted: "#6A6E85",
-    accent: "#E4572E",
-    palette: ["#E4572E", "#2E86AB", "#F2B134", "#3BA774", "#7A5CC2"],
+  night: {
+    name: "night",
+    bg: "#0C0D10",
+    bgEdge: "#040405",
+    grid: "rgba(255,255,255,0.06)",
+    ink: "#F4F3EE",
+    muted: "#8E8F98",
+    accent: "#C8F03C",
+    accentDeep: "#7E9A1B",
+    onAccent: "#101010",
+    alert: "#FF5A36",
+    slate: "#6B6D7C",
+    slateDark: "#4C4E5B",
+    slateLight: "#8A8C9B",
+    pill: "#1D1F26",
+    pillText: "#FFFFFF",
+    pillMuted: "#74767F",
+    pillBorder: "rgba(255,255,255,0.16)",
+    card: "#17191F",
+    shadow: "rgba(0,0,0,0.5)",
+    palette: ["#C8F03C", "#4C9BFF", "#FF5A36", "#8A8C9B", "#F4F3EE"],
   },
 };
 
-export const ThemeContext = createContext<Theme>(themes.midnight);
+export const ThemeContext = createContext<Theme>(themes.light);
 export const useTheme = () => useContext(ThemeContext);
 
-export const FONT = "Poppins, system-ui, sans-serif";
+/** Chunky headline face and a rounded bold for everything else. */
+export const DISPLAY = '"Passion One", Impact, sans-serif';
+export const BODY = "Nunito, system-ui, sans-serif";
+
+/** The stage is authored on this fixed canvas; the framework scales it into place. */
+export const STAGE = { width: 1000, height: 900, ground: 830 };
 
 /**
- * Sizing that works for both 9:16 and 16:9.
- * `u` is one design unit (1/1080 of the short edge), so sizes written as `40 * u`
- * look the same in both formats.
+ * Screen zones, matched to the reference: tracker at the very top, headline under it,
+ * stage in the middle, captions under the stage, bottom of the frame left empty for
+ * the platform's own buttons. `u` is one design unit (1/1080 of the short edge).
  */
 export const useLayout = () => {
   const { width, height } = useVideoConfig();
   const vertical = height > width;
   const u = Math.min(width, height) / 1080;
+  if (vertical) {
+    return {
+      vertical, u, width, height,
+      side: 64 * u,
+      progressTop: 76 * u,
+      headingTop: 196 * u,
+      stage: { x: 40 * u, y: 430 * u, scale: u },
+      horizon: 1060 * u,
+      contentTop: 190 * u,
+      contentBottom: 1400 * u,
+      captionCenter: 1470 * u,
+    };
+  }
+  const scale = 0.8 * u;
   return {
-    vertical,
-    u,
-    width,
-    height,
-    // Reels / Shorts UI covers the top and (mostly) the bottom of the frame.
-    safe: vertical
-      ? { top: 220 * u, bottom: 420 * u, side: 90 * u }
-      : { top: 90 * u, bottom: 90 * u, side: 150 * u },
+    vertical, u, width, height,
+    side: 90 * u,
+    progressTop: 36 * u,
+    headingTop: 132 * u,
+    stage: { x: (width - STAGE.width * scale) / 2, y: 236 * u, scale },
+    horizon: 760 * u,
+    contentTop: 130 * u,
+    contentBottom: 940 * u,
+    captionCenter: 1000 * u,
   };
 };

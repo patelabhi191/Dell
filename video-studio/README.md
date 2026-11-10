@@ -1,33 +1,82 @@
 # video-studio
 
-Code-driven **flat-vector** explainer videos for Instagram Reels, YouTube Shorts and regular YouTube.
-You write an episode as a JSON file; one command renders it in both 9:16 and 16:9.
+Code-driven flat-vector videos for Instagram Reels, YouTube Shorts and regular YouTube.
+An episode is a JSON file; commands turn it into a narrated, captioned video in 9:16 and 16:9.
 
-Built on [Remotion](https://www.remotion.dev) (React → MP4).
+**Start with [`PLAYBOOK.md`](PLAYBOOK.md)**: the channel's style, voice, script templates and
+checklist. This file is the technical reference.
+
+Built on [Remotion](https://www.remotion.dev) (React -> MP4).
 
 ## Quick start
 
 ```bash
 npm install
-npm run studio                                   # live preview in the browser
-npm run render -- 001-why-is-the-sky-blue        # -> out/<id>-short.mp4 and out/<id>-long.mp4
+npm run studio                                         # live preview in the browser
+npm run render -- 001-why-is-the-sky-blue short        # -> out/<id>-short.mp4 (1080x1920)
+npm run render -- 001-why-is-the-sky-blue              # both 9:16 and 16:9
 ```
 
-Requires Node 22+ and ffmpeg. The first render downloads a headless Chrome; to reuse one you already have,
-set `REMOTION_BROWSER=/path/to/chrome`.
+Requires Node 22+ and ffmpeg. The first render downloads a headless Chrome; to reuse one you
+already have, set `REMOTION_BROWSER=/path/to/chrome`.
 
-## Weekly workflow
+## Making a video
 
-1. `npm run new -- 002 "How do magnets work?"` creates `episodes/002-how-do-magnets-work.json`.
-2. Fill in the scenes (see below). Write the voiceover line for each scene in `narration`.
-3. `npm run narration -- 002-how-do-magnets-work` prints the script so you can proofread it.
-4. `npm run voiceover -- 002-how-do-magnets-work` speaks every scene's narration, stretches each
-   scene's `seconds` to fit its line, and writes `public/audio/<id>.mp3`. Re-run it whenever the
-   narration changes. Optional background track: `"music": "loop.mp3"`.
-5. `npm run captions -- 002-how-do-magnets-work` runs Whisper on the voiceover and writes word
-   timings to `captions/`. They are burned into the video; the `.srt` is for YouTube subtitles.
-6. `npm run studio` to check timing, then `npm run render -- 002-how-do-magnets-work`.
-7. Upload `-short.mp4` to Reels/Shorts and `-long.mp4` to YouTube.
+```bash
+npm run new -- info 003 "How do magnets work?"   # or: story 004 "..."
+npm run narration -- <id>     # print the script with timings
+npm run voiceover -- <id>     # speak it and fit each scene to its line
+npm run captions -- <id>      # Whisper word timings + .srt
+npm run render -- <id> short
+```
+
+Two pilots are included: `001-why-is-the-sky-blue` (informative, white) and
+`002-the-man-who-sold-the-eiffel-tower` (story, night mode).
+
+## Episode file
+
+| Field | Meaning |
+| --- | --- |
+| `format` | `info` or `story`. Sets the default theme and voice speed. |
+| `theme` | `light` (white) or `night` (black). |
+| `stage` | Name of a custom animated stage from `src/stages/`. Optional. |
+| `handle` | Channel handle shown under the captions. Optional. |
+| `voice`, `voiceSpeed` | Override the house voice for this episode. |
+| `captions` | `false` hides burned-in captions. |
+| `music`, `musicVolume` | Background track in `public/audio/`. |
+| `scenes` | The beats, in order. |
+
+Every scene has `type`, `seconds`, and optionally `narration`, `beat` (a name the stage
+animates on) and `progress` (step tracker text such as `"STEP 2/4"`). Wrap words in
+`*asterisks*` to highlight them.
+
+| type | fields | use for |
+| --- | --- | --- |
+| `show` | `heading?`, `tag?`, `tagTone?` | letting the stage play, with a headline or tag above it |
+| `statement` | `text`, `tag?`, `tagTone?` | a big line over the dimmed stage: hooks, turns, punchlines |
+| `stat` | `value`, `label`, `prefix?`, `suffix?`, `decimals?` | one number that counts up |
+| `list` | `heading`, `items[]`, `badges?[]` | recap card with 2-5 points |
+| `bars` | `heading`, `bars[{label, value, color?}]`, `unit?` | comparing 2-5 values |
+| `text` | `heading`, `body?`, `icon?` | one idea with an icon, for episodes without a stage |
+| `outro` | `title`, `cta?`, `ctaNote?` | follow call to action |
+
+`tagTone` is `dark`, `accent` or `alert`. The schema is in `src/types.ts`; an invalid episode
+fails with a readable error.
+
+## Custom stages
+
+A stage is the episode's own animation: objects that appear and build up as the narration
+reaches each beat. See `src/stages/sky.tsx` and `src/stages/eiffel.tsx`.
+
+1. Create `src/stages/<name>.tsx` returning SVG drawn on a 1000x900 canvas (floor at y=830).
+2. Register it in `src/stages/index.ts` and set `"stage": "<name>"` in the episode.
+3. Give scenes a `"beat"` and animate with `useBeat("<beat>")` from `src/beats.tsx`
+   (`enter()` for a spring, `ramp(from, to)` for linear progress, in seconds since the beat).
+4. Build from the parts in `src/props.tsx`: `Box`, `Building`, `House`, `Person`, `Tag`,
+   `DashedArrow`, `Wave`, `Cash`. They take colours from the theme, so a stage works in both
+   light and night mode.
+
+Beats start when their scene starts, so re-running the voiceover never breaks the sync.
 
 ## Voiceover
 
@@ -37,10 +86,10 @@ from Hugging Face. ffmpeg is used to produce the MP3; without it a WAV is writte
 
 ```bash
 npm run voiceover -- --voices                                   # list voices
-npm run voiceover -- <episode-id> --voice bm_george --speed 1.1
+npm run voiceover -- <episode-id> --voice am_liam --speed 1.05
 ```
 
-Voice names start with `af`/`am` (American female/male) or `bf`/`bm` (British). Set `"voice"` in
+The house voice is `am_fenrir` (see `PLAYBOOK.md`, section 4). Voice names start with `af`/`am` (American female/male) or `bf`/`bm` (British). Set `"voice"` in
 the episode JSON to make a choice stick. To use your own recording instead, put the file in
 `public/audio/`, set `"voiceover"` to its name and adjust each scene's `seconds` by hand.
 
@@ -76,36 +125,23 @@ data by default; turn it off with `npx hyperframes telemetry disable`.
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) (`pip install yt-dlp`). `refs/` is not committed.
 Use references to study pacing and style, not as footage in your own videos.
 
-## Scene types
-
-Every scene has `type`, `seconds`, and optional `narration`.
-
-| type    | fields                                                    | use for                    |
-| ------- | --------------------------------------------------------- | -------------------------- |
-| `title` | `title`, `kicker?`                                        | opening hook               |
-| `text`  | `heading`, `body?`, `icon?`                               | one idea per screen        |
-| `stat`  | `value`, `label`, `prefix?`, `suffix?`, `decimals?`       | a big number that counts up |
-| `bars`  | `heading`, `bars[{label, value, color?}]`, `unit?`        | comparing 2-5 values       |
-| `list`  | `heading`, `items[]`                                      | 2-5 points, revealed in turn |
-| `outro` | `title`, `cta`                                            | call to action             |
-
-Icons: `sun`, `eye`, `bulb`, `wave`, `globe`, `clock`, `spark`.
-The schema lives in `src/types.ts`; an invalid episode fails with a readable error.
-
 ## Where things are
 
+- `PLAYBOOK.md` - style, voice, script templates, checklist
 - `episodes/` - one JSON file per video
-- `src/scenes/index.tsx` - scene templates (add a new scene type here and in `src/types.ts`)
-- `src/theme.ts` - colour themes (`midnight`, `paper`) and safe areas for platform UI
-- `src/Icon.tsx` - flat icons
-- `src/Background.tsx` - drifting background shapes
+- `src/scenes/index.tsx` - scene templates
+- `src/stages/` - custom animated stages, one per episode that needs one
+- `src/props.tsx` - flat-vector building blocks for stages
+- `src/theme.ts` - the light and night themes, fonts and screen zones
+- `src/Captions.tsx`, `src/Progress.tsx`, `src/Backdrop.tsx` - caption pill, step tracker, grid floor
 - `public/audio/` - voiceover and music files
 - `captions/` - Whisper word timings and `.srt` files
+- `references/` - your reference clips (video files are not committed)
 - `hyperframes/` - HyperFrames starter composition
-- `scripts/voiceover.mjs` - text-to-speech
+- `scripts/` - the commands above
 
 ## Notes
 
 - Remotion is free for individuals and companies of up to three people; larger companies need a
   [licence](https://www.remotion.dev/docs/license).
-- Only use music, fonts and assets you have the rights to publish. Poppins (bundled) is OFL.
+- Only use music, fonts and assets you have the rights to publish. The bundled fonts (Passion One, Nunito) are OFL.

@@ -1,12 +1,12 @@
 import React, { useMemo } from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
-import { FONT, useLayout, useTheme } from "./theme";
+import { BODY, useLayout, useTheme } from "./theme";
 
 export type CaptionWord = { text: string; start: number; end: number };
 
 const MAX_WORDS = 4;
 const MAX_CHARS = 22;
-const HOLD = 0.6; // seconds a phrase lingers after its last word
+const HOLD = 0.5; // seconds a phrase lingers after its last word
 
 /** Short phrases that break at punctuation, so one thought is on screen at a time. */
 const toPhrases = (words: CaptionWord[]) => {
@@ -28,50 +28,74 @@ const toPhrases = (words: CaptionWord[]) => {
   return phrases;
 };
 
-/** Word-by-word captions from Whisper timings (captions/<id>.json). */
+/**
+ * Caption pill under the stage, from Whisper timings (captions/<id>.json).
+ * Words turn white as they are spoken; numbers are picked out in the accent colour.
+ */
 export const Captions: React.FC<{ words: CaptionWord[] }> = ({ words }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { u, vertical, safe } = useLayout();
+  const { u, vertical, captionCenter, side } = useLayout();
   const theme = useTheme();
   const phrases = useMemo(() => toPhrases(words), [words]);
   const t = frame / fps;
 
   const index = phrases.findIndex((p, i) => {
     const next = phrases[i + 1]?.[0].start ?? Infinity;
-    return t >= p[0].start && t < Math.min(next, p[p.length - 1].end + HOLD);
+    return t >= p[0].start - 0.05 && t < Math.min(next - 0.05, p[p.length - 1].end + HOLD);
   });
   if (index === -1) return null;
+  const size = (vertical ? 50 : 40) * u;
 
   return (
     <div
       style={{
         position: "absolute",
-        left: safe.side,
-        right: safe.side,
-        bottom: vertical ? safe.bottom - 130 * u : 50 * u,
+        left: side,
+        right: side,
+        top: captionCenter - size,
         display: "flex",
         justifyContent: "center",
       }}
     >
       <div
         style={{
-          fontFamily: FONT,
-          fontSize: (vertical ? 50 : 42) * u,
-          fontWeight: 800,
-          lineHeight: 1.2,
-          textAlign: "center",
-          padding: `${14 * u}px ${30 * u}px`,
-          borderRadius: 22 * u,
-          background: `${theme.bg}E6`,
-          color: theme.text,
+          display: "flex",
+          alignItems: "center",
+          gap: size * 0.3,
+          fontFamily: BODY,
+          fontSize: size,
+          fontWeight: 900,
+          lineHeight: 1,
+          whiteSpace: "nowrap",
+          padding: `${size * 0.36}px ${size * 0.5}px`,
+          borderRadius: size * 0.28,
+          background: theme.pill,
+          border: `${2 * u}px solid ${theme.pillBorder}`,
+          boxShadow: `0 ${6 * u}px ${18 * u}px ${theme.shadow}`,
         }}
       >
-        {phrases[index].map((word, i) => (
-          <span key={i} style={{ color: t >= word.start ? theme.accent : theme.text }}>
-            {word.text}{" "}
-          </span>
-        ))}
+        <span
+          style={{
+            width: size * 0.22,
+            height: size * 0.22,
+            background: theme.accent,
+            transform: "rotate(45deg)",
+            flexShrink: 0,
+          }}
+        />
+        <span>
+          {phrases[index].map((word, i) => {
+            const spoken = t >= word.start - 0.05;
+            const color = !spoken ? theme.pillMuted : /\d/.test(word.text) ? theme.accent : theme.pillText;
+            return (
+              <span key={i} style={{ color }}>
+                {word.text}
+                {i < phrases[index].length - 1 ? " " : ""}
+              </span>
+            );
+          })}
+        </span>
       </div>
     </div>
   );

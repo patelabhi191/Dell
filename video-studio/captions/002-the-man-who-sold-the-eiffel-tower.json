@@ -1,0 +1,722 @@
+[
+  {
+    "text": "In",
+    "start": 0.17,
+    "end": 0.23,
+    "id": "w0"
+  },
+  {
+    "text": "1925,",
+    "start": 0.23,
+    "end": 1.38,
+    "id": "w1"
+  },
+  {
+    "text": "a",
+    "start": 1.38,
+    "end": 1.45,
+    "id": "w2"
+  },
+  {
+    "text": "man",
+    "start": 1.64,
+    "end": 1.72,
+    "id": "w3"
+  },
+  {
+    "text": "sold",
+    "start": 1.72,
+    "end": 2.05,
+    "id": "w4"
+  },
+  {
+    "text": "the",
+    "start": 2.07,
+    "end": 2.32,
+    "id": "w5"
+  },
+  {
+    "text": "Eiffel",
+    "start": 2.32,
+    "end": 2.82,
+    "id": "w6"
+  },
+  {
+    "text": "Tower.",
+    "start": 2.82,
+    "end": 3.41,
+    "id": "w7"
+  },
+  {
+    "text": "He",
+    "start": 3.41,
+    "end": 3.78,
+    "id": "w8"
+  },
+  {
+    "text": "didn't",
+    "start": 3.78,
+    "end": 4.25,
+    "id": "w9"
+  },
+  {
+    "text": "own",
+    "start": 4.25,
+    "end": 4.47,
+    "id": "w10"
+  },
+  {
+    "text": "it.",
+    "start": 4.53,
+    "end": 4.98,
+    "id": "w11"
+  },
+  {
+    "text": "Paris",
+    "start": 5.21,
+    "end": 5.57,
+    "id": "w12"
+  },
+  {
+    "text": "1925,",
+    "start": 5.57,
+    "end": 7.12,
+    "id": "w13"
+  },
+  {
+    "text": "the",
+    "start": 7.12,
+    "end": 7.33,
+    "id": "w14"
+  },
+  {
+    "text": "tower",
+    "start": 7.33,
+    "end": 7.67,
+    "id": "w15"
+  },
+  {
+    "text": "is",
+    "start": 7.67,
+    "end": 7.71,
+    "id": "w16"
+  },
+  {
+    "text": "rusting",
+    "start": 7.8,
+    "end": 8.27,
+    "id": "w17"
+  },
+  {
+    "text": "and",
+    "start": 8.27,
+    "end": 8.43,
+    "id": "w18"
+  },
+  {
+    "text": "expensive",
+    "start": 8.76,
+    "end": 9.08,
+    "id": "w19"
+  },
+  {
+    "text": "to",
+    "start": 9.09,
+    "end": 9.22,
+    "id": "w20"
+  },
+  {
+    "text": "keep",
+    "start": 9.22,
+    "end": 9.58,
+    "id": "w21"
+  },
+  {
+    "text": "standing.",
+    "start": 9.58,
+    "end": 10.26,
+    "id": "w22"
+  },
+  {
+    "text": "Victor",
+    "start": 10.49,
+    "end": 10.76,
+    "id": "w23"
+  },
+  {
+    "text": "Lustig",
+    "start": 10.76,
+    "end": 11.25,
+    "id": "w24"
+  },
+  {
+    "text": "reads",
+    "start": 11.25,
+    "end": 11.67,
+    "id": "w25"
+  },
+  {
+    "text": "that",
+    "start": 11.67,
+    "end": 12,
+    "id": "w26"
+  },
+  {
+    "text": "in",
+    "start": 12,
+    "end": 12.17,
+    "id": "w27"
+  },
+  {
+    "text": "a",
+    "start": 12.17,
+    "end": 12.25,
+    "id": "w28"
+  },
+  {
+    "text": "newspaper",
+    "start": 12.25,
+    "end": 12.98,
+    "id": "w29"
+  },
+  {
+    "text": "and",
+    "start": 13.08,
+    "end": 13.26,
+    "id": "w30"
+  },
+  {
+    "text": "sees",
+    "start": 13.26,
+    "end": 13.59,
+    "id": "w31"
+  },
+  {
+    "text": "an",
+    "start": 13.59,
+    "end": 13.71,
+    "id": "w32"
+  },
+  {
+    "text": "opportunity.",
+    "start": 14.04,
+    "end": 14.82,
+    "id": "w33"
+  },
+  {
+    "text": "He",
+    "start": 14.82,
+    "end": 15.05,
+    "id": "w34"
+  },
+  {
+    "text": "forges",
+    "start": 15.05,
+    "end": 15.4,
+    "id": "w35"
+  },
+  {
+    "text": "government",
+    "start": 15.43,
+    "end": 16.2,
+    "id": "w36"
+  },
+  {
+    "text": "letterhead",
+    "start": 16.2,
+    "end": 16.98,
+    "id": "w37"
+  },
+  {
+    "text": "and",
+    "start": 17,
+    "end": 17.19,
+    "id": "w38"
+  },
+  {
+    "text": "invites",
+    "start": 17.2,
+    "end": 17.68,
+    "id": "w39"
+  },
+  {
+    "text": "six",
+    "start": 17.68,
+    "end": 18,
+    "id": "w40"
+  },
+  {
+    "text": "scrap",
+    "start": 18,
+    "end": 18.23,
+    "id": "w41"
+  },
+  {
+    "text": "dealers",
+    "start": 18.6,
+    "end": 18.86,
+    "id": "w42"
+  },
+  {
+    "text": "to",
+    "start": 18.86,
+    "end": 19.01,
+    "id": "w43"
+  },
+  {
+    "text": "a",
+    "start": 19.01,
+    "end": 19.08,
+    "id": "w44"
+  },
+  {
+    "text": "secret",
+    "start": 19.08,
+    "end": 19.43,
+    "id": "w45"
+  },
+  {
+    "text": "meeting",
+    "start": 19.43,
+    "end": 19.47,
+    "id": "w46"
+  },
+  {
+    "text": "at",
+    "start": 20.17,
+    "end": 20.19,
+    "id": "w47"
+  },
+  {
+    "text": "a",
+    "start": 20.19,
+    "end": 20.32,
+    "id": "w48"
+  },
+  {
+    "text": "luxury",
+    "start": 20.32,
+    "end": 20.92,
+    "id": "w49"
+  },
+  {
+    "text": "hotel.",
+    "start": 20.92,
+    "end": 21.6,
+    "id": "w50"
+  },
+  {
+    "text": "The",
+    "start": 21.6,
+    "end": 21.95,
+    "id": "w51"
+  },
+  {
+    "text": "city,",
+    "start": 21.95,
+    "end": 22.36,
+    "id": "w52"
+  },
+  {
+    "text": "he",
+    "start": 22.36,
+    "end": 22.48,
+    "id": "w53"
+  },
+  {
+    "text": "says,",
+    "start": 22.5,
+    "end": 22.93,
+    "id": "w54"
+  },
+  {
+    "text": "is",
+    "start": 22.93,
+    "end": 23.07,
+    "id": "w55"
+  },
+  {
+    "text": "quietly",
+    "start": 23.07,
+    "end": 23.58,
+    "id": "w56"
+  },
+  {
+    "text": "selling",
+    "start": 23.58,
+    "end": 24.09,
+    "id": "w57"
+  },
+  {
+    "text": "the",
+    "start": 24.09,
+    "end": 24.24,
+    "id": "w58"
+  },
+  {
+    "text": "tower",
+    "start": 24.31,
+    "end": 24.6,
+    "id": "w59"
+  },
+  {
+    "text": "for",
+    "start": 24.66,
+    "end": 24.87,
+    "id": "w60"
+  },
+  {
+    "text": "scrap,",
+    "start": 24.87,
+    "end": 25.44,
+    "id": "w61"
+  },
+  {
+    "text": "7,000",
+    "start": 25.5,
+    "end": 26.32,
+    "id": "w62"
+  },
+  {
+    "text": "tons",
+    "start": 26.32,
+    "end": 26.75,
+    "id": "w63"
+  },
+  {
+    "text": "of",
+    "start": 26.75,
+    "end": 26.89,
+    "id": "w64"
+  },
+  {
+    "text": "iron,",
+    "start": 27.09,
+    "end": 27.36,
+    "id": "w65"
+  },
+  {
+    "text": "and",
+    "start": 27.36,
+    "end": 27.61,
+    "id": "w66"
+  },
+  {
+    "text": "nobody",
+    "start": 27.61,
+    "end": 28.08,
+    "id": "w67"
+  },
+  {
+    "text": "can",
+    "start": 28.18,
+    "end": 28.36,
+    "id": "w68"
+  },
+  {
+    "text": "know.",
+    "start": 28.36,
+    "end": 28.96,
+    "id": "w69"
+  },
+  {
+    "text": "One",
+    "start": 29.21,
+    "end": 29.22,
+    "id": "w70"
+  },
+  {
+    "text": "dealer",
+    "start": 29.22,
+    "end": 29.7,
+    "id": "w71"
+  },
+  {
+    "text": "Andre",
+    "start": 29.73,
+    "end": 30.12,
+    "id": "w72"
+  },
+  {
+    "text": "Poisson",
+    "start": 30.12,
+    "end": 30.69,
+    "id": "w73"
+  },
+  {
+    "text": "pays,",
+    "start": 30.69,
+    "end": 31.17,
+    "id": "w74"
+  },
+  {
+    "text": "Lustig",
+    "start": 31.17,
+    "end": 31.65,
+    "id": "w75"
+  },
+  {
+    "text": "takes",
+    "start": 31.65,
+    "end": 32.06,
+    "id": "w76"
+  },
+  {
+    "text": "the",
+    "start": 32.06,
+    "end": 32.29,
+    "id": "w77"
+  },
+  {
+    "text": "money",
+    "start": 32.29,
+    "end": 32.39,
+    "id": "w78"
+  },
+  {
+    "text": "and",
+    "start": 32.76,
+    "end": 32.95,
+    "id": "w79"
+  },
+  {
+    "text": "catches",
+    "start": 32.95,
+    "end": 33.45,
+    "id": "w80"
+  },
+  {
+    "text": "the",
+    "start": 33.51,
+    "end": 33.61,
+    "id": "w81"
+  },
+  {
+    "text": "next",
+    "start": 33.61,
+    "end": 34.35,
+    "id": "w82"
+  },
+  {
+    "text": "train",
+    "start": 34.35,
+    "end": 34.49,
+    "id": "w83"
+  },
+  {
+    "text": "to",
+    "start": 34.49,
+    "end": 34.64,
+    "id": "w84"
+  },
+  {
+    "text": "Vienna.",
+    "start": 34.64,
+    "end": 35.34,
+    "id": "w85"
+  },
+  {
+    "text": "And",
+    "start": 35.34,
+    "end": 35.59,
+    "id": "w86"
+  },
+  {
+    "text": "Poisson",
+    "start": 35.59,
+    "end": 36.02,
+    "id": "w87"
+  },
+  {
+    "text": "never",
+    "start": 36.02,
+    "end": 36.35,
+    "id": "w88"
+  },
+  {
+    "text": "calls",
+    "start": 36.47,
+    "end": 36.7,
+    "id": "w89"
+  },
+  {
+    "text": "the",
+    "start": 36.7,
+    "end": 36.81,
+    "id": "w90"
+  },
+  {
+    "text": "police.",
+    "start": 37,
+    "end": 37.53,
+    "id": "w91"
+  },
+  {
+    "text": "He's",
+    "start": 37.54,
+    "end": 37.84,
+    "id": "w92"
+  },
+  {
+    "text": "too",
+    "start": 37.84,
+    "end": 38.06,
+    "id": "w93"
+  },
+  {
+    "text": "embarrassed.",
+    "start": 38.06,
+    "end": 39.14,
+    "id": "w94"
+  },
+  {
+    "text": "So",
+    "start": 39.14,
+    "end": 39.37,
+    "id": "w95"
+  },
+  {
+    "text": "a",
+    "start": 39.37,
+    "end": 39.38,
+    "id": "w96"
+  },
+  {
+    "text": "month",
+    "start": 39.38,
+    "end": 39.78,
+    "id": "w97"
+  },
+  {
+    "text": "later",
+    "start": 39.78,
+    "end": 40.13,
+    "id": "w98"
+  },
+  {
+    "text": "Lustig",
+    "start": 40.25,
+    "end": 40.59,
+    "id": "w99"
+  },
+  {
+    "text": "comes",
+    "start": 40.78,
+    "end": 41.06,
+    "id": "w100"
+  },
+  {
+    "text": "back",
+    "start": 41.06,
+    "end": 41.38,
+    "id": "w101"
+  },
+  {
+    "text": "and",
+    "start": 41.38,
+    "end": 41.62,
+    "id": "w102"
+  },
+  {
+    "text": "tries",
+    "start": 41.62,
+    "end": 42.02,
+    "id": "w103"
+  },
+  {
+    "text": "to",
+    "start": 42.02,
+    "end": 42.18,
+    "id": "w104"
+  },
+  {
+    "text": "sell",
+    "start": 42.18,
+    "end": 42.48,
+    "id": "w105"
+  },
+  {
+    "text": "the",
+    "start": 42.48,
+    "end": 42.6,
+    "id": "w106"
+  },
+  {
+    "text": "tower",
+    "start": 42.92,
+    "end": 43.14,
+    "id": "w107"
+  },
+  {
+    "text": "again.",
+    "start": 43.14,
+    "end": 43.75,
+    "id": "w108"
+  },
+  {
+    "text": "Would",
+    "start": 44.03,
+    "end": 44.13,
+    "id": "w109"
+  },
+  {
+    "text": "you",
+    "start": 44.13,
+    "end": 44.33,
+    "id": "w110"
+  },
+  {
+    "text": "have",
+    "start": 44.33,
+    "end": 44.58,
+    "id": "w111"
+  },
+  {
+    "text": "fallen",
+    "start": 44.63,
+    "end": 45,
+    "id": "w112"
+  },
+  {
+    "text": "for",
+    "start": 45,
+    "end": 45.2,
+    "id": "w113"
+  },
+  {
+    "text": "it?",
+    "start": 45.2,
+    "end": 45.56,
+    "id": "w114"
+  },
+  {
+    "text": "Follow",
+    "start": 45.56,
+    "end": 45.96,
+    "id": "w115"
+  },
+  {
+    "text": "for",
+    "start": 45.98,
+    "end": 46.17,
+    "id": "w116"
+  },
+  {
+    "text": "more",
+    "start": 46.18,
+    "end": 46.47,
+    "id": "w117"
+  },
+  {
+    "text": "true",
+    "start": 46.47,
+    "end": 46.75,
+    "id": "w118"
+  },
+  {
+    "text": "stories.",
+    "start": 46.75,
+    "end": 47.26,
+    "id": "w119"
+  }
+]
