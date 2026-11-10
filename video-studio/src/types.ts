@@ -65,6 +65,8 @@ export const episodeSchema = z.object({
   voiceover: z.string().optional(),
   /** Voice used by `npm run voiceover` (see `npm run voiceover -- --voices`). */
   voice: z.string().optional(),
+  /** Burn in captions when captions/<id>.json exists (made by `npm run captions`). */
+  captions: z.boolean().default(true),
   music: z.string().optional(),
   musicVolume: z.number().min(0).max(1).default(0.15),
   scenes: z.array(sceneSchema).min(1),

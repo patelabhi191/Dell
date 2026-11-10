@@ -1,0 +1,920 @@
+[
+  {
+    "text": "Why",
+    "start": 0.29,
+    "end": 0.3,
+    "id": "w0"
+  },
+  {
+    "text": "is",
+    "start": 0.3,
+    "end": 0.61,
+    "id": "w1"
+  },
+  {
+    "text": "the",
+    "start": 0.61,
+    "end": 0.88,
+    "id": "w2"
+  },
+  {
+    "text": "sky",
+    "start": 0.88,
+    "end": 1.17,
+    "id": "w3"
+  },
+  {
+    "text": "blue?",
+    "start": 1.21,
+    "end": 1.74,
+    "id": "w4"
+  },
+  {
+    "text": "The",
+    "start": 1.74,
+    "end": 2.61,
+    "id": "w5"
+  },
+  {
+    "text": "answer",
+    "start": 2.61,
+    "end": 2.87,
+    "id": "w6"
+  },
+  {
+    "text": "is",
+    "start": 2.87,
+    "end": 3.06,
+    "id": "w7"
+  },
+  {
+    "text": "hiding",
+    "start": 3.06,
+    "end": 3.64,
+    "id": "w8"
+  },
+  {
+    "text": "inside",
+    "start": 3.64,
+    "end": 3.74,
+    "id": "w9"
+  },
+  {
+    "text": "sunlight.",
+    "start": 4.7,
+    "end": 6,
+    "id": "w10"
+  },
+  {
+    "text": "Sunlight",
+    "start": 6.29,
+    "end": 6.88,
+    "id": "w11"
+  },
+  {
+    "text": "looks",
+    "start": 6.88,
+    "end": 7.42,
+    "id": "w12"
+  },
+  {
+    "text": "white,",
+    "start": 7.42,
+    "end": 8,
+    "id": "w13"
+  },
+  {
+    "text": "but",
+    "start": 8,
+    "end": 8.24,
+    "id": "w14"
+  },
+  {
+    "text": "it",
+    "start": 8.24,
+    "end": 8.34,
+    "id": "w15"
+  },
+  {
+    "text": "is",
+    "start": 8.34,
+    "end": 8.44,
+    "id": "w16"
+  },
+  {
+    "text": "really",
+    "start": 8.7,
+    "end": 8.73,
+    "id": "w17"
+  },
+  {
+    "text": "every",
+    "start": 8.73,
+    "end": 8.97,
+    "id": "w18"
+  },
+  {
+    "text": "color",
+    "start": 9.01,
+    "end": 9.26,
+    "id": "w19"
+  },
+  {
+    "text": "of",
+    "start": 9.3,
+    "end": 9.4,
+    "id": "w20"
+  },
+  {
+    "text": "the",
+    "start": 9.4,
+    "end": 9.57,
+    "id": "w21"
+  },
+  {
+    "text": "rainbow",
+    "start": 9.57,
+    "end": 10,
+    "id": "w22"
+  },
+  {
+    "text": "traveling",
+    "start": 10,
+    "end": 10.72,
+    "id": "w23"
+  },
+  {
+    "text": "together.",
+    "start": 10.9,
+    "end": 12,
+    "id": "w24"
+  },
+  {
+    "text": "Each",
+    "start": 12,
+    "end": 12.61,
+    "id": "w25"
+  },
+  {
+    "text": "color",
+    "start": 12.61,
+    "end": 12.94,
+    "id": "w26"
+  },
+  {
+    "text": "is",
+    "start": 12.94,
+    "end": 13.15,
+    "id": "w27"
+  },
+  {
+    "text": "a",
+    "start": 13.15,
+    "end": 13.25,
+    "id": "w28"
+  },
+  {
+    "text": "wave.",
+    "start": 13.25,
+    "end": 13.74,
+    "id": "w29"
+  },
+  {
+    "text": "Red",
+    "start": 14.29,
+    "end": 14.3,
+    "id": "w30"
+  },
+  {
+    "text": "waves",
+    "start": 14.61,
+    "end": 14.95,
+    "id": "w31"
+  },
+  {
+    "text": "are",
+    "start": 14.95,
+    "end": 15.31,
+    "id": "w32"
+  },
+  {
+    "text": "long",
+    "start": 15.31,
+    "end": 15.72,
+    "id": "w33"
+  },
+  {
+    "text": "and",
+    "start": 15.72,
+    "end": 16.63,
+    "id": "w34"
+  },
+  {
+    "text": "lazy.",
+    "start": 16.63,
+    "end": 16.97,
+    "id": "w35"
+  },
+  {
+    "text": "Blue",
+    "start": 16.97,
+    "end": 17.61,
+    "id": "w36"
+  },
+  {
+    "text": "waves",
+    "start": 17.61,
+    "end": 17.92,
+    "id": "w37"
+  },
+  {
+    "text": "are",
+    "start": 17.92,
+    "end": 18.23,
+    "id": "w38"
+  },
+  {
+    "text": "short",
+    "start": 18.23,
+    "end": 18.72,
+    "id": "w39"
+  },
+  {
+    "text": "and",
+    "start": 18.72,
+    "end": 18.76,
+    "id": "w40"
+  },
+  {
+    "text": "choppy.",
+    "start": 19.36,
+    "end": 19.97,
+    "id": "w41"
+  },
+  {
+    "text": "When",
+    "start": 20.29,
+    "end": 20.3,
+    "id": "w42"
+  },
+  {
+    "text": "sunlight",
+    "start": 20.61,
+    "end": 20.98,
+    "id": "w43"
+  },
+  {
+    "text": "hits",
+    "start": 21.05,
+    "end": 21.32,
+    "id": "w44"
+  },
+  {
+    "text": "the",
+    "start": 21.32,
+    "end": 21.57,
+    "id": "w45"
+  },
+  {
+    "text": "air,",
+    "start": 21.57,
+    "end": 22,
+    "id": "w46"
+  },
+  {
+    "text": "tiny",
+    "start": 22,
+    "end": 22.7,
+    "id": "w47"
+  },
+  {
+    "text": "molecules",
+    "start": 22.7,
+    "end": 22.97,
+    "id": "w48"
+  },
+  {
+    "text": "bounce",
+    "start": 23.01,
+    "end": 23.26,
+    "id": "w49"
+  },
+  {
+    "text": "the",
+    "start": 23.3,
+    "end": 23.46,
+    "id": "w50"
+  },
+  {
+    "text": "short",
+    "start": 23.46,
+    "end": 23.69,
+    "id": "w51"
+  },
+  {
+    "text": "waves",
+    "start": 23.77,
+    "end": 24,
+    "id": "w52"
+  },
+  {
+    "text": "in",
+    "start": 24,
+    "end": 24.12,
+    "id": "w53"
+  },
+  {
+    "text": "every",
+    "start": 24.12,
+    "end": 24.43,
+    "id": "w54"
+  },
+  {
+    "text": "direction,",
+    "start": 24.43,
+    "end": 25,
+    "id": "w55"
+  },
+  {
+    "text": "while",
+    "start": 25,
+    "end": 25.61,
+    "id": "w56"
+  },
+  {
+    "text": "long",
+    "start": 25.61,
+    "end": 25.85,
+    "id": "w57"
+  },
+  {
+    "text": "waves",
+    "start": 25.85,
+    "end": 26.32,
+    "id": "w58"
+  },
+  {
+    "text": "mostly",
+    "start": 26.32,
+    "end": 26.72,
+    "id": "w59"
+  },
+  {
+    "text": "pass",
+    "start": 26.72,
+    "end": 27.7,
+    "id": "w60"
+  },
+  {
+    "text": "straight",
+    "start": 27.7,
+    "end": 28.03,
+    "id": "w61"
+  },
+  {
+    "text": "through.",
+    "start": 28.03,
+    "end": 29,
+    "id": "w62"
+  },
+  {
+    "text": "Blue",
+    "start": 29.29,
+    "end": 29.3,
+    "id": "w63"
+  },
+  {
+    "text": "light",
+    "start": 29.61,
+    "end": 29.87,
+    "id": "w64"
+  },
+  {
+    "text": "scatters",
+    "start": 29.87,
+    "end": 30.64,
+    "id": "w65"
+  },
+  {
+    "text": "about",
+    "start": 30.64,
+    "end": 30.74,
+    "id": "w66"
+  },
+  {
+    "text": "six",
+    "start": 30.74,
+    "end": 31.7,
+    "id": "w67"
+  },
+  {
+    "text": "times",
+    "start": 31.7,
+    "end": 31.89,
+    "id": "w68"
+  },
+  {
+    "text": "more",
+    "start": 31.89,
+    "end": 32.26,
+    "id": "w69"
+  },
+  {
+    "text": "than",
+    "start": 32.29,
+    "end": 32.67,
+    "id": "w70"
+  },
+  {
+    "text": "red.",
+    "start": 32.67,
+    "end": 33,
+    "id": "w71"
+  },
+  {
+    "text": "So",
+    "start": 33,
+    "end": 33.17,
+    "id": "w72"
+  },
+  {
+    "text": "blue",
+    "start": 33.17,
+    "end": 33.61,
+    "id": "w73"
+  },
+  {
+    "text": "reaches",
+    "start": 33.61,
+    "end": 34.12,
+    "id": "w74"
+  },
+  {
+    "text": "your",
+    "start": 34.14,
+    "end": 34.49,
+    "id": "w75"
+  },
+  {
+    "text": "eyes",
+    "start": 34.49,
+    "end": 34.73,
+    "id": "w76"
+  },
+  {
+    "text": "from",
+    "start": 34.73,
+    "end": 35.215,
+    "id": "w77"
+  },
+  {
+    "text": "every",
+    "start": 35.215,
+    "end": 35.7,
+    "id": "w78"
+  },
+  {
+    "text": "part",
+    "start": 35.7,
+    "end": 35.97,
+    "id": "w79"
+  },
+  {
+    "text": "of",
+    "start": 36.01,
+    "end": 36.15,
+    "id": "w80"
+  },
+  {
+    "text": "the",
+    "start": 36.15,
+    "end": 36.41,
+    "id": "w81"
+  },
+  {
+    "text": "sky.",
+    "start": 36.41,
+    "end": 37,
+    "id": "w82"
+  },
+  {
+    "text": "Red",
+    "start": 37,
+    "end": 37.61,
+    "id": "w83"
+  },
+  {
+    "text": "light",
+    "start": 37.61,
+    "end": 37.66,
+    "id": "w84"
+  },
+  {
+    "text": "has",
+    "start": 37.66,
+    "end": 37.91,
+    "id": "w85"
+  },
+  {
+    "text": "a",
+    "start": 37.91,
+    "end": 37.97,
+    "id": "w86"
+  },
+  {
+    "text": "wavelength",
+    "start": 38.05,
+    "end": 38.72,
+    "id": "w87"
+  },
+  {
+    "text": "near",
+    "start": 38.72,
+    "end": 39.7,
+    "id": "w88"
+  },
+  {
+    "text": "700",
+    "start": 39.7,
+    "end": 39.89,
+    "id": "w89"
+  },
+  {
+    "text": "nanometers.",
+    "start": 39.89,
+    "end": 41,
+    "id": "w90"
+  },
+  {
+    "text": "Blue",
+    "start": 41,
+    "end": 41.61,
+    "id": "w91"
+  },
+  {
+    "text": "is",
+    "start": 41.61,
+    "end": 41.85,
+    "id": "w92"
+  },
+  {
+    "text": "around",
+    "start": 41.85,
+    "end": 42.69,
+    "id": "w93"
+  },
+  {
+    "text": "450.",
+    "start": 42.71,
+    "end": 44,
+    "id": "w94"
+  },
+  {
+    "text": "Shorter",
+    "start": 44,
+    "end": 44.61,
+    "id": "w95"
+  },
+  {
+    "text": "wave,",
+    "start": 44.61,
+    "end": 45.12,
+    "id": "w96"
+  },
+  {
+    "text": "stronger",
+    "start": 45.12,
+    "end": 45.72,
+    "id": "w97"
+  },
+  {
+    "text": "scattering.",
+    "start": 46.69,
+    "end": 46.97,
+    "id": "w98"
+  },
+  {
+    "text": "Violet",
+    "start": 46.97,
+    "end": 47.61,
+    "id": "w99"
+  },
+  {
+    "text": "scatters",
+    "start": 47.61,
+    "end": 48.11,
+    "id": "w100"
+  },
+  {
+    "text": "even",
+    "start": 48.14,
+    "end": 48.47,
+    "id": "w101"
+  },
+  {
+    "text": "more,",
+    "start": 48.48,
+    "end": 49,
+    "id": "w102"
+  },
+  {
+    "text": "so",
+    "start": 49,
+    "end": 49.16,
+    "id": "w103"
+  },
+  {
+    "text": "why",
+    "start": 49.16,
+    "end": 49.4,
+    "id": "w104"
+  },
+  {
+    "text": "isn't",
+    "start": 49.64,
+    "end": 49.76,
+    "id": "w105"
+  },
+  {
+    "text": "the",
+    "start": 49.81,
+    "end": 50.03,
+    "id": "w106"
+  },
+  {
+    "text": "sky",
+    "start": 50.03,
+    "end": 50.27,
+    "id": "w107"
+  },
+  {
+    "text": "violet?",
+    "start": 50.27,
+    "end": 51,
+    "id": "w108"
+  },
+  {
+    "text": "The",
+    "start": 51,
+    "end": 51.305,
+    "id": "w109"
+  },
+  {
+    "text": "sun",
+    "start": 51.305,
+    "end": 51.61,
+    "id": "w110"
+  },
+  {
+    "text": "sends",
+    "start": 51.61,
+    "end": 51.91,
+    "id": "w111"
+  },
+  {
+    "text": "out",
+    "start": 51.91,
+    "end": 52.16,
+    "id": "w112"
+  },
+  {
+    "text": "less",
+    "start": 52.16,
+    "end": 52.49,
+    "id": "w113"
+  },
+  {
+    "text": "of",
+    "start": 52.49,
+    "end": 52.65,
+    "id": "w114"
+  },
+  {
+    "text": "it,",
+    "start": 52.65,
+    "end": 53,
+    "id": "w115"
+  },
+  {
+    "text": "the",
+    "start": 53,
+    "end": 53.35,
+    "id": "w116"
+  },
+  {
+    "text": "upper",
+    "start": 53.35,
+    "end": 53.7,
+    "id": "w117"
+  },
+  {
+    "text": "atmosphere",
+    "start": 53.7,
+    "end": 54.22,
+    "id": "w118"
+  },
+  {
+    "text": "absorbs",
+    "start": 54.22,
+    "end": 54.69,
+    "id": "w119"
+  },
+  {
+    "text": "some,",
+    "start": 54.77,
+    "end": 55.15,
+    "id": "w120"
+  },
+  {
+    "text": "and",
+    "start": 55.29,
+    "end": 55.42,
+    "id": "w121"
+  },
+  {
+    "text": "our",
+    "start": 55.42,
+    "end": 55.62,
+    "id": "w122"
+  },
+  {
+    "text": "eyes",
+    "start": 55.71,
+    "end": 55.75,
+    "id": "w123"
+  },
+  {
+    "text": "are",
+    "start": 55.75,
+    "end": 56.26,
+    "id": "w124"
+  },
+  {
+    "text": "less",
+    "start": 56.26,
+    "end": 56.6,
+    "id": "w125"
+  },
+  {
+    "text": "sensitive",
+    "start": 56.6,
+    "end": 57.38,
+    "id": "w126"
+  },
+  {
+    "text": "to",
+    "start": 57.38,
+    "end": 57.54,
+    "id": "w127"
+  },
+  {
+    "text": "it.",
+    "start": 57.54,
+    "end": 57.97,
+    "id": "w128"
+  },
+  {
+    "text": "At",
+    "start": 59,
+    "end": 59.17,
+    "id": "w129"
+  },
+  {
+    "text": "sunset,",
+    "start": 59.61,
+    "end": 59.85,
+    "id": "w130"
+  },
+  {
+    "text": "light",
+    "start": 59.85,
+    "end": 60.27,
+    "id": "w131"
+  },
+  {
+    "text": "crosses",
+    "start": 60.27,
+    "end": 60.72,
+    "id": "w132"
+  },
+  {
+    "text": "far",
+    "start": 60.84,
+    "end": 60.87,
+    "id": "w133"
+  },
+  {
+    "text": "more",
+    "start": 60.87,
+    "end": 61.69,
+    "id": "w134"
+  },
+  {
+    "text": "air.",
+    "start": 61.69,
+    "end": 61.97,
+    "id": "w135"
+  },
+  {
+    "text": "The",
+    "start": 61.97,
+    "end": 62.29,
+    "id": "w136"
+  },
+  {
+    "text": "blue",
+    "start": 62.29,
+    "end": 62.61,
+    "id": "w137"
+  },
+  {
+    "text": "gets",
+    "start": 62.61,
+    "end": 62.93,
+    "id": "w138"
+  },
+  {
+    "text": "scattered",
+    "start": 62.93,
+    "end": 63.67,
+    "id": "w139"
+  },
+  {
+    "text": "away,",
+    "start": 63.68,
+    "end": 64.19,
+    "id": "w140"
+  },
+  {
+    "text": "and",
+    "start": 64.19,
+    "end": 64.44,
+    "id": "w141"
+  },
+  {
+    "text": "red",
+    "start": 64.44,
+    "end": 64.7,
+    "id": "w142"
+  },
+  {
+    "text": "is",
+    "start": 64.7,
+    "end": 64.86,
+    "id": "w143"
+  },
+  {
+    "text": "what",
+    "start": 64.86,
+    "end": 65.2,
+    "id": "w144"
+  },
+  {
+    "text": "is",
+    "start": 65.2,
+    "end": 65.37,
+    "id": "w145"
+  },
+  {
+    "text": "left.",
+    "start": 65.37,
+    "end": 66,
+    "id": "w146"
+  },
+  {
+    "text": "Now",
+    "start": 66,
+    "end": 66.61,
+    "id": "w147"
+  },
+  {
+    "text": "you",
+    "start": 66.61,
+    "end": 67.17,
+    "id": "w148"
+  },
+  {
+    "text": "know.",
+    "start": 67.21,
+    "end": 68,
+    "id": "w149"
+  },
+  {
+    "text": "Follow",
+    "start": 68.61,
+    "end": 68.74,
+    "id": "w150"
+  },
+  {
+    "text": "for",
+    "start": 68.74,
+    "end": 69.1,
+    "id": "w151"
+  },
+  {
+    "text": "more.",
+    "start": 69.1,
+    "end": 69.73,
+    "id": "w152"
+  }
+]

@@ -9,6 +9,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { Background } from "./Background";
+import { Captions, type CaptionWord } from "./Captions";
 import { SceneView } from "./scenes";
 import { ThemeContext, themes, useTheme } from "./theme";
 import type { Episode } from "./types";
@@ -51,7 +52,10 @@ const ProgressBar: React.FC = () => {
   );
 };
 
-export const EpisodeVideo: React.FC<{ episode: Episode }> = ({ episode }) => {
+export const EpisodeVideo: React.FC<{ episode: Episode; words?: CaptionWord[] }> = ({
+  episode,
+  words,
+}) => {
   const theme = themes[episode.theme] ?? themes.midnight;
   let from = 0;
   return (
@@ -69,6 +73,7 @@ export const EpisodeVideo: React.FC<{ episode: Episode }> = ({ episode }) => {
           </Sequence>
         );
       })}
+      {words && episode.captions ? <Captions words={words} /> : null}
       <ProgressBar />
       {episode.voiceover ? <Audio src={staticFile(`audio/${episode.voiceover}`)} /> : null}
       {episode.music ? (

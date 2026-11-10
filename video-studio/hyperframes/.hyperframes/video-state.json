@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "historyId": "4f99afd0-94f6-4e97-ae20-b67d62c6c612",
+  "currentRevision": "27c4a9e5-dd40-4fd5-802e-74dc75cc87fb",
+  "pendingChanges": false,
+  "files": {
+    "AGENTS.md": {
+      "hash": "268ff46777938da818baa92a718571785e9acf2cef2d3ffbacbb93483dcba37a",
+      "content": "/root/.cache/hyperframes/history/4f99afd0-94f6-4e97-ae20-b67d62c6c612/blobs/26/268ff46777938da818baa92a718571785e9acf2cef2d3ffbacbb93483dcba37a"
+    },
+    "CLAUDE.md": {
+      "hash": "268ff46777938da818baa92a718571785e9acf2cef2d3ffbacbb93483dcba37a",
+      "content": "/root/.cache/hyperframes/history/4f99afd0-94f6-4e97-ae20-b67d62c6c612/blobs/26/268ff46777938da818baa92a718571785e9acf2cef2d3ffbacbb93483dcba37a"
+    },
+    "hyperframes.json": {
+      "hash": "53dbce1e19aa713cbb12ee0bc4d206143b45ab15e6ffbfcaa8f69572d4d24d50",
+      "content": "/root/.cache/hyperframes/history/4f99afd0-94f6-4e97-ae20-b67d62c6c612/blobs/53/53dbce1e19aa713cbb12ee0bc4d206143b45ab15e6ffbfcaa8f69572d4d24d50"
+    },
+    "index.html": {
+      "hash": "ea01856d74d3e09e17626e996bf570511b0432bac607545ae8eece7144552045",
+      "content": "/root/.cache/hyperframes/history/4f99afd0-94f6-4e97-ae20-b67d62c6c612/blobs/ea/ea01856d74d3e09e17626e996bf570511b0432bac607545ae8eece7144552045"
+    },
+    "meta.json": {
+      "hash": "f9a1c67d3918da0fa1d53f24143f141f402be76d61caa8041ebffb00e713ba25",
+      "content": "/root/.cache/hyperframes/history/4f99afd0-94f6-4e97-ae20-b67d62c6c612/blobs/f9/f9a1c67d3918da0fa1d53f24143f141f402be76d61caa8041ebffb00e713ba25"
+    },
+    "package.json": {
+      "hash": "80e8210f4e81f18de30bbd5b37241e7fb8efd2513214d97e4a74918f3b9a8959",
+      "content": "/root/.cache/hyperframes/history/4f99afd0-94f6-4e97-ae20-b67d62c6c612/blobs/80/80e8210f4e81f18de30bbd5b37241e7fb8efd2513214d97e4a74918f3b9a8959"
+    },
+    "vendor/gsap.min.js": {
+      "hash": "92bb9a96476f983d212a2bc4f54c889039c1696dd4461d40a736860938570fbb",
+      "content": "/root/.cache/hyperframes/history/4f99afd0-94f6-4e97-ae20-b67d62c6c612/blobs/92/92bb9a96476f983d212a2bc4f54c889039c1696dd4461d40a736860938570fbb"
+    }
+  },
+  "revisions": {
+    "27c4a9e5-dd40-4fd5-802e-74dc75cc87fb": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1794332731930,
+      "endedAt": 1794332731938,
+      "files": {
+        "index.html": {
+          "before": "/root/.cache/hyperframes/history/4f99afd0-94f6-4e97-ae20-b67d62c6c612/blobs/4d/4d6b2453208adc69f6452f484667294da5b85d74ced0c8593932efe09e6e0bb4",
+          "after": "/root/.cache/hyperframes/history/4f99afd0-94f6-4e97-ae20-b67d62c6c612/blobs/ea/ea01856d74d3e09e17626e996bf570511b0432bac607545ae8eece7144552045"
+        },
+        "vendor/gsap.min.js": {
+          "before": null,
+          "after": "/root/.cache/hyperframes/history/4f99afd0-94f6-4e97-ae20-b67d62c6c612/blobs/92/92bb9a96476f983d212a2bc4f54c889039c1696dd4461d40a736860938570fbb"
+        }
+      }
+    }
+  },
+  "checks": {
+    "latest": null,
+    "revisions": {},
+    "unversioned": []
+  },
+  "snapshots": {
+    "latest": null,
+    "revisions": {},
+    "unversioned": []
+  },
+  "renders": {
+    "latest": {
+      "id": "28856796-c5e4-4944-9504-d4b96c3508cb",
+      "completedAt": 1794332736768,
+      "output": "/home/user/Dell/video-studio/out/hyperframes-test.mp4",
+      "status": "completed",
+      "revision": "27c4a9e5-dd40-4fd5-802e-74dc75cc87fb"
+    },
+    "retainedRevisions": [
+      "27c4a9e5-dd40-4fd5-802e-74dc75cc87fb"
+    ]
+  },
+  "pendingArtifactCleanup": []
+}

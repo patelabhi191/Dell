@@ -4,6 +4,7 @@ import "@fontsource/poppins/800.css";
 import React from "react";
 import { Composition, Folder, continueRender, delayRender } from "remotion";
 import { EpisodeVideo, FPS, episodeFrames } from "./EpisodeVideo";
+import type { CaptionWord } from "./Captions";
 import { episodeSchema, type Episode } from "./types";
 
 // Every JSON file in /episodes becomes two compositions: <id>-short and <id>-long.
@@ -15,6 +16,12 @@ const episodes: Episode[] = ctx.keys().map((key: string) => {
   }
   return parsed.data;
 });
+
+// Word timings from `npm run captions`, keyed by episode id.
+const captionCtx = (require as any).context("../captions", false, /\.json$/);
+const captions: Record<string, CaptionWord[]> = Object.fromEntries(
+  captionCtx.keys().map((key: string) => [key.replace(/^\.\/|\.json$/g, ""), captionCtx(key)]),
+);
 
 const fontsReady = delayRender("Loading fonts");
 Promise.all([400, 600, 800].map((w) => document.fonts.load(`${w} 1em Poppins`)))
@@ -35,7 +42,7 @@ export const Root: React.FC = () => (
             key={f.suffix}
             id={`${episode.id}-${f.suffix}`}
             component={EpisodeVideo}
-            defaultProps={{ episode }}
+            defaultProps={{ episode, words: captions[episode.id] }}
             durationInFrames={episodeFrames(episode)}
             fps={FPS}
             width={f.width}
