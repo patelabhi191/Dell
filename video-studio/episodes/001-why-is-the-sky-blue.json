@@ -5,14 +5,14 @@
   "scenes": [
     {
       "type": "title",
-      "seconds": 4.5,
-      "kicker": "60-second science",
+      "seconds": 5.8,
+      "kicker": "Quick science",
       "title": "Why is the sky blue?",
       "narration": "Why is the sky blue? The answer is hiding inside sunlight."
     },
     {
       "type": "text",
-      "seconds": 5.5,
+      "seconds": 6,
       "icon": "sun",
       "heading": "Sunlight looks white",
       "body": "But it is really every colour of the rainbow travelling together.",
@@ -20,7 +20,7 @@
     },
     {
       "type": "text",
-      "seconds": 6.5,
+      "seconds": 8.1,
       "icon": "wave",
       "heading": "Each colour is a wave",
       "body": "Red waves are long and lazy. Blue waves are short and choppy.",
@@ -28,7 +28,7 @@
     },
     {
       "type": "text",
-      "seconds": 8,
+      "seconds": 9.1,
       "icon": "globe",
       "heading": "Air scatters short waves",
       "body": "Air molecules bounce short waves in every direction. Long waves mostly pass straight through.",
@@ -36,7 +36,7 @@
     },
     {
       "type": "stat",
-      "seconds": 7.5,
+      "seconds": 8,
       "value": 6,
       "prefix": "~",
       "suffix": "x",
@@ -45,7 +45,7 @@
     },
     {
       "type": "bars",
-      "seconds": 7,
+      "seconds": 10,
       "heading": "Wavelength of light",
       "unit": " nm",
       "bars": [
@@ -69,7 +69,7 @@
     },
     {
       "type": "list",
-      "seconds": 11.5,
+      "seconds": 11.6,
       "heading": "So why not violet?",
       "items": [
         "The Sun sends out less violet",
@@ -80,7 +80,7 @@
     },
     {
       "type": "text",
-      "seconds": 7,
+      "seconds": 7.5,
       "icon": "eye",
       "heading": "And sunsets?",
       "body": "Light crosses far more air, the blue is scattered away, and red is what is left.",
@@ -88,10 +88,11 @@
     },
     {
       "type": "outro",
-      "seconds": 3.5,
+      "seconds": 4.3,
       "title": "Now you know.",
       "cta": "Follow for more",
       "narration": "Now you know. Follow for more."
     }
-  ]
+  ],
+  "voiceover": "001-why-is-the-sky-blue.mp3"
 }

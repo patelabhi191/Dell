@@ -63,6 +63,8 @@ export const episodeSchema = z.object({
   theme: z.string().default("midnight"),
   /** Optional files inside public/audio/ */
   voiceover: z.string().optional(),
+  /** Voice used by `npm run voiceover` (see `npm run voiceover -- --voices`). */
+  voice: z.string().optional(),
   music: z.string().optional(),
   musicVolume: z.number().min(0).max(1).default(0.15),
   scenes: z.array(sceneSchema).min(1),

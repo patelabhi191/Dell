@@ -20,12 +20,30 @@ set `REMOTION_BROWSER=/path/to/chrome`.
 
 1. `npm run new -- 002 "How do magnets work?"` creates `episodes/002-how-do-magnets-work.json`.
 2. Fill in the scenes (see below). Write the voiceover line for each scene in `narration`.
-3. `npm run narration -- 002-how-do-magnets-work` prints the timed script and flags scenes
-   whose narration is too long for their `seconds`.
-4. Record or generate the voiceover, save it in `public/audio/`, and set `"voiceover": "002.mp3"`
-   in the episode. Optional background track: `"music": "loop.mp3"`.
+3. `npm run narration -- 002-how-do-magnets-work` prints the script so you can proofread it.
+4. `npm run voiceover -- 002-how-do-magnets-work` speaks every scene's narration, stretches each
+   scene's `seconds` to fit its line, and writes `public/audio/<id>.mp3`. Re-run it whenever the
+   narration changes. Optional background track: `"music": "loop.mp3"`.
 5. `npm run studio` to check timing, then `npm run render -- 002-how-do-magnets-work`.
 6. Upload `-short.mp4` to Reels/Shorts and `-long.mp4` to YouTube.
+
+## Voiceover
+
+Speech comes from [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), a free open-source voice
+that runs on your own machine (no account or API key). The first run downloads a ~90 MB model
+from Hugging Face. ffmpeg is used to produce the MP3; without it a WAV is written instead.
+
+```bash
+npm run voiceover -- --voices                                   # list voices
+npm run voiceover -- <episode-id> --voice bm_george --speed 1.1
+```
+
+Voice names start with `af`/`am` (American female/male) or `bf`/`bm` (British). Set `"voice"` in
+the episode JSON to make a choice stick. To use your own recording instead, put the file in
+`public/audio/`, set `"voiceover"` to its name and adjust each scene's `seconds` by hand.
+
+To compare another service later (ElevenLabs, OpenAI, ...), add it to `providers` in
+`scripts/voiceover.mjs` and run with `--provider <name>`.
 
 ## Scene types
 
@@ -51,6 +69,7 @@ The schema lives in `src/types.ts`; an invalid episode fails with a readable err
 - `src/Icon.tsx` - flat icons
 - `src/Background.tsx` - drifting background shapes
 - `public/audio/` - voiceover and music files
+- `scripts/voiceover.mjs` - text-to-speech
 
 ## Notes
 

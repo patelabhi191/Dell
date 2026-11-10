@@ -18,7 +18,7 @@ const episode = {
   title,
   theme: "midnight",
   scenes: [
-    { type: "title", seconds: 3.5, kicker: "60-second science", title, narration: "" },
+    { type: "title", seconds: 3.5, kicker: "Quick science", title, narration: "" },
     { type: "text", seconds: 5, icon: "bulb", heading: "The hook", body: "One surprising sentence.", narration: "" },
     { type: "outro", seconds: 3.5, title: "Now you know.", cta: "Follow for more", narration: "" },
   ],
