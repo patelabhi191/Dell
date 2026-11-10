@@ -1,0 +1,48 @@
+import "@fontsource/poppins/400.css";
+import "@fontsource/poppins/600.css";
+import "@fontsource/poppins/800.css";
+import React from "react";
+import { Composition, Folder, continueRender, delayRender } from "remotion";
+import { EpisodeVideo, FPS, episodeFrames } from "./EpisodeVideo";
+import { episodeSchema, type Episode } from "./types";
+
+// Every JSON file in /episodes becomes two compositions: <id>-short and <id>-long.
+const ctx = (require as any).context("../episodes", false, /\.json$/);
+const episodes: Episode[] = ctx.keys().map((key: string) => {
+  const parsed = episodeSchema.safeParse(ctx(key));
+  if (!parsed.success) {
+    throw new Error(`Invalid episode ${key}:\n${parsed.error.message}`);
+  }
+  return parsed.data;
+});
+
+const fontsReady = delayRender("Loading fonts");
+Promise.all([400, 600, 800].map((w) => document.fonts.load(`${w} 1em Poppins`)))
+  .catch(() => undefined)
+  .then(() => continueRender(fontsReady));
+
+const formats = [
+  { suffix: "short", width: 1080, height: 1920 }, // Instagram Reels / YouTube Shorts
+  { suffix: "long", width: 1920, height: 1080 }, // regular YouTube
+] as const;
+
+export const Root: React.FC = () => (
+  <>
+    {episodes.map((episode) => (
+      <Folder key={episode.id} name={episode.id}>
+        {formats.map((f) => (
+          <Composition
+            key={f.suffix}
+            id={`${episode.id}-${f.suffix}`}
+            component={EpisodeVideo}
+            defaultProps={{ episode }}
+            durationInFrames={episodeFrames(episode)}
+            fps={FPS}
+            width={f.width}
+            height={f.height}
+          />
+        ))}
+      </Folder>
+    ))}
+  </>
+);

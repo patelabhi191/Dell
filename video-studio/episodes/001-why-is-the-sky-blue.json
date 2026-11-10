@@ -1,0 +1,97 @@
+{
+  "id": "001-why-is-the-sky-blue",
+  "title": "Why is the sky blue?",
+  "theme": "midnight",
+  "scenes": [
+    {
+      "type": "title",
+      "seconds": 4.5,
+      "kicker": "60-second science",
+      "title": "Why is the sky blue?",
+      "narration": "Why is the sky blue? The answer is hiding inside sunlight."
+    },
+    {
+      "type": "text",
+      "seconds": 5.5,
+      "icon": "sun",
+      "heading": "Sunlight looks white",
+      "body": "But it is really every colour of the rainbow travelling together.",
+      "narration": "Sunlight looks white, but it is really every colour of the rainbow travelling together."
+    },
+    {
+      "type": "text",
+      "seconds": 6.5,
+      "icon": "wave",
+      "heading": "Each colour is a wave",
+      "body": "Red waves are long and lazy. Blue waves are short and choppy.",
+      "narration": "Each colour is a wave. Red waves are long and lazy. Blue waves are short and choppy."
+    },
+    {
+      "type": "text",
+      "seconds": 8,
+      "icon": "globe",
+      "heading": "Air scatters short waves",
+      "body": "Air molecules bounce short waves in every direction. Long waves mostly pass straight through.",
+      "narration": "When sunlight hits the air, tiny molecules bounce the short waves in every direction, while long waves mostly pass straight through."
+    },
+    {
+      "type": "stat",
+      "seconds": 7.5,
+      "value": 6,
+      "prefix": "~",
+      "suffix": "x",
+      "label": "Blue light scatters about six times more than red",
+      "narration": "Blue light scatters about six times more than red. So blue reaches your eyes from every part of the sky."
+    },
+    {
+      "type": "bars",
+      "seconds": 7,
+      "heading": "Wavelength of light",
+      "unit": " nm",
+      "bars": [
+        {
+          "label": "Red",
+          "value": 700,
+          "color": "#F2545B"
+        },
+        {
+          "label": "Green",
+          "value": 550,
+          "color": "#7BD389"
+        },
+        {
+          "label": "Blue",
+          "value": 450,
+          "color": "#4CC9F0"
+        }
+      ],
+      "narration": "Red light has a wavelength near seven hundred nanometres. Blue is around four fifty. Shorter wave, stronger scattering."
+    },
+    {
+      "type": "list",
+      "seconds": 11.5,
+      "heading": "So why not violet?",
+      "items": [
+        "The Sun sends out less violet",
+        "The upper atmosphere absorbs some",
+        "Our eyes are less sensitive to it"
+      ],
+      "narration": "Violet scatters even more, so why isn't the sky violet? The Sun sends out less of it, the upper atmosphere absorbs some, and our eyes are less sensitive to it."
+    },
+    {
+      "type": "text",
+      "seconds": 7,
+      "icon": "eye",
+      "heading": "And sunsets?",
+      "body": "Light crosses far more air, the blue is scattered away, and red is what is left.",
+      "narration": "At sunset, light crosses far more air. The blue gets scattered away, and red is what is left."
+    },
+    {
+      "type": "outro",
+      "seconds": 3.5,
+      "title": "Now you know.",
+      "cta": "Follow for more",
+      "narration": "Now you know. Follow for more."
+    }
+  ]
+}
