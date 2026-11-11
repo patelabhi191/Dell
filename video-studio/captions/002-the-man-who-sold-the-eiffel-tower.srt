@@ -1,83 +1,87 @@
 1
-00:00:00,170 --> 00:00:03,410
+00:00:00,170 --> 00:00:03,570
 In 1925, a man sold the Eiffel Tower.
 
 2
-00:00:03,410 --> 00:00:04,980
+00:00:03,570 --> 00:00:04,700
 He didn't own it.
 
 3
-00:00:05,210 --> 00:00:08,430
-Paris 1925, the tower is rusting and
+00:00:04,940 --> 00:00:06,890
+Paris 1925.
 
 4
-00:00:08,760 --> 00:00:10,260
-expensive to keep standing.
+00:00:06,890 --> 00:00:09,050
+The tower is rusting and expensive to keep
 
 5
-00:00:10,490 --> 00:00:12,980
-Victor Lustig reads that in a newspaper
+00:00:09,110 --> 00:00:09,900
+standing.
 
 6
-00:00:13,080 --> 00:00:14,820
-and sees an opportunity.
+00:00:10,140 --> 00:00:12,400
+Victor Lustig reads that in a newspaper
 
 7
-00:00:14,820 --> 00:00:17,190
-He forges government letterhead and
+00:00:12,400 --> 00:00:14,110
+and sees an opportunity.
 
 8
-00:00:17,200 --> 00:00:19,430
-invites six scrap dealers to a secret
+00:00:14,110 --> 00:00:16,350
+He forges government letterhead and
 
 9
-00:00:19,430 --> 00:00:21,600
-meeting at a luxury hotel.
+00:00:16,350 --> 00:00:18,410
+invites six scrap dealers to a secret
 
 10
-00:00:21,600 --> 00:00:24,240
-The city, he says, is quietly selling the
+00:00:18,410 --> 00:00:20,630
+meeting at a luxury hotel.
 
 11
-00:00:24,310 --> 00:00:27,610
-tower for scrap, 7,000 tons of iron, and
+00:00:20,630 --> 00:00:23,380
+The city, he says, is quietly selling the
 
 12
-00:00:27,610 --> 00:00:28,960
-nobody can know.
+00:00:23,380 --> 00:00:25,890
+tower for scrap, seven thousand tons of
 
 13
-00:00:29,210 --> 00:00:31,650
-One dealer Andre Poisson pays, Lustig
+00:00:25,890 --> 00:00:27,900
+iron, and nobody can know.
 
 14
-00:00:31,650 --> 00:00:34,490
-takes the money and catches the next train
+00:00:27,900 --> 00:00:30,450
+One dealer Andre Poisson pays, Lustig
 
 15
-00:00:34,490 --> 00:00:35,340
-to Vienna.
+00:00:30,450 --> 00:00:33,170
+takes the money and catches the next train
 
 16
-00:00:35,340 --> 00:00:37,530
-And Poisson never calls the police.
+00:00:33,170 --> 00:00:33,910
+to Vienna.
 
 17
-00:00:37,540 --> 00:00:39,140
-He's too embarrassed.
+00:00:33,910 --> 00:00:36,200
+And Poisson never calls the police.
 
 18
-00:00:39,140 --> 00:00:41,620
-So a month later Lustig comes back and
+00:00:36,200 --> 00:00:37,800
+He's too embarrassed.
 
 19
-00:00:41,620 --> 00:00:43,750
-tries to sell the tower again.
+00:00:37,800 --> 00:00:40,060
+So a month later Lustig comes back and
 
 20
-00:00:44,030 --> 00:00:45,560
-Would you have fallen for it?
+00:00:40,060 --> 00:00:42,010
+tries to sell the tower again.
 
 21
-00:00:45,560 --> 00:00:47,260
+00:00:42,330 --> 00:00:43,700
+Would you have fallen for it?
+
+22
+00:00:43,700 --> 00:00:45,600
 Follow for more true stories.

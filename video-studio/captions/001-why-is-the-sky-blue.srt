@@ -1,111 +1,115 @@
 1
-00:00:00,230 --> 00:00:01,320
+00:00:00,230 --> 00:00:01,690
 Why is the sky blue?
 
 2
-00:00:01,620 --> 00:00:04,080
+00:00:01,990 --> 00:00:04,500
 The answer is hiding inside sunlight.
 
 3
-00:00:04,260 --> 00:00:06,000
+00:00:04,720 --> 00:00:06,890
 Sunlight looks white, but it's really
 
 4
-00:00:06,000 --> 00:00:07,500
+00:00:06,900 --> 00:00:08,610
 every color of the rainbow traveling
 
 5
-00:00:08,240 --> 00:00:09,040
+00:00:09,330 --> 00:00:09,700
 together.
 
 6
-00:00:09,270 --> 00:00:10,330
+00:00:09,930 --> 00:00:11,380
 Each color is a wave.
 
 7
-00:00:10,330 --> 00:00:12,160
+00:00:11,690 --> 00:00:13,600
 Red waves are long and lazy.
 
 8
-00:00:12,160 --> 00:00:14,400
+00:00:13,600 --> 00:00:15,790
 Blue waves are short and choppy.
 
 9
-00:00:14,630 --> 00:00:17,040
+00:00:16,230 --> 00:00:18,310
 When sunlight hits the air, tiny molecules
 
 10
-00:00:17,090 --> 00:00:19,380
+00:00:18,310 --> 00:00:20,110
 bounce the short blue waves in every
 
 11
-00:00:19,400 --> 00:00:20,070
+00:00:20,170 --> 00:00:21,000
 direction.
 
 12
-00:00:20,070 --> 00:00:22,390
+00:00:21,000 --> 00:00:23,240
 The long red waves mostly pass straight
 
 13
-00:00:22,390 --> 00:00:23,110
+00:00:23,240 --> 00:00:24,000
 through.
 
 14
-00:00:23,130 --> 00:00:25,170
+00:00:24,230 --> 00:00:26,310
 Blue scatters about six times more than
 
 15
-00:00:25,490 --> 00:00:27,840
+00:00:26,310 --> 00:00:28,960
 red, so blue reaches your eyes from every
 
 16
-00:00:27,840 --> 00:00:28,940
+00:00:28,960 --> 00:00:29,900
 part of the sky.
 
 17
-00:00:28,940 --> 00:00:30,540
-But here's the odd part.
+00:00:30,130 --> 00:00:31,900
+But here's the odd parts.
 
 18
-00:00:30,540 --> 00:00:32,650
-Violet scatters even more than blue, so
+00:00:31,900 --> 00:00:33,900
+Violet scatters even more than blue.
 
 19
-00:00:32,650 --> 00:00:34,240
-why isn't the sky violet?
+00:00:33,900 --> 00:00:36,400
+So why isn't the sky violet?
 
 20
-00:00:34,240 --> 00:00:36,320
+00:00:36,630 --> 00:00:38,400
 The sun sends out less of it.
 
 21
-00:00:36,320 --> 00:00:38,750
+00:00:38,400 --> 00:00:41,460
 The upper atmosphere absorbs some, and our
 
 22
-00:00:38,750 --> 00:00:40,640
+00:00:41,460 --> 00:00:43,400
 eyes are less sensitive to it.
 
 23
-00:00:40,640 --> 00:00:42,950
-At sunset light crosses far more air, the
+00:00:43,400 --> 00:00:45,900
+At sunset light crosses far more air.
 
 24
-00:00:42,950 --> 00:00:45,720
-blue gets scattered away and red is what's
+00:00:45,900 --> 00:00:48,000
+The blue gets scattered away and red is
 
 25
-00:00:45,730 --> 00:00:46,280
-left.
+00:00:48,230 --> 00:00:48,900
+what's left.
 
 26
-00:00:46,480 --> 00:00:49,090
-Blue sky by day, red sky by evening, Same
+00:00:49,130 --> 00:00:50,460
+Blue sky by day.
 
 27
-00:00:49,090 --> 00:00:50,950
-sunlight, different path.
+00:00:50,460 --> 00:00:52,400
+Red sky by evening.
 
 28
-00:00:51,190 --> 00:00:52,980
+00:00:52,400 --> 00:00:54,400
+Same sunlight, different path.
+
+29
+00:00:54,630 --> 00:00:56,900
 Follow for more quick science.

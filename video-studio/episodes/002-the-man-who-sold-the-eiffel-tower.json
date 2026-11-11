@@ -7,7 +7,7 @@
   "scenes": [
     {
       "type": "statement",
-      "seconds": 5.1,
+      "seconds": 4.8,
       "tag": "True story",
       "tagTone": "accent",
       "text": "He sold the *Eiffel Tower*",
@@ -15,28 +15,28 @@
     },
     {
       "type": "show",
-      "seconds": 9.8,
+      "seconds": 9.5,
       "beat": "tower",
       "tag": "Paris, 1925",
       "narration": "Paris, 1925. The tower is rusting, and expensive to keep standing. Victor Lustig reads that in a newspaper, and sees an opportunity."
     },
     {
       "type": "show",
-      "seconds": 6.9,
+      "seconds": 6.5,
       "beat": "meeting",
       "tag": "The setup",
       "narration": "He forges government letterhead, and invites six scrap dealers to a secret meeting at a luxury hotel."
     },
     {
       "type": "show",
-      "seconds": 7.3,
+      "seconds": 7.1,
       "beat": "pitch",
       "tag": "The pitch",
       "narration": "The city, he says, is quietly selling the tower for scrap. Seven thousand tons of iron. And nobody can know."
     },
     {
       "type": "show",
-      "seconds": 6.3,
+      "seconds": 6.1,
       "beat": "sold",
       "tag": "The sale",
       "tagTone": "alert",
@@ -44,20 +44,20 @@
     },
     {
       "type": "statement",
-      "seconds": 3.8,
+      "seconds": 3.7,
       "text": "He never called the *police*",
       "narration": "And Poisson never calls the police. He's too embarrassed."
     },
     {
       "type": "show",
-      "seconds": 4.7,
+      "seconds": 4.4,
       "beat": "again",
       "tag": "One month later",
       "narration": "So a month later, Lustig comes back. And tries to sell the tower again."
     },
     {
       "type": "outro",
-      "seconds": 3.7,
+      "seconds": 3.6,
       "title": "Would you have *fallen* for it?",
       "cta": "Follow",
       "ctaNote": "for more true stories",

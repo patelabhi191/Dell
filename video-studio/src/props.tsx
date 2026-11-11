@@ -1,4 +1,5 @@
 import React from "react";
+import { useCurrentFrame, useVideoConfig } from "remotion";
 import { BODY, DISPLAY, useTheme } from "./theme";
 import type { Tone } from "./types";
 
@@ -7,6 +8,13 @@ import type { Tone } from "./types";
  * and positioned by the point where they touch the floor (`x` = left edge, `ground` = y).
  * `grow` (0-1) raises an object out of the floor, so pass it a beat's `enter()`.
  */
+
+/** Gentle endless sway (-1..1) so standing objects never freeze. `seed` de-syncs them. */
+export const useIdle = (seed = 0, speed = 2.4) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  return Math.sin((frame / fps) * speed + seed);
+};
 
 type BoxColors = { front: string; side: string; top: string };
 
@@ -172,11 +180,14 @@ export const Person: React.FC<{
   const bodyW = h * 0.3;
   const shoulder = ground - h + head * 2 + h * 0.03;
   const hip = ground - h * 0.42;
+  // Breathing: the upper body bobs a little, the feet stay planted.
+  const bob = useIdle(x * 0.05) * h * 0.012;
   return (
     <g opacity={opacity}>
       <ellipse cx={x} cy={ground + 4} rx={bodyW * 0.8} ry={h * 0.035} fill={theme.shadow} />
       <rect x={x - bodyW * 0.42} y={hip - 4} width={bodyW * 0.36} height={ground - hip + 4} rx={bodyW * 0.14} fill={fill} />
       <rect x={x + bodyW * 0.06} y={hip - 4} width={bodyW * 0.36} height={ground - hip + 4} rx={bodyW * 0.14} fill={fill} />
+      <g transform={`translate(0 ${bob})`}>
       <rect x={x - bodyW / 2} y={shoulder} width={bodyW} height={hip - shoulder + 6} rx={bodyW * 0.3} fill={fill} />
       <circle cx={x} cy={ground - h + head} r={head} fill={fill} />
       {hat ? (
@@ -185,6 +196,7 @@ export const Person: React.FC<{
           <rect x={x - head * 0.95} y={ground - h - head * 0.75} width={head * 1.9} height={head * 1.1} rx={head * 0.2} fill={fill} />
         </>
       ) : null}
+      </g>
     </g>
   );
 };
@@ -206,8 +218,9 @@ export const Tag: React.FC<{
   const fg = tone === "accent" ? theme.onAccent : theme.pillText;
   const w = text.length * size * (display ? 0.5 : 0.62) + size * 1.3;
   const h = size * 1.75;
+  const sway = useIdle(x * 0.01 + y * 0.02, 1.8);
   return (
-    <g transform={`translate(${x} ${y}) rotate(${rotate}) scale(${scale})`}>
+    <g transform={`translate(${x} ${y + sway * 3}) rotate(${rotate + sway * 1.2}) scale(${scale})`}>
       <rect
         x={-w / 2}
         y={-h / 2}

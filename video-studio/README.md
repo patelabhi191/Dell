@@ -89,7 +89,7 @@ npm run voiceover -- --voices                                   # list voices
 npm run voiceover -- <episode-id> --voice am_liam --speed 1.05
 ```
 
-The house voice is `am_fenrir` (see `PLAYBOOK.md`, section 4). Voice names start with `af`/`am` (American female/male) or `bf`/`bm` (British). Set `"voice"` in
+The house voices are `am_liam` (info) and `am_puck` (story) (see `PLAYBOOK.md`, section 4). Voice names start with `af`/`am` (American female/male) or `bf`/`bm` (British). Set `"voice"` in
 the episode JSON to make a choice stick. To use your own recording instead, put the file in
 `public/audio/`, set `"voiceover"` to its name and adjust each scene's `seconds` by hand.
 

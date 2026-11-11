@@ -1,4 +1,4 @@
-// Usage: npm run voiceover -- <episode-id> [--voice am_fenrir] [--speed 1] [--provider kokoro]
+// Usage: npm run voiceover -- <episode-id> [--voice am_liam] [--speed 1] [--provider kokoro]
 //
 // Speaks every scene's "narration", stretches each scene's "seconds" to fit its line,
 // writes one audio track to public/audio/<id>.mp3 and points the episode at it.
@@ -19,7 +19,7 @@ const MIN_SCENE = 2.5;
  */
 const providers = {
   /** Kokoro: free, open-source, runs locally. Downloads a ~90 MB model on first use. */
-  async kokoro({ voice = "am_fenrir", speed }) {
+  async kokoro({ voice = "am_liam", speed }) {
     const { KokoroTTS } = await import("kokoro-js");
     const tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", {
       dtype: "q8",
@@ -56,8 +56,8 @@ if (!providers[providerName]) {
   console.error(`Unknown provider "${providerName}". Available: ${Object.keys(providers).join(", ")}`);
   process.exit(1);
 }
-// House voice (see PLAYBOOK.md): am_fenrir, brisk for info videos, slower for stories.
-const voice = flag("voice", episode.voice);
+// House voices (see PLAYBOOK.md): am_liam for info videos, am_puck (slower) for stories.
+const voice = flag("voice", episode.voice ?? (episode.format === "story" ? "am_puck" : "am_liam"));
 const defaultSpeed = episode.voiceSpeed ?? (episode.format === "story" ? 0.88 : 1.0);
 const speed = Number(flag("speed", defaultSpeed));
 const tts = await providers[providerName]({ voice, speed });

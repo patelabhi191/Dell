@@ -146,8 +146,46 @@ const Slam: React.FC<{ delay?: number; children: React.ReactNode }> = ({ delay =
   );
 };
 
+/** Splits "a *b c* d" into words, remembering which ones are highlighted. */
+const toWords = (text: string) =>
+  text
+    .split(/(\*[^*]+\*)/g)
+    .flatMap((part) => {
+      const marked = part.startsWith("*") && part.endsWith("*");
+      return (marked ? part.slice(1, -1) : part)
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((word) => (marked ? `*${word}*` : word));
+    })
+    // Keep stray punctuation ("*violet*?") attached to the word before it.
+    .reduce<string[]>((out, word) => {
+      if (/^[^\w*]+$/.test(word) && out.length) out[out.length - 1] += word;
+      else out.push(word);
+      return out;
+    }, []);
+
+/** One word of a statement, stamped in on its own beat. */
+const StampWord: React.FC<{ word: string; delay: number }> = ({ word, delay }) => {
+  const p = useEnter(delay, 11);
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        marginRight: "0.22em",
+        opacity: interpolate(p, [0, 0.3], [0, 1], { extrapolateRight: "clamp" }),
+        transform: `scale(${interpolate(p, [0, 1], [1.7, 1])}) rotate(${interpolate(p, [0, 1], [-5, 0])}deg)`,
+      }}
+    >
+      <Rich text={word} />
+    </span>
+  );
+};
+
 const Statement: React.FC<{ scene: Of<"statement"> }> = ({ scene }) => {
-  const { vertical } = useLayout();
+  const { vertical, u } = useLayout();
+  const theme = useTheme();
+  const words = toWords(scene.text);
+  const rule = useEnter(0.15 + words.length * 0.13, 16);
   return (
     <Frame>
       {scene.tag ? (
@@ -155,11 +193,12 @@ const Statement: React.FC<{ scene: Of<"statement"> }> = ({ scene }) => {
           <Pill tone={scene.tagTone}>{scene.tag}</Pill>
         </Pop>
       ) : null}
-      <Slam delay={0.08}>
-        <Display size={displaySize(scene.text, vertical)}>
-          <Rich text={scene.text} />
-        </Display>
-      </Slam>
+      <Display size={displaySize(scene.text, vertical)}>
+        {words.map((word, i) => (
+          <StampWord key={i} word={word} delay={0.08 + i * 0.13} />
+        ))}
+      </Display>
+      <div style={{ width: 300 * u * rule, height: 16 * u, borderRadius: 8 * u, background: theme.accent }} />
     </Frame>
   );
 };

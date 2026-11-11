@@ -1,5 +1,5 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
+import { random, useCurrentFrame, useVideoConfig } from "remotion";
 import { lerp, useBeat } from "../beats";
 import { Cash, Person, Tag } from "../props";
 import { BODY, STAGE, useTheme } from "../theme";
@@ -78,8 +78,66 @@ export const EiffelStage: React.FC = () => {
   const cashY = 720 - Math.sin(pay * Math.PI) * 130;
   const swing = again.on ? Math.sin(frame / 5) * 3 * (1 - again.ramp(0.5, 2)) : 0;
 
+  const t = frame / fps;
+  const night = tower.enter(0, 20);
+  const sweep = Math.sin(t * 0.9) * 38;
+  const train = sold.ramp(3.0, 5.8);
+
   return (
     <g>
+      {/* Night sky: twinkling stars, a moon, and the city behind. */}
+      {Array.from({ length: 34 }, (_, i) => (
+        <circle
+          key={i}
+          cx={random(`sx${i}`) * 1060 - 30}
+          cy={random(`sy${i}`) * 520 - 40}
+          r={2 + random(`sr${i}`) * 3}
+          fill={theme.ink}
+          opacity={night * (0.35 + 0.45 * Math.sin(t * (1.5 + random(`sv${i}`) * 3) + i))}
+        />
+      ))}
+      <g opacity={night} transform={`translate(860 ${110 + Math.sin(t * 0.5) * 6})`}>
+        <circle r={52} fill={theme.ink} />
+        <circle cx={22} cy={-12} r={46} fill={theme.bg} />
+      </g>
+      {Array.from({ length: 14 }, (_, i) => {
+        const w = 50 + random(`bw${i}`) * 40;
+        const h = (50 + random(`bh${i}`) * 110) * tower.enter(0.2 + i * 0.05, 16);
+        const x = -40 + i * 78;
+        return (
+          <g key={i} opacity={0.5}>
+            <rect x={x} y={G - h} width={w} height={h} fill={theme.slateDark} />
+            {h > 60 ? <rect x={x + w * 0.3} y={G - h + 16} width={10} height={12} fill={theme.accent} opacity={0.5 + 0.5 * Math.sin(t * 2 + i * 1.3)} /> : null}
+          </g>
+        );
+      })}
+
+      {/* Searchlight sweeping from the top of the tower. */}
+      <polygon
+        points={`${CX},46 ${CX - 70},-420 ${CX + 70},-420`}
+        fill={theme.accent}
+        opacity={0.13 * tower.enter(1, 20)}
+        transform={`rotate(${sweep} ${CX} 46)`}
+      />
+
+      {/* The getaway train crosses behind everything. */}
+      {train > 0 && train < 1 ? (
+        <g transform={`translate(${lerp(1150, -520, train)} ${G - 4})`}>
+          {[0, 1, 2].map((c) => (
+            <g key={c} transform={`translate(${c * 150} 0)`}>
+              <rect x={0} y={-62} width={138} height={50} rx={8} fill={c === 0 ? theme.alert : theme.slateLight} />
+              {c > 0 ? [18, 58, 98].map((wx) => <rect key={wx} x={wx} y={-52} width={24} height={18} rx={3} fill={theme.accent} />) : <rect x={84} y={-52} width={36} height={18} rx={3} fill={theme.accent} />}
+              <circle cx={30} cy={-8} r={11} fill={theme.ink} />
+              <circle cx={108} cy={-8} r={11} fill={theme.ink} />
+            </g>
+          ))}
+          {[0, 1, 2, 3].map((p) => {
+            const life = (t * 1.6 + p * 0.25) % 1;
+            return <circle key={p} cx={20 + life * 90} cy={-80 - life * 70} r={10 + life * 16} fill={theme.slateLight} opacity={0.6 * (1 - life)} />;
+          })}
+        </g>
+      ) : null}
+
       <Tower grow={tower.enter(0.1, 18)} />
       <Tag x={500} y={290} text="RUSTING. COSTLY." tone="alert" size={30} scale={tower.enter(1, 10) * (1 - meeting.ramp(0, 0.3))} />
 
@@ -101,6 +159,19 @@ export const EiffelStage: React.FC = () => {
           </g>
         );
       })}
+      {/* The dealers wonder, one after another, during the pitch. */}
+      {DEALERS.map((x, i) => (
+        <Tag
+          key={x}
+          x={x}
+          y={G - 176 - (i % 2) * 34}
+          text="?"
+          size={30}
+          display
+          scale={pitch.enter(0.8 + i * 0.35, 8) * (1 - pitch.ramp(4.2 + i * 0.1, 4.6 + i * 0.1)) * (sold.on ? 0 : 1)}
+        />
+      ))}
+      <Tag x={DEALERS[POISSON]} y={G - 222} text="!" tone="accent" size={34} display scale={sold.enter(0.1, 7) * (1 - sold.ramp(1.2, 1.5))} />
       <Tag x={DEALERS[POISSON]} y={G - 172} text="POISSON" size={26} scale={sold.enter(0.2, 10) * (1 - again.ramp(0, 0.4))} />
 
       <g transform={`rotate(${-6 + swing} ${CX} 470)`}>

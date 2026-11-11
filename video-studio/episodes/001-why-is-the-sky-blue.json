@@ -7,7 +7,7 @@
   "scenes": [
     {
       "type": "show",
-      "seconds": 3.9,
+      "seconds": 4.6,
       "beat": "intro",
       "heading": "Why is the sky *blue*?",
       "tag": "Quick science",
@@ -15,7 +15,7 @@
     },
     {
       "type": "show",
-      "seconds": 5,
+      "seconds": 5.1,
       "beat": "light",
       "progress": "STEP 1/4",
       "tag": "Sunlight looks white",
@@ -23,7 +23,7 @@
     },
     {
       "type": "show",
-      "seconds": 5.4,
+      "seconds": 6.3,
       "beat": "waves",
       "progress": "STEP 2/4",
       "tag": "Every color is a wave",
@@ -31,7 +31,7 @@
     },
     {
       "type": "show",
-      "seconds": 8.8,
+      "seconds": 8,
       "beat": "scatter",
       "progress": "STEP 3/4",
       "tag": "Air scatters the blue",
@@ -40,7 +40,7 @@
     },
     {
       "type": "stat",
-      "seconds": 5.8,
+      "seconds": 6,
       "value": 6,
       "suffix": "x",
       "label": "Blue scatters about *six times* more than red",
@@ -48,7 +48,7 @@
     },
     {
       "type": "statement",
-      "seconds": 5.8,
+      "seconds": 6.6,
       "tag": "Here's the odd part",
       "tagTone": "accent",
       "text": "So why not *violet*?",
@@ -56,7 +56,7 @@
     },
     {
       "type": "list",
-      "seconds": 5.9,
+      "seconds": 6.8,
       "heading": "Three reasons",
       "items": [
         "The Sun sends out less violet",
@@ -67,7 +67,7 @@
     },
     {
       "type": "show",
-      "seconds": 5.4,
+      "seconds": 5.6,
       "beat": "sunset",
       "progress": "STEP 4/4",
       "tag": "Sunset: more air to cross",
@@ -75,7 +75,7 @@
     },
     {
       "type": "statement",
-      "seconds": 4.8,
+      "seconds": 5.6,
       "text": "Same sunlight. *Different path.*",
       "narration": "Blue sky by day. Red sky by evening. Same sunlight, different path."
     },

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
+import { spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { BODY, useLayout, useTheme } from "./theme";
 
 export type CaptionWord = { text: string; start: number; end: number };
@@ -46,6 +46,8 @@ export const Captions: React.FC<{ words: CaptionWord[] }> = ({ words }) => {
   });
   if (index === -1) return null;
   const size = (vertical ? 50 : 40) * u;
+  // Each new phrase pops in; the word being spoken lifts slightly.
+  const pop = spring({ frame: frame - phrases[index][0].start * fps, fps, config: { damping: 11, mass: 0.5 } });
 
   return (
     <div
@@ -73,6 +75,7 @@ export const Captions: React.FC<{ words: CaptionWord[] }> = ({ words }) => {
           background: theme.pill,
           border: `${2 * u}px solid ${theme.pillBorder}`,
           boxShadow: `0 ${6 * u}px ${18 * u}px ${theme.shadow}`,
+          transform: `scale(${0.86 + 0.14 * pop})`,
         }}
       >
         <span
@@ -89,7 +92,15 @@ export const Captions: React.FC<{ words: CaptionWord[] }> = ({ words }) => {
             const spoken = t >= word.start - 0.05;
             const color = !spoken ? theme.pillMuted : /\d/.test(word.text) ? theme.accent : theme.pillText;
             return (
-              <span key={i} style={{ color }}>
+              <span
+                key={i}
+                style={{
+                  color,
+                  display: "inline-block",
+                  whiteSpace: "pre",
+                  transform: spoken && t < word.end + 0.08 ? `translateY(${-0.09 * size}px)` : undefined,
+                }}
+              >
                 {word.text}
                 {i < phrases[index].length - 1 ? " " : ""}
               </span>

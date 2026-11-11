@@ -19,6 +19,11 @@ const BURSTS = [
   [330, 330], [470, 250], [600, 380], [420, 520], [250, 560],
   [700, 300], [830, 520], [560, 610], [160, 420],
 ];
+const CLOUDS = [
+  { x: 620, y: 150, s: 1, v: 9 },
+  { x: 860, y: 250, s: 0.7, v: 6 },
+  { x: 90, y: 420, s: 0.6, v: 5 },
+];
 const MOLECULES = [
   [280, 250], [390, 420], [520, 330], [640, 250], [760, 410], [860, 620], [610, 500],
   [470, 640], [330, 660], [200, 510], [540, 180], [760, 560], [140, 640], [420, 150],
@@ -69,8 +74,29 @@ export const SkyStage: React.FC = () => {
         strokeLinecap="round"
         opacity={bounce * 0.9}
       />
+      {/* Clouds drift across; they thin out when the air itself becomes the subject. */}
+      {CLOUDS.map((c, i) => {
+        const x = ((c.x + t * c.v + 150) % 1300) - 150;
+        return (
+          <g key={i} transform={`translate(${x} ${c.y + Math.sin(t * 0.8 + i) * 5}) scale(${c.s})`} opacity={appear * lerp(0.95, 0.35, bounce)} fill={theme.card}>
+            <ellipse cx={0} cy={0} rx={70} ry={30} />
+            <ellipse cx={-40} cy={10} rx={46} ry={24} />
+            <ellipse cx={44} cy={8} rx={52} ry={26} />
+            <ellipse cx={8} cy={-22} rx={40} ry={28} />
+          </g>
+        );
+      })}
+
+      {/* Air molecules jiggle in place. */}
       {MOLECULES.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r={7} fill={theme.slate} opacity={scatter.enter(0.1 + i * 0.04) * 0.75} />
+        <circle
+          key={i}
+          cx={x + Math.sin(t * 3.1 + i * 2) * 6}
+          cy={y + Math.cos(t * 2.7 + i * 3) * 6}
+          r={7}
+          fill={theme.slate}
+          opacity={scatter.enter(0.1 + i * 0.04) * 0.75}
+        />
       ))}
 
       {/* Blue light bouncing off air molecules in every direction. */}
@@ -99,6 +125,29 @@ export const SkyStage: React.FC = () => {
 
       <rect x={10} y={STAGE.ground} width={980} height={14} rx={7} fill={theme.slateLight} opacity={appear} />
       <House x={800} ground={STAGE.ground} w={110} h={90} grow={appear} />
+      {/* Tree, swaying. */}
+      <g transform={`translate(560 ${STAGE.ground}) scale(${appear}) rotate(${Math.sin(t * 1.5) * 2})`}>
+        <rect x={-8} y={-70} width={16} height={70} rx={5} fill={theme.slateDark} />
+        <circle cx={0} cy={-100} r={46} fill={GREEN} />
+        <circle cx={-30} cy={-78} r={28} fill={GREEN} />
+        <circle cx={30} cy={-80} r={30} fill={GREEN} />
+      </g>
+      {/* Birds crossing the sky. */}
+      {[0, 1, 2].map((i) => {
+        const bx = ((t * 55 + i * 60) % 1400) - 200;
+        const flap = Math.sin(t * 9 + i) * 9;
+        return (
+          <path
+            key={i}
+            d={`M ${bx - 16},${330 + i * 26 + flap} Q ${bx - 8},${318 + i * 26} ${bx},${330 + i * 26} Q ${bx + 8},${318 + i * 26} ${bx + 16},${330 + i * 26 + flap}`}
+            fill="none"
+            stroke={theme.ink}
+            strokeWidth={5}
+            strokeLinecap="round"
+            opacity={appear * (1 - bounce)}
+          />
+        );
+      })}
       <Person x={720} ground={STAGE.ground} h={170} opacity={appear} />
 
       {/* Sunlight: one pale beam that splits into colour waves. */}
@@ -113,6 +162,12 @@ export const SkyStage: React.FC = () => {
           strokeLinecap="round"
           opacity={beam > 0 ? 1 - split : 0}
         />
+        {/* Packets of light racing down the beam. */}
+        {beam > 0.99 && split < 1
+          ? Array.from({ length: 5 }, (_, i) => (
+              <circle key={i} cx={86 + ((t * 420 + i * (length / 5)) % length)} cy={0} r={9} fill="#FFFFFF" opacity={(1 - split) * 0.9} />
+            ))
+          : null}
         <g transform="translate(86 0)" opacity={split}>
           <g transform="translate(0 -36)">
             <Wave length={length} wavelength={150} amp={15} color={RED} phase={t * 6} />

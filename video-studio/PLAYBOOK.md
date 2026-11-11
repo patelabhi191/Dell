@@ -24,7 +24,7 @@ for reuse: no footage, script lines, characters or mascots from them go into our
 
 | File | Use it for | What was measured |
 | --- | --- | --- |
-| `Animation_Style.mp4` | **the look** | 71 s, 200 words, 173 words/min. Off-white stage with a grid floor, flat blocky objects, lime accent, chunky uppercase headlines, step tracker on top, caption pill under the scene, a mascot, recap card + FOLLOW at the end. |
+| `Animation_Style.mp4` | **the look** | 71 s, 200 words, 173 words/min. Off-white stage with a grid floor, flat blocky objects, one bright accent (lime there, blue for us), chunky uppercase headlines, step tracker on top, caption pill under the scene, a mascot, recap card + FOLLOW at the end. |
 | `For_Knowledge_Info.mp4` | **informative structure** | 57 s, 153 words, 167 words/min. "Microwaves don't heat your food." Counter-intuitive hook, one mechanism, two everyday analogies, two "but here's the weird part" turns, a payoff line that ties back to the hook. |
 | `For_Story_Time.mp4` | **story structure** | 109 s, 254 words, 142 words/min. Second person, present tense, cold open on the threat, named characters with labels, numbers as stakes, "here is your plan so far" recap, three labelled choices, ends on a question to comment. |
 | `Voice.mp4` | **the voice** | 58 s, 161 words, 168 words/min. Male, median pitch about 128 Hz (range about 99-198 Hz), no music, clean silence between phrases. Night-mode chart video. |
@@ -43,14 +43,14 @@ the frame. Objects stand on the floor with a soft contact shadow.
 | --- | --- | --- |
 | Background | `#F2F0EC` | `#0C0D10` |
 | Ink (text, figures) | `#141414` | `#F4F3EE` |
-| Accent (the one bright colour) | `#C4E932` lime | `#C8F03C` lime |
+| Accent (the one bright colour) | `#2563FF` blue | `#4D8DFF` blue |
 | Alert (warnings, stamps) | `#F04E23` | `#FF5A36` |
 | Neutral objects | `#878796` slate | `#6B6D7C` slate |
 | Tags and caption pill | `#17181C`, white text | `#1D1F26`, white text |
 
 **Rules**
 
-- One accent colour. Lime marks the thing the viewer should look at: the hero, the key word,
+- One accent colour: **blue**. (The style reference uses lime; we chose blue.) It marks the thing the viewer should look at: the hero, the key word,
   the current step. Red-orange is only for warnings and stamps. Extra colours only when the
   subject needs them (the colours of light, a chart line).
 - Objects are flat shapes with three shades at most (front, darker side, lighter top). No
@@ -59,31 +59,42 @@ the frame. Objects stand on the floor with a soft contact shadow.
 - Headlines are short: 2-6 words, one or two highlighted with `*asterisks*`.
 - Screen zones, top to bottom: step tracker, headline or tag, stage, caption pill, then empty
   floor. The bottom fifth stays empty for the platform's buttons.
-- Motion: things pop or grow in (spring), headlines slam in slightly oversized, one new thing
-  at a time, timed to the word that names it. Nothing loops for decoration.
+- Motion: things pop or grow in (spring), headlines stamp in word by word, one new thing at a
+  time, timed to the word that names it.
+- **Keep it active.** The goal is that people watch to the end, so the frame is never still:
+  - Built in for every video: the floor glides, small shapes drift up, the camera punches in
+    on each cut and pushes slowly through the scene, captions pop per phrase, figures and tags
+    sway.
+  - Per stage: add ambient life that fits the setting (clouds, birds, a tree, twinkling stars,
+    a searchlight, a passing train) and small reactions (a "?" over a doubtful character, a
+    "!" on the one who acts).
+  - Something new should appear at least every 2-3 seconds. If a scene holds longer than
+    that with nothing changing, add an element or split the scene.
+  - Ambient motion stays small and slow; it must never compete with the thing being explained.
 - The scene **builds up**: objects stay on stage and accumulate across steps. Punchlines dim
   the stage and put one big line over it.
-- Mascot: none yet. The reference has one; ours must be an original character if we add it.
+- Logo / character: none yet. The owner is considering a channel logo or an original
+  character, possibly one that narrates the stories. To be added later; it must be our own
+  design, not the reference's mascot.
 
 ## 4. Voice
 
 The reference voice is almost certainly text-to-speech (studio-clean, no room tone, very even
 pace). Which product made it cannot be told from the file.
 
-**House voice: Kokoro `am_fenrir`.** Kokoro is free, open-source (Apache 2.0, fine for monetised
-videos) and runs locally. Of its twelve male English voices, `am_fenrir` measured closest to the
-reference: median pitch about 136 Hz against 128 Hz, with nearly the same range.
+**House voices (chosen by the owner after listening to samples): Kokoro `am_liam` for
+informative videos, Kokoro `am_puck` for stories.** Kokoro is free, open-source (Apache 2.0,
+fine for monetised videos) and runs locally.
 
 | Setting | Informative | Story |
 | --- | --- | --- |
-| Voice | `am_fenrir` | `am_fenrir` |
+| Voice | `am_liam` | `am_puck` |
 | Speed | 1.0 | 0.88 |
-| Resulting pace | about 170 words/min | about 150 words/min |
+| Resulting pace | about 160 words/min | about 160 words/min |
 | Reference pace | 167-173 | 142 |
 
-Runner-up voices to try with `--voice`: `am_liam` (slightly lower, flatter), `am_michael`
-(deeper, calmer), `am_puck` (more expressive). Matching was done by measurement, not by ear, so
-listen and overrule it if another voice sounds closer.
+Other voices to try with `--voice`: `am_fenrir` (measured closest to the reference's pitch),
+`am_michael` (deeper, calmer).
 
 Other routes, if Kokoro is not close enough:
 
@@ -161,6 +172,7 @@ dimmed stage), `stat` (one number), `list` (recap card), `bars` (compare values)
 - [ ] Every fact checked, sources noted in the brief.
 - [ ] Hook lands in the first 3 seconds; headline readable with the sound off.
 - [ ] Pace within 15 words/min of the target for the format.
+- [ ] Something new on screen at least every 2-3 seconds.
 - [ ] Captions skimmed for misheard words (names and numbers especially).
 - [ ] Nothing important in the bottom fifth or under the top tracker.
 - [ ] Only one accent colour doing the pointing; no stray colours.
@@ -186,13 +198,13 @@ Sign-off:    (follow line, or a question to comment)
 
 | Pilot | Format | Theme | Length | Pace |
 | --- | --- | --- | --- | --- |
-| `001-why-is-the-sky-blue` | info | light | 53 s | 173 words/min |
-| `002-the-man-who-sold-the-eiffel-tower` | story | night | 48 s | 153 words/min |
+| `001-why-is-the-sky-blue` | info | light | 57 s | 162 words/min |
+| `002-the-man-who-sold-the-eiffel-tower` | story | night | 46 s | 159 words/min |
 
 To decide before going weekly:
 
-- Voice: is `am_fenrir` close enough, or do we pay for another?
+- Voice: decided (`am_liam` info, `am_puck` story). Accent colour: decided (blue).
 - Channel name and handle (set `"handle"` in an episode to show it under the captions).
-- Mascot: add an original one, or stay without.
+- Logo or character (possibly a story narrator): owner is thinking about it.
 - Music and sound effects: the voice reference has none; the pilots have none.
 - Niche: which topics the informative videos cover.
