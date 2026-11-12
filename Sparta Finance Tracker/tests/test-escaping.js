@@ -219,6 +219,32 @@ const ent = s => [...s].map(c => '&#' + c.charCodeAt(0) + ';').join('');
   await page.evaluate(() => { meEditId = null; });
 
   // ─────────────────────────────────────────────────────────────────────────
+  section('a Monthly row\'s category is text on all five of its renderers');
+  /* The pickers only offer the fixed list, so this takes an older build or a
+     pulled record -- which is exactly where the Yearly one came from too. */
+  const MCAT = '"><img src=x onerror="window.__xss(\'mcat\')">Dining&Co';
+  await page.evaluate(c => {
+    const ym = isoLocal().slice(0, 7);
+    state.yf.txns.push({ id: 'mx1', type: 'expense', date: ym + '-05', amt: 12, desc: 'x', cat: c, who: 'ABI', tab: 'me' });
+    state.me.chartCats = [c]; meMonth = ym;
+  }, MCAT);
+  await go('monthly');
+  await page.evaluate(() => document.getElementById('meGear').click());
+  const hit = await page.$('#meChart .mehit');
+  if (hit) { await hit.dispatchEvent('mouseenter'); }
+  await page.waitForTimeout(250);
+  const m5 = await page.evaluate(c => ({
+    imgs: document.querySelectorAll('#monthlyView img').length,
+    bar: [...document.querySelectorAll('#meBars .me-bar-name')].some(e => e.textContent === c.toUpperCase() && e.title === c),
+    matrix: [...document.querySelectorAll('#meMatrixBody td')].some(e => e.textContent === c),
+    legend: document.getElementById('meLegend').textContent === c,
+    gear: [...document.querySelectorAll('#mePopList [data-mecat]')].some(e => e.dataset.mecat === c),
+    tip: document.getElementById('meChartTip').textContent.indexOf(c) === 0 }), MCAT);
+  check(!fired.includes('mcat') && m5.imgs === 0, 'no handler ran and no element was created on Monthly', JSON.stringify(m5));
+  check(m5.bar && m5.matrix && m5.legend && m5.gear && m5.tip,
+    'and the name still reads exactly as stored in the bars, grid, legend, gear and tooltip', JSON.stringify(m5));
+  await page.evaluate(() => { state.yf.txns = state.yf.txns.filter(t => t.id !== 'mx1'); });
+
   check(fired.length === 0, 'nothing executed anywhere in this run', fired.join(','));
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();

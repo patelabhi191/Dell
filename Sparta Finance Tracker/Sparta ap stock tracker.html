@@ -4268,7 +4268,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
     <div class="ay-list" id="arcList"></div>
   </div>
 
-  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-10-31</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
+  <footer><span id="verStamp" style="color:var(--text-dim)">build 2026-11-12</span> · SPARTA AP runs entirely in your browser · Not investment advice · Prices may be delayed</footer>
 </div>
 
 <div class="modal" id="sellModal">
@@ -4669,6 +4669,19 @@ const fin=v=>{ const n = typeof v==='number' ? v : (v==null||v==='' ? NaN : +v);
    same choke points, to the two values the app can actually compare -- and
    defaulting to ABI, exactly as a missing one already did. */
 const who2=w=>String(w||'').trim().toUpperCase()==='POO'?'POO':'ABI';
+/* A ROW'S ID IS WRITTEN INTO data- ATTRIBUTES ON EVERY TAB, by a dozen
+   renderers, none of which escape it -- reasonably, since uid() only ever makes
+   seven characters of base 36. But ids arrive from the cloud record as well,
+   and `core` is hand-editable by design (the PIN is documented as something to
+   reset in the Firebase console), so an id is whatever that record says it is:
+   one holding a quote closed the attribute and hung a handler off the row, on
+   every device that pulled it. Checked on the way IN, at the normalisers, for
+   the stated reason -- one choke point rather than a guard in each reader. An
+   id that is not plainly an id is replaced; it is identity, not content, so
+   nothing a user typed is lost. A MISSING id is repaired by the same test,
+   which matters on its own: a row with none could be neither edited nor
+   deleted, because both look it up by the attribute. */
+const idOk=v=>typeof v==='string' && /^[A-Za-z0-9_-]{1,64}$/.test(v);
 /* Cash is the three account buckets and nothing else, so the shape is fixed and
    the figures are coerced with it -- cashInScope() adds all three, so one bad
    bucket is enough to make the Dashboard hero total NaN. */
@@ -4730,6 +4743,14 @@ function automated(fn){
   try{ return fn() } finally{ fbAutomated=false }
 }
 function touchUpdatedAt(){
+  /* A tab parked by a this-browser-only clear (fbLocalOnly, see spartaReset) has
+     stopped being an authority on the cloud, and its stamp has to say so too.
+     The clear itself runs through persist()/yfPersist(), so it used to leave
+     the EMPTIED copy stamped "just now" -- and on the next load that made it
+     the newer side, so fbConnect pushed the emptiness up over the cloud copy
+     the confirm had just promised to leave alone. Hoisted var: undefined, and
+     so falsy, while `state` is still being built. */
+  if(fbLocalOnly) return;
   state.updatedAt=Date.now();
   store.set('sparta.updatedAt',state.updatedAt);
 }
@@ -4936,7 +4957,7 @@ function render(){
         ><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
           ><path d="M14 4h6v6"/><path d="M20 4l-8.6 8.6"/><path d="M18 13.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5.5"/></svg
-        ></a><small>${h.acct}${h.ccy?' · '+h.ccy:''}${h.manual?' · manual':''}</small></span></td>
+        ></a><small>${esc(h.acct)}${h.ccy?' · '+esc(h.ccy):''}${h.manual?' · manual':''}</small></span></td>
       <td>${h.qty}</td>
       <td>${fmtNat(h.avg,c)}</td>
       <td class="${pxCls}" style="font-weight:600">${fmtNat(price,c)}<br><span style="font-size:10.5px;opacity:.9">${arrow} ${(pxDiff>=0?'+':'')+pxDiff.toFixed(2)}%</span></td>
@@ -4984,6 +5005,29 @@ function limitFor(acct,y){
    readers. A year is derived from the timestamp, so a row with neither lands
    under NaN, where no selector offers it and no total counts it -- the money
    would simply be gone from the tab. The current year at least shows it. */
+/* The four lists that have no normaliser of their own. Each must be an ARRAY OF
+   OBJECTS before anything maps over it (a cloud record can deliver neither),
+   each row needs a usable id (see idOk), and a draft year's four amounts are
+   printed into value="" attributes, so they have to be numbers. Run on load and
+   again from applyPayload, the same two places the contribution pass below is. */
+function normalizeDash(){
+  ['holdings','sells','contribs','yearly'].forEach(k=>{
+    state[k]=(Array.isArray(state[k])?state[k]:[]).filter(r=>r&&typeof r==='object');
+    state[k].forEach(r=>{ if(!idOk(r.id)) r.id=uid() });
+  });
+  state.holdings.forEach(h=>{ if(typeof h.sym!=='string') h.sym=String(h.sym==null?'':h.sym) });
+  state.yearly.forEach(r=>{ ['tfsaAbi','tfsaPoo','fhsaAbi','fhsaPoo'].forEach(f=>{
+    if(r[f]!=null) r[f]=fin(r[f]) }) });
+  /* A sale is money too, and nothing coerced it: one record with no price made
+     its row and the Realised P/L tile read $NaN. */
+  state.sells.forEach(s=>{ s.qty=fin(s.qty); s.price=fin(s.price); s.avg=fin(s.avg);
+    s.t=fin(s.t); s.ccy=s.ccy==='CAD'?'CAD':'USD' });
+  /* THE YEAR IS COMPARED WITH ===, against a number off a <select> or the clock,
+     so a deposit carrying the STRING "2026" was in the log and in no total: not
+     in the hero card, not in the room left, not in the chart. */
+  state.contribs.forEach(c=>{ if(c.y!=null) c.y=+c.y });
+}
+normalizeDash();
 state.contribs.forEach(c=>{ if(!c.id) c.id=uid();
   if(c.y==null) c.y=new Date(c.t).getFullYear();
   if(!isFinite(c.y)) c.y=new Date().getFullYear();
@@ -5018,7 +5062,9 @@ state.contribs.forEach(c=>{ if(!c.id) c.id=uid();
     if(c==='CAD'){ h.avg=h.avg*state.fx; if(h.price!=null) h.price=h.price*state.fx }
     h.ccy=c; h.nat=true; changed=true;
   });
-  if(changed) persist();
+  // automated(): a load-time repair is not an edit, and must not move the stamp
+  // that decides which device wins the next connect
+  if(changed) automated(()=>persist());
 })();
 function contributed(acct,y){
   return state.contribs.filter(c=>c.acct===acct && c.y===y).reduce((s,c)=>s+c.amt,0);
@@ -5088,7 +5134,7 @@ function renderContribs(){
     if(cur) tr.style.background='rgba(255,255,255,.035)';
     tr.innerHTML=`<td style="text-align:left"><span class="sym" style="font-size:13px">${c.y}</span></td>
       <td>${c.backfill?'yearly entry':dte.toLocaleDateString('en-CA')}</td>
-      <td><span class="acct-tag ${c.acct==='TFSA'?'tag-tfsa':c.acct==='FHSA'?'tag-fhsa':'tag-other'}" style="margin:0">${c.acct||'\u2014'}</span></td>
+      <td><span class="acct-tag ${c.acct==='TFSA'?'tag-tfsa':c.acct==='FHSA'?'tag-fhsa':'tag-other'}" style="margin:0">${arcEsc(c.acct||'\u2014')}</span></td>
       <td><span class="acct-tag ${c.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${c.who||'ABI'}</span></td>
       <td>${fmtCADterm(c.amt)}</td>
       <td style="white-space:nowrap"><button class="yf-edit" title="Edit entry" data-cedit="${c.id}">\u270e</button><button class="rm" title="Remove entry" data-cid="${c.id}">\u2715</button></td>`;
@@ -5331,7 +5377,7 @@ function normalizeArchives(){
      the same test that has always dropped one with no year at all. */
   state.archives.forEach(a=>{ if(a&&typeof a==='object') a.year=+a.year });
   state.archives=state.archives.filter(a=>a&&typeof a==='object'&&isFinite(a.year)&&a.year);
-  state.archives.forEach(a=>{ if(!a.id) a.id=uid();
+  state.archives.forEach(a=>{ if(!idOk(a.id)) a.id=uid();
     if(!a.stats || typeof a.stats!=='object') a.stats={};
     ARC_STATS.forEach(k=>{ if(typeof a.stats[k]!=='number' || !isFinite(a.stats[k])) a.stats[k]=0 });
     /* The card BODY is the part that throws rather than merely misprinting:
@@ -5400,7 +5446,7 @@ function arcSnapshot(year){
         .map(c=>({c,v:yfIdx(ix,type,c)}))
         .filter(r=>r.v!==0).sort((a,b)=>b.v-a.v);
     };
-    const hl=yfHighlights({mInc,mExp,totInc,totExp,txns,
+    const hl=yfHighlights({mInc,mExp,totInc,totExp,txns,months:yfMonthsIn(year),
       planned:(state.yf.planned||{})[year]||{}, expCats:yfCats('expense')})
       .map(c=>({key:c.key,title:c.title,line:c.line,tone:c.tone}));
     /* The contributions line is built here and stored, not derived on render:
@@ -6371,7 +6417,14 @@ function addHolding(){
   else toast(`Added ${sym} (${acct} cash not deducted — insufficient balance)`);
   const ex=state.holdings.find(h=>h.sym===sym&&h.acct===acct);
   if(ex){
-    ex.avg=(ex.avg*ex.qty+price*qty)/(ex.qty+qty);
+    /* THE PRICE WAS TYPED IN THE DISPLAY CURRENCY; THE HOLDING KEEPS ITS OWN.
+       ex.avg is native (h.ccy), so averaging the typed figure straight in mixed
+       the two whenever they differed: ten AAPL held at US$180.50 plus ten more
+       bought at C$274 (US$200) came out at an average of 227.25 "USD" instead
+       of 190.25, and every P/L on the row followed it. Converted at the same
+       rate the cash deduction two lines up already used. */
+    const pIn = hCcy(ex)===state.ccy ? price : (state.ccy==='CAD' ? price/state.fx : price*state.fx);
+    ex.avg=(ex.avg*ex.qty+pIn*qty)/(ex.qty+qty);
     ex.qty+=qty;
   }else{
     /* No current-price field any more: a new position starts at the buy price
@@ -6597,8 +6650,16 @@ function moveCash(dir){
   markUserEdit();
   const a=$('cashAcct').value, amt=toBase(parseFloat($('cashAmt').value));
   if(!(amt>0)){ toast('Enter an amount'); return }
-  if(dir<0 && state.cash[a]<amt){ toast('Not enough '+a+' cash'); return }
+  /* HALF A DISPLAYED CENT OF SLACK. Cash is held in the base currency and SHOWN
+     converted and rounded, so typing back the balance on screen can come out a
+     hair above what is stored: 2,500.50 shows as C$3,425.69, and 3,425.69 back
+     through the rate is 2,500.5036 -- "Not enough TFSA cash" for withdrawing
+     exactly the figure the panel says is there. Anything inside the rounding
+     is the whole balance, and it lands on a true zero rather than on dust. */
+  const slack=0.005/rate();
+  if(dir<0 && state.cash[a]+slack<amt){ toast('Not enough '+a+' cash'); return }
   state.cash[a]+=dir*amt;
+  if(dir<0 && Math.abs(state.cash[a])<slack) state.cash[a]=0;
   $('cashAmt').value='';
   toast((dir>0?'Added ':'Withdrew ')+money(amt)+(dir>0?' to ':' from ')+a);
   snapshot(); persist(); render();
@@ -6752,6 +6813,13 @@ function spartaReset(ids, alsoCloud){
   fbLocalOnly=!alsoCloud;
   try{ picked.forEach(r=>RESET_CLEAR[r.id]()) }
   finally{ if(alsoCloud) fbLocalOnly=false }
+  /* ...and the copy left behind makes NO claim at the next connect. "A reconnect
+     will pull them back" is only true if the cloud wins that connect, and
+     fbConnect decides it on sparta.updatedAt: left at its old value it could
+     still outrank the cloud (an edit that never synced), and stamped by the
+     clear it always did. Zero loses to any cloud copy that exists, and an
+     empty cloud is still seeded from here exactly as before. */
+  if(!alsoCloud){ state.updatedAt=0; store.set('sparta.updatedAt',0) }
   if(alsoCloud && typeof cloudPushAll==='function' && fbDB) cloudPushAll().catch(()=>{});
   /* SHORT ON PURPOSE. This string lands in #fbStatus, which sits inline in the
      Cloud sync card's heading row, and the drawer's whole content has a 660px
@@ -6882,7 +6950,17 @@ function applyView(view){
 }
 $('viewSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>applyView(b.dataset.view));
 function setCcy(c){
-  state.ccy=c; persist();
+  /* THE DISPLAY CURRENCY IS A PREFERENCE OF THIS BROWSER, NOT AN EDIT TO THE
+     LEDGER. sparta.ccy is a device key and is not in corePayload(), so nothing
+     here can change what the cloud holds -- but this called a bare persist(),
+     which stamps sparta.updatedAt and raises the user-edited flag, and init
+     calls setCcy(state.ccy) on EVERY load. So merely opening the app re-stamped
+     this browser as "changed just now". Opened once while offline, or with sync
+     switched off, a laptop that had not been touched for a week then outranked
+     the phone's real work on its next connect and pushed its stale ledger over
+     it. Same rule as the price refresh: an action that changes none of your
+     rows must not be able to claim it did. */
+  state.ccy=c; automated(()=>persist());
   $('ccySeg').querySelectorAll('button').forEach(x=>x.className=x.dataset.ccy===c?'active all':'');
   render();
 }
@@ -6894,7 +6972,13 @@ async function fetchFX(){
   try{
     const r=await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=CAD');
     const j=await r.json();
-    if(j&&j.rates&&j.rates.CAD>0){ state.fx=j.rates.CAD; persist(); render(); }
+    /* automated(): an exchange rate arriving is not something you did. This
+       runs on load and then HOURLY, and as a bare persist() it stamped the
+       browser, raised the user-edited flag and pushed `core` wholesale from a
+       tab nobody was touching -- the overnight-tab incident, on a one-hour
+       timer instead of a sixty-second one. sparta.fx is a device key and is
+       not in the payload, so nothing is lost by holding back. */
+    if(j&&j.rates&&j.rates.CAD>0){ state.fx=j.rates.CAD; automated(()=>persist()); render(); }
   }catch(e){ /* keep last known rate */ }
 }
 // year dropdowns (deposit year + the viewing-year selector)
@@ -6924,7 +7008,13 @@ function checkYearRollover(){
   if(typeof meFillMonthSelect==='function') meFillMonthSelect();
   $('depYrT').value=String(now);
   if([...$('depYrF').options].some(o=>o.value===String(now))) $('depYrF').value=String(now);
-  persist(); render();
+  /* automated(): midnight on 31 December is the clock moving, not an edit. A
+     tab left open across it used to stamp itself and upload its whole ledger,
+     and because this also runs on the wake listener registered just below --
+     BEFORE fbRecheckOnWake's -- the fresh stamp made the wake check conclude
+     this tab was the newer copy and skip the pull it exists to make. Nothing
+     this function changes is stored: cYear and logYear are view state. */
+  automated(()=>persist()); render();
   toast('Happy '+now+' \u2014 new contribution year added, fresh room available');
 }
 setInterval(checkYearRollover,60000);
@@ -6973,7 +7063,11 @@ function fbRefreshPanel(){
   }
 }
 $('fbToggle').onchange=async()=>{
-  state.fbOn=$('fbToggle').checked; persist();
+  // automated(): the sync switch is a device setting, not a change to the
+  // ledger -- stamping here let a browser that had sat with sync off claim to
+  // be newer than the cloud the moment it was switched back on and failed to
+  // connect, and push on the load after
+  state.fbOn=$('fbToggle').checked; automated(()=>persist());
   if(state.fbOn){ await fbConnect(false) }
   else { fbDB=null; fbSetStatus('sync off'); toast('Sync off \u2014 local data kept') }
   localRefreshPanel();          // cloud-only mode is only offered while sync can carry it
@@ -7027,6 +7121,10 @@ if($('localToggle')) $('localToggle').onchange=()=>{
     if(typeof mePersist==='function') mePersist();
     if(typeof planPersist==='function') planPersist();
     if(typeof notesPersist==='function') notesPersist();
+    // the sealed years too: they are the sixth store and were the one left in
+    // memory only, so a reload before the next archive edit came up with none
+    // and the rollover re-sealed every past year from today's ledger
+    store.set('sparta.archives',state.archives);
     toast('This browser will keep its own copy again');
   }
 };
@@ -7159,7 +7257,9 @@ function applyPayload(p){
   if(!p) return;
   fbApplying=true;
   state.holdings=p.holdings||[]; state.cash=cash3(p.cash);
+  const full = p.v>=2;                       // see corePayload: absent then means emptied
   if(Array.isArray(p.sells)) state.sells=p.sells;   // absent in payloads written before sells existed
+  else if(full) state.sells=[];
   state.history=histPts(p.history);          // also fills in a missing `k`
   state.contribs=p.contribs||[];
   state.limits=p.limits||{TFSA:7000,FHSA:8000}; state.limitsY=p.limitsY||{}; state.yearly=p.yearly||[];
@@ -7170,8 +7270,8 @@ state.yearly.forEach(r=>{
   if(p.yf) state.yf=p.yf;
   if(p.me) state.me=p.me;
   if(p.notes) state.notes=p.notes;
-  if(p.plan) state.plan=p.plan;
-  if(Array.isArray(p.archives)) state.archives=p.archives;
+  if(p.plan) state.plan=p.plan; else if(full) state.plan={segments:[]};
+  if(Array.isArray(p.archives)) state.archives=p.archives; else if(full) state.archives=[];
   if(p.pin && typeof p.pin==='object'){
     store.set('sparta.pinOn', !!p.pin.on);
     store.set('sparta.pinCode', p.pin.code||null);
@@ -7187,6 +7287,7 @@ state.yearly.forEach(r=>{
   if(typeof normalizeArchives==='function'){ normalizeArchives(); store.set('sparta.archives',state.archives);
     if(typeof renderArchives==='function') renderArchives() }
   state.updatedAt=p.updatedAt||Date.now();
+  normalizeDash();
   /* `amt` is coerced here rather than in contributed(), which is one of four
    readers. A year is derived from the timestamp, so a row with neither lands
    under NaN, where no selector offers it and no total counts it -- the money
@@ -7216,6 +7317,18 @@ state.contribs.forEach(c=>{ if(!c.id) c.id=uid();
   if(changed) persist();
 })();
   persist(); render();
+  /* WHAT WAS JUST PULLED IS AS OLD AS THE CLOUD SAYS IT IS, NOT AS NEW AS THE
+     PULL. persist() above stamps Date.now(), which overwrote the line that set
+     state.updatedAt from the payload: every pull left this browser claiming to
+     be newer than the copy it had just taken. On the next load that claim won
+     (local > cloud), so the app re-uploaded the whole ledger and history for
+     nothing -- and anything another device had written with an earlier stamp
+     in between (an edit queued while it was offline, or a clock a minute
+     behind) was overwritten by it. Put the cloud's own stamp back, so a copy
+     that has not been edited here never outranks the place it came from. */
+  if(typeof p.updatedAt==='number' && isFinite(p.updatedAt) && p.updatedAt>0){
+    state.updatedAt=p.updatedAt; store.set('sparta.updatedAt',state.updatedAt);
+  }
   if(typeof renderYF==='function') renderYF();     // render() only covers Dashboard+Contributions;
   if(typeof renderME==='function') renderME();      // without this, a pull while on Yearly/Monthly
   fbApplying=false;                                 // updates state but leaves the screen stale
@@ -7314,8 +7427,16 @@ const decPoint=a=>a==null ? null
 function coreHoldings(){
   return state.holdings.map(h=>{ const o=Object.assign({},h); if(!h.manual) delete o.price; return o });
 }
+/* `v` SAYS WHICH LISTS THIS PAYLOAD KNOWS ABOUT. Firebase does not store an
+   empty array or an empty object -- the key is simply absent when it is read
+   back -- so "the last sale was undone" and "this was written by a build from
+   before sales existed" arrive looking identical. applyPayload kept the local
+   list in both cases, which is right for the old build and wrong for the
+   delete: the other device kept its copy and pushed it back up with its next
+   edit. A payload stamped v>=2 was written by a build that owns sells, plan and
+   archives, so there an absent one means EMPTY. */
 function corePayload(){
-  return { pin:{ on:store.get('sparta.pinOn',false), code:store.get('sparta.pinCode',null) },
+  return { v:2, pin:{ on:store.get('sparta.pinOn',false), code:store.get('sparta.pinCode',null) },
     holdings:coreHoldings(), cash:state.cash, contribs:state.contribs,
     limits:state.limits, limitsY:state.limitsY, yearly:state.yearly, yf:state.yf, me:state.me,
     notes:state.notes, plan:state.plan, archives:state.archives, sells:state.sells,
@@ -7415,7 +7536,11 @@ async function cloudSaveDebounced(){
     if(j===lastCoreJSON) return;                 // nothing actually changed
     lastCoreJSON=j;
     fbDB.child('core').set(payload).then(()=>fbSetStatus('connected \u00b7 auto-sync on',true))
-      .catch(()=>fbSetStatus('sync error \u2014 will retry on next change'));
+      /* lastCoreJSON was set BEFORE the write was known to have landed, so a
+         refused one was remembered as sent: the "next change" this status
+         promises had to differ from it, and saving the same ledger again was
+         silently skipped as "nothing changed". Forget it, so the retry is real. */
+      .catch(()=>{ lastCoreJSON=''; fbSetStatus('sync error \u2014 will retry on next change') });
   },1200);
 }
 // a single snapshot = one tiny child write
@@ -8030,6 +8155,13 @@ function normalizeYF(){
      exactly as deleting a bill does: it goes back to being an ordinary Monthly
      expense that counts for itself instead of sitting in no total at all.
      Runs after the tab backfill above, which still reads the old shape. */
+  /* Ids, before the repoint below reads them (see idOk). An allocation pointing
+     at a row whose id is replaced is carried across to the new one, so a bill
+     does not lose its itemised lines for having had a bad id. */
+  const yfReid=new Map();
+  y.txns.forEach(t=>{ if(!idOk(t.id)){ const n=uid(); if(t.id!=null) yfReid.set(String(t.id),n); t.id=n } });
+  if(yfReid.size) y.txns.forEach(t=>{
+    if(t.allot!=null && yfReid.has(String(t.allot))) t.allot=yfReid.get(String(t.allot)) });
   const yfIds=new Set(y.txns.map(t=>t.id));
   let yfRepointed=0;
   y.txns.forEach(t=>{
@@ -8388,7 +8520,16 @@ if($('calcGo')){
    answerable instead of discovering the edges by missing them. */
 const ASK_SRC_YF = 'Yearly — money that left the bank';
 const ASK_SRC_ME = 'Monthly — where it went';
-const askNorm = q => String(q||'').toLowerCase().replace(/[^a-z0-9$ .%-]/g,' ').replace(/\s+/g,' ').trim();
+/* The thousands comma goes FIRST. Every other piece of punctuation becomes a
+   space, and that turned "over $1,000" into "over $1 000": the amount matcher
+   read the limit as $1 and answered "8 over $1". */
+const askNorm = q => String(q||'').toLowerCase().replace(/(\d),(?=\d{3}(?!\d))/g,'$1')
+  .replace(/[^a-z0-9$ .%-]/g,' ').replace(/\s+/g,' ').trim();
+/* A category as the reader would type it: through the same normaliser as the
+   question (so Health/medical and Education\Tuition, whose punctuation askNorm
+   turns into spaces, can match at all) and with a plural folded, so "groceries"
+   finds Grocery. Applied to BOTH sides, so it only has to be consistent. */
+const askStem = s => askNorm(s).replace(/ies\b/g,'y').replace(/([a-z])s\b/g,'$1');
 
 /* The SAME predicate yfTxns() uses, over a date RANGE instead of the global
    state.yfYear. Written out once, here, because yfTxns() is pinned to that
@@ -8403,22 +8544,30 @@ const askRows = (from, to) => (state.yf.txns||[]).filter(t =>
    only once the months are named back to the reader. */
 function askPeriod(q, yr){
   const now = new Date(), curY = now.getFullYear();
+  /* A YEAR IS LOOKED FOR IN WHAT IS LEFT ONCE THE MONEY IS TAKEN OUT. "Anything
+     over $2000" matched 20\d\d, so the question was answered for the YEAR 2000
+     -- "None, nothing over $2,000 in 2000" -- on a ledger holding a $2,500 row.
+     And naming another year used to return on the spot with the whole of it,
+     so "what did I spend in march 2025" printed the 2025 total under a March
+     question. The year now only replaces `yr`; the month words below still
+     get their turn, and every answer still names the range it used. */
+  const qy = q.replace(/\b(?:over|above|more than|bigger than) \$?[\d.]+/g,' ').replace(/\$[\d.]+/g,' ');
+  const yrM = qy.match(/\b(20\d\d)\b/);
+  const named = (yrM && +yrM[1] !== yr) ? +yrM[1] : 0;
+  if(named) yr = named;
   const cur = (yr === curY) ? now.getMonth()+1 : 12;
   const pad = m => String(m).padStart(2,'0');
   const last = m => String(new Date(yr, m, 0).getDate()).padStart(2,'0');
   const span = (a,b) => ({ from:`${yr}-${pad(a)}-01`, to:`${yr}-${pad(b)}-${last(b)}`,
     label: a===b ? `${YF_MONTHS[a-1]} ${yr}` : `${YF_MONTHS[a-1]}–${YF_MONTHS[b-1]} ${yr}`,
-    months: b-a+1 });
-  const yrM = q.match(/\b(20\d\d)\b/);
-  if(yrM && +yrM[1] !== yr){ const y=+yrM[1];
-    return { from:`${y}-01-01`, to:`${y}-12-31`, label:String(y), months:12, year:y }; }
+    months: b-a+1, year: named||undefined });
   const n = q.match(/last (\d+) month/);
   if(n){ const k=Math.max(1,Math.min(12,+n[1])); return span(Math.max(1,cur-k+1), cur); }
   if(/this month|current month/.test(q)) return span(cur,cur);
   if(/last month/.test(q)) return cur>1 ? span(cur-1,cur-1) : span(1,1);
   const names=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
   for(let i=0;i<12;i++) if(new RegExp('\\b'+names[i]).test(q)) return span(i+1,i+1);
-  return { from:`${yr}-01-01`, to:`${yr}-12-31`, label:String(yr), months:cur };
+  return { from:`${yr}-01-01`, to:`${yr}-12-31`, label:String(yr), months:cur, year:named||undefined };
 }
 
 /* Each intent: a chip label, a matcher, and a run() that returns
@@ -8469,7 +8618,14 @@ const ASK_INTENTS = [
   { id:'cat', chip:null, src:ASK_SRC_YF,
     re:/\bon ([a-z0-9/\\ ]+)/,
     run:(c)=>{ const names=yfCats('expense').concat(yfIdxNames(yfCatIndex(c.rows),'expense'));
-      const hit=names.find(n=>c.q.includes(String(n).toLowerCase()));
+      /* THE LONGEST NAME THAT MATCHES, compared the way the question was
+         normalised. First-in-list answered "spent on other bank" with the
+         figure for Other, and a raw includes() could never find a name whose
+         punctuation askNorm had already removed from the question -- those
+         fell through to the YEAR'S TOTAL, printed under a category question. */
+      const qs=' '+askStem(c.q)+' ';
+      const hit=[...new Set(names)].filter(n=>{ const k=askStem(n); return k && qs.includes(' '+k+' ') })
+        .sort((a,b)=>String(b).length-String(a).length)[0];
       if(!hit) return undefined;        // not a category question after all
       const v=yfCatOf(c.rows.filter(t=>t.type==='expense'),hit);
       if(!v) return {head:yf$(0), line:`on ${hit} over ${c.p.label} — nothing recorded.`};
@@ -8672,8 +8828,12 @@ const YF_HI_MAX=8;               // more dots than this stops being scannable
 /* Pure: turn one year's aggregates into the insight cards worth showing.
    Every card is guarded. A year with a single month of data must not claim a
    "highest month", and no branch may average over an empty set of months. */
+/* How many months of `yr` a monthly plan has to cover: the months elapsed in
+   the year in progress, all twelve of a year that is over. */
+const yfMonthsIn=yr=>(+yr===new Date().getFullYear())?(new Date().getMonth()+1):12;
 function yfHighlights(d){
   const {mInc,mExp,totInc,totExp,txns,planned,expCats}=d;
+  const planM=d.months>0?d.months:1;
   const out=[];
   const all=[...Array(12).keys()];
   /* A MONTH THAT NETS BELOW ZERO STILL HAPPENED. These three lists used to test
@@ -8774,15 +8934,24 @@ function yfHighlights(d){
   if(planKeys.length){
     const act=c=>txns.filter(t=>t.type==='expense'&&t.cat===c).reduce((s,t)=>s+t.amt,0);
     let hi=null, lo=null;
+    /* PLANNED IS A MONTHLY FIGURE (it is the number typed on the category's
+       row), and `a` is the year to date. This card was the one reader still
+       subtracting one from the other raw, so by March every category had
+       "overspent" a single month's plan: Home at $1,450 a month and $2,900
+       spent by November read "$1,450.00 over" beside a table whose Diff for
+       the same row said +$1,186 under, and an Ask panel answering "nothing is
+       over its budget". The plan is carried up to the months it covers, the
+       same basis the Income table and Ask already use. */
+    const planOf=c=>planned[c]*planM;
     planKeys.forEach(c=>{
-      const a=act(c), diff=a-planned[c];
+      const a=act(c), diff=a-planOf(c);
       if(diff>0&&(!hi||diff>hi.d)) hi={c,d:diff,a};
       if(diff<0&&(!lo||diff<lo.d)) lo={c,d:diff,a};
     });
     if(hi) push('over','exp','Over budget',
-      hi.c+': planned '+yf$(planned[hi.c])+', spent '+yf$2(hi.a)+' — '+yf$2(hi.d)+' over.');
+      hi.c+': planned '+yf$(planOf(hi.c))+', spent '+yf$2(hi.a)+' — '+yf$2(hi.d)+' over.');
     if(lo) push('under','inc','Under budget',
-      lo.c+': planned '+yf$(planned[lo.c])+', used '+yf$2(lo.a)+' — '+yf$2(-lo.d)+' to spare.');
+      lo.c+': planned '+yf$(planOf(lo.c))+', used '+yf$2(lo.a)+' — '+yf$2(-lo.d)+' to spare.');
   }
 
   // ---- categories & contributors ----
@@ -8850,7 +9019,7 @@ function yfHiBuild(){
      divides by totInc, so a row the month loop cannot place made the card
      disagree with the End tile three inches above it. */
   const totInc=txns.reduce((a,t)=>a+(t.type==='income'?t.amt:0),0), totExp=yfSpendOf(txns);
-  const cards=yfHighlights({mInc,mExp,totInc,totExp,txns,
+  const cards=yfHighlights({mInc,mExp,totInc,totExp,txns,months:yfMonthsIn(yr),
     planned:(state.yf.planned||{})[yr]||{}, expCats:yfCats('expense')});
   yfHiN=cards.length;
   panel.style.display=cards.length?'':'none';
@@ -9366,7 +9535,13 @@ function yfSaveTx(){
 
   if(yfEditId){
     const t=state.yf.txns.find(x=>x.id===yfEditId);
-    if(t){ Object.assign(t,{type,date,amt,desc,cat,who}); toast('Transaction updated'); }
+    if(t){ Object.assign(t,{type,date,amt,desc,cat,who});
+      /* allotM is "the bill month this line is filed under", and Monthly reads
+         it in preference to the line's own date. Moving the BILL to another
+         month left its lines behind in the old one: August's bill, with its
+         groceries still listed and charted under July. */
+      yfKidsOf(t.id).forEach(k=>{ k.allotM=String(date).slice(0,7) });
+      toast('Transaction updated'); }
     yfCancelEdit();
   } else {
     state.yf.txns.push({id:uid(),type,date,amt,desc,cat,who,tab:'yf'});
@@ -9455,7 +9630,9 @@ function yfFillYearSel(){
   const sel=$('yfYearSel'); if(!sel) return;
   // every year that has a record, plus the current one, newest first
   const yrs=new Set((state.yf.txns||[]).map(t=>(t.date||'').slice(0,4)).filter(Boolean));
-  Object.keys(state.yf.start||{}).forEach(y=>yrs.add(String(y)));
+  // only a key that IS a year: these go into option markup, and a start map
+  // from a hand-edited record can carry anything as a key
+  Object.keys(state.yf.start||{}).forEach(y=>{ if(/^\d{4}$/.test(y)) yrs.add(String(y)) });
   yrs.add(String(nowYear()));
   yrs.add(String(nowYear()+1));                   // next year is always reachable
   yrs.add(String(state.yfYear));
@@ -9644,6 +9821,12 @@ const meMonthOf=t=>t.allot?(t.allotM||(t.date||'').slice(0,7)):(t.date||'').slic
 // ordinary row — so say so. `src` is whatever statement the row was imported
 // from, typed in at import time; both are user text, so both are escaped.
 const tagEsc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+/* The same, for a value going inside a quoted attribute. Monthly's pickers only
+   offer the fixed ME_CATS, which is why its five category renderers below never
+   escaped the name -- but the name on a ROW is whatever the ledger holds, and a
+   Monthly row can carry a Yearly name (free text) from an older build or a
+   pulled record. Those sites printed it raw into text, title="" and data-c="". */
+const attrEsc=s=>tagEsc(s).replace(/"/g,'&quot;');
 /* NEITHER TAG CARRIES AN OPACITY, and that is the point: they are one
    component, and the source tag used to be a second rendering of it.
    .tag-other's colour is already --text-dim, an alpha ink at .55, so the
@@ -10119,7 +10302,7 @@ function renderMEChart(){
     arr.forEach((v,i)=>{
       dots+=`<circle cx="${px(i).toFixed(1)}" cy="${py(v).toFixed(1)}" r="3.5" fill="${col}" stroke="#1B222A" stroke-width="1.5"/>`;
       dots+=`<circle class="mehit" cx="${px(i).toFixed(1)}" cy="${py(v).toFixed(1)}" r="13" fill="transparent"
-        style="pointer-events:all;cursor:pointer" data-c="${c}" data-m="${i}" data-v="${v}" data-col="${col}"/>`;
+        style="pointer-events:all;cursor:pointer" data-c="${attrEsc(c)}" data-m="${i}" data-v="${v}" data-col="${col}"/>`;
     });
   });
   svg.innerHTML=grid+ylab+
@@ -10130,14 +10313,15 @@ function renderMEChart(){
   svg.querySelectorAll('.mehit').forEach(h=>{
     const show=()=>{ const r=svg.getBoundingClientRect(), wrap=tip.parentElement.getBoundingClientRect();
       const cx=+h.getAttribute('cx'), cy=+h.getAttribute('cy');
-      tip.innerHTML=`<b style="color:${h.dataset.col}">${h.dataset.c}</b> ${YF_MONTHS[+h.dataset.m]}<br>${meMoney(+h.dataset.v)}`;
+      // dataset hands back the DECODED name, so it is escaped again on the way out
+      tip.innerHTML=`<b style="color:${h.dataset.col}">${tagEsc(h.dataset.c)}</b> ${YF_MONTHS[+h.dataset.m]}<br>${meMoney(+h.dataset.v)}`;
       tip.style.left=(r.left+(cx/W)*r.width-wrap.left)+'px';
       tip.style.top=(r.top+(cy/H)*r.height-wrap.top-10)+'px';
       tip.style.opacity='1'; };
     h.addEventListener('mouseenter',show); h.addEventListener('click',show);
     h.addEventListener('mouseleave',()=>tip.style.opacity='0');
   });
-  $('meLegend').innerHTML=chosen.map(c=>`<span><i style="background:${meColor(c)}"></i>${c}</span>`).join('')
+  $('meLegend').innerHTML=chosen.map(c=>`<span><i style="background:${meColor(c)}"></i>${tagEsc(c)}</span>`).join('')
     || '<span style="color:var(--text-dim)">No categories selected</span>';
 }
 function renderMEMatrix(){
@@ -10162,7 +10346,7 @@ function renderMEMatrix(){
   let body=cats.map(c=>{
     const arr=data[c]; const tot=arr.reduce((s,v)=>s+v,0);
     arr.forEach((v,i)=>colTot[i]+=v);
-    return `<tr><td title="${c}"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${meColor(c)};margin-right:7px"></span>${c}</td>`+
+    return `<tr><td title="${attrEsc(c)}"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${meColor(c)};margin-right:7px"></span>${tagEsc(c)}</td>`+
       arr.map(cell).join('')+`<td class="col-tot">${Math.round(tot).toLocaleString('en-CA')}</td></tr>`;
   }).join('');
   const grand=colTot.reduce((s,v)=>s+v,0);
@@ -10176,8 +10360,8 @@ function renderMEGear(){
   const list=$('mePopList'); if(!list) return;
   const chosen=meChartCats();
   list.innerHTML=meChartableCats(meYear()).map(c=>`
-    <label><input type="checkbox" data-mecat="${c.replace(/"/g,'&quot;')}" ${chosen.includes(c)?'checked':''}>
-    <span class="dot" style="background:${meColor(c)};color:${meColor(c)}"></span>${c}</label>`).join('');
+    <label><input type="checkbox" data-mecat="${attrEsc(c)}" ${chosen.includes(c)?'checked':''}>
+    <span class="dot" style="background:${meColor(c)};color:${meColor(c)}"></span>${tagEsc(c)}</label>`).join('');
   list.querySelectorAll('[data-mecat]').forEach(cb=>cb.onchange=()=>{
     const c=cb.dataset.mecat, arr=meChartCats();
     const i=arr.indexOf(c);
@@ -10305,7 +10489,7 @@ function renderME(){
   const max=Math.max(...cats.map(([,v])=>v),0)||1;
   $('meBars').innerHTML=cats.map(([c,v])=>`
     <div class="me-bar-row">
-      <div class="me-bar-name" title="${c}" style="color:${meColor(c)}">${c.toUpperCase()}</div>
+      <div class="me-bar-name" title="${attrEsc(c)}" style="color:${meColor(c)}">${tagEsc(c.toUpperCase())}</div>
       <div class="me-bar-track"><div class="me-bar-fill" style="width:${Math.max(0,v/max*100).toFixed(1)}%"></div></div>
       <div class="me-bar-amt">${meMoney(v)}</div>
     </div>`).join('');
@@ -10720,7 +10904,7 @@ function normalizeNotes(){
   if(!Array.isArray(n.points)) n.points=[];
   n.points = n.points
     .map(p => typeof p==='string' ? {id:uid(), text:p}       // tolerate a plain-string list
-           : (p && typeof p==='object') ? {id:p.id||uid(), text:String(p.text==null?'':p.text)}
+           : (p && typeof p==='object') ? {id:idOk(p.id)?p.id:uid(), text:String(p.text==null?'':p.text)}
            : null)
     .filter(Boolean);
   if(typeof n.text!=='string') n.text = n.text==null ? '' : String(n.text);
@@ -11004,7 +11188,7 @@ function normalizePlan(){
     const items = (Array.isArray(s.items)?s.items:[]).map(it=>{
       if(!it || typeof it!=='object' || Array.isArray(it)) return null;
       const amt = Number(it.amt);
-      return { id: it.id||uid(),
+      return { id: idOk(it.id)?it.id:uid(),
                date: /^\d{4}-\d{2}-\d{2}$/.test(it.date) ? it.date : isoLocal(),
                type: it.type==='income' ? 'income' : 'expense',
                name: String(it.name==null?'':it.name),
@@ -11012,7 +11196,7 @@ function normalizePlan(){
                notes: String(it.notes==null?'':it.notes) };
     }).filter(Boolean);
     const st = Number(s.start);
-    return { id:s.id||uid(), name:String(s.name==null?'':s.name),
+    return { id:idOk(s.id)?s.id:uid(), name:String(s.name==null?'':s.name),
              start: isFinite(st)?st:0, open: !!s.open, items };
   }).filter(Boolean);
   return p;

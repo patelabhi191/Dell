@@ -709,7 +709,9 @@ const YEAR = 2026;
 
   // a payload written before sells existed must not wipe the ones here
   check(await page.evaluate(() => {
-    const p = corePayload(); delete p.sells;
+    /* `v` goes with it: that is what an older build's payload looks like. A
+       payload that carries v>=2 and no sells is the other case -- section 11c. */
+    const p = corePayload(); delete p.sells; delete p.v;
     applyPayload(p);
     return state.sells.length;
   }) === 2, 'an older payload with no sells key leaves them alone, rather than emptying them');
@@ -1073,6 +1075,169 @@ const YEAR = 2026;
     });
     check(again === false, '10h: and said once, not on every failed write afterwards');
     await c.close();
+  }
+
+  /* ── 11. only an EDIT may claim this browser changed ───────────────────
+     sparta.updatedAt decides which copy survives a connect, so anything that
+     moves it without a row changing hands a stale browser the win. Each of
+     these did, with nobody touching anything. */
+  section('11. opening the app, a rate, a new year and a pull are not edits');
+  {
+    const c = await browser.newContext(); const p = await c.newPage(); await stub(p);
+    const perr = []; p.on('pageerror', e => perr.push(e.message));
+    await p.addInitScript(() => { try {
+      if (localStorage.getItem('__s11__')) return;
+      localStorage.clear(); localStorage.setItem('__s11__', '1');
+      localStorage.setItem('sparta.local.adopted', '1');
+      localStorage.setItem('sparta.local.updatedAt', '1000');
+      localStorage.setItem('sparta.local.dash.cash', JSON.stringify({ TFSA: 2500.5, FHSA: 0, Other: 0 }));
+      localStorage.setItem('sparta.local.yf.data', JSON.stringify({ txns: [
+        { id: 'r1', type: 'expense', date: '2026-01-04', amt: 50, desc: 'Row', cat: 'Food', tab: 'yf' }] }));
+    } catch (e) { } });
+    await p.goto(url, { waitUntil: 'load' }); await p.waitForTimeout(900);   // past the FX fetch
+    const load = await p.evaluate(() => ({ stored: localStorage.getItem('sparta.local.updatedAt'),
+      mem: state.updatedAt, edited: fbUserEdited, had: BOOT_HAD_LOCAL_DATA }));
+    check(load.had === true, '11a: PRECONDITION -- the browser held data at load', JSON.stringify(load));
+    check(load.stored === '1000' && load.mem === 1000,
+      '11a: a plain load leaves the stamp where the last edit put it', JSON.stringify(load));
+    check(load.edited === false, '11a: ...and does not raise the user-edited flag', String(load.edited));
+
+    const quiet = await p.evaluate(async () => {
+      const wrote = []; const real = fbDB;
+      fbDB = { child: () => ({ set: () => { wrote.push('core'); return Promise.resolve() } }) };
+      lastCoreJSON = ''; const out = {};
+      const probe = async (name, fn) => {
+        fbUserEdited = false; state.updatedAt = 5; const n = wrote.length;
+        await fn(); await new Promise(r => setTimeout(r, 1500));
+        out[name] = { stamp: state.updatedAt, edited: fbUserEdited, wrote: wrote.length - n };
+      };
+      await probe('fx', () => fetchFX());
+      await probe('ccy', () => { setCcy('USD'); setCcy('CAD') });
+      await probe('year', () => { YEAR = YEAR - 1; checkYearRollover() });
+      // the control: the same harness, a real edit
+      await probe('edit', () => { state.cash.TFSA += 1; persist() });
+      fbDB = real; fbUserEdited = false;
+      return out;
+    });
+    ['fx', 'ccy', 'year'].forEach(k => check(
+      quiet[k].stamp === 5 && quiet[k].edited === false && quiet[k].wrote === 0,
+      `11b: ${k === 'fx' ? 'the hourly exchange rate' : k === 'ccy' ? 'the currency switch' : 'the 1 January rollover'} neither stamps, flags nor uploads`,
+      JSON.stringify(quiet[k])));
+    check(quiet.edit.stamp > 5 && quiet.edit.edited === true && quiet.edit.wrote === 1,
+      '11b: while a real edit through the same harness does all three -- not vacuous',
+      JSON.stringify(quiet.edit));
+
+    const pull = await p.evaluate(() => {
+      state.sells = [{ id: 's1', t: 1, sym: 'X', acct: 'TFSA', qty: 1, price: 2, avg: 1, ccy: 'USD' }];
+      state.plan = { segments: [{ id: 'p1', name: 'Seg', start: 0, items: [] }] };
+      state.archives = [{ id: 'a1', year: 2020, stats: {} }];
+      const base = { holdings: [], cash: { TFSA: 1 }, yf: { cats: { exp: ['A'], inc: ['B'] } } };
+      applyCloud({ core: Object.assign({ updatedAt: 777 }, base) });          // no v: an older build
+      const legacy = { sells: state.sells.length, plan: state.plan.segments.length, arc: state.archives.length,
+        mem: state.updatedAt, stored: localStorage.getItem('sparta.local.updatedAt') };
+      applyCloud({ core: Object.assign({ updatedAt: 888, v: 2 }, base) });    // this build, lists emptied
+      return { legacy, now: { sells: state.sells.length, plan: state.plan.segments.length,
+        arc: state.archives.length }, v: corePayload().v };
+    });
+    check(pull.legacy.mem === 777 && pull.legacy.stored === '777',
+      '11c: a pulled copy keeps the CLOUD\'s stamp, not the moment it was pulled', JSON.stringify(pull.legacy));
+    check(pull.legacy.sells === 1 && pull.legacy.plan === 1 && pull.legacy.arc === 1,
+      '11c: a payload from before `v` still leaves absent lists alone', JSON.stringify(pull.legacy));
+    check(pull.v >= 2 && pull.now.sells === 0 && pull.now.plan === 0 && pull.now.arc === 0,
+      '11c: from a build that owns them, an absent list means EMPTIED -- the delete travels',
+      JSON.stringify(pull));
+
+    const retry = await p.evaluate(async () => {
+      const real = fbDB; let n = 0;
+      fbDB = { child: () => ({ set: () => { n++; return n === 1 ? Promise.reject(new Error('denied')) : Promise.resolve() } }) };
+      fbUserEdited = true; lastCoreJSON = '';
+      await cloudSaveDebounced(); await new Promise(r => setTimeout(r, 1500));
+      await cloudSaveDebounced(); await new Promise(r => setTimeout(r, 1500));   // same ledger, saved again
+      fbDB = real; fbUserEdited = false;
+      return n;
+    });
+    check(retry === 2, '11d: a core write that FAILED is sent again by the next save of the same ledger',
+      String(retry));
+
+    const fixed = await p.evaluate(() => {
+      const bad = '"><b id=inj>';
+      applyCloud({ core: { updatedAt: 999, v: 2, cash: {},
+        holdings: [{ id: bad, sym: 'AAA', acct: 'TFSA', qty: 1, avg: 1, nat: true }, null],
+        sells: [{ id: bad, t: 'x', sym: 'S', acct: 'TFSA', qty: 2, avg: 1 }],
+        contribs: [{ id: bad, t: 1, y: String(new Date().getFullYear()), acct: 'TFSA', amt: 40, cad: true }],
+        yf: { txns: [{ id: bad, type: 'expense', date: '2026-02-01', amt: 9, cat: 'Credit Bill', tab: 'yf' },
+          { type: 'expense', date: '2026-02-02', amt: 3, cat: 'Groceries', tab: 'me', allot: bad, allotM: '2026-02' }] } } });
+      const bill = state.yf.txns.find(t => t.tab === 'yf'), kid = state.yf.txns.find(t => t.tab === 'me');
+      const ok = v => /^[A-Za-z0-9_-]+$/.test(v);
+      return { ids: [state.holdings[0].id, state.sells[0].id, state.contribs[0].id, bill.id, kid.id].every(ok),
+        holdings: state.holdings.length, link: kid.allot === bill.id,
+        sale: [state.sells[0].price, state.sells[0].t, state.sells[0].ccy],
+        counted: contributed('TFSA', new Date().getFullYear()), inj: !!document.getElementById('inj') };
+    });
+    check(fixed.ids && !fixed.inj, '11e: an id that is not an id is replaced on the way in, on every list',
+      JSON.stringify(fixed));
+    check(fixed.link, '11e: ...and the allocation that pointed at it follows it to the new one');
+    check(fixed.holdings === 1 && fixed.sale[0] === 0 && fixed.sale[1] === 0 && fixed.sale[2] === 'USD',
+      '11e: a null row is dropped and a sale with no price reads 0, not NaN', JSON.stringify(fixed));
+    check(fixed.counted === 40, '11e: a deposit whose year arrived as a STRING is still in the total',
+      String(fixed.counted));
+    check(perr.length === 0, '11: no page errors', perr.join(' | '));
+    await c.close();
+  }
+
+  section('12. a this-browser-only clear loses the next connect, as its confirm says');
+  {
+    const O2 = await open(browser, url, SEED);
+    await O2.page.waitForTimeout(300);
+    const cloudStamp = Date.now();
+    await O2.page.waitForTimeout(40);
+    const parked = await O2.page.evaluate(() => {
+      spartaReset(['yearly'], false);
+      const after = state.updatedAt;
+      state.cash.TFSA += 1; persist(); yfPersist();          // edits in the parked tab
+      return { after, later: state.updatedAt, stored: localStorage.getItem(nsKey('sparta.updatedAt')) };
+    });
+    check(parked.after === 0 && parked.later === 0 && parked.stored === '0',
+      '12: the cleared copy carries no claim, and a parked tab does not acquire one',
+      JSON.stringify(parked));
+    await O2.page.reload({ waitUntil: 'load' }); await O2.page.waitForTimeout(400);
+    const back = await O2.page.evaluate(async rs => {
+      const log = [];
+      const remote = { core: { updatedAt: rs, v: 2, holdings: state.holdings, cash: state.cash,
+        contribs: state.contribs, yf: { txns: [{ id: 'c1', type: 'expense', date: '2026-01-04', amt: 320.55,
+          desc: 'CLOUD ROW', cat: 'Grocery', tab: 'yf' }], cats: { exp: ['Grocery'], inc: ['Paycheck'] } } } };
+      const ref = { get: () => Promise.resolve({ exists: () => true, val: () => remote }),
+        set: () => { log.push('push'); return Promise.resolve() },
+        child: () => ({ set: () => { log.push('core'); return Promise.resolve() } }) };
+      window.firebase = { apps: [1], database: () => ({ ref: () => ref }) };
+      window.fbConfigProblem = () => null; state.fbOn = true;
+      await fbConnect(true);
+      return { log, had: BOOT_HAD_LOCAL_DATA, rows: state.yf.txns.map(t => t.desc) };
+    }, cloudStamp);
+    check(back.had === true, '12: PRECONDITION -- the other tabs\' data is still here, so this browser has a say',
+      String(back.had));
+    check(back.log.length === 0, '12: the emptied ledger is NOT pushed over the cloud on the next load',
+      JSON.stringify(back.log));
+    check(back.rows.length === 1 && back.rows[0] === 'CLOUD ROW',
+      '12: the cloud copy is pulled back, which is what the confirm promised', JSON.stringify(back.rows));
+    await O2.ctx.close();
+  }
+
+  section('13. switching local storage back on writes the archives down too');
+  {
+    const O3 = await open(browser, url, SEED);
+    const kept = await O3.page.evaluate(() => {
+      state.archives = [{ id: 'keep', year: 2021, stats: {}, edited: true }]; normalizeArchives();
+      Object.keys(localStorage).filter(k => /^sparta\./.test(k) && !/pin|localOff/.test(k))
+        .forEach(k => localStorage.removeItem(k));
+      localSetOff(true);                                    // as the switch leaves it
+      const t = document.getElementById('localToggle'); t.disabled = false; t.checked = true;
+      t.onchange();
+      return JSON.parse(localStorage.getItem(nsKey('sparta.archives')) || '[]').map(a => a.id);
+    });
+    check(kept.length === 1 && kept[0] === 'keep',
+      '13: the sealed years reach the disk with the other five stores', JSON.stringify(kept));
+    await O3.ctx.close();
   }
 
   await ctx.close(); await browser.close(); srv.close();

@@ -480,7 +480,12 @@ const section = t => console.log(`\n── ${t} ──`);
       hero: document.getElementById('heroValue').textContent,
       rows: document.querySelectorAll('#hbody tr').length }));
     await B.page.click('#hbody .bk');
-    await B.page.waitForTimeout(250);
+    /* Park the pointer before reading the colour. The click leaves it over the
+       mark, and .bk:hover is brighter than its resting grey; whether the
+       re-rendered button has picked hover up by the time this reads is a race,
+       so the check passed or failed on timing rather than on the colour. */
+    await B.page.mouse.move(0, 0);
+    await B.page.waitForTimeout(400);
     const marked = await B.page.evaluate(() => {
       const b = document.querySelector('#hbody .bk');
       const other = document.querySelector('.tag-other');

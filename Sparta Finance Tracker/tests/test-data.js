@@ -253,6 +253,56 @@ const near = (a, b, eps = 0.005) => Math.abs(a - b) < eps;
     await s2.ctx.close();
   }
 
+  console.log('\n── Dashboard: the typed figure and the stored one are in different currencies ──');
+  {
+    const s3 = await open(browser, url);          // SEED: display CAD at 1.37, AAPL held in USD
+    const d = await s3.page.evaluate(() => {
+      const $ = id => document.getElementById(id);
+      const h = state.holdings.find(x => x.sym === 'AAPL');
+      const pre = { ccy: state.ccy, fx: state.fx, hccy: h.ccy, avg: h.avg, qty: h.qty };
+      state.cash.TFSA = 0;                         // keep the cash deduction out of it
+      $('fSym').value = 'AAPL'; $('fAcct').value = 'TFSA'; $('fQty').value = '10'; $('fPrice').value = '274';
+      addHolding();
+      const avg = h.avg, qty = h.qty;
+      // a CAD holding topped up in CAD is the same-currency path and must not move
+      const v = state.holdings.find(x => x.sym === 'VFV'); const v0 = v.avg;
+      $('fSym').value = 'VFV'; $('fQty').value = '25'; $('fPrice').value = String(v0); addHolding();
+      // cash: withdraw exactly the balance the panel shows
+      state.cash.TFSA = 2500.5; render();
+      const shown = $('cashT').textContent;
+      $('cashAcct').value = 'TFSA'; $('cashAmt').value = shown.replace(/[^0-9.]/g, '');
+      moveCash(-1);
+      const left = state.cash.TFSA, said = $('toast').textContent;
+      $('cashAmt').value = '1'; moveCash(-1);      // and nothing more than that
+      return { pre, avg, qty, vfv: [v0, v.avg], shown, left, said, refused: $('toast').textContent, after: state.cash.TFSA };
+    });
+    check(d.pre.ccy === 'CAD' && d.pre.hccy === 'USD', 'PRECONDITION: CAD on screen, a USD holding', JSON.stringify(d.pre));
+    const want = (180.5 * 10 + (274 / 1.37) * 10) / 20;
+    check(near(d.avg, want) && d.qty === 20,
+      'buying more of a USD holding at a CAD price averages in USD', `${d.avg} (want ${want})`);
+    check(near(d.vfv[0], d.vfv[1]), 'the same-currency path is untouched', JSON.stringify(d.vfv));
+    check(d.left === 0 && /Withdrew/.test(d.said),
+      `the balance on screen (${d.shown}) can be withdrawn in full, and lands on zero`, `${d.left} — ${d.said}`);
+    check(/Not enough/.test(d.refused) && d.after === 0, 'and a dollar more than that is still refused', d.refused);
+    await s3.ctx.close();
+  }
+
+  console.log('\n── Yearly: a bill that moves month takes its itemised lines with it ──');
+  {
+    const s4 = await open(browser, url);
+    const b = await s4.page.evaluate(() => {
+      state.yf.txns.push({ id: 'bill7', type: 'expense', date: '2026-07-19', amt: 900, desc: 'Card', cat: 'Credit Bill', who: 'ABI', tab: 'yf' },
+        { id: 'kid7', type: 'expense', date: '2026-07-05', amt: 200, desc: 'Shop', cat: 'Groceries', who: 'ABI', tab: 'me', allot: 'bill7', allotM: '2026-07' });
+      state.yfYear = 2026; renderYF(); yfStartEdit('bill7');
+      document.getElementById('yfDate').value = '2026-08-02'; yfSaveTx();
+      const kid = state.yf.txns.find(t => t.id === 'kid7');
+      return { m: meMonthOf(kid), date: kid.date, aug: (meMonthlyByCat('2026').Groceries || [])[7] };
+    });
+    check(b.m === '2026-08' && b.aug === 200, 'the line is filed under the bill\'s new month', JSON.stringify(b));
+    check(b.date === '2026-07-05', 'and keeps its own purchase date', b.date);
+    await s4.ctx.close();
+  }
+
   await ctx.close(); await browser.close(); srv.close();
   console.log(`\nDATA-DRIVEN + UNIT: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

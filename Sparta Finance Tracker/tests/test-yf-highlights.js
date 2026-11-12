@@ -23,7 +23,10 @@ const SEED_TX = [
   { type: 'income',  date: `${YEAR}-06-01`, amt: 3000, desc: 'Pay',      cat: 'Paycheck',  who: 'ABI' },
   { type: 'expense', date: `${YEAR}-06-05`, amt: 7200, desc: 'Reno',     cat: 'Home',      who: 'POO' },
 ];
-const seed = (page, txns = SEED_TX, planned = { Food: 3000 }) => page.evaluate(([tx, pl, yr]) => {
+/* Planned is a MONTHLY figure, so the budget card measures it against the
+   months it covers. 100 a month is under the year's 5,500 of Food in any month
+   of the year, which keeps section 1 from depending on when it is run. */
+const seed = (page, txns = SEED_TX, planned = { Food: 100 }) => page.evaluate(([tx, pl, yr]) => {
   state.yfYear = yr;
   state.yf.txns = tx.map((t, i) => Object.assign({ id: 'x' + i }, t));
   state.yf.planned = { [yr]: pl };
@@ -69,8 +72,34 @@ const cards = page => page.evaluate(() =>
   const def = c.find(x => x.title === 'Spent more than you earned');
   check(!!def && /FEB/.test(def.line) && !/JAN/.test(def.line), 'deficit card lists FEB only', def && def.line);
   const over = c.find(x => x.title === 'Over budget');
-  check(!!over && /Food/.test(over.line) && /2,500/.test(over.line),
-    'Food over budget by $2,500 (5,500 spent vs 3,000 planned)', over && over.line);
+  const nowM = new Date().getMonth() + 1;          // YEAR is the year in progress
+  const wantOver = (5500 - 100 * nowM).toLocaleString('en-CA');
+  check(!!over && /Food/.test(over.line) && over.line.includes('$' + wantOver + '.00 over'),
+    `Food over budget by $${wantOver}: 5,500 spent against 100 a month x ${nowM} months`, over && over.line);
+  /* The half that was wrong. Home planned at 5,000 a MONTH, 7,200 spent in the
+     year: more than one month's plan, far less than the plan to date.
+     Subtracting the raw monthly figure called that "$2,200 over". Asked of the
+     generator directly, with only that plan, so the card cap cannot hide it. */
+  const basis = await page.evaluate(() => {
+    const tx = yfTxns(), m = new Date().getMonth() + 1;
+    const mk = months => yfHighlights({ mInc: Array(12).fill(0), mExp: Array(12).fill(0), totInc: 0, totExp: 0,
+      txns: tx, months, planned: { Home: 5000 }, expCats: yfCats('expense') });
+    const line = (cards, t) => (cards.find(x => x.title === t) || {}).line || '';
+    return { m, under: line(mk(m), 'Under budget'), over: line(mk(m), 'Over budget'),
+      one: line(mk(1), 'Over budget'), closed: yfMonthsIn(new Date().getFullYear() - 1),
+      open: yfMonthsIn(new Date().getFullYear()) };
+  });
+  if (basis.m >= 2) {
+    check(/Home/.test(basis.under) && basis.over === '',
+      'Home, inside its plan to date, is NOT reported over budget', `${basis.under} | ${basis.over}`);
+    check(basis.under.includes('planned $' + (5000 * basis.m).toLocaleString('en-CA') + ','),
+      '...and the plan it is measured against is the monthly figure x months elapsed', basis.under);
+  }
+  check(/Home/.test(basis.one) && /2,200\.00 over/.test(basis.one),
+    'the same rows against ONE month of plan are over -- so the basis is what decides it', basis.one);
+  check(basis.closed === 12 && basis.open === basis.m,
+    'a year that has ended covers twelve months, the year in progress the months so far',
+    `${basis.closed} / ${basis.open}`);
   const who = c.find(x => x.title === 'Who spent what');
   check(!!who && /ABI/.test(who.line) && /POO/.test(who.line), 'contributor split present', who && who.line);
   const fam = {

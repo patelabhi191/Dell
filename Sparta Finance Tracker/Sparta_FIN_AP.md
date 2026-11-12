@@ -2291,6 +2291,49 @@ doubling, and an uncompacted history inside it, look like an unconsidered cost r
 intended one. **Affects upgraders only**; a ledger that started on a namespaced build has one copy.
 Left alone because deleting them removes the safety net that is their whole purpose.
 
+### ARCHITECTURE REVIEW, 2026-11-12 -- what it changed, and what it left
+
+Build stamp `2026-11-12`, suite **2,272 passed / 0 failed across 21 files**. Nothing visible was
+restyled; three figures changed because they were wrong.
+
+**Sync -- "only an edit may claim this browser changed"** (`test-storage` 11-13):
+
+- `setCcy`, `fetchFX`, `checkYearRollover`, the sync switch and the load-time `migrateNative` all
+  called a bare `persist()`. Init calls `setCcy(state.ccy)` on every load and `fetchFX` runs hourly,
+  so **merely opening the app re-stamped `sparta.updatedAt`** and an idle tab pushed `core` every
+  hour. All five are `automated()` now.
+- `applyPayload` ended in `persist()`, which overwrote the cloud's stamp with "now". A pulled copy
+  keeps the cloud's own stamp.
+- **A this-browser-only clear was pushed to the cloud on the next load** -- the clear stamped the
+  emptied copy "just now", so it won the connect. The stamp is zeroed and `touchUpdatedAt()` does
+  nothing while `fbLocalOnly` is up.
+- `corePayload()` carries `v:2`. Firebase drops empty arrays, so deleting the LAST sale, plan
+  segment or archive never reached another device; with `v>=2` an absent list means emptied.
+- A failed `core` write forgets `lastCoreJSON`; switching local storage back on writes the
+  archives down too.
+
+**Money:** the Highlights budget card compared a MONTHLY plan with the year to date (it now takes
+`months`, via `yfMonthsIn`); `addHolding` averaged a display-currency price into a native-currency
+holding; `moveCash` refused to withdraw exactly the balance on screen; moving a bill's date left
+its itemised lines' `allotM` in the old month. **Ask:** an amount was read as a year ("over $2000"),
+a thousands comma cut the limit to $1, the first category in the list won over the one named, and
+a category with punctuation in its name fell through to the year's total.
+
+**Data from outside the form:** `idOk()` -- ids are checked in every normaliser (they go raw into
+`data-` attributes); `normalizeDash()` is the missing normaliser for holdings, sells, contributions
+and draft years; Monthly's five category renderers escape the name.
+
+**Left alone, each needing a decision:**
+
+- **Cash is held in the USD base and shown converted**, so a CAD balance moves with the exchange
+  rate. Same fault Contributions was cured of; fixing it means giving cash a currency.
+- **`arcPersist()`/`yfPersist()` stamp even inside `automated()`**, by design (see the rollover
+  notes). The first load of a new year, made offline, still leaves a stale ledger stamped fresh.
+- **`sparta.arcDeleted` is not in `corePayload()`**, so a deleted archive can be re-sealed by
+  another device.
+- **An edit made before the first connect resolves can be overwritten by the pull.**
+- **Ask: "spent on <something that is not a category>" is answered with the year's total.**
+
 ### Two process notes that cost real work here
 
 - **Agents share one session rate limit with the main session.** Three run in parallel exhausted it

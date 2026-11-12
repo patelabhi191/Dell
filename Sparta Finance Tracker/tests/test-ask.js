@@ -170,6 +170,46 @@ const digits = s => String(s).replace(/[^0-9]/g, '');
     '6: and the budget answer uses the plan of the year ASKED about, not the year on screen',
     `${otherYr.b.head} ${otherYr.b.line}`);
 
+  /* ── 6b. the question that was typed is the question that is answered ──
+     Each of these returned a confident figure for a DIFFERENT question: a year
+     that was really an amount, a limit cut off at its comma, the first category
+     in the list rather than the one named, and the whole year's spending under
+     a category whose name carries punctuation or was typed in the plural. */
+  section('6b. amounts, commas, category names and a month in another year');
+  const sharp = await O.page.evaluate(() => {
+    const add = [
+      { id: 'q1', type: 'expense', date: '2026-02-02', amt: 2500, desc: 'Laptop', cat: 'Other Bank', who: 'ABI', tab: 'yf' },
+      { id: 'q2', type: 'expense', date: '2026-02-03', amt: 11,   desc: 'Sundry', cat: 'Other',      who: 'ABI', tab: 'yf' },
+      { id: 'q3', type: 'expense', date: '2025-03-03', amt: 70,   desc: 'Old',    cat: 'Grocery',    who: 'ABI', tab: 'yf' },
+      { id: 'q4', type: 'expense', date: '2025-06-03', amt: 900,  desc: 'Old2',   cat: 'Home',       who: 'ABI', tab: 'yf' }];
+    state.yf.txns.push(...add);
+    const a = q => { const r = yfAsk(q); return { ok: r.ok, head: r.head, line: r.line, intent: r.intent, range: r.range } };
+    const out = { over2000: a('anything over $2000'), over1000: a('anything over $1,000'),
+      health: a('what did I spend on health/medical'), bank: a('what did I spend on other bank'),
+      plural: a('what did I spend on groceries'), mar25: a('what did I spend in march 2025'),
+      y25: a('what did I spend in 2025'), viewing: state.yfYear };
+    state.yf.txns = state.yf.txns.filter(t => !/^q\d$/.test(t.id));
+    return out;
+  });
+  check(sharp.viewing === 2026, '6b: PRECONDITION -- the tab is showing 2026', String(sharp.viewing));
+  check(sharp.over2000.intent === 'over' && /^1 over \$2,000/.test(sharp.over2000.head) && sharp.over2000.range === '2026',
+    '6b: "over $2000" is an amount, not the year 2000', `${sharp.over2000.head} | ${sharp.over2000.line}`);
+  // Home 1,450 twice and the 2,500 laptop: three rows above a thousand
+  check(/^3 over \$1,000/.test(sharp.over1000.head),
+    '6b: a thousands comma does not cut the limit down to $1', sharp.over1000.head);
+  check(sharp.health.intent === 'cat' && digits(sharp.health.head) === '63' && /Health\/medical/.test(sharp.health.line),
+    '6b: a category with punctuation in its name is found, not answered with the year\'s total',
+    `${sharp.health.head} | ${sharp.health.line}`);
+  check(digits(sharp.bank.head) === '2500' && /on Other Bank/.test(sharp.bank.line),
+    '6b: "other bank" is Other Bank, not the shorter Other that sits before it in the list',
+    `${sharp.bank.head} | ${sharp.bank.line}`);
+  check(sharp.plural.intent === 'cat' && digits(sharp.plural.head) === String(Math.round(320.55 + 288.1)),
+    '6b: "groceries" finds the Grocery category', `${sharp.plural.head} | ${sharp.plural.line}`);
+  check(digits(sharp.mar25.head) === '70' && /MAR 2025/.test(sharp.mar25.line),
+    '6b: a month AND another year is that month of that year', `${sharp.mar25.head} | ${sharp.mar25.line}`);
+  check(digits(sharp.y25.head) === '970' && sharp.y25.range === '2025',
+    '6b: and the year alone is still the whole of it', `${sharp.y25.head} | ${sharp.y25.range}`);
+
   /* ── 7. the panel, the chips and the dialog ───────────────────────────── */
   section('7. the panel and its help dialog');
   const ui = await O.page.evaluate(async () => {
@@ -295,9 +335,18 @@ const digits = s => String(s).replace(/[^0-9]/g, '');
   /* .panel:hover lifts a card by 3px. Every click above was a REAL mouse
      click, so the pointer is still inside whichever card it last pressed --
      and the two panels then measure 3px apart for no reason the layout owns.
-     Park the mouse before taking any geometry. */
+     Park the mouse before taking any geometry.
+     ...AND WAIT FOR THE CARD TO LAND. The lift is `transition:transform .35s`,
+     and this used to sleep a fixed 300ms -- shorter than the transition it was
+     waiting out, and in a contended container a frame can cost over 100ms, so
+     the card was sometimes still 3px up when it was measured. That is the
+     "326/329" this section failed with inside a full run and passed with
+     alone (bug class 11: measuring a value that is still animating). Wait on
+     the property, not on a guess at how long it takes. */
   await O.page.mouse.move(0, 0);
-  await O.page.waitForTimeout(300);
+  await O.page.waitForFunction(() => ['yfBlankPanel', 'yfHiPanel'].every(id => {
+    const t = getComputedStyle(document.getElementById(id)).transform;
+    return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)'; }), null, { timeout: 5000 });
 
   const row = await O.page.evaluate(() => {
     const r = document.getElementById('yfTopRow');
