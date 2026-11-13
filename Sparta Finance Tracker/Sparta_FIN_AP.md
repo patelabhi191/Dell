@@ -2384,6 +2384,20 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **PIN lock review** (2026-11-13). It is a screen lock, not encryption: the code is stored in
+  the clear on the device and in `core`, by design. Two faults, pinned by the new `test-pin.js`:
+  - **The lock stopped the mouse and not the keyboard.** The gate covers the page, but the app
+    underneath stayed in the tab order: eleven Tabs reached it, and a note was added and typed into
+    with the gate up. `pinInert()` now makes everything but `#pinGate` inert while the gate shows
+    (unlock, setup and change alike) and releases it on close. Nothing drawn changes.
+  - **A code nobody can type locked the owner out.** The keypad enters six digits; the gate went
+    up for any non-empty code, so `12345`, `abcdef` or `""` from a hand-edited cloud record was a
+    lock with no key on every device that pulled it. `pinCodeOk()` (`/^\d{6}$/`) is now the one
+    test: in the pre-paint inline script, in `pinHasCode`, and on a pulled PIN. An untypeable code
+    is treated as no lock, and Settings says Off rather than "On" with no lock behind it.
+  Known and left alone: there is no limit on wrong attempts. Since the code is readable in
+  localStorage by anyone with the device unlocked and devtools, a throttle would add delay
+  without adding protection.
 - **Plan tab review** (2026-11-13). Three faults, each reproduced in the browser and pinned in
   `test-plan.js` (the notepad one in `test-notes.js`):
   - **Expanding a segment counted as an edit.** The toggle went through `planPersist()`, so opening

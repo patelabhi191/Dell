@@ -2934,7 +2934,9 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
   try{
     var on = localStorage.getItem('sparta.pinOn') === 'true';
     var code = localStorage.getItem('sparta.pinCode');
-    if(!on || !code || code === 'null') document.getElementById('pinGate').style.display = 'none';
+    /* six digits, with or without the JSON quotes: the keypad can type nothing
+       else, so any other stored value is a lock with no key (see pinCodeOk) */
+    if(!on || !code || !/^"?\d{6}"?$/.test(code)) document.getElementById('pinGate').style.display = 'none';
     else document.body.style.overflow = 'hidden';
   }catch(e){ document.getElementById('pinGate').style.display = 'none'; }
 })();
@@ -7273,8 +7275,10 @@ state.yearly.forEach(r=>{
   if(p.plan) state.plan=p.plan; else if(full) state.plan={segments:[]};
   if(Array.isArray(p.archives)) state.archives=p.archives; else if(full) state.archives=[];
   if(p.pin && typeof p.pin==='object'){
-    store.set('sparta.pinOn', !!p.pin.on);
-    store.set('sparta.pinCode', p.pin.code||null);
+    // only a code the keypad can type may arrive switched on (see pinCodeOk)
+    const pinGood=/^\d{6}$/.test(String(p.pin.code==null?'':p.pin.code));
+    store.set('sparta.pinOn', !!p.pin.on && pinGood);
+    store.set('sparta.pinCode', pinGood ? String(p.pin.code) : null);
     if(p.pin.code) store.set('sparta.pinHash', null);   // code is now the source of truth
     if(typeof pinRefreshSettingsUI==='function') pinRefreshSettingsUI();
   }
@@ -11677,7 +11681,29 @@ applyTabOrder(); renderTabOrder();
 function pinCryptoAvailable(){ return true }        // no hashing needed any more
 const pinIsOn=()=>store.get('sparta.pinOn',false)===true;
 const pinCode=()=>store.get('sparta.pinCode',null);
-const pinHasCode=()=>{ const c=pinCode(); return !!(c && String(c).length===6) };
+/* SIX DIGITS, because that is all the keypad can enter. The old test was only
+   "six characters long", and the gate's own was only "not empty" -- so a code
+   of 12345, abcdef or "" (a hand-edited cloud record; core is editable by
+   design) put up a lock that no sequence of keys could open, on every device
+   that pulled it. A code that cannot be typed is treated as no code: the rule
+   pinOpen already states, that a lock which cannot be verified must not trap
+   the owner out of their own data. */
+const pinCodeOk=c=>/^\d{6}$/.test(String(c==null?'':c));
+const pinHasCode=()=>pinCodeOk(pinCode());
+/* THE LOCK WAS A PICTURE OF A LOCK. The gate covers the page, which stops the
+   mouse, but the app underneath was still in the tab order: eleven presses of
+   Tab reached the first control behind it, and from there the ledger could be
+   edited blind -- a note was added, and typed into, with the gate still up.
+   `inert` takes everything behind the gate out of focus, clicks and the
+   accessibility tree for as long as it is showing, and changes nothing that
+   is drawn. The same is right while setting or changing a PIN: it is a modal. */
+function pinInert(on){
+  [...document.body.children].forEach(el=>{
+    if(el.id==='pinGate' || el.tagName==='SCRIPT' || el.tagName==='STYLE') return;
+    if(on){ if(!el.inert){ el.inert=true; el.setAttribute('data-pin-inert','') } }
+    else if(el.hasAttribute('data-pin-inert')){ el.inert=false; el.removeAttribute('data-pin-inert') }
+  });
+}
 
 let pinBuf='', pinMode='unlock', pinFirstEntry='', pinTickerTimer=null;
 function pinShowMsg(t,isErr){ const el=$('pinMsg'); el.textContent=t; el.classList.toggle('err',!!isErr) }
@@ -11731,10 +11757,12 @@ function pinOpen(mode){                       // 'unlock' | 'setup' | 'change'
   $('pinGate').style.display='flex';
   $('pinGate').classList.add('pinlocked');
   document.body.style.overflow='hidden';
+  pinInert(true);
   pinStartTicker(); pinStartPhases();
 }
 function pinCloseOverlay(){                    // used for setup/change completing or being cancelled
   pinStopTicker(); pinStopPhases();
+  pinInert(false);
   $('pinGate').classList.add('unlocking');
   setTimeout(()=>{
     $('pinGate').style.display='none';
@@ -11822,6 +11850,9 @@ if($('pinKeys')){
     pinRefreshSettingsUI();
     toast('PIN lock removed');
   };
+  // "On" with no code that can be typed is not a lock, and Settings should not
+  // say it is. A device setting, so it is repaired without stamping the ledger.
+  if(pinIsOn() && !pinHasCode()) store.set('sparta.pinOn',false);
   pinRefreshSettingsUI();
   // the tiny inline script already decided whether to show the gate on load;
   // if it's showing, wire it up as a real 'unlock' attempt
