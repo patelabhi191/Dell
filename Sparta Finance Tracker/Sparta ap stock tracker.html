@@ -1451,7 +1451,11 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .yf-hi-dot.on{background:var(--text);transform:scale(1.25)}
 @media (prefers-reduced-motion:reduce){.yf-hi-slide{transition:none}}
 /* under a bill's name in the category table: what was billed vs itemised out */
-.yf-billnote{font-size:10px;color:var(--text-faint);font-weight:500;letter-spacing:0;margin-top:2px}
+/* ON THE SCALE. This was 10px, a size no token names: the only sentence-case
+   text in the app under --fs-fine, and it is a MONEY figure ("$1,910 Bill
+   Paid") in the faintest ink. 9.5 and 10.5 on the scale are for tracked
+   uppercase labels, which read larger than their size; this is not one. */
+.yf-billnote{font-size:var(--fs-fine);color:var(--text-faint);font-weight:500;letter-spacing:0;margin-top:2px}
 .yf-addcat{display:flex;gap:8px;margin-top:10px}
 .yf-addcat input{flex:1;padding:8px 10px;font-size:12.5px}
 .yf-addcat .btn{padding:8px 14px;font-size:12px}

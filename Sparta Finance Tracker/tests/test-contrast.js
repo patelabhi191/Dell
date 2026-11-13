@@ -740,6 +740,23 @@ const CONTRAST = (root) => {
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
 
+  /* ── 11. the bill sub-line is on the type scale ─────────────────────────
+     "$1,910 Bill Paid" / "$878 Spend" under an amount in Yearly's Transactions
+     was 10px: a size no token names, and the only sentence-case text in the
+     app under --fs-fine. A probe carries the class, because this fixture has
+     no card bill to draw one for. */
+  section('11. the bill sub-line under an amount is --fs-fine, not a size of its own');
+  await go('yearly');
+  const bn = await page.evaluate(() => {
+    const td = document.querySelector('#yfTxTable tbody td') || document.body;
+    const d = document.createElement('div'); d.className = 'yf-billnote'; d.textContent = '$1,910 Bill Paid';
+    td.appendChild(d);
+    const fs = parseFloat(getComputedStyle(d).fontSize);
+    const tok = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fs-fine'));
+    d.remove(); return { fs, tok };
+  });
+  check(bn.tok >= 11 && bn.fs === bn.tok, 'it is drawn at --fs-fine', `${bn.fs}px against a token of ${bn.tok}px`);
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nCONTRAST: ${pass} passed, ${fail} failed`);

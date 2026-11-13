@@ -2429,6 +2429,14 @@ and draft years; Monthly's five category renderers escape the name.
   **34px** and **33px**, and neither is drawn any differently: the boxes still measure 18px and
   23px, and the year filter and the question box beside them are still their own targets.
   Pinned in `test-contrast.js` §10.
+- **Visibility review: one size beside the scale** (2026-11-13). A census of every painted font
+  size on the six tabs found one that no token names: `.yf-billnote`, the "$1,910 Bill Paid" /
+  "$878 Spend" line under an amount in Yearly's Transactions, at **10px** in `--text-faint`. The
+  9.5 and 10.5 steps are for tracked uppercase labels; this is a sentence-case money figure and
+  was the smallest one in the app. Now `--fs-fine` (11px). A row carrying one grows 40px to 42px
+  at 1440 and 47px to 48px at 390; the table is no wider and nothing wraps. Pinned in
+  `test-contrast.js` §11. Left alone and worth knowing: `.acct-tag` is 10px on Dashboard and
+  Contributions and 9.5px on Yearly, one role at two sizes, and neither is hard to read.
   Left as it was, deliberately: the add forms on the other tabs (cash, Add a position, the
   Yearly and Monthly entry rows) still print as empty boxes. The original print pass kept inputs
   on purpose because several hold data (planned amounts, starting balances), and separating the
