@@ -644,6 +644,63 @@ const CONTRAST = (root) => {
   // static markup is not a JS string: \" there is painted as a backslash and a quote
   check(pair.slash === false, 'no escaped quote is painted as a literal backslash on Contributions');
 
+  /* ── 8. Monthly's matrix: a month name ends where its figures end ───────
+     The cells take 8px from `#monthlyView .htable td`; the headings kept the
+     4px of `.me-matrix th`, so each heading hung 4px past the column it names.
+     INK is compared, not the box: an uppercase label is tracked, and the
+     tracking after its last letter is not ink. A probe row is added because
+     this fixture has no itemised expenses, and removed again. */
+  section('8. the category matrix headings share their columns\' edges');
+  for (const w of [1440, 390]) {
+    await page.setViewportSize({ width: w, height: 1000 });
+    await go('monthly');
+    const mm = await page.evaluate(() => {
+      const t = document.getElementById('meMatrix'), ths = [...t.querySelectorAll('thead th')];
+      const tr = document.createElement('tr');
+      tr.innerHTML = ths.map((h, i) => `<td>${i ? '1,234' : 'Probe'}</td>`).join('');
+      t.querySelector('tbody').appendChild(tr);
+      const rng = el => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };
+      const ls = parseFloat(getComputedStyle(ths[1]).letterSpacing) || 0;
+      let worst = 0;
+      for (let i = 1; i < ths.length; i++)
+        worst = Math.max(worst, Math.abs((rng(ths[i]).right - ls) - rng(tr.children[i]).right));
+      const left = rng(ths[0]).left - rng(tr.children[0]).left;
+      tr.remove();
+      return { cols: ths.length, worst: +worst.toFixed(2), left: +left.toFixed(2) };
+    });
+    check(mm.cols === 14 && mm.worst <= 1,
+      `${w}px: every month heading's last letter is over its figures' last digit`, `worst Δ${mm.worst}px`);
+    check(Math.abs(mm.left) <= 1, `${w}px: CATEGORY starts where the names start`, `Δ${mm.left}px`);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
+  /* ── 9. the Ask help dialog opens at its title ──────────────────────────
+     Its Close button is the last thing in a card taller than the screen, and
+     focusing it scrolled the card to the end: the dialog opened on its final
+     paragraph with the heading 154px (1440x900) to 487px (390x844) above the
+     top of the screen. Focus still lands on Close. */
+  section('9. the Ask help dialog opens showing its title, not its last line');
+  for (const [w, h] of [[1440, 900], [1280, 720], [390, 844]]) {
+    await page.setViewportSize({ width: w, height: h });
+    await go('yearly');
+    await page.evaluate(() => document.querySelector('.sec-i[data-dialog]').click());
+    await page.waitForTimeout(320);
+    const ah = await page.evaluate(() => {
+      const m = document.getElementById('askHelpModal'), k = m.querySelector('.modal-card');
+      return { open: m.classList.contains('open'), top: k.scrollTop, scrolls: k.scrollHeight > k.clientHeight + 4,
+               title: Math.round(m.querySelector('h3').getBoundingClientRect().top),
+               focus: document.activeElement && document.activeElement.id };
+    });
+    check(ah.open && ah.scrolls, `${w}x${h}: PRECONDITION -- the dialog is open and taller than its card`,
+      JSON.stringify(ah));
+    check(ah.top === 0 && ah.title >= 0, `${w}x${h}: it opens at the top, title on screen`,
+      `scrollTop ${ah.top}, title at y=${ah.title}`);
+    check(ah.focus === 'askHelpClose', `${w}x${h}: and focus is still on Close`, String(ah.focus));
+    await page.evaluate(() => document.getElementById('askHelpClose').click());
+    await page.waitForTimeout(220);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nCONTRAST: ${pass} passed, ${fail} failed`);

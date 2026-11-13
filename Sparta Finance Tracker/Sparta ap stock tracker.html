@@ -1634,6 +1634,17 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .me-matrix tr.tot td{font-weight:800;color:var(--sk-amber);border-top:1px solid rgba(255,255,255,.14)}
 .me-matrix td.col-tot,.me-matrix th.col-tot{font-weight:700;color:var(--sk-ink)}
 .me-matrix td.zero{color:#5D6B7D}
+/* THE HEADING SHARES ITS COLUMN'S EDGE. The cells take 8px from
+   `#monthlyView .htable td`, which outranks the 4px above, and the headings
+   kept the 4px -- so every month name ended 4px to the right of the figures
+   under it and CATEGORY began 4px to the left of the names. The right side
+   also gives back the tracking that follows the last letter of an uppercase
+   label, or the ink would sit that much inside the edge instead. A month
+   heading is right-aligned, so its LEFT padding does nothing but take room:
+   with 8px there, TOTAL no longer fitted its 54px column on a phone and
+   pushed 3.5px out of the far side. Only CATEGORY needs the left 8px. */
+#monthlyView .me-matrix th{padding-left:0;padding-right:calc(8px - var(--ls-label))}
+#monthlyView .me-matrix th:first-child{padding-left:8px}
 @media(max-width:900px){.me-matrix{min-width:840px}}
 
 
@@ -8853,7 +8864,11 @@ function askHelpOpen(btn){
   modalRemember('askHelpModal');
   m.classList.add('open');
   if(btn) btn.setAttribute('aria-expanded','true');
-  setTimeout(()=>{ const c=$('askHelpClose'); if(c) c.focus(); },50);
+  /* preventScroll, and the card put back at its top: Close is the LAST thing in
+     a card taller than the screen, so focusing it scrolled the card to its end
+     and the dialog opened on its final paragraph with the title off screen. */
+  setTimeout(()=>{ const c=$('askHelpClose'); if(c) c.focus({preventScroll:true});
+    const k=m.querySelector('.modal-card'); if(k) k.scrollTop=0; },50);
 }
 function askHelpClose(){
   const m=$('askHelpModal'); if(!m) return;

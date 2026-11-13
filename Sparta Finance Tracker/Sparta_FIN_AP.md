@@ -2408,6 +2408,18 @@ and draft years; Monthly's five category renderers escape the name.
   12, now 12 on both, so every label and box in the pair shares a line), and the help text under
   "Total contributions by year" painted `\"yearly entry\"` with its backslashes, because it is
   static markup and not a JS string. Pinned in `test-contrast.js` §7.
+- **Visibility review: a dialog that opened on its last line, and headings 4px off their
+  columns** (2026-11-13). `askHelpOpen` focuses Close, which is the last thing in a card taller
+  than the screen, so the browser scrolled the card to its end: "What you can ask" opened on its
+  final paragraph with the title 154px above the screen at 1440x900, 316px at 1280x720 and 487px
+  at 390x844. Now `focus({preventScroll:true})` and `scrollTop=0`; focus still lands on Close.
+  On Monthly, the matrix cells take 8px from `#monthlyView .htable td` while the headings kept
+  the 4px of `.me-matrix th`, so every month name ended past the figures under it (2.46px of ink,
+  4px of box) and CATEGORY began 4px left of the names. The headings now give
+  `calc(8px - var(--ls-label))` on the right, because the tracking after the last letter of an
+  uppercase label is not ink, and no left padding except on CATEGORY: with 8px on both sides
+  TOTAL stopped fitting its 54px phone column and pushed 3.5px out. Both 0.01px now at 1440 and
+  390. Pinned in `test-contrast.js` §8 and §9.
   Left as it was, deliberately: the add forms on the other tabs (cash, Add a position, the
   Yearly and Monthly entry rows) still print as empty boxes. The original print pass kept inputs
   on purpose because several hold data (planned amounts, starting balances), and separating the
