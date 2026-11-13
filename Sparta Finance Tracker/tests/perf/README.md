@@ -16,6 +16,7 @@ Run one directly when you want numbers:
 | `profile-latency.js` | `compactHistory` on genuinely raw points, typing, tab switches — **and the measurement floor** |
 | `profile-scaling.js` | the storage footprint split by drawer, and the same functions at 860 / 1,720 / 3,441 / 6,882 rows |
 | `profile-ledger-scans.js` | counts how many times one `renderYF()` re-filters the whole ledger |
+| `profile-new-paths.js` | the paths added after the first pass, at 1,720 to 13,764 rows: the ten Ask chips, `yfHiBuild`, `normalizeDash`, saving the ledger, and building the cloud payload |
 
 ## Read `profile-latency.js`'s floor before believing any latency figure
 

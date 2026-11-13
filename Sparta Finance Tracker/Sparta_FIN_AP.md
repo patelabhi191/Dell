@@ -2384,6 +2384,13 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Large-ledger speed review** (2026-11-13). Nothing to fix. The existing probes still show
+  every render near-linear in row count (`renderYF` 47 ms at 6,882 rows, nothing quadratic), and
+  the new `tests/perf/profile-new-paths.js` covers what was added since. At 13,764 rows, four
+  times the five-year fixture: all ten Ask chips together 3 ms, `yfHiBuild` under 1 ms,
+  `normalizeDash` 0.1 ms, writing the ledger 19 ms, building and serialising the cloud payload
+  12 ms. The one scale concern is storage, not time, and is the open item already recorded
+  below: the pre-namespace originals are never deleted, so an upgraded browser holds two copies.
 - **Print review** (2026-11-13). The hide list in `@media print` was written against `.btn` and
   its relatives, so controls that are not one still printed. Plan was the worst: its whole add
   form (date picker, Income/Expense switch, three empty boxes, a full-width teal button) under
