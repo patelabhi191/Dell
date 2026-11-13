@@ -2384,6 +2384,16 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Stock Calculator review** (2026-11-13). The arithmetic was sound; four edges of the input
+  and formatting were not, all pinned in `test-calc.js` §8b:
+  - A figure past 1e12 printed as `1e+21.00` (`toFixed` switches to exponent notation). Refused.
+  - A sub-penny price showed as `0.00` because four decimals cannot hold it; `calcFmt` now uses
+    eight below a cent.
+  - A move too small for two decimals read `+0.00%` beside the word "growth"; it is `<0.01%`.
+  - A number box holding unparseable text (`1e`) reports `value ""` with the characters on screen,
+    so the block read as empty and the other stayed unlocked. `validity.badInput` counts as filled.
+  - A form restored by the browser fills boxes without firing `input`, so the lock never ran;
+    `calcLock` now also runs on `pageshow`.
 - **PIN lock review** (2026-11-13). It is a screen lock, not encryption: the code is stored in
   the clear on the device and in `core`, by design. Two faults, pinned by the new `test-pin.js`:
   - **The lock stopped the mouse and not the keyboard.** The gate covers the page, but the app

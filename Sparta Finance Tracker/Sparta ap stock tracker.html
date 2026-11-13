@@ -8387,14 +8387,29 @@ const CALC_GROW=['cgBuy','cgSell'];
 const calcNum = id => { const el=$(id); if(!el) return NaN;
   const v=String(el.value).trim(); if(!v) return NaN;
   const n=Number(v); return isFinite(n) ? n : NaN; };
-const calcFilled = ids => ids.some(id=>{ const el=$(id); return el && String(el.value).trim()!=='' });
+/* badInput counts as filled. A number field holding text it cannot parse ("1e",
+   a lone "-") reports value "" while the characters are still on screen, so the
+   block read as empty: the other one stayed unlocked, and Calculate answered
+   "fill one of the two sets" to someone looking at a box they had typed in. */
+const calcFilled = ids => ids.some(id=>{ const el=$(id);
+  return el && (String(el.value).trim()!=='' || (el.validity && el.validity.badInput)) });
+/* Past this, toFixed() switches to exponent notation and the formatter below
+   printed "1e+21.00". Nothing traded is priced there; say so rather than
+   print a figure that is not one. */
+const CALC_MAX=1e12;
+const calcTooBig = (...ns) => ns.some(n=>Math.abs(n)>=CALC_MAX);
 /* A price carries more than two decimals often enough to matter (191.1333),
    and a share count can be fractional (0.75). Up to four decimals, trailing
    zeros trimmed -- but never BELOW two for a price, because 180.5 reads as
    sloppy where 180.50 reads as money. A quantity has no such floor. */
 const calcFmt = (n, min) => { if(!isFinite(n)) return '—';
   const lo = (min===undefined) ? 2 : min;
-  let s = n.toFixed(4).replace(/0+$/,'');
+  /* Four decimals, EXCEPT below a cent, where four is not enough to show the
+     figure at all: a sub-penny price of 0.00003 printed as "0.00", and the
+     line read "avg UP 0.00 · cost 0.00". Eight there, which is as fine as
+     any quoted price goes. */
+  const a=Math.abs(n);
+  let s = n.toFixed(a>0 && a<0.01 ? 8 : 4).replace(/0+$/,'');
   if(s.indexOf('.')<0) s += '.';
   let dec = s.length - s.indexOf('.') - 1;
   while(dec < lo){ s += '0'; dec++ }
@@ -8441,6 +8456,8 @@ function calcAvg(){
     return calcSay(null, 'Fill all four boxes with numbers.');
   if(qty<0||add<0||avg<0||px<0)
     return calcSay(null, 'Prices and share counts cannot be negative.');
+  if(calcTooBig(avg,qty,px,add))
+    return calcSay(null, 'Those figures are too large to work with.');
   const total=qty+add;
   /* Nothing held and nothing bought is not an average of zero -- there is no
      position to take an average OF. Said, not rounded to a number. */
@@ -8472,6 +8489,8 @@ function calcGrow(){
     return calcSay(null, 'Fill both boxes with numbers.');
   if(buy<0||sell<0)
     return calcSay(null, 'Prices cannot be negative.');
+  if(calcTooBig(buy,sell))
+    return calcSay(null, 'Those figures are too large to work with.');
   const diff=sell-buy;
   /* A PERCENTAGE OF ZERO IS NOT ZERO PER CENT, and it is not infinity either
      -- there is nothing for the price to have grown FROM. Yearly prints a dash
@@ -8486,7 +8505,10 @@ function calcGrow(){
   const word=diff>0?'growth':diff<0?'decline':'no change';
   /* A percentage is two decimals exactly -- calcFmt's second argument is a
      MINIMUM, so passing 2 there left 17.6731%. */
-  calcSay(sign+Math.abs(pct).toFixed(2)+'%',
+  /* A move too small for two decimals is still a move. Printed as "+0.00%"
+     beside the word "growth" it contradicted itself; "<0.01%" is the truth. */
+  const pctTxt = (diff!==0 && Math.abs(pct)<0.005) ? '<0.01' : Math.abs(pct).toFixed(2);
+  calcSay(sign+pctTxt+'%',
     diff===0 ? word+' \u00b7 it sold for what it cost'
       : word+' \u00b7 '+sign+calcFmt(Math.abs(diff))+' a share \u00b7 '+calcFmt(buy)+' \u2192 '+calcFmt(sell),
     diff>0?'up':diff<0?'down':'flat');
@@ -8506,6 +8528,12 @@ if($('calcGo')){
     el.addEventListener('input', calcLock);
     el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); calcRun() } });
   });
+  /* The lock is driven by `input`, and a browser restoring a form after a
+     reload or a back-navigation fills the boxes WITHOUT firing it -- so both
+     blocks could hold figures with neither greyed out, and Calculate then
+     answered for the average while the eye was on growth. pageshow fires after
+     that restore, on first load and on a return from the back/forward cache. */
+  window.addEventListener('pageshow', calcLock);
 }
 
 /* ---------- Ask: answers read out of the ledger ----------------------------

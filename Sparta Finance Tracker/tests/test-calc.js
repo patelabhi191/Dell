@@ -270,6 +270,57 @@ const section = t => console.log(`\n── ${t} ──`);
     `${place.sameCol} / ${place.afterEye}`);
   check(place.gap === 20, '8: ...one column gap below it, with no dead space', `${place.gap}px`);
 
+  /* ── 8b. inputs at the edges ──────────────────────────────────────────── */
+  section('8b. figures the formatter could not print, and boxes it could not read');
+  const big = await avg('1e21', 1, '1e21', 1);
+  check(/too large/.test(big.err || '') && big.head === null,
+    '8b: a figure past the formatter is refused, not printed as "1e+21.00"', String(big.err));
+  const bigG = await grow(1, '1e22');
+  check(/too large/.test(bigG.err || ''), '8b: ...in the growth block too', String(bigG.err));
+
+  /* Four decimals cannot show a sub-penny price at all: 0.00003 came out as
+     "0.00" and the line read "avg UP 0.00 - cost 0.00". */
+  const penny = await avg(0.00001, 1, 0.00003, 1);
+  check(penny.head === '0.00002' && /avg UP 0\.00001/.test(penny.line) && /cost 0\.00004/.test(penny.line),
+    '8b: a sub-penny price keeps its digits', `${penny.head} / ${penny.line}`);
+  check(a1.head === want1.toFixed(4), '8b: ...and ordinary prices are still four decimals',
+    a1.head);
+
+  const hair = await grow(100, 100.00001);
+  check(hair.head === '+<0.01%' && /growth/.test(hair.line),
+    '8b: a move too small for two decimals is "<0.01%", not "+0.00%" beside the word growth',
+    `${hair.head} / ${hair.line}`);
+  check(r3.head === '0.00%', '8b: ...while a true no-change is still exactly 0.00%', r3.head);
+
+  /* A number box holding text it cannot parse reports value "" with the
+     characters still on screen. */
+  await O.page.evaluate(() => calcClear());
+  await O.page.click('#cgBuy'); await O.page.keyboard.type('1e');
+  const half = await O.page.evaluate(() => ({
+    bad: document.getElementById('cgBuy').validity.badInput,
+    avgLocked: document.getElementById('calcBlockAvg').classList.contains('locked') }));
+  await O.page.keyboard.press('Enter'); await O.page.waitForTimeout(80);
+  const halfMsg = await O.page.evaluate(() => document.getElementById('calcOut').textContent);
+  check(half.bad && half.avgLocked,
+    '8b: a box with unreadable text in it still counts as the block in use', JSON.stringify(half));
+  check(/both boxes with numbers/.test(halfMsg),
+    '8b: ...and Calculate says to fix it, not "fill one of the two sets"', halfMsg);
+
+  /* A browser restoring a form after a reload fills the boxes without firing
+     `input`, so the lock never ran. */
+  const restored = await O.page.evaluate(() => {
+    calcClear();
+    document.getElementById('cavPrice').value = '5';       // no input event, as a restore does it
+    document.getElementById('cgBuy').value = '10';
+    window.dispatchEvent(new Event('pageshow'));
+    return { growLocked: document.getElementById('calcBlockGrow').classList.contains('locked'),
+      growDisabled: document.getElementById('cgBuy').disabled };
+  });
+  check(restored.growLocked && restored.growDisabled,
+    '8b: boxes filled by a form restore are locked on pageshow, so one block is visibly in play',
+    JSON.stringify(restored));
+  await O.page.evaluate(() => calcClear());
+
   /* ── 9. it is genuinely stateless ─────────────────────────────────────── */
   section('9. nothing is stored and nothing is synced');
   const clean = await O.page.evaluate(() => {
