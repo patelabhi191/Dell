@@ -32,3 +32,7 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+
+# Claude Code agent worktrees: transient git worktrees for background agents,
+# locked while in use and auto-removed afterwards. Never part of the project.
+.claude/worktrees/
