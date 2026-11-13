@@ -2420,6 +2420,15 @@ and draft years; Monthly's five category renderers escape the name.
   uppercase label is not ink, and no left padding except on CATEGORY: with 8px on both sides
   TOTAL stopped fitting its 54px phone column and pushed 3.5px out. Both 0.01px now at 1440 and
   390. Pinned in `test-contrast.js` §8 and §9.
+- **Visibility review: two controls under a finger's width** (2026-11-13). Every button, select
+  and input on the six tabs was hit-tested at 390px. All but two are 24px both ways or already
+  carry a grown hit area (`.bk`, the Highlights dots; Plan's 14x19 caret sits in a header that is
+  clickable across its whole 16px-padded width). The two: `#logToggle`, the Deposit log's
+  heading-button and the only way to open the log, at **18px** tall, and `#askChipsBtn`
+  ("Frequent questions") at **23px**. Both now carry a `::before` hit area the way `.bk` does,
+  **34px** and **33px**, and neither is drawn any differently: the boxes still measure 18px and
+  23px, and the year filter and the question box beside them are still their own targets.
+  Pinned in `test-contrast.js` §10.
   Left as it was, deliberately: the add forms on the other tabs (cash, Add a position, the
   Yearly and Monthly entry rows) still print as empty boxes. The original print pass kept inputs
   on purpose because several hold data (planned amounts, starting balances), and separating the

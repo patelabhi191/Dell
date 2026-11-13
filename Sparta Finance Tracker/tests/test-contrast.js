@@ -701,6 +701,45 @@ const CONTRAST = (root) => {
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
 
+  /* ── 10. two controls a finger could not reliably land on ───────────────
+     Swept at 390px, every other button, select and input in the six tabs is at
+     least 24px both ways or already carries a grown hit area. These two were
+     not: the Deposit log's heading-button at 18px tall and "Frequent questions"
+     at 23px. Measured the way section 3 measures the dots -- off the hit-test
+     chain, scrolled into view first -- and the PAINTED box must not have moved. */
+  section('10. the Deposit log toggle and Frequent questions are 24px to the finger');
+  const hitH = sel => page.evaluate(sel => {
+    const el = document.querySelector(sel); if (!el) return null;
+    el.scrollIntoView({ block: 'center', behavior: 'instant' });
+    const b = el.getBoundingClientRect(), cx = b.x + Math.min(b.width / 2, 30), cy = b.y + b.height / 2;
+    let t = cy, bo = cy;
+    for (let y = cy; y > cy - 40; y -= 0.5) { if (!el.contains(document.elementFromPoint(cx, y))) break; t = y; }
+    for (let y = cy; y < cy + 40; y += 0.5) { if (!el.contains(document.elementFromPoint(cx, y))) break; bo = y; }
+    return { hit: +(bo - t).toFixed(1), box: +b.height.toFixed(1), inView: b.top >= 0 && b.bottom <= innerHeight };
+  }, sel);
+  // a grown target must not have been grown over the control next to it
+  const stillOwn = sel => page.evaluate(sel => {
+    const el = document.querySelector(sel); if (!el) return null;
+    el.scrollIntoView({ block: 'center', behavior: 'instant' });
+    const b = el.getBoundingClientRect();
+    return [b.top + 2, b.top + b.height / 2, b.bottom - 2].every(y =>
+      el.contains(document.elementFromPoint(b.x + b.width / 2, y)));
+  }, sel);
+  for (const w of [390, 1440]) {
+    await page.setViewportSize({ width: w, height: 1000 });
+    await go('contrib');
+    const lt = await hitH('#logToggle');
+    check(lt && lt.inView && lt.hit >= 24, `${w}px: the Deposit log toggle takes a 24px touch`, lt && `hit ${lt.hit}px`);
+    check(lt && Math.abs(lt.box - 18) <= 1.5, `${w}px: and its heading is still one 18px line`, lt && `box ${lt.box}px`);
+    check(await stillOwn('#logYear') === true, `${w}px: the log's year filter beside it is still its own target`);
+    await go('yearly');
+    const fq = await hitH('#askChipsBtn');
+    check(fq && fq.inView && fq.hit >= 24, `${w}px: Frequent questions takes a 24px touch`, fq && `hit ${fq.hit}px`);
+    check(fq && Math.abs(fq.box - 23) <= 1.5, `${w}px: and the chip is still drawn 23px tall`, fq && `box ${fq.box}px`);
+    check(await stillOwn('#askInput') === true, `${w}px: the question box under it is still its own target`);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nCONTRAST: ${pass} passed, ${fail} failed`);
