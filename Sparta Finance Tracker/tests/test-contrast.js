@@ -587,6 +587,63 @@ const CONTRAST = (root) => {
     '--text-faint on the lightest Plan surface clears the bar with headroom',
     onCard ? `${faintOn}:1 on rgb(${onCard.join(',')}) (L ${lum(onCard).toFixed(1)})` : '(no card)');
 
+  /* ── 7. a heading is one phrase ─────────────────────────────────────────
+     Three headings are display:flex with space-between so a tag or a button can
+     sit at the far end. Bare text either side of a year <span> is then THREE
+     flex items, not one, and the title was painted with 86px holes in it:
+     "TFSA —        2026        contributions", and on Monthly "CATEGORY BY
+     MONTH ·" at the left edge with its year alone at the right. Measured as the
+     widest gap between neighbouring runs of the phrase; a word space in these
+     faces is under 6px. */
+  section('7. a heading with a year in it reads as one phrase');
+  const phraseGap = id => page.evaluate(id => {
+    const y = document.getElementById(id), h = y.closest('h3');
+    const rg = document.createRange(), runs = [];
+    const w = document.createTreeWalker(h, NodeFilter.SHOW_TEXT);
+    let n; while ((n = w.nextNode())) {
+      if (!n.nodeValue.trim() || n.parentElement.closest('.acct-tag,button')) continue;
+      rg.selectNodeContents(n);
+      const r = rg.getBoundingClientRect(); if (r.width > 0) runs.push(r);
+    }
+    runs.sort((a, b) => a.left - b.left);
+    let worst = 0, oneLine = true;
+    for (let i = 1; i < runs.length; i++) {
+      worst = Math.max(worst, runs[i].left - runs[i - 1].right);
+      if (Math.abs(runs[i].top - runs[0].top) > 2) oneLine = false;
+    }
+    return { runs: runs.length, worst: +worst.toFixed(1), oneLine };
+  }, id);
+  for (const w of [1440, 1280, 390]) {
+    await page.setViewportSize({ width: w, height: 1000 });
+    await go('contrib');
+    for (const id of ['yrT', 'yrF']) {
+      const g = await phraseGap(id);
+      check(g.runs === 3 && g.oneLine && g.worst <= 8,
+        `${w}px ${id === 'yrT' ? 'TFSA' : 'FHSA'} card title: no hole between its words`,
+        `widest gap ${g.worst}px over ${g.runs} runs`);
+    }
+    await go('monthly');
+    const g = await phraseGap('meMatrixYear');
+    check(g.runs === 2 && g.oneLine && g.worst <= 8,
+      `${w}px Category by month: the year follows its heading`, `gap ${g.worst}px`);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await go('contrib');
+  /* The two account cards are a pair, so their forms start on one line. One
+     had margin-top:16px and the other 12px, and every label and box in the
+     left card sat 4px below its twin from there down. */
+  const pair = await page.evaluate(() => {
+    const t = id => document.querySelector(`label[for="${id}"]`).getBoundingClientRect().top;
+    return { dy: +(t('depAmtT') - t('depAmtF')).toFixed(2),
+             btn: +(document.getElementById('depBtnT').getBoundingClientRect().top -
+                    document.getElementById('depBtnF').getBoundingClientRect().top).toFixed(2),
+             slash: document.getElementById('contribView').textContent.indexOf('\\"') >= 0 };
+  });
+  check(Math.abs(pair.dy) <= 0.5 && Math.abs(pair.btn) <= 0.5,
+    'the TFSA and FHSA forms sit on the same lines', `labels Δ${pair.dy}px, buttons Δ${pair.btn}px`);
+  // static markup is not a JS string: \" there is painted as a backslash and a quote
+  check(pair.slash === false, 'no escaped quote is painted as a literal backslash on Contributions');
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nCONTRAST: ${pass} passed, ${fail} failed`);

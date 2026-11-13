@@ -3793,13 +3793,16 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
     </section>
     <div class="statrow" style="margin-bottom:20px">
       <section class="panel cash">
-        <h3>TFSA — <span id="yrT"></span> contributions <span class="acct-tag tag-tfsa">TFSA</span></h3>
+        <!-- The phrase is ONE flex item. The h3 is display:flex with space-between, so
+             bare text either side of the year span became three items and the
+             title was painted "TFSA —        2026        contributions". -->
+        <h3><span>TFSA — <span id="yrT"></span> contributions</span> <span class="acct-tag tag-tfsa">TFSA</span></h3>
         <div class="hero" style="padding:6px 0 14px">
           <div class="value" style="font-size:34px" id="cTfsaAmt">$0.00</div>
           <div class="delta"><span class="sub" id="cTfsaRoom">of C$7,000.00 limit</span></div>
         </div>
         <div class="cbar"><div class="cfill tfill" id="cTfsaBar"></div></div>
-        <div class="cashform" style="margin-top:16px">
+        <div class="cashform" style="margin-top:12px">
           <div>
             <label for="depAmtT">Amount (C$)</label>
             <input id="depAmtT" type="number" min="0" step="0.01" placeholder="1,000.00">
@@ -3822,7 +3825,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
         </div>
       </section>
       <section class="panel cash">
-        <h3>FHSA — <span id="yrF"></span> contributions <span class="acct-tag tag-fhsa">FHSA</span></h3>
+        <h3><span>FHSA — <span id="yrF"></span> contributions</span> <span class="acct-tag tag-fhsa">FHSA</span></h3>
         <div class="hero" style="padding:6px 0 14px">
           <div class="value" style="font-size:34px" id="cFhsaAmt">$0.00</div>
           <div class="delta"><span class="sub" id="cFhsaRoom">of C$8,000.00 limit</span></div>
@@ -3885,7 +3888,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
         <button class="btn" id="addYearBtn">+ Add year</button>
         <button class="btn primary" id="saveYears">Save</button>
       </div>
-      <p class="note">Add a year, type the TFSA/FHSA totals in CAD, then click Save — the row locks to read-only and is written into the deposit log above (marked \"yearly entry\"). Use ✕ on a saved row to delete it and re-enter. Saved yearly entries are record-only: they count toward your limits and the FHSA lifetime total, but do not add to your available cash, since that money was contributed in the past. Years where you logged individual deposits show automatically and are managed from the log.</p>
+      <p class="note">Add a year, type the TFSA/FHSA totals in CAD, then click Save — the row locks to read-only and is written into the deposit log above (marked "yearly entry"). Use ✕ on a saved row to delete it and re-enter. Saved yearly entries are record-only: they count toward your limits and the FHSA lifetime total, but do not add to your available cash, since that money was contributed in the past. Years where you logged individual deposits show automatically and are managed from the log.</p>
     </section>
   </div>
 
@@ -4235,7 +4238,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
 
     <!-- category x month matrix -->
     <section class="skeu-panel" style="margin-top:8px">
-      <h3 class="skeu-h">CATEGORY BY MONTH · <span id="meMatrixYear"></span></h3>
+      <h3 class="skeu-h"><span>CATEGORY BY MONTH · <span id="meMatrixYear"></span></span></h3>
       <div class="tscroll">
         <table class="htable me-matrix" id="meMatrix">
           <thead><tr id="meMatrixHead"></tr></thead>

@@ -2398,6 +2398,16 @@ and draft years; Monthly's five category renderers escape the name.
   `.pl-acts`, `.pl-segdel`, `.pl-caret`, `.pl-new`, the chart's `#rangeSeg`, `.collapse-btn`.
   `#calcPanel` is left off (six boxes that are always empty), and Ask prints only when it is
   holding an answer. Pinned in `test-print.js` §9.
+- **Visibility review: headings that fell apart** (2026-11-13). Three headings are `display:flex`
+  with `space-between` so a tag can sit at the far end, and each held bare text either side of a
+  year `<span>`. That is three flex items, not one, so the Contributions cards were titled
+  "TFSA —        2026        contributions" (86px holes at 1440 and 1280, 22px at 390) and
+  Monthly's "CATEGORY BY MONTH ·" sat at the left edge with its year 871px away at the right.
+  The phrase is now wrapped in one span, the way "12 MONTH TREND" beside it always was; the ids
+  are unchanged. With it: the TFSA form began 4px lower than the FHSA form (`margin-top` 16 against
+  12, now 12 on both, so every label and box in the pair shares a line), and the help text under
+  "Total contributions by year" painted `\"yearly entry\"` with its backslashes, because it is
+  static markup and not a JS string. Pinned in `test-contrast.js` §7.
   Left as it was, deliberately: the add forms on the other tabs (cash, Add a position, the
   Yearly and Monthly entry rows) still print as empty boxes. The original print pass kept inputs
   on purpose because several hold data (planned amounts, starting balances), and separating the
