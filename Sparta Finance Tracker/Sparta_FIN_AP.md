@@ -2384,6 +2384,17 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Print review** (2026-11-13). The hide list in `@media print` was written against `.btn` and
+  its relatives, so controls that are not one still printed. Plan was the worst: its whole add
+  form (date picker, Income/Expense switch, three empty boxes, a full-width teal button) under
+  every open segment, with pencil, cross and bin beside the figures. Now hidden: `.pl-form`,
+  `.pl-acts`, `.pl-segdel`, `.pl-caret`, `.pl-new`, the chart's `#rangeSeg`, `.collapse-btn`.
+  `#calcPanel` is left off (six boxes that are always empty), and Ask prints only when it is
+  holding an answer. Pinned in `test-print.js` §9.
+  Left as it was, deliberately: the add forms on the other tabs (cash, Add a position, the
+  Yearly and Monthly entry rows) still print as empty boxes. The original print pass kept inputs
+  on purpose because several hold data (planned amounts, starting balances), and separating the
+  two is a per-form job. A collapsed Plan segment prints its header line only, as on screen.
 - **Stock Calculator review** (2026-11-13). The arithmetic was sound; four edges of the input
   and formatting were not, all pinned in `test-calc.js` §8b:
   - A figure past 1e12 printed as `1e+21.00` (`toFixed` switches to exponent notation). Refused.

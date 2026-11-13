@@ -427,6 +427,63 @@ const YF_INK = ['#yfStartVal', '#yfEndVal', '#yfInvested', '#yfMoved', '#yfSaved
   check(P.errs.length === 0, 'no page errors', P.errs.join(' | '));
   await P.ctx.close();
 
+  /* ── 9. controls that are not a .btn ──────────────────────────────────── */
+  section('9. nothing you would have to click is on the page');
+  {
+    /* The hide list was written against .btn and its relatives. Plan's
+       controls are none of those, so its add form printed whole under every
+       open segment, teal button and all. */
+    const Q = await open(browser, url, Object.assign({}, SEED, { 'sparta.plan': JSON.stringify({ segments: [
+      { id: 'sg1', name: 'Trip', start: 1000, open: true, items: [
+        { id: 'i1', date: '2026-12-01', type: 'expense', name: 'Flights', amt: 400, notes: '' }] }] }) }));
+    const q = Q.page;
+    const onPaper = async view => {
+      await q.emulateMedia({ media: 'screen' });
+      await q.evaluate(v => applyView(v), view); await q.waitForTimeout(300);
+      await q.emulateMedia({ media: 'print' }); await q.waitForTimeout(200);
+      return q.evaluate(() => {
+        const vis = e => !!e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden';
+        const shown = sel => [...document.querySelectorAll(sel)].filter(vis).length;
+        return {
+          /* .bk is the broker mark: a letter beside a ticker, which is data */
+          buttons: [...document.querySelectorAll('button,[role=button]')]
+            .filter(e => vis(e) && !e.classList.contains('bk')).map(e => e.id || e.className),
+          plForm: shown('.pl-form'), plRows: shown('.pl-row'),
+          plName: shown('.pl-segname'), plFoot: shown('.pl-foot'),
+          calc: shown('#calcPanel'), ask: shown('#yfBlankPanel'), hi: shown('#yfHiPanel'),
+        };
+      });
+    };
+    const plan = await onPaper('plan');
+    check(plan.buttons.length === 0, '9: Plan prints no buttons at all', plan.buttons.join(', '));
+    check(plan.plForm === 0, '9: ...and not the "Add to this plan" form', String(plan.plForm));
+    check(plan.plRows === 1 && plan.plName === 1 && plan.plFoot === 1,
+      '9: while the planned rows, the segment name and the lowest-point line all stay',
+      JSON.stringify(plan));
+
+    const dash = await onPaper('dash');
+    check(dash.buttons.length === 0, '9: the Dashboard prints no buttons (the range switch was one)',
+      dash.buttons.join(', '));
+    check(dash.calc === 0, '9: the Stock Calculator -- six boxes that are always empty -- is left off',
+      String(dash.calc));
+    const contrib = await onPaper('contrib');
+    check(contrib.buttons.length === 0, '9: Contributions prints no buttons', contrib.buttons.join(', '));
+
+    /* Ask is worth printing when it is holding an answer and not before. */
+    const bare = await onPaper('yearly');
+    check(bare.ask === 0 && bare.hi === 1,
+      '9: Ask with no answer is left off, and Highlights still prints', JSON.stringify(bare));
+    await q.emulateMedia({ media: 'screen' });
+    await q.evaluate(() => { document.getElementById('askInput').value = 'top categories';
+      document.getElementById('askForm').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })) });
+    await q.waitForTimeout(150);
+    const asked = await onPaper('yearly');
+    check(asked.ask === 1, '9: Ask holding an answer does print', String(asked.ask));
+    check(asked.buttons.length === 0, '9: ...without its buttons', asked.buttons.join(', '));
+    check(Q.errs.length === 0, '9: no page errors', Q.errs.join(' | '));
+    await Q.ctx.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nPRINT: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

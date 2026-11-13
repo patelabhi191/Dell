@@ -2808,6 +2808,23 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
      rgba(0,0,0,.2) fill that is the one surface on the page that did not come
      out white. */
   .skeu-drop,.dropzone{display:none!important}
+  /* CONTROLS THE LIST ABOVE NEVER CAUGHT, because none of them is a .btn.
+     Plan was the worst of it: its add form printed whole -- a date picker, an
+     Income/Expense switch, three empty boxes and a full-width teal "Add to
+     plan" -- under every open segment, with a pencil, a cross and a bin beside
+     the figures. The segment's name and starting balance stay; they are data.
+     The chart's range switch and the log's collapse arrow are the same kind of
+     thing on the other tabs. */
+  .pl-form,.pl-acts,.pl-segdel,.pl-caret,.pl-new,#rangeSeg,.collapse-btn{display:none!important}
+  /* With the form gone the list is the whole segment, so it takes the row. */
+  .pl-split{display:block!important}
+  /* The Stock Calculator holds nothing: it is six boxes that are empty the
+     moment the page loads. On paper that is a form nobody can fill in. */
+  #calcPanel{display:none!important}
+  /* Ask prints only when it is holding an answer. Before a question it is a
+     heading over an empty box, and Highlights then takes the row alone. */
+  #yfBlankPanel:has(#askOut:empty){display:none!important}
+  .yf-toprow:has(#askOut:empty){grid-template-columns:1fr!important}
   /* The last two secondary greys, both enumerable rather than tokenised: the
      sub-label under a panel heading, and the pill beside it. Left at their
      screen values and remapped here, because unlike --sk-dim they are not one
