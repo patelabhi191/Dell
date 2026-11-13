@@ -637,6 +637,65 @@ const section = t => console.log(`\n── ${t} ──`);
   check(gate.startBal === true, 'editing the starting balance does too', String(gate.startBal));
   check(gate.newSeg === true, 'and so does creating a segment', String(gate.newSeg));
 
+  /* ── looking is not editing, and typing is not lost ───────────────────── */
+  section('view state, the save window, and a date that is not one');
+  {
+    const R = await open(browser, url, Object.assign({}, SEED, { 'sparta.plan': JSON.stringify({ segments: [
+      { id: 'sg1', name: 'Trip', start: 1000, open: false, items: [
+        { id: 'i1', date: '2026-12-01', type: 'expense', name: 'Flights', amt: 400, notes: '' },
+        { id: 'i2', date: '2026-13-45', type: 'income', name: 'Odd date', amt: 50, notes: '' }] }] }) }));
+    const p = R.page;
+    await p.click('#viewSeg button[data-view="plan"]'); await p.waitForTimeout(250);
+
+    /* A date of the right SHAPE that is not a date came through a pulled
+       record as "45" with no month beside it. */
+    const odd = await p.evaluate(() => state.plan.segments[0].items.map(i => i.date));
+    check(odd[0] === '2026-12-01', 'a real date is left exactly as stored', odd[0]);
+    check(odd[1] !== '2026-13-45' && /^\d{4}-\d{2}-\d{2}$/.test(odd[1]),
+      'an impossible one (month 13, day 45) is repaired rather than printed', odd[1]);
+
+    /* Expanding a segment used to stamp the ledger, raise the user-edited flag
+       and push -- so a laptop opened offline to READ a plan outranked the
+       phone's real work on its next connect. */
+    await p.evaluate(() => { fbUserEdited = false });
+    const s0 = await p.evaluate(() => state.updatedAt);
+    await p.waitForTimeout(25);
+    await p.click('.pl-seghead .pl-caret'); await p.waitForTimeout(150);
+    const tog = await p.evaluate(() => ({ u: state.updatedAt, e: fbUserEdited,
+      open: state.plan.segments[0].open,
+      disk: JSON.parse(localStorage.getItem(nsKey('sparta.plan'))).segments[0].open }));
+    check(tog.open === true && tog.disk === true,
+      'expanding a segment is remembered on this device', JSON.stringify(tog));
+    check(tog.u === s0, '...without moving the stamp that decides who wins a sync',
+      `${s0} -> ${tog.u}`);
+    check(tog.e === false, '...and without claiming the user edited the ledger', String(tog.e));
+
+    /* The control: a REAL edit must still do both, or the fix above has just
+       switched Plan's sync off. */
+    await p.fill('.pl-f-name', 'Hotel'); await p.fill('.pl-f-amt', '120');
+    await p.click('.pl-addbtn'); await p.waitForTimeout(120);
+    const real = await p.evaluate(() => ({ u: state.updatedAt, e: fbUserEdited }));
+    check(real.u > s0 && real.e === true, 'while adding an item still stamps and marks the edit',
+      JSON.stringify(real));
+
+    /* 400ms of debounce was 400ms in which the figure lived only in memory:
+       type a starting balance, reload inside it, and the old one came back. */
+    await p.fill('.pl-start', '2500');
+    await p.waitForTimeout(50);                       // well inside the window
+    await p.reload({ waitUntil: 'load' }); await p.waitForTimeout(300);
+    const kept = await p.evaluate(() => state.plan.segments[0].start);
+    check(kept === 2500, 'a starting balance typed just before a reload survives it', String(kept));
+
+    await p.click('#viewSeg button[data-view="plan"]'); await p.waitForTimeout(200);
+    await p.fill('.pl-segname', 'Trip to Banff');
+    await p.waitForTimeout(50);
+    await p.reload({ waitUntil: 'load' }); await p.waitForTimeout(300);
+    const nm = await p.evaluate(() => state.plan.segments[0].name);
+    check(nm === 'Trip to Banff', '...and so does a segment name', nm);
+    check(R.errs.length === 0, 'no page errors in this section', R.errs.join(' | '));
+    await R.ctx.close();
+  }
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nPLAN: ${pass} passed, ${fail} failed`);

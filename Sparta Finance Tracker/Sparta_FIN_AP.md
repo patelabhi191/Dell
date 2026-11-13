@@ -2384,6 +2384,19 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Plan tab review** (2026-11-13). Three faults, each reproduced in the browser and pinned in
+  `test-plan.js` (the notepad one in `test-notes.js`):
+  - **Expanding a segment counted as an edit.** The toggle went through `planPersist()`, so opening
+    a segment to read it stamped `sparta.updatedAt`, raised the user-edited flag and pushed `core`.
+    A laptop opened offline to look at a plan then outranked the phone on its next connect. The
+    toggle now uses `planPersistView()`, which writes to this device only; the open state still
+    travels with the next real edit.
+  - **The 400ms debounce was a window in which the edit lived only in memory.** A starting balance
+    or segment name typed and followed by a reload, a close, or a phone backgrounding the tab was
+    lost with nothing to say so. `planFlush()` runs on `pagehide` and on the hidden half of
+    `visibilitychange`. The notepad had the identical window and gets `notesFlush()`.
+  - **A date of the right shape that is not a date** (`2026-13-45`, from a pulled or hand-edited
+    record) printed as "45" with no month. `plDateOk()` checks it is a real calendar day.
 - **Ask: the chips fold away, Highlights fills its card** (2026-11-06). Ten chips took three rows
   and most of the card before anything had been typed, so they now sit behind a **Frequent
   questions** disclosure at the right end of the heading row, folded on every load. The card opens

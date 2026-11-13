@@ -10922,7 +10922,13 @@ let npSaveTimer=null;
 function notesPersist(){ store.set('sparta.notes', state.notes); touchUpdatedAt();
   if(typeof cloudSaveDebounced==='function') cloudSaveDebounced() }
 // Typing must not hit localStorage and the cloud on every keystroke.
-function notesPersistSoon(){ clearTimeout(npSaveTimer); npSaveTimer=setTimeout(notesPersist,400) }
+function notesPersistSoon(){ clearTimeout(npSaveTimer);
+  npSaveTimer=setTimeout(()=>{ npSaveTimer=null; notesPersist() },400) }
+// the same window Plan's debounce has (see planFlush): a note typed and then
+// left inside 400ms was in memory and nowhere else
+function notesFlush(){ if(npSaveTimer){ clearTimeout(npSaveTimer); npSaveTimer=null; notesPersist() } }
+window.addEventListener('pagehide',notesFlush);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) notesFlush() });
 
 // Deliberately NOT called from render(): that runs on every price tick, and
 // rebuilding the inputs under the caret would make the notepad unusable.
@@ -11179,6 +11185,13 @@ if($('npStocks')) $('npStocks').addEventListener('click',e=>{
 renderNotes();
 
 /* ============ Plan: forward-looking cash segments ============ */
+/* A REAL DATE, not just the shape of one. The shape test alone let 2026-13-45
+   through from a hand-edited or pulled record, and the row then printed "45"
+   with no month beside it and sorted after every real December. The date
+   picker cannot produce one, so this only ever repairs stored data. */
+const plDateOk=v=>{ if(typeof v!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const [y,m,d]=v.split('-').map(Number), t=new Date(y,m-1,d);
+  return t.getFullYear()===y && t.getMonth()===m-1 && t.getDate()===d; };
 function normalizePlan(){
   const p = state.plan = (state.plan && typeof state.plan==='object' && !Array.isArray(state.plan))
     ? state.plan : {};
@@ -11189,7 +11202,7 @@ function normalizePlan(){
       if(!it || typeof it!=='object' || Array.isArray(it)) return null;
       const amt = Number(it.amt);
       return { id: idOk(it.id)?it.id:uid(),
-               date: /^\d{4}-\d{2}-\d{2}$/.test(it.date) ? it.date : isoLocal(),
+               date: plDateOk(it.date) ? it.date : isoLocal(),
                type: it.type==='income' ? 'income' : 'expense',
                name: String(it.name==null?'':it.name),
                amt: isFinite(amt) ? Math.abs(amt) : 0,
@@ -11228,8 +11241,26 @@ function planPersist(){ store.set('sparta.plan', state.plan); touchUpdatedAt();
    admitted to being edits. */
 function planPersistSoon(){
   if(typeof fbBooting!=='undefined' && !fbBooting && !fbApplying && !fbAutomated) markUserEdit();
-  clearTimeout(plSaveTimer); plSaveTimer=setTimeout(planPersist,400);
+  clearTimeout(plSaveTimer); plSaveTimer=setTimeout(()=>{ plSaveTimer=null; planPersist() },400);
 }
+/* THE 400ms IS A WINDOW IN WHICH THE EDIT EXISTS ONLY IN MEMORY. Type a
+   starting balance and close the tab, reload, or switch apps on a phone inside
+   it, and the figure was gone: state had 2,500, the disk still had 1,000, and
+   the reload showed 1,000 with nothing to say an edit had been dropped. The
+   two fields this debounces are the two a person is most likely to type and
+   then leave. pagehide covers close and reload; the hidden half of
+   visibilitychange covers a phone, where a backgrounded tab can be discarded
+   without ever seeing pagehide. */
+function planFlush(){ if(plSaveTimer){ clearTimeout(plSaveTimer); plSaveTimer=null; planPersist() } }
+window.addEventListener('pagehide',planFlush);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) planFlush() });
+/* Which segments are expanded is how the tab was LEFT, not a change to the
+   plan. It went through planPersist(), so opening a segment to read it stamped
+   sparta.updatedAt, raised the user-edited flag and pushed `core` -- and a
+   laptop opened offline to look at a plan then outranked the phone's real work
+   on its next connect. Saved to this device only; it still travels with the
+   next real edit, since it is part of the plan record. */
+function planPersistView(){ store.set('sparta.plan', state.plan) }
 
 const plSeg=id=>state.plan.segments.find(s=>s.id===id);
 const plNum=v=>{ const n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:0 };
@@ -11509,7 +11540,7 @@ if($('planSegs')){
     }
     // clicks on the header toggle, unless they landed in a field
     if(e.target.closest('.pl-seghead') && !e.target.closest('input')){
-      seg.open=!seg.open; planPersist(); renderPlan();
+      seg.open=!seg.open; planPersistView(); renderPlan();
     }
   });
 
@@ -11519,7 +11550,7 @@ if($('planSegs')){
     e.preventDefault();                       // Space would scroll the page instead
     const segEl=e.target.closest('.pl-seg'); if(!segEl) return;
     const id=segEl.dataset.id, seg=plSeg(id); if(!seg) return;
-    seg.open=!seg.open; planPersist(); renderPlan();
+    seg.open=!seg.open; planPersistView(); renderPlan();
     /* renderPlan() rebuilds every segment, so the element that was focused no
        longer exists -- without putting focus back on the same segment's caret
        the keyboard is dropped at the top of the page on every single toggle,

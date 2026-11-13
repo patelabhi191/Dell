@@ -294,6 +294,21 @@ const section = t => console.log(`\n── ${t} ──`);
   }
   await page.setViewportSize({ width: 1360, height: 1000 });
 
+  /* The save is debounced by 400ms, and for that long the note lived only in
+     memory: typed, then the tab reloaded or closed, and it was gone. */
+  {
+    const F = await open(browser, url);
+    await F.page.waitForTimeout(200);
+    await F.page.click('#npAdd'); await F.page.waitForTimeout(150);
+    await F.page.keyboard.type('Buy the dip');
+    await F.page.waitForTimeout(50);                  // well inside the window
+    await F.page.reload({ waitUntil: 'load' }); await F.page.waitForTimeout(300);
+    const pts = await F.page.evaluate(() => state.notes.points.map(p => p.text));
+    check(pts.includes('Buy the dip'), 'a note typed just before a reload survives it',
+      JSON.stringify(pts));
+    await F.ctx.close();
+  }
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nNOTES: ${pass} passed, ${fail} failed`);
