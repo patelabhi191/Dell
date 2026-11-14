@@ -40,7 +40,10 @@ export const SkyStage: React.FC = () => {
   const scatter = useBeat("scatter");
   const sunset = useBeat("sunset");
 
-  const appear = Math.max(intro.enter(0.2, 10), light.enter(0, 10));
+  // Everything is on stage from frame one, and the hook previews the finished picture
+  // (a blue sky) before the explanation rewinds to plain sunlight.
+  const appear = 1;
+  const preview = intro.on ? 1 - light.ramp(0, 0.5) : 0;
   const beam = light.ramp(0.2, 0.9);
   const split = waves.ramp(0.1, 0.8);
   const bounce = scatter.ramp(0.3, 1.4);
@@ -63,7 +66,7 @@ export const SkyStage: React.FC = () => {
       <path
         d={`M 20,${STAGE.ground} A 480 590 0 0 1 980,${STAGE.ground} Z`}
         fill={sky}
-        opacity={lerp(0.26, 0.34, set) * bounce}
+        opacity={lerp(0.26, 0.34, set) * Math.max(bounce, preview)}
       />
       <path
         d={`M 20,${STAGE.ground} A 480 590 0 0 1 980,${STAGE.ground}`}
@@ -72,7 +75,7 @@ export const SkyStage: React.FC = () => {
         strokeWidth={4}
         strokeDasharray="4 16"
         strokeLinecap="round"
-        opacity={bounce * 0.9}
+        opacity={Math.max(bounce, preview) * 0.9}
       />
       {/* Clouds drift across; they thin out when the air itself becomes the subject. */}
       {CLOUDS.map((c, i) => {

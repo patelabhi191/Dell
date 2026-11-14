@@ -1,4 +1,6 @@
-# Video Playbook
+# Frontier in 60: Video Playbook
+
+Channel: **Frontier in 60** (`@frontierin60`). Every video is **under 60 seconds**.
 
 The standing brief for every video on this channel. Read it before writing a script, building a
 scene, or rendering. If a video needs to break a rule here, change the rule here first.
@@ -8,7 +10,7 @@ YouTube (Shorts first, 16:9 optional).
 
 ## 1. What we make
 
-Faceless animated videos, 45-75 seconds, 9:16, with an AI voiceover and burned-in captions.
+Faceless animated videos, 40-58 seconds (never 60 or more), 9:16, with an AI voiceover and burned-in captions.
 
 | Format | Share | Purpose | Default look |
 | --- | --- | --- | --- |
@@ -16,6 +18,61 @@ Faceless animated videos, 45-75 seconds, 9:16, with an AI voiceover and burned-i
 | **Story** (`"format": "story"`) | occasional | tell one true story with a twist | black stage (`night`) |
 
 Either format can use either theme. White is the default; black is "night mode".
+
+## Retention system (read this first)
+
+The job of every video is to be watched to the end. The first upload of pilot 001 lost about
+66% of viewers to an early swipe, so these rules now override anything else in this playbook.
+
+**A. Hook immediately**
+
+- Never open on a logo, a title card, the channel name or an introduction. The logo and handle
+  appear only on the outro.
+- The first words are the question or claim. The **first frame** is already a complete,
+  interesting picture: nothing fades in from blank. It previews the payoff (pilot 001 opens on
+  the finished blue sky, then rewinds to explain it).
+- The hook is on screen as text within the first half second, readable with the sound off.
+- Open a loop the viewer wants closed, and where possible a second one: "Why is the sky blue?
+  And why does it turn orange at sunset?" The second question is answered last.
+
+**B. Animated subtitles, always**
+
+- Captions are burned in, one short phrase at a time, popping in with the voice.
+- The video's key words are highlighted in **cyan** in the captions (set `"keywords"` in the
+  episode: for pilot 001 they are blue, sunlight, air, sunset and similar). Numbers are
+  highlighted automatically. Many viewers watch muted; the highlighted words alone should tell
+  the story.
+
+**C. A visual change every 2-4 seconds**
+
+- Something new must happen on screen at least every 2-4 seconds: a new object, a cut to a big
+  statement, a colour change, a camera punch. Plan the shots as a list before building, e.g.
+  blue sky -> sunlight entering the air -> scattering -> orange sunset.
+- No scene holds a single unchanged picture for longer than about 4 seconds. If the narration
+  for a scene runs longer, give its stage more than one change or split the scene.
+
+**D. Hold them to the end**
+
+- Delay the payoff. The answer to the hook's main question lands in the last quarter, not the
+  first.
+- Use at least one mid-video turn ("but here's the odd part") to reopen curiosity around the
+  halfway point, where attention usually sags.
+- Do not signal the ending. No "so, in conclusion", no slow wind-down; the last line is the
+  payoff, followed by a follow line of 2 seconds at most.
+- No progress or step tracker ("STEP 2/4"). It tells viewers how much is left and gives them a
+  reason to leave. Removed from the framework.
+- Where it fits, let the last line lead back into the first so a replay feels natural.
+
+**E. Measure and adjust**
+
+- After each upload, record skip rate (left in the first 3 seconds) and the retention curve
+  in section 9. A cliff at the start means the hook failed; a steady slide means the middle is
+  slow; a drop near the end means the ending was signalled.
+- Change one thing at a time between videos so the numbers mean something. Compare against
+  our own earlier videos, not outside benchmarks: there is no official "good" figure.
+
+These rules come from the owner's direction plus common practice described in creator and
+analytics-vendor guides. Treat the timings as starting points to test, not proven laws.
 
 ## 2. The four reference clips
 
@@ -57,8 +114,14 @@ the frame. Objects stand on the floor with a soft contact shadow.
   gradients on objects, no outlines, no photos, no AI-generated images in this style.
 - Type: **Passion One** uppercase for headlines, **Nunito** 900 for tags, captions and body.
 - Headlines are short: 2-6 words, one or two highlighted with `*asterisks*`.
-- Screen zones, top to bottom: step tracker, headline or tag, stage, caption pill, then empty
-  floor. The bottom fifth stays empty for the platform's buttons.
+- **Safe zones** (measured from a screenshot of our own Reel on a notched iPhone; all values on
+  the 1080x1920 frame). Text, captions and anything that matters stay inside them:
+  - Top 14% (above y=270) is empty: status bar, Dynamic Island / notch and the "Reels" header.
+  - Bottom 22% (below y=1500) is empty: username, caption and audio row.
+  - Right edge (x beyond 890) is empty from 55% down: like, comment and share buttons.
+  - About 5% on each side can be cropped on tall phones: keep 110 px side margins.
+  - Order inside the safe area: headline or tag, stage, caption pill (centred near 69%).
+  The layout enforces this; a custom stage must not draw outside its canvas.
 - Motion: things pop or grow in (spring), headlines stamp in word by word, one new thing at a
   time, timed to the word that names it.
 - **Keep it active.** The goal is that people watch to the end, so the frame is never still:
@@ -73,8 +136,8 @@ the frame. Objects stand on the floor with a soft contact shadow.
   - Ambient motion stays small and slow; it must never compete with the thing being explained.
 - The scene **builds up**: objects stay on stage and accumulate across steps. Punchlines dim
   the stage and put one big line over it.
-- Logo / character: none yet. The owner is considering a channel logo or an original
-  character, possibly one that narrates the stories. To be added later; it must be our own
+- Logo / character: the channel has a logo; it goes on the outro only, never the opening.
+  The owner is considering an original character, possibly one that narrates the stories. To be added later; it must be our own
   design, not the reference's mascot.
 
 ## 4. Voice
@@ -123,8 +186,8 @@ the same script with `--provider`.
 | # | Beat | Share of runtime | What happens |
 | --- | --- | --- | --- |
 | 1 | **Hook** | 0-7% | A question or a claim that sounds wrong. Headline on screen, stage previewed. |
-| 2 | **Setup** | 7-20% | The one thing the viewer needs first. Step 1. |
-| 3 | **Mechanism** | 20-50% | 2-4 steps, each adds one object or change to the stage. Step tracker runs. |
+| 2 | **Setup** | 7-20% | The one thing the viewer needs first. |
+| 3 | **Mechanism** | 20-50% | 2-4 steps, each adds one object or change to the stage. |
 | 4 | **Number** | about 50% | One figure as a big stat. |
 | 5 | **Turn** | 55-75% | "But here's the odd part." A surprise or exception, then its short answer. |
 | 6 | **Payoff** | 75-92% | Last step, then one line that ties back to the hook. |
@@ -174,14 +237,28 @@ dimmed stage), `stat` (one number), `list` (recap card), `bars` (compare values)
 - [ ] Pace within 15 words/min of the target for the format.
 - [ ] Something new on screen at least every 2-3 seconds.
 - [ ] Captions skimmed for misheard words (names and numbers especially).
-- [ ] Nothing important in the bottom fifth or under the top tracker.
+- [ ] First frame is a full picture; no logo or intro before the hook.
+- [ ] Captions have their keywords set and highlighted.
+- [ ] Nothing in the top 14%, the bottom 22%, or under the right-hand buttons.
+- [ ] Under 60 seconds.
 - [ ] Only one accent colour doing the pointing; no stray colours.
 - [ ] Nothing copied from a reference clip or anyone else's video.
 - [ ] Watched once at full speed on a phone.
 
 ## 8. Brief for a new video
 
-Copy this into the request each time.
+The owner usually sends a brief in this shape; it is enough to start from:
+
+```text
+Opening hook (0-3 sec):  the question or claim, in quotes
+The story (45-60 sec):   the facts, in a few paragraphs
+Visual direction:        bullet list of what to show, in order
+```
+
+Turn it into a video like this: keep the hook as the first line; rewrite the story into short
+spoken sentences (about 140-155 words); translate "shots" and "footage" into flat-vector
+scenes in the house style; check every fact and report any that could not be confirmed. If
+format or theme is not stated, choose them. Optional extra fields:
 
 ```text
 Format:      info | story
@@ -198,13 +275,20 @@ Sign-off:    (follow line, or a question to comment)
 
 | Pilot | Format | Theme | Length | Pace |
 | --- | --- | --- | --- | --- |
-| `001-why-is-the-sky-blue` | info | light | 57 s | 162 words/min |
+| `001-why-is-the-sky-blue` | info | light | 59 s | 165 words/min |
 | `002-the-man-who-sold-the-eiffel-tower` | story | night | 46 s | 159 words/min |
+
+Published results:
+
+| Video | Version | Result | What changed next |
+| --- | --- | --- | --- |
+| 001 sky | v1 (step tracker, slow open, no keyword highlights) | about 66% swiped away | Retention system added: full first frame, two-question hook, cyan keywords, tracker removed, safe zones |
 
 To decide before going weekly:
 
 - Voice: decided (`am_liam` info, `am_puck` story). Accent colour: decided (blue).
-- Channel name and handle (set `"handle"` in an episode to show it under the captions).
-- Logo or character (possibly a story narrator): owner is thinking about it.
+- Channel name: decided, Frontier in 60 (`@frontierin60`, shown on the outro only).
+- Logo: exists (Instagram avatar); add the file to `public/` to show it on the outro.
+- Character (possibly a story narrator): owner is thinking about it.
 - Music and sound effects: the voice reference has none; the pilots have none.
 - Niche: which topics the informative videos cover.

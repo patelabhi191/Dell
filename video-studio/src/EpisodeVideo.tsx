@@ -10,10 +10,9 @@ import {
 import { Backdrop } from "./Backdrop";
 import { BeatsContext } from "./beats";
 import { Captions, type CaptionWord } from "./Captions";
-import { Progress } from "./Progress";
 import { SceneView } from "./scenes";
 import { stages } from "./stages";
-import { BODY, STAGE, ThemeContext, themes, useLayout, useTheme } from "./theme";
+import { STAGE, ThemeContext, themes, useLayout } from "./theme";
 import type { Episode } from "./types";
 
 export const FPS = 30;
@@ -24,13 +23,20 @@ export const sceneFrames = (seconds: number) => Math.round(seconds * FPS);
 export const episodeFrames = (episode: Episode) =>
   episode.scenes.reduce((sum, s) => sum + sceneFrames(s.seconds), 0);
 
-const SceneFade: React.FC<{ frames: number; last: boolean; children: React.ReactNode }> = ({
+const SceneFade: React.FC<{
+  frames: number;
+  first: boolean;
+  last: boolean;
+  children: React.ReactNode;
+}> = ({
   frames,
+  first,
   last,
   children,
 }) => {
   const frame = useCurrentFrame();
-  const fadeIn = interpolate(frame, [0, FADE], [0, 1], { extrapolateRight: "clamp" });
+  // The very first frame must already be full: it is what a scrolling viewer sees.
+  const fadeIn = first ? 1 : interpolate(frame, [0, FADE], [0, 1], { extrapolateRight: "clamp" });
   const fadeOut = last
     ? 1
     : interpolate(frame, [frames - FADE, frames], [1, 0], { extrapolateLeft: "clamp" });
@@ -62,28 +68,6 @@ const StageLayer: React.FC<{ name: string; opacity: number; zoom: number }> = ({
   );
 };
 
-const Handle: React.FC<{ text: string }> = ({ text }) => {
-  const { u, captionCenter } = useLayout();
-  const theme = useTheme();
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: 0,
-        right: 0,
-        top: captionCenter + 62 * u,
-        textAlign: "center",
-        fontFamily: BODY,
-        fontWeight: 700,
-        fontSize: 26 * u,
-        color: theme.muted,
-      }}
-    >
-      {text}
-    </div>
-  );
-};
-
 export const EpisodeVideo: React.FC<{ episode: Episode; words?: CaptionWord[] }> = ({
   episode,
   words,
@@ -109,7 +93,6 @@ export const EpisodeVideo: React.FC<{ episode: Episode; words?: CaptionWord[] }>
   const stageOpacity = stageLevel(previous) + (stageLevel(current) - stageLevel(previous)) * blend;
   // Camera: a small punch-in on every cut, then a slow push through the scene.
   const zoom = 1 + 0.05 * (1 - blend) * (index > 0 ? 1 : 0) + 0.04 * (local / current.frames);
-  const progressOpacity = previous?.scene.progress ? 1 : blend;
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -118,16 +101,12 @@ export const EpisodeVideo: React.FC<{ episode: Episode; words?: CaptionWord[] }>
         {episode.stage ? <StageLayer name={episode.stage} opacity={stageOpacity} zoom={zoom} /> : null}
         {timeline.map(({ scene, start, frames }, i) => (
           <Sequence key={i} from={start} durationInFrames={frames}>
-            <SceneFade frames={frames} last={i === timeline.length - 1}>
-              <SceneView scene={scene} />
+            <SceneFade frames={frames} first={i === 0} last={i === timeline.length - 1}>
+              <SceneView scene={scene} handle={episode.handle} />
             </SceneFade>
           </Sequence>
         ))}
-        {current.scene.progress ? (
-          <Progress value={current.scene.progress} opacity={progressOpacity} />
-        ) : null}
-        {words && episode.captions ? <Captions words={words} /> : null}
-        {episode.handle ? <Handle text={episode.handle} /> : null}
+        {words && episode.captions ? <Captions words={words} keywords={episode.keywords} /> : null}
         {episode.voiceover ? <Audio src={staticFile(`audio/${episode.voiceover}`)} /> : null}
         {episode.music ? (
           <Audio src={staticFile(`audio/${episode.music}`)} volume={episode.musicVolume} loop />

@@ -1,4 +1,4 @@
-# Repository guide
+# Repository guide (Frontier in 60)
 
 - `video-studio/` is the channel's video pipeline (faceless animated shorts for Instagram and
   YouTube). **Before any video work, read `video-studio/PLAYBOOK.md`**: it is the standing brief

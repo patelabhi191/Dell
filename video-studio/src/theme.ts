@@ -23,6 +23,8 @@ export type Theme = {
   pillText: string;
   pillMuted: string;
   pillBorder: string;
+  /** Key words in the captions. Cyan reads better than the accent on the dark pill. */
+  captionHighlight: string;
   card: string;
   shadow: string;
   /** Extra colours for bars and badges. */
@@ -49,6 +51,7 @@ export const themes: Record<Theme["name"], Theme> = {
     pillText: "#FFFFFF",
     pillMuted: "#85868C",
     pillBorder: "transparent",
+    captionHighlight: "#3DDCFF",
     card: "#FFFFFF",
     shadow: "rgba(20,20,20,0.16)",
     palette: ["#2563FF", "#F5B700", "#F04E23", "#878796", "#141414"],
@@ -71,6 +74,7 @@ export const themes: Record<Theme["name"], Theme> = {
     pillText: "#FFFFFF",
     pillMuted: "#74767F",
     pillBorder: "rgba(255,255,255,0.16)",
+    captionHighlight: "#3DDCFF",
     card: "#17191F",
     shadow: "rgba(0,0,0,0.5)",
     palette: ["#4D8DFF", "#F5B700", "#FF5A36", "#8A8C9B", "#F4F3EE"],
@@ -88,36 +92,39 @@ export const BODY = "Nunito, system-ui, sans-serif";
 export const STAGE = { width: 1000, height: 900, ground: 830 };
 
 /**
- * Screen zones, matched to the reference: tracker at the very top, headline under it,
- * stage in the middle, captions under the stage, bottom of the frame left empty for
- * the platform's own buttons. `u` is one design unit (1/1080 of the short edge).
+ * Screen zones for 9:16, measured against the Instagram Reels interface on a notched phone:
+ *  - top 14% is covered by the status bar / Dynamic Island and the "Reels" header;
+ *  - bottom 22% is covered by the username, caption and audio row;
+ *  - the right edge carries the like/comment/share buttons from about 55% down;
+ *  - tall phones crop roughly 5% off each side.
+ * So: nothing above 270, nothing below 1500, and nothing right of 890 in the lower half
+ * (all in 1080x1920 units). `u` is one design unit (1/1080 of the short edge).
  */
 export const useLayout = () => {
   const { width, height } = useVideoConfig();
   const vertical = height > width;
   const u = Math.min(width, height) / 1080;
   if (vertical) {
+    const scale = 0.82 * u;
     return {
       vertical, u, width, height,
-      side: 64 * u,
-      progressTop: 76 * u,
-      headingTop: 196 * u,
-      stage: { x: 40 * u, y: 430 * u, scale: u },
-      horizon: 1060 * u,
-      contentTop: 190 * u,
-      contentBottom: 1400 * u,
-      captionCenter: 1470 * u,
+      side: 110 * u,
+      headingTop: 290 * u,
+      stage: { x: 110 * u, y: 450 * u, scale },
+      horizon: 1010 * u,
+      contentTop: 290 * u,
+      contentBottom: 1250 * u,
+      captionCenter: 1335 * u,
     };
   }
   const scale = 0.8 * u;
   return {
     vertical, u, width, height,
     side: 90 * u,
-    progressTop: 36 * u,
-    headingTop: 132 * u,
-    stage: { x: (width - STAGE.width * scale) / 2, y: 236 * u, scale },
-    horizon: 760 * u,
-    contentTop: 130 * u,
+    headingTop: 70 * u,
+    stage: { x: (width - STAGE.width * scale) / 2, y: 210 * u, scale },
+    horizon: 740 * u,
+    contentTop: 80 * u,
     contentBottom: 940 * u,
     captionCenter: 1000 * u,
   };

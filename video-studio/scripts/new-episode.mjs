@@ -20,12 +20,12 @@ const s = (type, fields) => ({ type, seconds: 4, ...fields, narration: "" });
 const scenes =
   format === "info"
     ? [
-        s("statement", { tag: "Quick science", text: "The *hook* line" }),
-        s("show", { progress: "STEP 1/3", tag: "What you need first" }),
-        s("show", { progress: "STEP 2/3", tag: "How it works" }),
+        s("show", { heading: "The *hook* question?", tag: "and the second question" }),
+        s("show", { tag: "What you need first" }),
+        s("show", { tag: "How it works" }),
         s("stat", { value: 10, suffix: "x", label: "The one number worth *remembering*" }),
         s("statement", { tag: "Here's the odd part", tagTone: "accent", text: "The *turn*" }),
-        s("show", { progress: "STEP 3/3", tag: "The payoff" }),
+        s("show", { tag: "The payoff" }),
         s("statement", { text: "One line that ties back to *the hook*" }),
         s("outro", { title: "Now you *know*", cta: "Follow", ctaNote: "for more" }),
       ]
@@ -39,7 +39,7 @@ const scenes =
         s("outro", { title: "A question to *comment*?", cta: "Follow", ctaNote: "for more true stories" }),
       ];
 
-const episode = { id, title, format, theme: format === "story" ? "night" : "light", scenes };
+const episode = { id, title, format, theme: format === "story" ? "night" : "light", keywords: [], scenes };
 writeFileSync(file, JSON.stringify(episode, null, 2) + "\n");
 console.log(`Created ${file}`);
 console.log('Fill in each "narration", then follow PLAYBOOK.md section 6.');

@@ -30,9 +30,14 @@ const toPhrases = (words: CaptionWord[]) => {
 
 /**
  * Caption pill under the stage, from Whisper timings (captions/<id>.json).
- * Words turn white as they are spoken; numbers are picked out in the accent colour.
+ * Words turn white as they are spoken; numbers and the episode's keywords are cyan throughout,
+ * so the point still lands with the sound off.
  */
-export const Captions: React.FC<{ words: CaptionWord[] }> = ({ words }) => {
+export const Captions: React.FC<{ words: CaptionWord[]; keywords?: string[] }> = ({
+  words,
+  keywords = [],
+}) => {
+  const keys = useMemo(() => new Set(keywords.map((k) => k.toLowerCase())), [keywords]);
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { u, vertical, captionCenter, side } = useLayout();
@@ -90,7 +95,9 @@ export const Captions: React.FC<{ words: CaptionWord[] }> = ({ words }) => {
         <span>
           {phrases[index].map((word, i) => {
             const spoken = t >= word.start - 0.05;
-            const color = !spoken ? theme.pillMuted : /\d/.test(word.text) ? theme.accent : theme.pillText;
+            const bare = word.text.toLowerCase().replace(/[^a-z0-9']/g, "");
+            const key = /\d/.test(word.text) || keys.has(bare) || keys.has(bare.replace(/'?s$/, ""));
+            const color = key ? theme.captionHighlight : spoken ? theme.pillText : theme.pillMuted;
             return (
               <span
                 key={i}

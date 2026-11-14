@@ -7,11 +7,6 @@ const base = {
   narration: z.string().optional(),
   /** Names this moment so the episode's stage can animate on it (see src/stages). */
   beat: z.string().optional(),
-  /** Step tracker at the top, e.g. "STEP 2/4" or "PROPERTY 1/5". */
-  progress: z
-    .string()
-    .regex(/^.+ \d+\/\d+$/, 'progress must look like "STEP 2/4"')
-    .optional(),
 };
 
 export const iconNames = ["sun", "eye", "bulb", "wave", "globe", "clock", "spark"] as const;
@@ -87,8 +82,10 @@ export const episodeSchema = z.object({
   theme: z.enum(["light", "night"]).optional(),
   /** Name of a custom animated stage registered in src/stages/index.ts. */
   stage: z.string().optional(),
-  /** Channel handle shown small under the captions, e.g. "@yourchannel". */
-  handle: z.string().optional(),
+  /** Channel handle, shown on the outro. */
+  handle: z.string().default("@frontierin60"),
+  /** Words to pick out in cyan in the captions (case-insensitive), e.g. ["blue", "sunset"]. */
+  keywords: z.array(z.string()).default([]),
   /** Voice and speed for `npm run voiceover` (defaults depend on format). */
   voice: z.string().optional(),
   voiceSpeed: z.number().min(0.5).max(2).optional(),

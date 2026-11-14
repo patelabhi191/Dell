@@ -40,14 +40,15 @@ Two pilots are included: `001-why-is-the-sky-blue` (informative, white) and
 | `format` | `info` or `story`. Sets the default theme and voice speed. |
 | `theme` | `light` (white) or `night` (black). |
 | `stage` | Name of a custom animated stage from `src/stages/`. Optional. |
-| `handle` | Channel handle shown under the captions. Optional. |
+| `handle` | Channel handle shown on the outro. Defaults to `@frontierin60`. |
+| `keywords` | Words highlighted in cyan in the captions. |
 | `voice`, `voiceSpeed` | Override the house voice for this episode. |
 | `captions` | `false` hides burned-in captions. |
 | `music`, `musicVolume` | Background track in `public/audio/`. |
 | `scenes` | The beats, in order. |
 
 Every scene has `type`, `seconds`, and optionally `narration`, `beat` (a name the stage
-animates on) and `progress` (step tracker text such as `"STEP 2/4"`). Wrap words in
+animates on). Wrap words in
 `*asterisks*` to highlight them.
 
 | type | fields | use for |
@@ -133,7 +134,7 @@ Use references to study pacing and style, not as footage in your own videos.
 - `src/stages/` - custom animated stages, one per episode that needs one
 - `src/props.tsx` - flat-vector building blocks for stages
 - `src/theme.ts` - the light and night themes, fonts and screen zones
-- `src/Captions.tsx`, `src/Progress.tsx`, `src/Backdrop.tsx` - caption pill, step tracker, grid floor
+- `src/Captions.tsx`, `src/Backdrop.tsx` - caption pill, grid floor
 - `public/audio/` - voiceover and music files
 - `captions/` - Whisper word timings and `.srt` files
 - `references/` - your reference clips (video files are not committed)

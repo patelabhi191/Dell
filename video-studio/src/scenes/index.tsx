@@ -219,7 +219,7 @@ const Show: React.FC<{ scene: Of<"show"> }> = ({ scene }) => {
     >
       {scene.heading ? (
         <Slam>
-          <Display size={vertical ? 132 : 96}>
+          <Display size={vertical ? 116 : 92}>
             <Rich text={scene.heading} />
           </Display>
         </Slam>
@@ -430,7 +430,7 @@ const List: React.FC<{ scene: Of<"list"> }> = ({ scene }) => {
   );
 };
 
-const Outro: React.FC<{ scene: Of<"outro"> }> = ({ scene }) => {
+const Outro: React.FC<{ scene: Of<"outro">; handle?: string }> = ({ scene, handle }) => {
   const { u, vertical } = useLayout();
   const theme = useTheme();
   return (
@@ -458,11 +458,16 @@ const Outro: React.FC<{ scene: Of<"outro"> }> = ({ scene }) => {
           <span style={{ fontSize: 36 * u, fontWeight: 800, color: theme.pillText }}>{scene.ctaNote}</span>
         </div>
       </Pop>
+      {handle ? (
+        <Rise delay={0.7}>
+          <div style={{ fontSize: 40 * u, fontWeight: 900, color: theme.muted }}>{handle}</div>
+        </Rise>
+      ) : null}
     </Frame>
   );
 };
 
-export const SceneView: React.FC<{ scene: Scene }> = ({ scene }) => {
+export const SceneView: React.FC<{ scene: Scene; handle?: string }> = ({ scene, handle }) => {
   switch (scene.type) {
     case "statement":
       return <Statement scene={scene} />;
@@ -477,6 +482,6 @@ export const SceneView: React.FC<{ scene: Scene }> = ({ scene }) => {
     case "list":
       return <List scene={scene} />;
     case "outro":
-      return <Outro scene={scene} />;
+      return <Outro scene={scene} handle={handle} />;
   }
 };
