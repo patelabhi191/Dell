@@ -173,10 +173,20 @@
     }
   ],
   "voiceover": "003-the-router-that-grounded-america.mp3",
-  "thumbnail": {
-    "title": "One box grounded *America*",
-    "tag": "Nov 13, 2026",
-    "at": "flood",
-    "offset": 2.6
-  }
+  "thumbnails": [
+    {
+      "name": "mystery",
+      "title": "One box grounded *every US plane*",
+      "tag": "Nov 13, 2026",
+      "at": "cover",
+      "offset": 0
+    },
+    {
+      "name": "reveal",
+      "title": "One box grounded *America*",
+      "tag": "Nov 13, 2026",
+      "at": "flood",
+      "offset": 2.6
+    }
+  ]
 }

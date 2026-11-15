@@ -55,15 +55,16 @@ export const Root: React.FC = () => (
             height={f.height}
           />
         ))}
-        {episode.thumbnail ? (
+        {episode.thumbnails.map((th) => (
           <Still
-            id={`${episode.id}-thumb`}
+            key={th.name}
+            id={`${episode.id}-thumb-${th.name}`}
             component={Thumbnail}
-            defaultProps={{ episode, words: captions[episode.id] }}
+            defaultProps={{ episode, words: captions[episode.id], name: th.name }}
             width={1080}
             height={1920}
           />
-        ) : null}
+        ))}
       </Folder>
     ))}
   </>

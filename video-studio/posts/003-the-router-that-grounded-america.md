@@ -1,7 +1,9 @@
 # Instagram post: 003 The router that grounded America
 
 Video: `out/003-the-router-that-grounded-america-short.mp4`
-Cover: `out/003-the-router-that-grounded-america-thumb.png`
+Cover: `out/003-the-router-that-grounded-america-thumb-mystery.png` (chosen; does not reveal the router)
+Alternative cover: `out/003-the-router-that-grounded-america-thumb-reveal.png`
+Voice: am_liam (chosen over am_puck)
 
 ## Caption
 

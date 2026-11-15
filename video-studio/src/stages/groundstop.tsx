@@ -538,6 +538,69 @@ const Finale: React.FC<{ t: number; spreadT: number | null }> = ({ t, spreadT })
   );
 };
 
+
+/** A plain cardboard box with a face: the culprit, before we say what it is. */
+const MysteryBox: React.FC<{ t: number }> = ({ t }) => {
+  const theme = useTheme();
+  const blink = t % 3 < 0.12;
+  return (
+    <g>
+      <ellipse cx={30} cy={118} rx={190} ry={20} fill={theme.shadow} />
+      <polygon points="-120,-80 -60,-130 180,-130 120,-80" fill="#E8B872" />
+      <polygon points="120,-80 180,-130 180,70 120,120" fill="#B98446" />
+      <rect x={-120} y={-80} width={240} height={200} fill="#D9A15B" />
+      <rect x={-18} y={-80} width={36} height={200} fill="#F2D49B" />
+      <polygon points="-18,-80 18,-80 78,-130 42,-130" fill="#F7E2B4" />
+      <ellipse cx={-50} cy={-10} rx={22} ry={blink ? 3 : 24} fill="#FFFFFF" />
+      <ellipse cx={50} cy={-10} rx={22} ry={blink ? 3 : 24} fill="#FFFFFF" />
+      {blink ? null : (
+        <>
+          <circle cx={-44} cy={-6} r={11} fill={theme.ink} />
+          <circle cx={56} cy={-6} r={11} fill={theme.ink} />
+        </>
+      )}
+      <path d="M -26 52 Q 0 66 30 46" fill="none" stroke={theme.ink} strokeWidth={7} strokeLinecap="round" />
+      <path d="M -86 -46 L -24 -36" stroke={theme.ink} strokeWidth={7} strokeLinecap="round" />
+      <path d="M 86 -46 L 24 -36" stroke={theme.ink} strokeWidth={7} strokeLinecap="round" />
+      <circle cx={-86} cy={40} r={13} fill="#FF7AB6" opacity={0.55} />
+      <circle cx={86} cy={40} r={13} fill="#FF7AB6" opacity={0.55} />
+    </g>
+  );
+};
+
+/** Cover-only picture: a mystery box surrounded by grounded planes. */
+const Cover: React.FC<{ t: number }> = ({ t }) => {
+  const theme = useTheme();
+  return (
+    <g>
+      <polygon points="390,-40 610,-40 820,830 180,830" fill={theme.accent} opacity={0.1} />
+      <rect x={-40} y={828} width={1080} height={20} rx={10} fill={theme.slateLight} opacity={0.6} />
+      {[
+        { x: 170, y: 560, s: 0.6, c: 4, r: 6 },
+        { x: 830, y: 560, s: 0.6, c: 5, r: -6 },
+        { x: 150, y: 790, s: 0.85, c: 1, r: -7 },
+        { x: 850, y: 790, s: 0.85, c: 2, r: 7 },
+      ].map((p, i) => (
+        <g key={i}>
+          <ellipse cx={p.x} cy={p.y + 46 * p.s} rx={130 * p.s} ry={12 * p.s} fill={theme.shadow} />
+          <g transform={`translate(${p.x} ${p.y}) scale(${i % 2 ? -p.s : p.s} ${p.s})`}>
+            <SidePlane color={LIVERY[p.c]} mood="sad" />
+          </g>
+          <Tag x={p.x} y={p.y - 150 * p.s} text="GROUNDED" tone="alert" size={34 * p.s + 6} display rotate={p.r} />
+        </g>
+      ))}
+      <g transform="translate(470 690) scale(1.15)">
+        <MysteryBox t={t} />
+      </g>
+      {[[290, 470, 0], [700, 430, 1], [600, 330, 2], [380, 340, 3]].map(([x, y, k]) => (
+        <text key={k} x={x} y={y} textAnchor="middle" fontFamily={DISPLAY} fontSize={k % 2 ? 110 : 84} fill={LIVERY[k]} transform={`rotate(${(k % 2 ? 1 : -1) * 12} ${x} ${y})`}>
+          ?
+        </text>
+      ))}
+    </g>
+  );
+};
+
 // ---------------------------------------------------------------- stage
 
 export const GroundStopStage: React.FC = () => {
@@ -565,6 +628,9 @@ export const GroundStopStage: React.FC = () => {
   const wrong = useBeat("wrong");
   const finale = useBeat("finale");
   const spread = useBeat("spread");
+
+  const cover = useBeat("cover");
+  if (cover.start !== undefined) return <Cover t={1.5} />;
 
   const cockpitOn = 1 - grounded.ramp(0, 0.35);
   const tarmacOn = grounded.ramp(0, 0.35) * (1 - box.ramp(0, 0.35));

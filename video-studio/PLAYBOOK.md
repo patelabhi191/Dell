@@ -261,8 +261,10 @@ npm run render -- <id> short   # out/<id>-short.mp4 (drop "short" for 16:9 too)
    `src/stages/index.ts`, set `"stage": "<name>"`, and give scenes a `"beat"` name to animate on.
    Build it from `src/props.tsx` (Box, Building, House, Person, Tag, DashedArrow, Wave, Cash).
 4. **Voiceover**, then **captions**. Re-run both whenever the narration changes.
-5. **Cover**: add a `"thumbnail"` block to the episode (title, tag, and the beat + offset of
-   the frame to freeze) and run `npm run thumbnail -- <id>`. Keep the title and the main
+5. **Cover**: add covers to the episode's `"thumbnails"` list (name, title, tag, and the beat +
+   offset of the frame to freeze, or `"at": "cover"` for a cover-only picture the stage draws)
+   and run `npm run thumbnail -- <id>`. The cover must not give away the answer: show the
+   mystery (a box with a face), not the reveal (the router). Keep the title and the main
    character inside the middle 4:5 area, which is what the profile grid shows.
 6. **Post caption**: write `posts/<id>.md` with the caption, hashtags and sources: first line
    repeats the hook, then 3-4 short factual lines, a question to comment on, the follow line,

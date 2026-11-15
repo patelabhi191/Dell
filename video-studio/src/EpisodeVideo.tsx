@@ -126,12 +126,17 @@ const buildTimeline = (episode: Episode, words?: CaptionWord[]) => {
 };
 
 /** Reel cover: the stage frozen at one moment, with a big title. Safe for 4:5 and 3:4 crops. */
-export const Thumbnail: React.FC<{ episode: Episode; words?: CaptionWord[] }> = ({ episode, words }) => {
+export const Thumbnail: React.FC<{ episode: Episode; words?: CaptionWord[]; name: string }> = ({
+  episode,
+  words,
+  name,
+}) => {
   const theme = themeOf(episode);
   const { beats } = buildTimeline(episode, words);
-  const thumb = episode.thumbnail;
+  const thumb = episode.thumbnails.find((th) => th.name === name);
   const { u, width } = useLayout();
-  if (!thumb) throw new Error(`${episode.id} has no "thumbnail" in its episode file`);
+  if (!thumb) throw new Error(`${episode.id} has no thumbnail named "${name}"`);
+  if (thumb.at === "cover") beats.cover = 0;
   if (beats[thumb.at] === undefined) throw new Error(`Thumbnail beat "${thumb.at}" is not in ${episode.id}`);
   const at = Math.round(beats[thumb.at] + thumb.offset * FPS);
   // Shift every beat back by `at`, so frame 0 of this still shows the stage at that moment.
@@ -166,7 +171,8 @@ export const Thumbnail: React.FC<{ episode: Episode; words?: CaptionWord[] }> = 
             style={{
               fontFamily: DISPLAY,
               fontWeight: 900,
-              fontSize: 168 * u,
+              // Long titles get smaller so the picture still shows under them.
+              fontSize: (thumb.title.replace(/\*/g, "").length > 24 ? 138 : 168) * u,
               lineHeight: 0.92,
               textTransform: "uppercase",
               color: theme.ink,

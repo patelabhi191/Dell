@@ -105,12 +105,21 @@ export const episodeSchema = z.object({
   /** Files inside public/audio/ */
   voiceover: z.string().optional(),
   /**
-   * Reel cover: a still of the stage frozen `offset` seconds after beat `at`, with `title`
-   * on top. Rendered with `npm run thumbnail -- <id>`.
+   * Reel covers. Each is a still of the stage frozen `offset` seconds after beat `at`, with
+   * `title` on top. A stage may also draw a cover-only picture for the beat "cover".
+   * Rendered with `npm run thumbnail -- <id>` to out/<id>-thumb-<name>.png.
    */
-  thumbnail: z
-    .object({ title: z.string(), tag: z.string().optional(), at: z.string(), offset: z.number().default(0) })
-    .optional(),
+  thumbnails: z
+    .array(
+      z.object({
+        name: z.string().regex(/^[a-z0-9-]+$/),
+        title: z.string(),
+        tag: z.string().optional(),
+        at: z.string(),
+        offset: z.number().default(0),
+      }),
+    )
+    .default([]),
   /** Burn in captions when captions/<id>.json exists (made by `npm run captions`). */
   captions: z.boolean().default(true),
   music: z.string().optional(),
