@@ -370,10 +370,10 @@ const Terminal: React.FC<{ t: number; safeT: number | null; enter: number }> = (
   const shown = TERM_LINES.slice(0, Math.min(typed + 1, TERM_LINES.length * 3)).map((_, i) => TERM_LINES[i % TERM_LINES.length]);
   const visible = shown.slice(-10);
   const calm = safeT !== null && t >= safeT;
-  const check = calm ? clamp01((t - safeT!) / 0.35) : 0;
-  const pop = calm ? Math.min(1.15, 1.15 * ease((t - safeT!) / 0.25)) - Math.max(0, (t - safeT! - 0.25) * 0.6) : 0;
+  const check = calm ? clamp01((t - safeT!) / 0.15) : 0;
+  const pop = calm ? Math.min(1.12, 1.12 * ease((t - safeT!) / 0.12)) - Math.min(0.12, Math.max(0, (t - safeT! - 0.12) * 0.8)) : 0;
   return (
-    <g transform={`translate(500 560) scale(${enter}) translate(-500 -560)`}>
+    <g transform={`translate(500 600) scale(${0.78 * enter}) translate(-500 -560)`}>
       <rect x={110} y={340} width={780} height={470} rx={26} fill={theme.shadow} transform="translate(0 12)" />
       <rect x={110} y={340} width={780} height={470} rx={26} fill="#0B100D" />
       <rect x={110} y={340} width={780} height={52} rx={26} fill="#1E2420" />
@@ -398,7 +398,7 @@ const Terminal: React.FC<{ t: number; safeT: number | null; enter: number }> = (
             <path d="M 0 -88 L 74 -60 L 74 6 Q 74 66 0 96 Q -74 66 -74 6 L -74 -60 Z" fill="#22B573" />
             <path d="M -32 4 L -8 28 L 36 -22" fill="none" stroke="#FFFFFF" strokeWidth={16} strokeLinecap="round" strokeLinejoin="round" />
           </g>
-          <g transform={`translate(500 690) rotate(-5) scale(${clamp01(((t - safeT!) - 0.3) / 0.25)})`}>
+          <g transform={`translate(500 690) rotate(-5) scale(${Math.min(1.1, 1.1 * ease((t - safeT!) / 0.12))})`}>
             <rect x={-250} y={-36} width={500} height={72} rx={18} fill="#FFFFFF" stroke="#22B573" strokeWidth={6} />
             <text x={0} y={13} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={34} fill="#22B573">NO SIGN OF AN ATTACK</text>
           </g>

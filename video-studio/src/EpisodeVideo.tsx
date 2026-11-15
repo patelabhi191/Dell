@@ -12,9 +12,9 @@ import { Backdrop } from "./Backdrop";
 import { BeatsContext } from "./beats";
 import { Captions, type CaptionWord } from "./Captions";
 import { StillContext } from "./motion";
-import { SceneView } from "./scenes";
+import { Pill, Rich, SceneView } from "./scenes";
 import { stages } from "./stages";
-import { STAGE, ThemeContext, themes, useLayout } from "./theme";
+import { DISPLAY, STAGE, ThemeContext, themes, useLayout } from "./theme";
 import type { Episode } from "./types";
 
 export const FPS = 30;
@@ -67,8 +67,14 @@ const SceneFade: React.FC<{
 };
 
 /** Scales the 1000x900 stage canvas into its zone on screen. */
-const StageLayer: React.FC<{ name: string; opacity: number; zoom: number }> = ({ name, opacity, zoom }) => {
-  const { stage } = useLayout();
+const StageLayer: React.FC<{
+  name: string;
+  opacity: number;
+  zoom: number;
+  place?: { x: number; y: number; scale: number };
+}> = ({ name, opacity, zoom, place }) => {
+  const layout = useLayout();
+  const stage = place ?? layout.stage;
   const Stage = stages[name];
   if (!Stage) throw new Error(`Unknown stage "${name}". Register it in src/stages/index.ts`);
   return (
@@ -91,13 +97,10 @@ const StageLayer: React.FC<{ name: string; opacity: number; zoom: number }> = ({
   );
 };
 
-export const EpisodeVideo: React.FC<{ episode: Episode; words?: CaptionWord[] }> = ({
-  episode,
-  words,
-}) => {
-  const frame = useCurrentFrame();
-  const theme = themes[episode.theme ?? (episode.format === "story" ? "night" : "light")];
+const themeOf = (episode: Episode) => themes[episode.theme ?? (episode.format === "story" ? "night" : "light")];
 
+/** Scene start frames and beat frames (including word cues) for an episode. */
+const buildTimeline = (episode: Episode, words?: CaptionWord[]) => {
   let cursor = 0;
   const timeline = episode.scenes.map((scene) => {
     const start = cursor;
@@ -119,6 +122,72 @@ export const EpisodeVideo: React.FC<{ episode: Episode; words?: CaptionWord[] }>
       beats[name] = hit ? Math.round(hit.start * FPS) : start;
     }
   }
+  return { timeline, beats };
+};
+
+/** Reel cover: the stage frozen at one moment, with a big title. Safe for 4:5 and 3:4 crops. */
+export const Thumbnail: React.FC<{ episode: Episode; words?: CaptionWord[] }> = ({ episode, words }) => {
+  const theme = themeOf(episode);
+  const { beats } = buildTimeline(episode, words);
+  const thumb = episode.thumbnail;
+  const { u, width } = useLayout();
+  if (!thumb) throw new Error(`${episode.id} has no "thumbnail" in its episode file`);
+  if (beats[thumb.at] === undefined) throw new Error(`Thumbnail beat "${thumb.at}" is not in ${episode.id}`);
+  const at = Math.round(beats[thumb.at] + thumb.offset * FPS);
+  // Shift every beat back by `at`, so frame 0 of this still shows the stage at that moment.
+  const shifted = Object.fromEntries(Object.entries(beats).map(([k, v]) => [k, v - at]));
+  const scale = 0.94 * u;
+  return (
+    <ThemeContext.Provider value={theme}>
+      <BeatsContext.Provider value={shifted}>
+        <>
+          <Backdrop />
+          {episode.stage ? (
+            <StageLayer
+              name={episode.stage}
+              opacity={1}
+              zoom={1}
+              place={{ x: (width - STAGE.width * scale) / 2, y: 760 * u, scale }}
+            />
+          ) : null}
+        </>
+        <AbsoluteFill
+          style={{
+            padding: `${300 * u}px ${80 * u}px 0`,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 26 * u,
+            textAlign: "center",
+          }}
+        >
+          {thumb.tag ? <Pill tone="accent" size={40}>{thumb.tag}</Pill> : null}
+          <div
+            style={{
+              fontFamily: DISPLAY,
+              fontWeight: 900,
+              fontSize: 168 * u,
+              lineHeight: 0.92,
+              textTransform: "uppercase",
+              color: theme.ink,
+              textWrap: "balance",
+            }}
+          >
+            <Rich text={thumb.title} />
+          </div>
+        </AbsoluteFill>
+      </BeatsContext.Provider>
+    </ThemeContext.Provider>
+  );
+};
+
+export const EpisodeVideo: React.FC<{ episode: Episode; words?: CaptionWord[] }> = ({
+  episode,
+  words,
+}) => {
+  const frame = useCurrentFrame();
+  const theme = themeOf(episode);
+  const { timeline, beats } = buildTimeline(episode, words);
 
   const index = Math.max(0, timeline.findIndex((s) => frame < s.start + s.frames));
   const current = timeline[index];

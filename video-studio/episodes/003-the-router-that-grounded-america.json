@@ -30,27 +30,28 @@
   "scenes": [
     {
       "type": "show",
-      "seconds": 4.6,
+      "seconds": 3.6,
       "beat": "hook",
       "heading": "Every US airport *stopped*",
       "tag": "Nov 13, 2026",
       "tagTone": "accent",
-      "narration": "November thirteenth. Every US airport stopped sending planes up."
+      "narration": "One small box just stopped every plane in America from taking off.",
+      "speed": 1.14
     },
     {
       "type": "show",
-      "seconds": 4,
+      "seconds": 5.7,
       "beat": "grounded",
       "tag": "Only the 3rd time ever",
       "tagTone": "alert",
-      "narration": "Only the third time ever. The first was nine eleven."
+      "narration": "November thirteenth. Only the third time ever. The first was nine eleven."
     },
     {
       "type": "show",
-      "seconds": 2.9,
+      "seconds": 2.5,
       "beat": "box",
-      "heading": "One small *box*",
-      "narration": "This time, the cause was one small box."
+      "heading": "How does one *box* do that?",
+      "narration": "So how does one box do that?"
     },
     {
       "type": "show",
@@ -109,7 +110,7 @@
     },
     {
       "type": "statement",
-      "seconds": 4.6,
+      "seconds": 3.6,
       "tag": "Cyberattack?",
       "tagTone": "alert",
       "text": "Officials say *no*",
@@ -119,8 +120,7 @@
         "safe": "no"
       },
       "layout": "top",
-      "stage": "full",
-      "hold": 1
+      "stage": "full"
     },
     {
       "type": "show",
@@ -172,5 +172,11 @@
       "narration": "Follow for more."
     }
   ],
-  "voiceover": "003-the-router-that-grounded-america.mp3"
+  "voiceover": "003-the-router-that-grounded-america.mp3",
+  "thumbnail": {
+    "title": "One box grounded *America*",
+    "tag": "Nov 13, 2026",
+    "at": "flood",
+    "offset": 2.6
+  }
 }

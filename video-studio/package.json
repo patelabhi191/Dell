@@ -9,6 +9,7 @@
     "narration": "node scripts/narration.mjs",
     "voiceover": "node scripts/voiceover.mjs",
     "captions": "node scripts/captions.mjs",
+    "thumbnail": "node scripts/thumbnail.mjs",
     "ref": "node scripts/ref.mjs",
     "new": "node scripts/new-episode.mjs",
     "typecheck": "tsc --noEmit"

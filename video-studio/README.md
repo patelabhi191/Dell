@@ -28,6 +28,7 @@ npm run narration -- <id>     # print the script with timings
 npm run voiceover -- <id>     # speak it and fit each scene to its line
 npm run captions -- <id>      # Whisper word timings + .srt
 npm run render -- <id> short
+npm run thumbnail -- <id>     # out/<id>-thumb.png, the Reel cover
 ```
 
 Two pilots are included: `001-why-is-the-sky-blue` (informative, white) and

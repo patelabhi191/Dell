@@ -12,6 +12,8 @@ const base = {
    * fires "fail" when the voice says "started". Needs captions; falls back to scene start.
    */
   cues: z.record(z.string(), z.string()).optional(),
+  /** Voice speed for this scene only (e.g. a punchier hook). */
+  speed: z.number().min(0.5).max(2).optional(),
   /** Extra silent seconds after the narration, set by `npm run voiceover`. */
   hold: z.number().min(0).max(3).optional(),
   /** "top" puts the text in the upper part of the frame so the stage stays visible below. */
@@ -102,6 +104,13 @@ export const episodeSchema = z.object({
   voiceSpeed: z.number().min(0.5).max(2).optional(),
   /** Files inside public/audio/ */
   voiceover: z.string().optional(),
+  /**
+   * Reel cover: a still of the stage frozen `offset` seconds after beat `at`, with `title`
+   * on top. Rendered with `npm run thumbnail -- <id>`.
+   */
+  thumbnail: z
+    .object({ title: z.string(), tag: z.string().optional(), at: z.string(), offset: z.number().default(0) })
+    .optional(),
   /** Burn in captions when captions/<id>.json exists (made by `npm run captions`). */
   captions: z.boolean().default(true),
   music: z.string().optional(),

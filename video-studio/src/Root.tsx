@@ -5,8 +5,8 @@ import "@fontsource/nunito/700.css";
 import "@fontsource/nunito/800.css";
 import "@fontsource/nunito/900.css";
 import React from "react";
-import { Composition, Folder, continueRender, delayRender } from "remotion";
-import { EpisodeVideo, FPS, episodeFrames } from "./EpisodeVideo";
+import { Composition, Folder, Still, continueRender, delayRender } from "remotion";
+import { EpisodeVideo, FPS, Thumbnail, episodeFrames } from "./EpisodeVideo";
 import type { CaptionWord } from "./Captions";
 import { episodeSchema, type Episode } from "./types";
 
@@ -55,6 +55,15 @@ export const Root: React.FC = () => (
             height={f.height}
           />
         ))}
+        {episode.thumbnail ? (
+          <Still
+            id={`${episode.id}-thumb`}
+            component={Thumbnail}
+            defaultProps={{ episode, words: captions[episode.id] }}
+            width={1080}
+            height={1920}
+          />
+        ) : null}
       </Folder>
     ))}
   </>

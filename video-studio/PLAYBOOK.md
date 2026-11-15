@@ -32,6 +32,13 @@ The job of every video is to be watched to the end. The first upload of pilot 00
   interesting picture: nothing fades in from blank. It previews the payoff (pilot 001 opens on
   the finished blue sky, then rewinds to explain it).
 - The hook is on screen as text within the first half second, readable with the sound off.
+- The first spoken words are the shock itself ("One small box just stopped every plane in
+  America from taking off"). Never open on a date, a greeting, a place name or context: put
+  those on screen as a badge and say them second.
+- The voice starts on frame one (the framework removes the lead-in silence for scene 1) and
+  the hook line is read a little faster (`"speed": 1.14` on the first scene).
+- Ask the viewer's question out loud within about 10 seconds ("So how does one box do
+  that?") and answer it near the end.
 - Open a loop the viewer wants closed, and where possible a second one: "Why is the sky blue?
   And why does it turn orange at sunset?" The second question is answered last.
 
@@ -254,7 +261,13 @@ npm run render -- <id> short   # out/<id>-short.mp4 (drop "short" for 16:9 too)
    `src/stages/index.ts`, set `"stage": "<name>"`, and give scenes a `"beat"` name to animate on.
    Build it from `src/props.tsx` (Box, Building, House, Person, Tag, DashedArrow, Wave, Cash).
 4. **Voiceover**, then **captions**. Re-run both whenever the narration changes.
-5. **Check** (section 7), **render**, upload. Upload the `.srt` from `captions/` to YouTube.
+5. **Cover**: add a `"thumbnail"` block to the episode (title, tag, and the beat + offset of
+   the frame to freeze) and run `npm run thumbnail -- <id>`. Keep the title and the main
+   character inside the middle 4:5 area, which is what the profile grid shows.
+6. **Post caption**: write `posts/<id>.md` with the caption, hashtags and sources: first line
+   repeats the hook, then 3-4 short factual lines, a question to comment on, the follow line,
+   and 10-15 hashtags (topic, format, channel).
+7. **Check** (section 7), **render**, upload. Upload the `.srt` from `captions/` to YouTube.
 
 Scene types: `show` (stage plays, optional headline and tag), `statement` (big line over the
 dimmed stage), `stat` (one number), `list` (recap card), `bars` (compare values), `text`
@@ -271,6 +284,8 @@ dimmed stage), `stat` (one number), `list` (recap card), `bars` (compare values)
 - [ ] Captions have their keywords set and highlighted.
 - [ ] Nothing in the top 14%, the bottom 22%, or under the right-hand buttons.
 - [ ] Under 60 seconds.
+- [ ] Voice starts on frame one with the shock line; no date or context first.
+- [ ] Cover rendered and checked in the 4:5 crop; post caption and sources written.
 - [ ] Only one accent colour doing the pointing; no stray colours.
 - [ ] Nothing copied from a reference clip or anyone else's video.
 - [ ] Watched once at full speed on a phone.

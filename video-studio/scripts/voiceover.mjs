@@ -27,8 +27,8 @@ const providers = {
     });
     return {
       voices: Object.keys(tts.voices),
-      async speak(text) {
-        const out = await tts.generate(text, { voice, speed });
+      async speak(text, lineSpeed = speed) {
+        const out = await tts.generate(text, { voice, speed: lineSpeed });
         return { samples: out.audio, sampleRate: out.sampling_rate };
       },
     };
@@ -82,12 +82,12 @@ const trimSilence = (samples, sampleRate) => {
 };
 
 // Speak sentence by sentence: keeps each request short and gives natural pauses.
-const speakLine = async (text) => {
+const speakLine = async (text, lineSpeed) => {
   const sentences = text.match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g).map((s) => s.trim());
   const parts = [];
   let sampleRate;
   for (const sentence of sentences.filter(Boolean)) {
-    const out = await tts.speak(sentence);
+    const out = await tts.speak(sentence, lineSpeed);
     sampleRate = out.sampleRate;
     parts.push(trimSilence(out.samples, sampleRate));
   }
@@ -108,12 +108,15 @@ let start = 0;
 for (const [i, scene] of episode.scenes.entries()) {
   const text = scene.narration?.trim();
   if (text) {
-    const clip = await speakLine(text);
+    // A scene can set its own "speed" (the hook is read faster). The first line starts with
+    // no silence: the voice must begin on frame one.
+    const clip = await speakLine(text, scene.speed ?? speed);
     sampleRate = clip.sampleRate;
     const spoken = clip.samples.length / sampleRate;
+    const lead = i === 0 ? 0 : LEAD;
     // "hold" adds silent seconds after the line, so a visual can land before the next scene.
-    scene.seconds = Math.max(MIN_SCENE, Math.ceil((LEAD + spoken + TAIL + (scene.hold ?? 0)) * 10) / 10);
-    clips.push({ at: start + LEAD, samples: clip.samples });
+    scene.seconds = Math.max(MIN_SCENE, Math.ceil((lead + spoken + TAIL + (scene.hold ?? 0)) * 10) / 10);
+    clips.push({ at: start + lead, samples: clip.samples });
     console.log(`scene ${i + 1}: ${spoken.toFixed(1)}s spoken -> ${scene.seconds}s on screen`);
   } else {
     console.log(`scene ${i + 1}: no narration, keeping ${scene.seconds}s`);
