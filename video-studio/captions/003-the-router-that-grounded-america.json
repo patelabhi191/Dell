@@ -1,0 +1,884 @@
+[
+  {
+    "text": "On",
+    "start": 0.13,
+    "end": 0.22,
+    "id": "w0"
+  },
+  {
+    "text": "Friday",
+    "start": 0.22,
+    "end": 0.54,
+    "id": "w1"
+  },
+  {
+    "text": "every",
+    "start": 0.54,
+    "end": 0.84,
+    "id": "w2"
+  },
+  {
+    "text": "airport",
+    "start": 0.96,
+    "end": 1.35,
+    "id": "w3"
+  },
+  {
+    "text": "in",
+    "start": 1.35,
+    "end": 1.41,
+    "id": "w4"
+  },
+  {
+    "text": "America",
+    "start": 1.5,
+    "end": 1.95,
+    "id": "w5"
+  },
+  {
+    "text": "stopped",
+    "start": 1.95,
+    "end": 2.38,
+    "id": "w6"
+  },
+  {
+    "text": "taking",
+    "start": 2.46,
+    "end": 2.82,
+    "id": "w7"
+  },
+  {
+    "text": "off,",
+    "start": 2.82,
+    "end": 3.16,
+    "id": "w8"
+  },
+  {
+    "text": "all",
+    "start": 3.33,
+    "end": 3.51,
+    "id": "w9"
+  },
+  {
+    "text": "at",
+    "start": 3.51,
+    "end": 3.75,
+    "id": "w10"
+  },
+  {
+    "text": "once,",
+    "start": 3.75,
+    "end": 4.32,
+    "id": "w11"
+  },
+  {
+    "text": "and",
+    "start": 4.32,
+    "end": 4.44,
+    "id": "w12"
+  },
+  {
+    "text": "the",
+    "start": 4.44,
+    "end": 4.56,
+    "id": "w13"
+  },
+  {
+    "text": "cause",
+    "start": 4.56,
+    "end": 4.8,
+    "id": "w14"
+  },
+  {
+    "text": "was",
+    "start": 4.8,
+    "end": 5.12,
+    "id": "w15"
+  },
+  {
+    "text": "one",
+    "start": 5.12,
+    "end": 5.36,
+    "id": "w16"
+  },
+  {
+    "text": "small",
+    "start": 5.36,
+    "end": 6.06,
+    "id": "w17"
+  },
+  {
+    "text": "box.",
+    "start": 6.06,
+    "end": 6.64,
+    "id": "w18"
+  },
+  {
+    "text": "Planes",
+    "start": 6.86,
+    "end": 7.02,
+    "id": "w19"
+  },
+  {
+    "text": "already",
+    "start": 7.12,
+    "end": 7.68,
+    "id": "w20"
+  },
+  {
+    "text": "flying",
+    "start": 7.68,
+    "end": 8.16,
+    "id": "w21"
+  },
+  {
+    "text": "kept",
+    "start": 8.16,
+    "end": 8.48,
+    "id": "w22"
+  },
+  {
+    "text": "going,",
+    "start": 8.48,
+    "end": 9.02,
+    "id": "w23"
+  },
+  {
+    "text": "but",
+    "start": 9.1,
+    "end": 9.26,
+    "id": "w24"
+  },
+  {
+    "text": "for",
+    "start": 9.29,
+    "end": 9.49,
+    "id": "w25"
+  },
+  {
+    "text": "over",
+    "start": 9.49,
+    "end": 9.66,
+    "id": "w26"
+  },
+  {
+    "text": "four",
+    "start": 9.95,
+    "end": 10.06,
+    "id": "w27"
+  },
+  {
+    "text": "hours",
+    "start": 10.06,
+    "end": 10.41,
+    "id": "w28"
+  },
+  {
+    "text": "nothing",
+    "start": 10.41,
+    "end": 10.76,
+    "id": "w29"
+  },
+  {
+    "text": "new",
+    "start": 11.08,
+    "end": 11.12,
+    "id": "w30"
+  },
+  {
+    "text": "took",
+    "start": 11.12,
+    "end": 11.4,
+    "id": "w31"
+  },
+  {
+    "text": "off.",
+    "start": 11.4,
+    "end": 11.88,
+    "id": "w32"
+  },
+  {
+    "text": "Here's",
+    "start": 12.1,
+    "end": 12.51,
+    "id": "w33"
+  },
+  {
+    "text": "why,",
+    "start": 12.51,
+    "end": 13.04,
+    "id": "w34"
+  },
+  {
+    "text": "after",
+    "start": 13.04,
+    "end": 13.39,
+    "id": "w35"
+  },
+  {
+    "text": "takeoff,",
+    "start": 13.39,
+    "end": 14.04,
+    "id": "w36"
+  },
+  {
+    "text": "your",
+    "start": 14.04,
+    "end": 14.26,
+    "id": "w37"
+  },
+  {
+    "text": "plane",
+    "start": 14.34,
+    "end": 14.65,
+    "id": "w38"
+  },
+  {
+    "text": "is",
+    "start": 14.65,
+    "end": 14.77,
+    "id": "w39"
+  },
+  {
+    "text": "guided",
+    "start": 14.77,
+    "end": 14.86,
+    "id": "w40"
+  },
+  {
+    "text": "by",
+    "start": 15.21,
+    "end": 15.32,
+    "id": "w41"
+  },
+  {
+    "text": "one",
+    "start": 15.32,
+    "end": 15.52,
+    "id": "w42"
+  },
+  {
+    "text": "of",
+    "start": 15.52,
+    "end": 15.65,
+    "id": "w43"
+  },
+  {
+    "text": "22",
+    "start": 15.65,
+    "end": 16,
+    "id": "w44"
+  },
+  {
+    "text": "control",
+    "start": 16.32,
+    "end": 16.54,
+    "id": "w45"
+  },
+  {
+    "text": "centers",
+    "start": 16.54,
+    "end": 17.01,
+    "id": "w46"
+  },
+  {
+    "text": "you",
+    "start": 17.02,
+    "end": 17.22,
+    "id": "w47"
+  },
+  {
+    "text": "never",
+    "start": 17.22,
+    "end": 17.56,
+    "id": "w48"
+  },
+  {
+    "text": "see.",
+    "start": 17.56,
+    "end": 18.08,
+    "id": "w49"
+  },
+  {
+    "text": "Controllers",
+    "start": 18.3,
+    "end": 18.89,
+    "id": "w50"
+  },
+  {
+    "text": "there",
+    "start": 18.89,
+    "end": 19.26,
+    "id": "w51"
+  },
+  {
+    "text": "keep",
+    "start": 19.26,
+    "end": 19.49,
+    "id": "w52"
+  },
+  {
+    "text": "planes",
+    "start": 19.58,
+    "end": 19.99,
+    "id": "w53"
+  },
+  {
+    "text": "apart",
+    "start": 19.99,
+    "end": 20.36,
+    "id": "w54"
+  },
+  {
+    "text": "by",
+    "start": 20.36,
+    "end": 20.46,
+    "id": "w55"
+  },
+  {
+    "text": "talking,",
+    "start": 20.54,
+    "end": 21.11,
+    "id": "w56"
+  },
+  {
+    "text": "to",
+    "start": 21.11,
+    "end": 21.41,
+    "id": "w57"
+  },
+  {
+    "text": "pilots",
+    "start": 21.41,
+    "end": 21.74,
+    "id": "w58"
+  },
+  {
+    "text": "and",
+    "start": 21.74,
+    "end": 21.96,
+    "id": "w59"
+  },
+  {
+    "text": "to",
+    "start": 21.96,
+    "end": 22.07,
+    "id": "w60"
+  },
+  {
+    "text": "each",
+    "start": 22.07,
+    "end": 22.24,
+    "id": "w61"
+  },
+  {
+    "text": "other.",
+    "start": 22.52,
+    "end": 23.08,
+    "id": "w62"
+  },
+  {
+    "text": "That",
+    "start": 23.3,
+    "end": 23.36,
+    "id": "w63"
+  },
+  {
+    "text": "afternoon,",
+    "start": 23.36,
+    "end": 24.15,
+    "id": "w64"
+  },
+  {
+    "text": "17",
+    "start": 24.15,
+    "end": 24.49,
+    "id": "w65"
+  },
+  {
+    "text": "of",
+    "start": 24.58,
+    "end": 24.72,
+    "id": "w66"
+  },
+  {
+    "text": "the",
+    "start": 24.72,
+    "end": 24.93,
+    "id": "w67"
+  },
+  {
+    "text": "22",
+    "start": 24.93,
+    "end": 25.36,
+    "id": "w68"
+  },
+  {
+    "text": "started",
+    "start": 25.36,
+    "end": 25.86,
+    "id": "w69"
+  },
+  {
+    "text": "losing",
+    "start": 25.86,
+    "end": 26.07,
+    "id": "w70"
+  },
+  {
+    "text": "those",
+    "start": 26.41,
+    "end": 26.65,
+    "id": "w71"
+  },
+  {
+    "text": "lines.",
+    "start": 26.65,
+    "end": 27.22,
+    "id": "w72"
+  },
+  {
+    "text": "A",
+    "start": 27.28,
+    "end": 27.34,
+    "id": "w73"
+  },
+  {
+    "text": "controller",
+    "start": 27.5,
+    "end": 28.02,
+    "id": "w74"
+  },
+  {
+    "text": "who",
+    "start": 28.02,
+    "end": 28.12,
+    "id": "w75"
+  },
+  {
+    "text": "can't",
+    "start": 28.23,
+    "end": 28.55,
+    "id": "w76"
+  },
+  {
+    "text": "talk",
+    "start": 28.55,
+    "end": 28.82,
+    "id": "w77"
+  },
+  {
+    "text": "can't",
+    "start": 28.82,
+    "end": 29.15,
+    "id": "w78"
+  },
+  {
+    "text": "keep",
+    "start": 29.15,
+    "end": 29.42,
+    "id": "w79"
+  },
+  {
+    "text": "planes",
+    "start": 29.42,
+    "end": 29.83,
+    "id": "w80"
+  },
+  {
+    "text": "apart,",
+    "start": 29.83,
+    "end": 30.3,
+    "id": "w81"
+  },
+  {
+    "text": "so",
+    "start": 30.3,
+    "end": 30.61,
+    "id": "w82"
+  },
+  {
+    "text": "officials",
+    "start": 30.61,
+    "end": 31.18,
+    "id": "w83"
+  },
+  {
+    "text": "stopped",
+    "start": 31.18,
+    "end": 31.42,
+    "id": "w84"
+  },
+  {
+    "text": "every",
+    "start": 31.72,
+    "end": 32.07,
+    "id": "w85"
+  },
+  {
+    "text": "departure.",
+    "start": 32.07,
+    "end": 33,
+    "id": "w86"
+  },
+  {
+    "text": "Was",
+    "start": 33.22,
+    "end": 33.24,
+    "id": "w87"
+  },
+  {
+    "text": "it",
+    "start": 33.24,
+    "end": 33.38,
+    "id": "w88"
+  },
+  {
+    "text": "a",
+    "start": 33.38,
+    "end": 33.48,
+    "id": "w89"
+  },
+  {
+    "text": "cyber",
+    "start": 33.48,
+    "end": 33.84,
+    "id": "w90"
+  },
+  {
+    "text": "attack?",
+    "start": 33.96,
+    "end": 34.64,
+    "id": "w91"
+  },
+  {
+    "text": "Officials",
+    "start": 34.64,
+    "end": 35.67,
+    "id": "w92"
+  },
+  {
+    "text": "say",
+    "start": 35.67,
+    "end": 35.95,
+    "id": "w93"
+  },
+  {
+    "text": "no.",
+    "start": 36,
+    "end": 36.6,
+    "id": "w94"
+  },
+  {
+    "text": "At",
+    "start": 36.6,
+    "end": 36.82,
+    "id": "w95"
+  },
+  {
+    "text": "one",
+    "start": 36.82,
+    "end": 36.93,
+    "id": "w96"
+  },
+  {
+    "text": "remote",
+    "start": 36.93,
+    "end": 37.33,
+    "id": "w97"
+  },
+  {
+    "text": "site,",
+    "start": 37.33,
+    "end": 37.73,
+    "id": "w98"
+  },
+  {
+    "text": "contractor",
+    "start": 37.73,
+    "end": 38.4,
+    "id": "w99"
+  },
+  {
+    "text": "L3",
+    "start": 38.4,
+    "end": 38.63,
+    "id": "w100"
+  },
+  {
+    "text": "Harris",
+    "start": 38.66,
+    "end": 38.98,
+    "id": "w101"
+  },
+  {
+    "text": "was",
+    "start": 39.06,
+    "end": 39.22,
+    "id": "w102"
+  },
+  {
+    "text": "switching",
+    "start": 39.25,
+    "end": 39.55,
+    "id": "w103"
+  },
+  {
+    "text": "old",
+    "start": 39.93,
+    "end": 40.06,
+    "id": "w104"
+  },
+  {
+    "text": "copper",
+    "start": 40.06,
+    "end": 40.46,
+    "id": "w105"
+  },
+  {
+    "text": "lines",
+    "start": 40.46,
+    "end": 40.74,
+    "id": "w106"
+  },
+  {
+    "text": "to",
+    "start": 40.74,
+    "end": 41.04,
+    "id": "w107"
+  },
+  {
+    "text": "fiber,",
+    "start": 41.04,
+    "end": 41.48,
+    "id": "w108"
+  },
+  {
+    "text": "routine",
+    "start": 41.48,
+    "end": 42.22,
+    "id": "w109"
+  },
+  {
+    "text": "work.",
+    "start": 42.22,
+    "end": 42.93,
+    "id": "w110"
+  },
+  {
+    "text": "One",
+    "start": 42.93,
+    "end": 43.18,
+    "id": "w111"
+  },
+  {
+    "text": "router",
+    "start": 43.18,
+    "end": 43.53,
+    "id": "w112"
+  },
+  {
+    "text": "there",
+    "start": 43.53,
+    "end": 43.8,
+    "id": "w113"
+  },
+  {
+    "text": "began",
+    "start": 43.92,
+    "end": 44.17,
+    "id": "w114"
+  },
+  {
+    "text": "flooding",
+    "start": 44.21,
+    "end": 44.68,
+    "id": "w115"
+  },
+  {
+    "text": "the",
+    "start": 44.68,
+    "end": 44.87,
+    "id": "w116"
+  },
+  {
+    "text": "network,",
+    "start": 44.87,
+    "end": 45.48,
+    "id": "w117"
+  },
+  {
+    "text": "over",
+    "start": 45.48,
+    "end": 45.76,
+    "id": "w118"
+  },
+  {
+    "text": "a",
+    "start": 45.76,
+    "end": 45.83,
+    "id": "w119"
+  },
+  {
+    "text": "thousand",
+    "start": 45.83,
+    "end": 46.4,
+    "id": "w120"
+  },
+  {
+    "text": "connection",
+    "start": 46.4,
+    "end": 47.06,
+    "id": "w121"
+  },
+  {
+    "text": "attempts",
+    "start": 47.4,
+    "end": 47.68,
+    "id": "w122"
+  },
+  {
+    "text": "every",
+    "start": 47.68,
+    "end": 48.04,
+    "id": "w123"
+  },
+  {
+    "text": "five",
+    "start": 48.04,
+    "end": 48.32,
+    "id": "w124"
+  },
+  {
+    "text": "seconds.",
+    "start": 48.32,
+    "end": 49.06,
+    "id": "w125"
+  },
+  {
+    "text": "Investigators",
+    "start": 49.3,
+    "end": 49.93,
+    "id": "w126"
+  },
+  {
+    "text": "still",
+    "start": 50.04,
+    "end": 50.29,
+    "id": "w127"
+  },
+  {
+    "text": "don't",
+    "start": 50.33,
+    "end": 50.63,
+    "id": "w128"
+  },
+  {
+    "text": "know",
+    "start": 50.63,
+    "end": 50.9,
+    "id": "w129"
+  },
+  {
+    "text": "if",
+    "start": 50.9,
+    "end": 51.03,
+    "id": "w130"
+  },
+  {
+    "text": "the",
+    "start": 51.03,
+    "end": 51.23,
+    "id": "w131"
+  },
+  {
+    "text": "router",
+    "start": 51.23,
+    "end": 51.64,
+    "id": "w132"
+  },
+  {
+    "text": "was",
+    "start": 51.64,
+    "end": 51.84,
+    "id": "w133"
+  },
+  {
+    "text": "faulty",
+    "start": 51.84,
+    "end": 52.07,
+    "id": "w134"
+  },
+  {
+    "text": "or",
+    "start": 52.07,
+    "end": 52.41,
+    "id": "w135"
+  },
+  {
+    "text": "installed",
+    "start": 52.41,
+    "end": 52.99,
+    "id": "w136"
+  },
+  {
+    "text": "wrong.",
+    "start": 52.99,
+    "end": 53.6,
+    "id": "w137"
+  },
+  {
+    "text": "One",
+    "start": 53.82,
+    "end": 53.91,
+    "id": "w138"
+  },
+  {
+    "text": "box,",
+    "start": 53.91,
+    "end": 54.43,
+    "id": "w139"
+  },
+  {
+    "text": "a",
+    "start": 54.43,
+    "end": 54.44,
+    "id": "w140"
+  },
+  {
+    "text": "whole",
+    "start": 54.56,
+    "end": 55.01,
+    "id": "w141"
+  },
+  {
+    "text": "country",
+    "start": 55.1,
+    "end": 55.8,
+    "id": "w142"
+  },
+  {
+    "text": "grounded.",
+    "start": 55.8,
+    "end": 57,
+    "id": "w143"
+  },
+  {
+    "text": "Follow",
+    "start": 57,
+    "end": 57.53,
+    "id": "w144"
+  },
+  {
+    "text": "for",
+    "start": 57.53,
+    "end": 57.74,
+    "id": "w145"
+  },
+  {
+    "text": "more.",
+    "start": 58.04,
+    "end": 58.36,
+    "id": "w146"
+  }
+]

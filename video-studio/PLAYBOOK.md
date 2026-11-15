@@ -277,6 +277,7 @@ Sign-off:    (follow line, or a question to comment)
 | --- | --- | --- | --- | --- |
 | `001-why-is-the-sky-blue` | info | light | 59 s | 165 words/min |
 | `002-the-man-who-sold-the-eiffel-tower` | story | night | 46 s | 159 words/min |
+| `003-the-router-that-grounded-america` | info (news explainer) | night | 59 s | 148 words/min |
 
 Published results:
 

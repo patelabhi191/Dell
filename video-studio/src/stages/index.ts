@@ -1,5 +1,6 @@
 import type React from "react";
 import { EiffelStage } from "./eiffel";
+import { GroundStopStage } from "./groundstop";
 import { SkyStage } from "./sky";
 
 /**
@@ -10,4 +11,5 @@ import { SkyStage } from "./sky";
 export const stages: Record<string, React.FC> = {
   sky: SkyStage,
   eiffel: EiffelStage,
+  groundstop: GroundStopStage,
 };

@@ -1,0 +1,119 @@
+{
+  "id": "003-the-router-that-grounded-america",
+  "title": "The router that grounded America",
+  "format": "info",
+  "theme": "night",
+  "stage": "groundstop",
+  "keywords": [
+    "airport",
+    "airports",
+    "planes",
+    "router",
+    "fiber",
+    "copper",
+    "centers",
+    "controllers",
+    "talking",
+    "talk",
+    "cyberattack",
+    "grounded",
+    "network",
+    "faa",
+    "harris",
+    "l3",
+    "box"
+  ],
+  "scenes": [
+    {
+      "type": "show",
+      "seconds": 6.8,
+      "beat": "map",
+      "heading": "Every US airport *stopped*",
+      "tag": "One small box did it",
+      "tagTone": "alert",
+      "narration": "On Friday, every airport in America stopped taking off. All at once. And the cause was one small box."
+    },
+    {
+      "type": "show",
+      "seconds": 5.1,
+      "beat": "frozen",
+      "tag": "4+ hours. Zero takeoffs.",
+      "narration": "Planes already flying kept going. But for over four hours, nothing new took off."
+    },
+    {
+      "type": "show",
+      "seconds": 6.2,
+      "beat": "centers",
+      "tag": "22 hidden control centers",
+      "tagTone": "accent",
+      "narration": "Here's why. After takeoff, your plane is guided by one of twenty-two control centers you never see."
+    },
+    {
+      "type": "show",
+      "seconds": 5,
+      "beat": "talk",
+      "tag": "They work by talking",
+      "narration": "Controllers there keep planes apart by talking. To pilots, and to each other."
+    },
+    {
+      "type": "stat",
+      "seconds": 4.2,
+      "beat": "lost",
+      "value": 17,
+      "label": "of 22 centers lost *their lines*",
+      "narration": "That afternoon, seventeen of the twenty-two started losing those lines."
+    },
+    {
+      "type": "statement",
+      "seconds": 5.7,
+      "text": "No talking. *No takeoffs.*",
+      "narration": "A controller who can't talk can't keep planes apart. So officials stopped every departure."
+    },
+    {
+      "type": "statement",
+      "seconds": 3.6,
+      "tag": "Cyberattack?",
+      "tagTone": "alert",
+      "text": "Officials say *no*",
+      "narration": "Was it a cyberattack? Officials say no."
+    },
+    {
+      "type": "show",
+      "seconds": 6.4,
+      "beat": "router",
+      "tag": "A routine upgrade",
+      "narration": "At one remote site, contractor L three Harris was switching old copper lines to fiber. Routine work."
+    },
+    {
+      "type": "show",
+      "seconds": 6.1,
+      "beat": "flood",
+      "tag": "Then it flooded the network",
+      "tagTone": "alert",
+      "narration": "One router there began flooding the network. Over a thousand connection attempts, every five seconds."
+    },
+    {
+      "type": "statement",
+      "seconds": 4.5,
+      "tag": "Still under investigation",
+      "text": "Faulty? Or *installed wrong*?",
+      "narration": "Investigators still don't know if the router was faulty, or installed wrong."
+    },
+    {
+      "type": "statement",
+      "seconds": 3.3,
+      "text": "One box. *A whole country grounded.*",
+      "narration": "One box. A whole country, grounded."
+    },
+    {
+      "type": "outro",
+      "seconds": 2.5,
+      "title": "Now you *know*",
+      "cta": "Follow",
+      "ctaNote": "for more in 60 seconds",
+      "narration": "Follow for more."
+    }
+  ],
+  "voiceover": "003-the-router-that-grounded-america.mp3",
+  "voiceSpeed": 1.06
+}
