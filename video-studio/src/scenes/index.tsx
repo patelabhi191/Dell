@@ -99,9 +99,43 @@ export const Pill: React.FC<{ tone?: Tone; size?: number; children: React.ReactN
   );
 };
 
+/**
+ * Confetti burst behind a reveal (numbers, punchlines). Small, fast and colourful: it gives
+ * the eye a reason to stay on the new slide.
+ */
+const Burst: React.FC<{ top?: boolean }> = ({ top = false }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const { u, contentTop, contentBottom, width } = useLayout();
+  const theme = useTheme();
+  const p = Math.min(1, frame / (0.8 * fps));
+  if (p >= 1) return null;
+  const cx = width / 2;
+  const cy = top ? contentTop + 190 * u : (contentTop + contentBottom) / 2;
+  const colors = [theme.accent, "#F5B700", theme.alert, "#22B573", "#8B5CF6"];
+  const ease = 1 - Math.pow(1 - p, 3);
+  return (
+    <svg style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }} width={width} height={1}>
+      {Array.from({ length: 18 }, (_, i) => {
+        const a = (i / 18) * Math.PI * 2 + (i % 2) * 0.2;
+        const d = (220 + (i % 3) * 90) * u * ease;
+        const size = (14 + (i % 4) * 6) * u * (1 - p);
+        const x = cx + Math.cos(a) * d;
+        const y = cy + Math.sin(a) * d * 0.8;
+        return i % 3 === 0 ? (
+          <rect key={i} x={x - size / 2} y={y - size / 2} width={size} height={size} rx={size * 0.25} fill={colors[i % colors.length]} transform={`rotate(${p * 200 + i * 20} ${x} ${y})`} />
+        ) : (
+          <circle key={i} cx={x} cy={y} r={size / 2} fill={colors[i % colors.length]} />
+        );
+      })}
+    </svg>
+  );
+};
+
 /** Centres content in the zone between the tracker and the captions. */
-const Frame: React.FC<{ align?: "center" | "start"; children: React.ReactNode }> = ({
+const Frame: React.FC<{ align?: "center" | "start"; top?: boolean; children: React.ReactNode }> = ({
   align = "center",
+  top = false,
   children,
 }) => {
   const { side, contentTop, contentBottom, height, u } = useLayout();
@@ -112,7 +146,7 @@ const Frame: React.FC<{ align?: "center" | "start"; children: React.ReactNode }>
         padding: `${contentTop}px ${side}px ${height - contentBottom}px`,
         display: "flex",
         flexDirection: "column",
-        justifyContent: "center",
+        justifyContent: top ? "flex-start" : "center",
         alignItems: align === "center" ? "center" : "flex-start",
         textAlign: align === "center" ? "center" : "left",
         fontFamily: BODY,
@@ -186,14 +220,16 @@ const Statement: React.FC<{ scene: Of<"statement"> }> = ({ scene }) => {
   const theme = useTheme();
   const words = toWords(scene.text);
   const rule = useEnter(0.15 + words.length * 0.13, 16);
+  const top = scene.layout === "top";
   return (
-    <Frame>
+    <Frame top={top}>
+      <Burst top={top} />
       {scene.tag ? (
         <Pop>
           <Pill tone={scene.tagTone}>{scene.tag}</Pill>
         </Pop>
       ) : null}
-      <Display size={displaySize(scene.text, vertical)}>
+      <Display size={displaySize(scene.text, vertical) * (top ? 0.82 : 1)}>
         {words.map((word, i) => (
           <StampWord key={i} word={word} delay={0.08 + i * 0.13} />
         ))}
@@ -271,14 +307,16 @@ const Stat: React.FC<{ scene: Of<"stat"> }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: (t) => 1 - Math.pow(1 - t, 3),
   });
+  const top = scene.layout === "top";
   return (
-    <Frame>
+    <Frame top={top}>
+      <Burst top={top} />
       <Pop>
         <div
           style={{
             fontFamily: DISPLAY,
             fontWeight: 900,
-            fontSize: 420 * u,
+            fontSize: (top ? 290 : 420) * u,
             lineHeight: 0.9,
             color: theme.accent,
             textShadow: `0 ${14 * u}px 0 ${theme.accentDeep}`,
@@ -435,6 +473,7 @@ const Outro: React.FC<{ scene: Of<"outro">; handle?: string }> = ({ scene, handl
   const theme = useTheme();
   return (
     <Frame>
+      <Burst />
       <Slam>
         <Display size={displaySize(scene.title, vertical)}>
           <Rich text={scene.title} />

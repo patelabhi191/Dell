@@ -74,6 +74,36 @@ The job of every video is to be watched to the end. The first upload of pilot 00
 These rules come from the owner's direction plus common practice described in creator and
 analytics-vendor guides. Treat the timings as starting points to test, not proven laws.
 
+## Doom-scroll animation (CoComelon-inspired)
+
+Our viewers arrive mid-scroll, already full of flashy, colourful, fast content. A calm
+explainer that looks like a slideshow gets swiped. So every video borrows the *energy* of
+toddler cartoons such as CoComelon, which are built to hold attention second by second.
+We borrow the techniques only: never their characters, designs, songs or music.
+
+1. **Nothing is ever still.** Every element is alive: planes fly, dials wiggle, characters
+   blink and bob, clouds drift, dots pulse. A frozen frame is an exit.
+2. **Bright and colourful on white.** Use several saturated colours for objects (blue,
+   yellow, red-orange, green, purple, pink). Blue stays the "look here" colour for text.
+3. **Give the key objects a face.** The thing the story is about (a plane, a router, a
+   planet) gets simple eyes and a mouth that react: happy, curious, sad, panicked. Viewers
+   follow a character far longer than a diagram.
+4. **Bounce physics.** Things drop in from above and squash on landing, overshoot and settle,
+   wobble when hit. Use springs, never linear slides.
+5. **Every slide is a new picture.** Never reuse the previous picture with only a new caption.
+   Change the viewpoint: map -> close-up -> pilot's-eye view -> character -> timeline.
+6. **Point-of-view shots.** Put the viewer inside the moment (a cockpit on approach, a control
+   room) at least once, ideally in the hook.
+7. **Each slide enters differently.** The framework rotates entrances (slide, zoom, drop,
+   tilt) so no two consecutive slides arrive the same way.
+8. **Celebrate reveals.** Numbers and punchlines get a confetti burst and a slam-in.
+9. **Land on the word.** Visual changes fire on the exact spoken word, using scene `cues`
+   (e.g. dots turn red on "nothing", centers fail on "started").
+10. **Put facts on screen.** Dates, times, counts and names appear as labels, clocks, cards
+    and timelines, so a muted viewer still learns something every few seconds.
+
+Style note: faces and dark outlines on characters are allowed; everything else stays flat.
+
 ## 2. The four reference clips
 
 Keep the originals in `references/` (see `references/README.md`). They are for studying, never
@@ -277,7 +307,7 @@ Sign-off:    (follow line, or a question to comment)
 | --- | --- | --- | --- | --- |
 | `001-why-is-the-sky-blue` | info | light | 59 s | 165 words/min |
 | `002-the-man-who-sold-the-eiffel-tower` | story | night | 46 s | 159 words/min |
-| `003-the-router-that-grounded-america` | info (news explainer) | night | 59 s | 148 words/min |
+| `003-the-router-that-grounded-america` | info (news explainer) | light | 58 s | 144 words/min |
 
 Published results:
 

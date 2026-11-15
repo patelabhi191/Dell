@@ -2,8 +2,9 @@
   "id": "003-the-router-that-grounded-america",
   "title": "The router that grounded America",
   "format": "info",
-  "theme": "night",
+  "theme": "light",
   "stage": "groundstop",
+  "voiceSpeed": 1.06,
   "keywords": [
     "airport",
     "airports",
@@ -18,56 +19,93 @@
     "cyberattack",
     "grounded",
     "network",
-    "faa",
+    "box",
+    "departure",
     "harris",
     "l3",
-    "box"
+    "eleven",
+    "nine",
+    "flying"
   ],
   "scenes": [
     {
       "type": "show",
-      "seconds": 6.8,
-      "beat": "map",
+      "seconds": 4.6,
+      "beat": "hook",
       "heading": "Every US airport *stopped*",
-      "tag": "One small box did it",
+      "tag": "Nov 13, 2026",
+      "tagTone": "accent",
+      "narration": "November thirteenth. Every US airport stopped sending planes up."
+    },
+    {
+      "type": "show",
+      "seconds": 4,
+      "beat": "grounded",
+      "tag": "Only the 3rd time ever",
       "tagTone": "alert",
-      "narration": "On Friday, every airport in America stopped taking off. All at once. And the cause was one small box."
+      "narration": "Only the third time ever. The first was nine eleven."
     },
     {
       "type": "show",
-      "seconds": 5.1,
-      "beat": "frozen",
-      "tag": "4+ hours. Zero takeoffs.",
-      "narration": "Planes already flying kept going. But for over four hours, nothing new took off."
+      "seconds": 2.9,
+      "beat": "box",
+      "heading": "One small *box*",
+      "narration": "This time, the cause was one small box."
     },
     {
       "type": "show",
-      "seconds": 6.2,
+      "seconds": 2.6,
+      "beat": "flights",
+      "tag": "Planes in the air kept flying",
+      "narration": "Planes already in the air kept flying."
+    },
+    {
+      "type": "show",
+      "seconds": 2.9,
+      "beat": "stop",
+      "cues": {
+        "frozen": "nothing"
+      },
+      "tag": "Nothing new took off",
+      "tagTone": "alert",
+      "narration": "But for over four hours, nothing new took off."
+    },
+    {
+      "type": "show",
+      "seconds": 5.2,
       "beat": "centers",
       "tag": "22 hidden control centers",
       "tagTone": "accent",
-      "narration": "Here's why. After takeoff, your plane is guided by one of twenty-two control centers you never see."
+      "narration": "Here's why. In the air, you're guided by one of twenty-two hidden control centers."
     },
     {
       "type": "show",
-      "seconds": 5,
+      "seconds": 3.2,
       "beat": "talk",
       "tag": "They work by talking",
-      "narration": "Controllers there keep planes apart by talking. To pilots, and to each other."
+      "narration": "Controllers there keep planes apart by talking."
     },
     {
       "type": "stat",
       "seconds": 4.2,
       "beat": "lost",
+      "cues": {
+        "fail": "started"
+      },
+      "layout": "top",
+      "stage": "full",
       "value": 17,
       "label": "of 22 centers lost *their lines*",
       "narration": "That afternoon, seventeen of the twenty-two started losing those lines."
     },
     {
       "type": "statement",
-      "seconds": 5.7,
+      "seconds": 5,
+      "beat": "notalk",
+      "layout": "top",
+      "stage": "full",
       "text": "No talking. *No takeoffs.*",
-      "narration": "A controller who can't talk can't keep planes apart. So officials stopped every departure."
+      "narration": "A controller who can't talk can't keep planes apart. So departures stopped."
     },
     {
       "type": "statement",
@@ -79,25 +117,25 @@
     },
     {
       "type": "show",
-      "seconds": 6.4,
+      "seconds": 4.5,
       "beat": "router",
       "tag": "A routine upgrade",
-      "narration": "At one remote site, contractor L three Harris was switching old copper lines to fiber. Routine work."
+      "narration": "At one site, contractor L three Harris was switching copper lines to fiber."
     },
     {
       "type": "show",
-      "seconds": 6.1,
+      "seconds": 5.5,
       "beat": "flood",
       "tag": "Then it flooded the network",
       "tagTone": "alert",
-      "narration": "One router there began flooding the network. Over a thousand connection attempts, every five seconds."
+      "narration": "One router began flooding the network. Over a thousand requests every five seconds."
     },
     {
       "type": "statement",
-      "seconds": 4.5,
+      "seconds": 4.1,
       "tag": "Still under investigation",
       "text": "Faulty? Or *installed wrong*?",
-      "narration": "Investigators still don't know if the router was faulty, or installed wrong."
+      "narration": "Investigators still don't know if it was faulty, or installed wrong."
     },
     {
       "type": "statement",
@@ -114,6 +152,5 @@
       "narration": "Follow for more."
     }
   ],
-  "voiceover": "003-the-router-that-grounded-america.mp3",
-  "voiceSpeed": 1.06
+  "voiceover": "003-the-router-that-grounded-america.mp3"
 }

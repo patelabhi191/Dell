@@ -7,6 +7,15 @@ const base = {
   narration: z.string().optional(),
   /** Names this moment so the episode's stage can animate on it (see src/stages). */
   beat: z.string().optional(),
+  /**
+   * Extra beats that start on a spoken word inside this scene, e.g. {"fail": "started"}
+   * fires "fail" when the voice says "started". Needs captions; falls back to scene start.
+   */
+  cues: z.record(z.string(), z.string()).optional(),
+  /** "top" puts the text in the upper part of the frame so the stage stays visible below. */
+  layout: z.enum(["center", "top"]).default("center"),
+  /** "full" keeps the stage at full strength behind this scene; "dim" fades it back. */
+  stage: z.enum(["dim", "full"]).optional(),
 };
 
 export const iconNames = ["sun", "eye", "bulb", "wave", "globe", "clock", "spark"] as const;

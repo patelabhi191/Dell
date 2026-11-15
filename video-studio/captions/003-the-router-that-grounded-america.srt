@@ -1,107 +1,103 @@
 1
-00:00:00,130 --> 00:00:02,380
-On Friday every airport in America stopped
+00:00:00,230 --> 00:00:02,470
+November 13th, every U.S.
 
 2
-00:00:02,460 --> 00:00:05,120
-taking off, all at once, and the cause was
+00:00:02,470 --> 00:00:04,520
+airport stopped sending planes up.
 
 3
-00:00:05,120 --> 00:00:06,640
-one small box.
+00:00:04,750 --> 00:00:07,540
+Only the third time ever, the first was
 
 4
-00:00:06,860 --> 00:00:09,490
-Planes already flying kept going, but for
+00:00:07,540 --> 00:00:08,560
+9-11.
 
 5
-00:00:09,490 --> 00:00:11,880
-over four hours nothing new took off.
+00:00:08,790 --> 00:00:11,560
+This time the cause was one small box.
 
 6
-00:00:12,100 --> 00:00:14,770
-Here's why, after takeoff, your plane is
+00:00:11,790 --> 00:00:14,080
+Planes already in the air kept flying.
 
 7
-00:00:14,770 --> 00:00:17,220
-guided by one of 22 control centers you
+00:00:14,080 --> 00:00:16,530
+But for over four hours, nothing new took
 
 8
-00:00:17,220 --> 00:00:18,080
-never see.
+00:00:16,530 --> 00:00:17,000
+off.
 
 9
-00:00:18,300 --> 00:00:20,460
-Controllers there keep planes apart by
+00:00:17,230 --> 00:00:19,640
+Here's why, in the air, you're guided by
 
 10
-00:00:20,540 --> 00:00:23,080
-talking, to pilots and to each other.
+00:00:19,640 --> 00:00:22,200
+one of 22 hidden control centers.
 
 11
-00:00:23,300 --> 00:00:25,860
-That afternoon, 17 of the 22 started
+00:00:22,430 --> 00:00:24,570
+Controllers there keep planes apart by
 
 12
-00:00:25,860 --> 00:00:27,220
-losing those lines.
+00:00:24,570 --> 00:00:25,320
+talking.
 
 13
-00:00:27,280 --> 00:00:29,420
-A controller who can't talk can't keep
+00:00:25,550 --> 00:00:28,120
+That afternoon, 17 of the 22 started
 
 14
-00:00:29,420 --> 00:00:32,070
-planes apart, so officials stopped every
+00:00:28,120 --> 00:00:29,450
+losing those lines.
 
 15
-00:00:32,070 --> 00:00:33,000
-departure.
+00:00:29,560 --> 00:00:31,810
+A controller who can't talk can't keep
 
 16
-00:00:33,220 --> 00:00:34,640
-Was it a cyber attack?
+00:00:31,810 --> 00:00:34,640
+planes apart, so departures stopped.
 
 17
-00:00:34,640 --> 00:00:36,600
-Officials say no.
+00:00:34,870 --> 00:00:36,230
+Was it a cyber attack?
 
 18
-00:00:36,600 --> 00:00:38,980
-At one remote site, contractor L3 Harris
+00:00:36,510 --> 00:00:38,200
+Officials say no.
 
 19
-00:00:39,060 --> 00:00:41,480
-was switching old copper lines to fiber,
+00:00:38,200 --> 00:00:40,580
+At one site, contractor L3 Harris was
 
 20
-00:00:41,480 --> 00:00:42,930
-routine work.
+00:00:40,580 --> 00:00:42,720
+switching copper lines to fiber.
 
 21
-00:00:42,930 --> 00:00:44,870
-One router there began flooding the
+00:00:42,720 --> 00:00:45,040
+One router began flooding the network.
 
 22
-00:00:44,870 --> 00:00:47,060
-network, over a thousand connection
+00:00:45,270 --> 00:00:48,200
+Over 1,000 requests every five seconds.
 
 23
-00:00:47,400 --> 00:00:49,060
-attempts every five seconds.
+00:00:48,430 --> 00:00:50,490
+Investigators still don't know if it was
 
 24
-00:00:49,300 --> 00:00:51,230
-Investigators still don't know if the
+00:00:50,490 --> 00:00:52,230
+faulty or installed wrong.
 
 25
-00:00:51,230 --> 00:00:53,600
-router was faulty or installed wrong.
-
-26
-00:00:53,820 --> 00:00:57,000
+00:00:52,510 --> 00:00:55,550
 One box, a whole country grounded.
 
-27
-00:00:57,000 --> 00:00:58,360
+26
+00:00:55,790 --> 00:00:57,150
 Follow for more.

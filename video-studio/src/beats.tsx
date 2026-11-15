@@ -20,6 +20,8 @@ export const useBeat = (name: string) => {
   const start = useContext(BeatsContext)[name];
   const local = start === undefined ? -1 : frame - start;
   return {
+    /** Frame the beat starts on, or undefined if no scene names it. */
+    start,
     on: local >= 0,
     t: local / fps,
     enter: (delay = 0, damping = 14) =>

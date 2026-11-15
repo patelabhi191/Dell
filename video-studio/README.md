@@ -48,7 +48,9 @@ Two pilots are included: `001-why-is-the-sky-blue` (informative, white) and
 | `scenes` | The beats, in order. |
 
 Every scene has `type`, `seconds`, and optionally `narration`, `beat` (a name the stage
-animates on). Wrap words in
+animates on), `cues` (beats that fire on a spoken word, e.g. `{"fail": "started"}`),
+`layout` (`"top"` puts the text high so the stage shows below) and `stage` (`"full"` or
+`"dim"`, how strongly the stage shows behind this scene). Wrap words in
 `*asterisks*` to highlight them.
 
 | type | fields | use for |
