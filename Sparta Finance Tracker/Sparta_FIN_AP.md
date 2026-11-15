@@ -2384,6 +2384,13 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Yearly's figures are right-aligned** (2026-11-15). This REVERSES the earlier decision to
+  centre the three Yearly tables (`#yfExpTable`, `#yfIncTable`, `.yf-mtable`). Centred, the right
+  edges of one column's figures were up to 18px apart, so `$9,383` and `$18,508` could not be
+  compared down a column. The owner chose right-alignment after seeing both side by side. The
+  Planned input's box sits on the column's right edge and its text is right-aligned inside it;
+  the category name stays left. Measured after: 0px spread in every column at 1440 and 390, no
+  new sideways scroll. Pinned in `test-contrast.js` §12.
 - **Large-ledger speed review** (2026-11-13). Nothing to fix. The existing probes still show
   every render near-linear in row count (`renderYF` 47 ms at 6,882 rows, nothing quadratic), and
   the new `tests/perf/profile-new-paths.js` covers what was added since. At 13,764 rows, four

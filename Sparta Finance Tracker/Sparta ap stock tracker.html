@@ -1378,7 +1378,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
   .yf-mtable th:first-child,.yf-mtable td:first-child{width:auto;position:sticky;left:0;
     background:linear-gradient(90deg,rgba(12,24,34,.97),rgba(12,24,34,.92));z-index:2}
 }
-.yf-mtable th,.yf-mtable td{padding:6px 4px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.yf-mtable th,.yf-mtable td{padding:6px 4px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
 .yf-mtable th:first-child,.yf-mtable td:first-child{text-align:left}
 .yf-mtable th:first-child,.yf-mtable td:first-child{width:96px;letter-spacing:.02em}
 .yf-mtable td:first-child,.yf-mtable th:first-child{text-align:left;font-weight:600}
@@ -1387,21 +1387,23 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
    because the figure is undefined rather than good or bad -- see the comment in
    renderYF. */
 .yf-na{color:var(--text-dim)}
-/* CENTRED, not right-aligned, on the Yearly tab's three tables. .htable's own
-   default is right -- correct for a ledger column you scan for magnitude -- but
-   these read as a grid of cells rather than a column of figures, and the
-   Planned cell holds an INPUT whose box was already centre-ish while the
-   figures beside it hung off the right edge. The heading goes with its column
-   or the two disagree. The first column is a category NAME, not a number, and
-   stays left; every other .htable in the app is untouched. */
+/* RIGHT-ALIGNED, like every other .htable in the app. These three were
+   centred for a while, on the reasoning that they read as a grid of cells and
+   that the Planned input's box already sat centre-ish. The cost showed up in
+   use: centred, $9,383 and $18,508 share a midpoint and nothing else, so the
+   thousands of one sit over the hundreds of the other and a column cannot be
+   scanned for size. Right-aligned with tabular figures, units stack on units.
+   The owner chose this over the centring after seeing both. The heading goes
+   with its column; the first column is a NAME and stays left. */
 #yfExpTable th,#yfExpTable td,#yfIncTable th,#yfIncTable td,
-.yf-mtable th,.yf-mtable td{text-align:center}
+.yf-mtable th,.yf-mtable td{text-align:right}
 #yfExpTable th:first-child,#yfExpTable td:first-child,
 #yfIncTable th:first-child,#yfIncTable td:first-child,
 .yf-mtable th:first-child,.yf-mtable td:first-child{text-align:left}
-/* the input is the cell's content now, so it centres with it */
-#yfExpTable .yf-plan-in,#yfIncTable .yf-plan-in{margin-left:auto;margin-right:auto}
-.yf-plan-in{width:86px;text-align:center;padding:6px 8px;font-size:12.5px;margin-left:auto}
+/* the Planned input is a figure in a column too: its box sits on the column's
+   right edge and its digits on the box's, so 654.47 stacks over 1092.72 */
+#yfExpTable .yf-plan-in,#yfIncTable .yf-plan-in{margin-left:auto;margin-right:0}
+.yf-plan-in{width:86px;text-align:right;padding:6px 8px;font-size:12.5px;margin-left:auto}
 #yfExpTable td,#yfIncTable td{padding:4px 7px;font-size:12px}
 #yfExpTable th,#yfIncTable th{padding:6px 7px}
 .yf-catbtn{border:none;background:transparent;color:var(--text-dim);font-size:12px;padding:2px 5px;border-radius:6px;cursor:pointer}

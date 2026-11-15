@@ -757,6 +757,38 @@ const CONTRAST = (root) => {
   });
   check(bn.tok >= 11 && bn.fs === bn.tok, 'it is drawn at --fs-fine', `${bn.fs}px against a token of ${bn.tok}px`);
 
+  /* ── 12. Yearly's figures stack units on units ──────────────────────────
+     The three Yearly tables were centred, so $9,383 and $18,508 shared a
+     midpoint and nothing else: the right edges of one column's figures were up
+     to 18px apart, and a column could not be scanned for size. Right-aligned,
+     every figure in a column ends on the same pixel. Measured off the ink (or
+     the Planned input's box), not the cell, which is the same width either way. */
+  section("12. each Yearly money column ends on one edge");
+  await go('yearly');
+  const cols = await page.evaluate(() => {
+    const ink = el => { const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let n, r = null;
+      while ((n = w.nextNode())) { if (!n.nodeValue.trim()) continue;
+        const g = document.createRange(); g.selectNodeContents(n); const q = g.getBoundingClientRect();
+        if (q.width) r = r == null ? q.right : Math.max(r, q.right) } return r };
+    const edge = (tb, i) => [...document.querySelectorAll(tb + ' tbody tr')].map(tr => tr.cells[i])
+      .filter(Boolean).map(c => { const inp = c.querySelector('input');
+        return inp ? inp.getBoundingClientRect().right : ink(c) }).filter(v => v != null);
+    const spread = a => a.length > 1 ? Math.max(...a) - Math.min(...a) : -1;
+    const al = sel => getComputedStyle(document.querySelector(sel)).textAlign;
+    return { spend: spread(edge('#yfExpTable', 1)), planned: spread(edge('#yfExpTable', 2)),
+      earned: spread(edge('#yfIncTable', 1)), jan: spread(edge('#yfMTable', 1)),
+      head: al('#yfExpTable thead th:nth-child(2)'), name: al('#yfExpTable tbody td:first-child'),
+      input: al('#yfExpTable .yf-plan-in'),
+      tab: getComputedStyle(document.querySelector('#yfExpTable tbody td:nth-child(2)')).fontVariantNumeric };
+  });
+  check(cols.spend >= 0 && cols.spend <= 0.5, 'Spend: every figure ends on the same edge', `${cols.spend}px apart`);
+  check(cols.planned >= 0 && cols.planned <= 0.5, 'Planned: every input box does too', `${cols.planned}px apart`);
+  check(cols.earned >= 0 && cols.earned <= 0.5, 'Earned, on the income table', `${cols.earned}px apart`);
+  check(cols.jan >= 0 && cols.jan <= 0.5, 'and a month column of the twelve-month table', `${cols.jan}px apart`);
+  check(cols.head === 'right', 'the heading sits over the edge its figures share', cols.head);
+  check(cols.input === 'right', 'a planned amount is right-aligned inside its box', cols.input);
+  check(cols.name === 'left' || cols.name === 'start', 'while the category name stays on the left', cols.name);
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nCONTRAST: ${pass} passed, ${fail} failed`);
