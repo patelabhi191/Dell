@@ -4,8 +4,9 @@ import { BODY, useLayout, useTheme } from "./theme";
 
 export type CaptionWord = { text: string; start: number; end: number };
 
-const MAX_WORDS = 4;
-const MAX_CHARS = 22;
+// 1-3 words at a time: the benchmark reel flashes short bursts, which keeps eyes moving.
+const MAX_WORDS = 3;
+const MAX_CHARS = 20;
 const HOLD = 0.5; // seconds a phrase lingers after its last word
 
 /** Short phrases that break at punctuation, so one thought is on screen at a time. */

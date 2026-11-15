@@ -601,6 +601,116 @@ const Cover: React.FC<{ t: number }> = ({ t }) => {
   );
 };
 
+
+/** "Older than the iPhone": a beige 2002 network box next to a phone from 2007. */
+const OlderThan: React.FC<{ t: number; enter: (d: number, damping?: number) => number }> = ({ t, enter }) => {
+  const theme = useTheme();
+  const box = enter(0.05, 9);
+  const phone = enter(0.55, 8);
+  const dust = (k: number) => (t * 0.5 + k / 4) % 1;
+  return (
+    <g>
+      <g transform={`translate(330 640) scale(${box})`}>
+        <ellipse cx={20} cy={150} rx={250} ry={22} fill={theme.shadow} />
+        {[0, 1].map((r) => (
+          <g key={r} transform={`translate(0 ${r * 120 - 60})`}>
+            <polygon points="-230,-50 -190,-80 270,-80 230,-50" fill="#EFE6CF" />
+            <polygon points="230,-50 270,-80 270,30 230,60" fill="#BFB393" />
+            <rect x={-230} y={-50} width={460} height={110} rx={10} fill="#E2D7B8" />
+            {Array.from({ length: 10 }, (_, i) => (
+              <rect key={i} x={-200 + i * 40} y={18} width={24} height={14} rx={3} fill="#3D3F4A" />
+            ))}
+            {Array.from({ length: 6 }, (_, i) => (
+              <circle key={i} cx={-190 + i * 22} cy={-20} r={6} fill={i % 2 ? "#22B573" : "#F5B700"} opacity={Math.sin(t * 6 + i + r) > 0 ? 1 : 0.3} />
+            ))}
+          </g>
+        ))}
+        <g transform="translate(70 -146) rotate(-4)">
+          <rect x={-130} y={-34} width={260} height={68} rx={10} fill="#FFFFFF" stroke={theme.ink} strokeWidth={4} />
+          <text x={0} y={-6} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={18} fill={theme.muted}>NETWORK ORDERED</text>
+          <text x={0} y={24} textAnchor="middle" fontFamily={DISPLAY} fontSize={36} fill={theme.ink}>JULY 2002</text>
+        </g>
+        {[0, 1, 2, 3].map((k) => (
+          <circle key={k} cx={-180 + k * 120} cy={-110 - dust(k) * 90} r={8 + dust(k) * 10} fill="#CFC6AE" opacity={0.7 * (1 - dust(k))} />
+        ))}
+      </g>
+      <g transform={`translate(780 ${600 + Math.sin(t * 3) * 10}) rotate(${8 + Math.sin(t * 2) * 3}) scale(${phone})`}>
+        <rect x={-78} y={-150} width={156} height={300} rx={28} fill={theme.ink} />
+        <rect x={-66} y={-124} width={132} height={240} rx={10} fill="#7CC8FF" />
+        {Array.from({ length: 12 }, (_, i) => (
+          <rect key={i} x={-52 + (i % 3) * 38} y={-108 + Math.floor(i / 3) * 44} width={28} height={28} rx={8} fill={LIVERY[i % LIVERY.length]} />
+        ))}
+        <circle cx={0} cy={134} r={10} fill="#3D3F4A" />
+      </g>
+      <Tag x={780} y={410} text="IPHONE: 2007" size={30} display scale={phone} />
+      <Tag x={500} y={300} text="5 YEARS OLDER" tone="alert" size={40} display rotate={-4} scale={enter(1.2, 8)} />
+    </g>
+  );
+};
+
+/** Big red ground-stop button, pressed once. */
+const StopButton: React.FC<{ t: number; s: number }> = ({ t, s }) => {
+  const theme = useTheme();
+  const press = t > 0.35 && t < 0.6 ? 16 : 0;
+  const ring = t > 0.45 ? (t - 0.45) % 1 : 1;
+  return (
+    <g transform={`translate(170 80) scale(${s})`}>
+      {t > 0.45 ? <circle cx={0} cy={-6} r={60 + ring * 90} fill="none" stroke={theme.alert} strokeWidth={6} opacity={1 - ring} /> : null}
+      <ellipse cx={0} cy={56} rx={110} ry={16} fill={theme.shadow} />
+      <rect x={-100} y={14} width={200} height={40} rx={14} fill="#F5B700" />
+      <rect x={-100} y={14} width={200} height={14} rx={7} fill="#FFD54A" />
+      <text x={0} y={46} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={20} fill={theme.ink}>GROUND STOP</text>
+      <g transform={`translate(0 ${press})`}>
+        <rect x={-60} y={-22} width={120} height={36} fill="#B32A12" />
+        <ellipse cx={0} cy={-22} rx={60} ry={24} fill={theme.alert} />
+        <ellipse cx={-18} cy={-28} rx={18} ry={7} fill="#FFFFFF" opacity={0.45} />
+      </g>
+    </g>
+  );
+};
+
+/** 2009: a router mistake on the same network knocked out 129 facilities. */
+const Outage2009: React.FC<{ t: number; enter: (d: number, damping?: number) => number }> = ({ t, enter }) => {
+  const theme = useTheme();
+  const ox = 500;
+  const oy = 620;
+  const s = 0.82;
+  const at = (x: number, y: number) => [ox + (x - 495) * s, oy + (y - 440) * s];
+  const count = Math.round(129 * ease((t - 0.6) / 1.8));
+  const dots = Array.from({ length: 44 }, (_, i) => {
+    let x = 0;
+    let y = 0;
+    for (let k = 0; k < 20; k++) {
+      x = 110 + random(`dx${i}-${k}`) * 780;
+      y = 230 + random(`dy${i}-${k}`) * 400;
+      if (y < 560 || (x > 450 && x < 800)) break;
+    }
+    return { p: at(x, y), when: 0.6 + random(`dw${i}`) * 1.8 };
+  });
+  return (
+    <g transform={`translate(500 620) scale(${enter(0.05, 11)}) translate(-500 -620)`}>
+      <polygon points={US.map(([x, y]) => at(x, y).join(",")).join(" ")} fill={theme.card} />
+      <polygon points={US.map(([x, y]) => at(x, y).join(",")).join(" ")} fill="none" stroke={theme.slateLight} strokeWidth={5} strokeLinejoin="round" />
+      {dots.map((d, i) => {
+        const red = t > d.when;
+        const bump = red ? 1 + 0.7 * Math.max(0, 1 - (t - d.when) / 0.3) : 1;
+        return <circle key={i} cx={d.p[0]} cy={d.p[1]} r={9 * bump} fill={red ? theme.alert : theme.slateLight} />;
+      })}
+      <g transform={`translate(500 860) scale(${enter(0.6, 9)})`}>
+        <rect x={-250} y={-58} width={500} height={116} rx={26} fill={theme.alert} />
+        <text x={-20} y={22} textAnchor="end" fontFamily={DISPLAY} fontSize={76} fill="#FFFFFF">{count}</text>
+        <text x={0} y={-6} fontFamily={BODY} fontWeight={900} fontSize={26} fill="#FFFFFF">FACILITIES</text>
+        <text x={0} y={26} fontFamily={BODY} fontWeight={900} fontSize={26} fill="#FFFFFF">KNOCKED OUT</text>
+      </g>
+      <g transform={`translate(500 330) rotate(-3) scale(${enter(0.2, 9)})`}>
+        <rect x={-150} y={-46} width={300} height={92} rx={20} fill={theme.card} stroke={theme.ink} strokeWidth={5} />
+        <text x={0} y={-8} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={22} fill={theme.muted}>SAME NETWORK</text>
+        <text x={0} y={30} textAnchor="middle" fontFamily={DISPLAY} fontSize={44} fill={theme.ink}>NOV 2009</text>
+      </g>
+    </g>
+  );
+};
+
 // ---------------------------------------------------------------- stage
 
 export const GroundStopStage: React.FC = () => {
@@ -629,17 +739,25 @@ export const GroundStopStage: React.FC = () => {
   const finale = useBeat("finale");
   const spread = useBeat("spread");
 
+  const older = useBeat("older");
+  const money = useBeat("money");
+  const warned = useBeat("warned");
+  const hit = useBeat("hit");
+  const apart = useBeat("apart");
   const cover = useBeat("cover");
   if (cover.start !== undefined) return <Cover t={1.5} />;
 
   const cockpitOn = 1 - grounded.ramp(0, 0.35);
-  const tarmacOn = grounded.ramp(0, 0.35) * (1 - box.ramp(0, 0.35));
-  const timelineOn = grounded.ramp(0, 0.3) * (1 - box.ramp(0, 0.3));
+  const tarmacOn = grounded.ramp(0, 0.35) * (1 - Math.max(box.ramp(0, 0.35), older.ramp(0, 0.35)));
+  const timelineOn = grounded.ramp(0, 0.3) * (1 - Math.max(box.ramp(0, 0.3), older.ramp(0, 0.3)));
   const boxOn = box.ramp(0, 0.2) * (1 - flights.ramp(0, 0.3));
+  const olderOn = older.ramp(0, 0.25) * (1 - flights.ramp(0, 0.3));
+  const warnedOn = warned.ramp(0, 0.3) * (1 - money.ramp(0, 0.3));
   const mapOn = flights.ramp(0, 0.3) * (1 - cyber.ramp(0, 0.3));
   const terminalOn = cyber.ramp(0, 0.2) * (1 - router.ramp(0, 0.3));
   const roomOn = router.ramp(0.3, 0.8) * (1 - faulty.ramp(0, 0.3));
   const suspectsOn = faulty.ramp(0, 0.3) * (1 - finale.ramp(0, 0.3));
+  const roomOff = warned.ramp(0, 0.3);
   const finaleOn = finale.ramp(0, 0.3);
 
   // Map placement: large while it is the subject, smaller and lower once text sits on top.
@@ -813,6 +931,16 @@ export const GroundStopStage: React.FC = () => {
                 return o > 0.01 ? <MapPlane key={i} x={x} y={y} angle={(Math.atan2(ny - y, nx - x) * 180) / Math.PI} color={pl.color} scale={0.75} opacity={o} /> : null;
               })
             : null}
+          {apart.on && !lost.on ? (
+            <g transform={`translate(455 395) scale(${apart.enter(0, 9)})`}>
+              <circle cx={-55} cy={0} r={64} fill={theme.accent} opacity={0.12} />
+              <circle cx={-55} cy={0} r={64} fill="none" stroke={theme.accent} strokeWidth={4} strokeDasharray="10 8" strokeDashoffset={-t * 30} />
+              <MapPlane x={-55} y={0} angle={0} color="#F5B700" scale={1.3} />
+              <MapPlane x={70} y={0} angle={180} color={theme.alert} scale={1.3} />
+              <line x1={-20} y1={34} x2={40} y2={34} stroke={theme.ink} strokeWidth={4} />
+              <Tag x={10} y={64} text="5 MILES" size={22} />
+            </g>
+          ) : null}
           {asCenters > 0
             ? CENTERS.map(([x, y], i) => {
                 const red = failed(i);
@@ -844,6 +972,20 @@ export const GroundStopStage: React.FC = () => {
         </g>
       ) : null}
 
+      {/* ---------------- OLDER THAN THE IPHONE ---------------- */}
+      {olderOn > 0.01 ? (
+        <g opacity={olderOn}>
+          <OlderThan t={older.t} enter={older.enter} />
+        </g>
+      ) : null}
+
+      {/* the big red button */}
+      {hit.on && centers.ramp(0, 0.3) < 1 ? (
+        <g opacity={1 - centers.ramp(0, 0.3)}>
+          <StopButton t={hit.t} s={hit.enter(0, 9)} />
+        </g>
+      ) : null}
+
       {/* clock for the freeze */}
       {stop.on && centers.ramp(0, 0.3) < 1 ? (
         <g transform={`translate(820 70) scale(${stop.enter(0.1, 9)})`} opacity={1 - centers.ramp(0, 0.3)}>
@@ -857,6 +999,13 @@ export const GroundStopStage: React.FC = () => {
           <text x={-36} y={34} fontFamily={BODY} fontWeight={900} fontSize={24} fill={theme.alert}>
             {frozen.on ? `+${Math.min(4, Math.floor(frozen.t * 1.6) + 1)}${frozen.t * 1.6 >= 3 ? "+" : ""} HRS STOPPED` : "EASTERN TIME"}
           </text>
+        </g>
+      ) : null}
+
+      {/* ---------------- 2009: IT HAPPENED BEFORE ---------------- */}
+      {warnedOn > 0.01 ? (
+        <g opacity={warnedOn}>
+          <Outage2009 t={warned.t} enter={warned.enter} />
         </g>
       ) : null}
 
@@ -882,7 +1031,7 @@ export const GroundStopStage: React.FC = () => {
       ) : null}
 
       {/* ---------------- REMOTE SITE ---------------- */}
-      {roomOn > 0.01 ? <RemoteSite t={t} router={router} flood={flood} opacity={roomOn} /> : null}
+      {roomOn * (1 - roomOff) > 0.01 ? <RemoteSite t={t} router={router} flood={flood} opacity={roomOn * (1 - roomOff)} /> : null}
     </g>
   );
 };

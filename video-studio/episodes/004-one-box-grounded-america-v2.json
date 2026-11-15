@@ -1,0 +1,182 @@
+{
+  "id": "004-one-box-grounded-america-v2",
+  "title": "One box grounded America (v2, benchmark pacing)",
+  "format": "info",
+  "theme": "light",
+  "stage": "groundstop",
+  "voiceSpeed": 1.2,
+  "pacing": {
+    "lead": 0.08,
+    "tail": 0.18,
+    "sentenceGap": 0.12,
+    "minScene": 1.8
+  },
+  "keywords": [
+    "box",
+    "plane",
+    "planes",
+    "america",
+    "network",
+    "iphone",
+    "stop",
+    "nothing",
+    "centers",
+    "radar",
+    "radio",
+    "miles",
+    "hackers",
+    "router",
+    "fiber",
+    "copper",
+    "flooded",
+    "bother",
+    "mistake",
+    "billion",
+    "trust",
+    "eleven",
+    "nine"
+  ],
+  "thumbnails": [
+    {
+      "name": "mystery",
+      "title": "One box grounded *every US plane*",
+      "tag": "Nov 13, 2026",
+      "at": "cover",
+      "offset": 0
+    }
+  ],
+  "scenes": [
+    {
+      "type": "show",
+      "seconds": 3.3,
+      "beat": "hook",
+      "speed": 1.24,
+      "heading": "Every US airport *stopped*",
+      "tag": "Nov 13, 2026 \u00b7 3:54 PM ET",
+      "tagTone": "accent",
+      "narration": "One small box just stopped every plane in America from taking off."
+    },
+    {
+      "type": "show",
+      "seconds": 3.6,
+      "beat": "grounded",
+      "tag": "Only the 3rd time ever",
+      "tagTone": "alert",
+      "narration": "It's only happened twice before. The first was nine eleven."
+    },
+    {
+      "type": "show",
+      "seconds": 2.8,
+      "beat": "older",
+      "heading": "Older than the *iPhone*",
+      "narration": "And the network behind it is older than the iPhone."
+    },
+    {
+      "type": "show",
+      "seconds": 2.1,
+      "beat": "flights",
+      "tag": "Planes in the air kept flying",
+      "narration": "Planes already flying kept going."
+    },
+    {
+      "type": "show",
+      "seconds": 4.7,
+      "beat": "stop",
+      "cues": {
+        "hit": "stop",
+        "frozen": "nothing"
+      },
+      "tag": "4+ hours. Zero takeoffs.",
+      "tagTone": "alert",
+      "narration": "But at three fifty-four, the FAA hit stop. Nothing new took off for over four hours."
+    },
+    {
+      "type": "show",
+      "seconds": 4.3,
+      "beat": "centers",
+      "tag": "22 hidden control centers",
+      "tagTone": "accent",
+      "narration": "Here's why. In the air, you're handed to one of twenty-two hidden control centers."
+    },
+    {
+      "type": "show",
+      "seconds": 4.6,
+      "beat": "talk",
+      "cues": {
+        "apart": "five"
+      },
+      "tag": "Radar + radio = one network",
+      "narration": "They keep you five miles from other planes. By radar and radio, on one network."
+    },
+    {
+      "type": "stat",
+      "seconds": 2.8,
+      "beat": "lost",
+      "cues": {
+        "fail": "started"
+      },
+      "layout": "top",
+      "stage": "full",
+      "value": 17,
+      "label": "of 22 centers lost *their lines*",
+      "narration": "On Friday, seventeen of those centers started losing it."
+    },
+    {
+      "type": "statement",
+      "seconds": 2.2,
+      "beat": "cyber",
+      "cues": {
+        "safe": "no"
+      },
+      "layout": "top",
+      "stage": "full",
+      "tag": "Cyberattack?",
+      "tagTone": "alert",
+      "text": "Officials say *no*",
+      "narration": "Hackers? Officials say no."
+    },
+    {
+      "type": "show",
+      "seconds": 3.4,
+      "beat": "router",
+      "tag": "A routine upgrade",
+      "narration": "Contractor L three Harris was swapping copper lines for fiber."
+    },
+    {
+      "type": "show",
+      "seconds": 4.3,
+      "beat": "flood",
+      "tag": "Then it flooded the network",
+      "tagTone": "alert",
+      "narration": "Then one router flooded the network. A thousand requests every five seconds."
+    },
+    {
+      "type": "show",
+      "seconds": 7.2,
+      "beat": "warned",
+      "tag": "It happened before",
+      "tagTone": "alert",
+      "narration": "Here's what should bother you. In 2009, a router mistake on this same network knocked out 129 air traffic facilities."
+    },
+    {
+      "type": "stat",
+      "seconds": 3.1,
+      "value": 12.5,
+      "decimals": 1,
+      "prefix": "$",
+      "suffix": "B",
+      "label": "approved to *fix air traffic control*",
+      "narration": "Congress has approved twelve and a half billion dollars to fix it.",
+      "beat": "money"
+    },
+    {
+      "type": "statement",
+      "seconds": 4.9,
+      "tag": "Your call",
+      "tagTone": "accent",
+      "text": "Would you *trust it*?",
+      "narration": "Same network. Same kind of mistake. Would you trust it? Comment below."
+    }
+  ],
+  "voiceover": "004-one-box-grounded-america-v2.mp3"
+}

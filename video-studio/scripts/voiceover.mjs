@@ -91,7 +91,7 @@ const speakLine = async (text, lineSpeed) => {
     sampleRate = out.sampleRate;
     parts.push(trimSilence(out.samples, sampleRate));
   }
-  const gap = Math.round(SENTENCE_GAP * sampleRate);
+  const gap = Math.round((episode.pacing?.sentenceGap ?? SENTENCE_GAP) * sampleRate);
   const total = parts.reduce((n, p) => n + p.length, 0) + gap * (parts.length - 1);
   const samples = new Float32Array(total);
   let at = 0;
@@ -113,9 +113,12 @@ for (const [i, scene] of episode.scenes.entries()) {
     const clip = await speakLine(text, scene.speed ?? speed);
     sampleRate = clip.sampleRate;
     const spoken = clip.samples.length / sampleRate;
-    const lead = i === 0 ? 0 : LEAD;
+    const lead = i === 0 ? 0 : episode.pacing?.lead ?? LEAD;
     // "hold" adds silent seconds after the line, so a visual can land before the next scene.
-    scene.seconds = Math.max(MIN_SCENE, Math.ceil((lead + spoken + TAIL + (scene.hold ?? 0)) * 10) / 10);
+    scene.seconds = Math.max(
+      episode.pacing?.minScene ?? MIN_SCENE,
+      Math.ceil((lead + spoken + (episode.pacing?.tail ?? TAIL) + (scene.hold ?? 0)) * 10) / 10,
+    );
     clips.push({ at: start + lead, samples: clip.samples });
     console.log(`scene ${i + 1}: ${spoken.toFixed(1)}s spoken -> ${scene.seconds}s on screen`);
   } else {

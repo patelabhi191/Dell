@@ -316,7 +316,8 @@ const Stat: React.FC<{ scene: Of<"stat"> }> = ({ scene }) => {
           style={{
             fontFamily: DISPLAY,
             fontWeight: 900,
-            fontSize: (top ? 290 : 420) * u,
+            // Longer numbers ("$12.5B") shrink so they never run off the frame.
+            fontSize: Math.min(top ? 290 : 420, 1500 / Math.max(1, `${scene.prefix}${scene.value.toFixed(scene.decimals)}${scene.suffix}`.length)) * u,
             lineHeight: 0.9,
             color: theme.accent,
             textShadow: `0 ${14 * u}px 0 ${theme.accentDeep}`,

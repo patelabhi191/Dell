@@ -50,10 +50,10 @@ The job of every video is to be watched to the end. The first upload of pilot 00
   highlighted automatically. Many viewers watch muted; the highlighted words alone should tell
   the story.
 
-**C. A visual change every 2-4 seconds**
+**C. A visual change every 1.5-3 seconds**
 
-- Something new must happen on screen at least every 2-4 seconds: a new object, a cut to a big
-  statement, a colour change, a camera punch. Plan the shots as a list before building, e.g.
+- Something new must happen on screen at least every 1.5-3 seconds (the benchmark cuts every
+  1.4 s on average): a new object, a cut to a big statement, a colour change, a camera punch. Plan the shots as a list before building, e.g.
   blue sky -> sunlight entering the air -> scattering -> orange sunset.
 - No scene holds a single unchanged picture for longer than about 4 seconds. If the narration
   for a scene runs longer, give its stage more than one change or split the scene.
@@ -80,6 +80,52 @@ The job of every video is to be watched to the end. The first upload of pilot 00
 
 These rules come from the owner's direction plus common practice described in creator and
 analytics-vendor guides. Treat the timings as starting points to test, not proven laws.
+
+## Benchmark reel (study this before every video)
+
+A same-topic reel on the 13 Nov 2026 ground stop got **22K views**, more than ours. It is the
+standard to beat; the owner does not need to resend it. The file is not committed (another
+creator's work); this section records everything we learned from it. Never copy its script
+lines, visuals or characters.
+
+**What it is.** 47.7 s, 154 words, **197 words/min**, 33 cuts (one every 1.4 s). Dark night-map
+look in 3D: a US map of city lights, airports, radar rooms, a clay-style controller, beige
+network boxes. Captions are 1-3 words at a time with key words in a filled highlight box.
+
+**Script, beat by beat.**
+
+| Time | Beat | Line (paraphrased) | On screen |
+| --- | --- | --- | --- |
+| 0-3 s | Shock | America stopped every plane from taking off | Plane on runway, "FRIDAY 13 NOV 2026 · 3:54 PM ET" stamp, red GROUND STOP |
+| 3-6 s | Rarity | Only twice before; the first was 9/11 | Three dated cards 2001 / 2023 / 2026 |
+| 6-9 s | Rule out | Officials say it was not an attack | Map with an "attack?" tag, crossed out |
+| 9-11 s | Relatable anchor | A network older than the iPhone choked | Beige box "JULY 2002" next to a phone |
+| 11-20 s | Mechanism, in "you" | You're handed to one of 22 radar rooms; they keep you 5 miles apart by radar and radio | "22" over the map, controller at a scope, "5 miles" ring between two planes |
+| 20-28 s | Cause | Both ride one network ordered in 2002; its routers flooded | Network boxes, "JULY 2002" label, radar going red |
+| 28-36 s | Decision | With ~3,500 planes up, the FAA made one call: nobody new takes off for 4+ hours | Counter of planes in the air, big red GROUND STOP button, clock |
+| 36-41 s | Stakes | "Here's what should bother you": a review called the network obsolete | Safety-review document over the boxes |
+| 41-47 s | Question + loop | Would you pay $50B to replace it or hope it holds? Because last time it didn't | Cost counter, crossed-out box, back to the runway |
+
+**What it does better than our 003 (and the rules we took from it).**
+
+| | Benchmark | Our 003 v1 | Rule now |
+| --- | --- | --- | --- |
+| Pace | 197 words/min | 141 | Info videos run at **175-195 words/min** (voice speed 1.2, tight pacing) |
+| Cuts | every 1.4 s | every ~4 s | A new picture or element every **1.5-3 s** |
+| Captions | 1-3 words | up to 4 | **1-3 words** per caption |
+| Data on screen | timestamp, counters, labels in every shot | some | Every scene shows at least one fact as a label, counter, stamp or card |
+| Relatable anchor | "older than the iPhone" | none | Compare one key fact to something everyone knows |
+| Viewer in the story | "you're handed to...", "keep you 5 miles" | mostly third person | Explain the mechanism in **second person** |
+| Stakes | "Here's what should bother you" | none | Add a stakes beat in the last third: why it matters to the viewer |
+| Ending | a question to answer in comments, then a loop line | "One box, a whole country" + follow | End on a **question to comment** plus a line that loops to the hook |
+
+**Where we stay different on purpose.** White background (owner's choice), flat colourful
+cartoon style with faces, blue accent. And we only state facts we can verify: the benchmark's
+"3,500 planes", "review called it obsolete" and "$50 billion" were not confirmed, so 004 uses
+verified alternatives (the 2009 outage on the same network, the $12.5B Congress approved).
+
+**Versions to compare.** `003` (our first take, 141 words/min) vs `004` (rebuilt on these
+rules, 181 words/min). Post both at different times and log the results in section 9.
 
 ## Doom-scroll animation (CoComelon-inspired)
 
@@ -189,8 +235,8 @@ fine for monetised videos) and runs locally.
 | Setting | Informative | Story |
 | --- | --- | --- |
 | Voice | `am_liam` | `am_puck` |
-| Speed | 1.0 | 0.88 |
-| Resulting pace | about 160 words/min | about 160 words/min |
+| Speed | 1.2, with tight pacing (`"pacing"` in the episode) | 0.88 |
+| Resulting pace | about 180 words/min (benchmark: 197) | about 160 words/min |
 | Reference pace | 167-173 | 142 |
 
 Other voices to try with `--voice`: `am_fenrir` (measured closest to the reference's pitch),
@@ -208,7 +254,7 @@ the same script with `--provider`.
 
 ## 5. Script rules
 
-- Length: **130-190 words** for an info video (45-65 s), **120-260** for a story (50-110 s).
+- Length: **140-170 words** for an info video (45-58 s at 175-195 words/min), **120-260** for a story (50-110 s).
 - Sentences are short: 4-10 words. One idea per sentence. Fragments are fine. ("Left, right.
   Billions of times every second.")
 - Plain words. Say numbers the way a person would. Use concrete numbers and names.
@@ -226,9 +272,12 @@ the same script with `--provider`.
 | 2 | **Setup** | 7-20% | The one thing the viewer needs first. |
 | 3 | **Mechanism** | 20-50% | 2-4 steps, each adds one object or change to the stage. |
 | 4 | **Number** | about 50% | One figure as a big stat. |
-| 5 | **Turn** | 55-75% | "But here's the odd part." A surprise or exception, then its short answer. |
-| 6 | **Payoff** | 75-92% | Last step, then one line that ties back to the hook. |
-| 7 | **Sign-off** | last 3 s | "Follow for more ..." Optional recap card worth saving. |
+| 5 | **Turn** | 55-70% | "But here's the odd part." A surprise or exception, then its short answer. |
+| 6 | **Stakes** | 70-85% | "Here's what should bother you." Why it matters to the viewer; a verified fact. |
+| 7 | **Question + loop** | last 4 s | A question viewers can answer in a word in the comments, with a line that echoes the hook. |
+
+Explain the mechanism in second person ("you're handed to...") and include one relatable
+comparison ("older than the iPhone").
 
 ### Story template
 
@@ -279,7 +328,8 @@ dimmed stage), `stat` (one number), `list` (recap card), `bars` (compare values)
 
 - [ ] Every fact checked, sources noted in the brief.
 - [ ] Hook lands in the first 3 seconds; headline readable with the sound off.
-- [ ] Pace within 15 words/min of the target for the format.
+- [ ] Pace within 15 words/min of the target for the format (info: 175-195).
+- [ ] Stakes beat present; ends on a question to comment.
 - [ ] Something new on screen at least every 2-3 seconds.
 - [ ] Captions skimmed for misheard words (names and numbers especially).
 - [ ] First frame is a full picture; no logo or intro before the hook.
@@ -324,13 +374,15 @@ Sign-off:    (follow line, or a question to comment)
 | --- | --- | --- | --- | --- |
 | `001-why-is-the-sky-blue` | info | light | 59 s | 165 words/min |
 | `002-the-man-who-sold-the-eiffel-tower` | story | night | 46 s | 159 words/min |
-| `003-the-router-that-grounded-america` | info (news explainer) | light | 59 s | 141 words/min |
+| `003-the-router-that-grounded-america` | info (news explainer) | light | 58 s | 141 words/min |
+| `004-one-box-grounded-america-v2` | info, rebuilt on the benchmark rules | light | 53 s | 181 words/min |
 
 Published results:
 
 | Video | Version | Result | What changed next |
 | --- | --- | --- | --- |
 | 001 sky | v1 (step tracker, slow open, no keyword highlights) | about 66% swiped away | Retention system added: full first frame, two-question hook, cyan keywords, tracker removed, safe zones |
+| Benchmark (not ours) | same topic as 003/004 | 22K views | Benchmark section and rules above |
 
 To decide before going weekly:
 

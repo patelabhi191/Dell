@@ -102,6 +102,15 @@ export const episodeSchema = z.object({
   /** Voice and speed for `npm run voiceover` (defaults depend on format). */
   voice: z.string().optional(),
   voiceSpeed: z.number().min(0.5).max(2).optional(),
+  /** Silence around lines for `npm run voiceover`, in seconds. Tighter = faster video. */
+  pacing: z
+    .object({
+      lead: z.number().min(0).optional(),
+      tail: z.number().min(0).optional(),
+      sentenceGap: z.number().min(0).optional(),
+      minScene: z.number().min(0.5).optional(),
+    })
+    .optional(),
   /** Files inside public/audio/ */
   voiceover: z.string().optional(),
   /**

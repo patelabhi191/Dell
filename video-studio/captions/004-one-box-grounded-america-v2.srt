@@ -1,0 +1,111 @@
+1
+00:00:00,030 --> 00:00:01,950
+One small box just stopped every plane in
+
+2
+00:00:01,950 --> 00:00:03,350
+America from taking off.
+
+3
+00:00:03,430 --> 00:00:05,160
+It's only happened twice before.
+
+4
+00:00:05,190 --> 00:00:07,950
+The first was 9/11. and the network behind
+
+5
+00:00:08,000 --> 00:00:09,800
+it is older than the iPhone.
+
+6
+00:00:09,830 --> 00:00:12,110
+Planes already flying kept going, but at
+
+7
+00:00:12,170 --> 00:00:14,200
+3:54, the FAA hit stop.
+
+8
+00:00:14,270 --> 00:00:16,560
+Nothing new took off for over four hours.
+
+9
+00:00:16,630 --> 00:00:18,850
+Here's why, in the air, you're handed to
+
+10
+00:00:18,890 --> 00:00:20,880
+one of 22 hidden control centers.
+
+11
+00:00:20,910 --> 00:00:23,060
+They keep you five miles from other planes
+
+12
+00:00:23,110 --> 00:00:25,480
+by radar and radio on one network.
+
+13
+00:00:25,510 --> 00:00:27,580
+On Friday, 17 of those centers started
+
+14
+00:00:27,580 --> 00:00:28,280
+losing it.
+
+15
+00:00:28,310 --> 00:00:30,460
+Hackers? officials say no.
+
+16
+00:00:30,510 --> 00:00:32,880
+Contractor L3 Harris was swapping copper
+
+17
+00:00:32,880 --> 00:00:33,880
+lines for fiber.
+
+18
+00:00:33,910 --> 00:00:35,800
+Then one router flooded the network.
+
+19
+00:00:35,830 --> 00:00:38,200
+A thousand requests every five seconds.
+
+20
+00:00:38,230 --> 00:00:39,640
+Here's what should bother you.
+
+21
+00:00:39,670 --> 00:00:42,100
+In 2009, a router mistake on the same
+
+22
+00:00:42,100 --> 00:00:44,490
+network knocked out 129 air traffic
+
+23
+00:00:44,490 --> 00:00:45,400
+facilities.
+
+24
+00:00:45,430 --> 00:00:48,060
+Congress has approved $12.5 billion to fix
+
+25
+00:00:48,120 --> 00:00:48,410
+it.
+
+26
+00:00:48,550 --> 00:00:50,920
+Same network, same kind of mistake.
+
+27
+00:00:50,950 --> 00:00:52,040
+Would you trust it?
+
+28
+00:00:52,070 --> 00:00:52,870
+Comment below.

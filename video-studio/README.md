@@ -44,6 +44,8 @@ Two pilots are included: `001-why-is-the-sky-blue` (informative, white) and
 | `handle` | Channel handle shown on the outro. Defaults to `@frontierin60`. |
 | `keywords` | Words highlighted in cyan in the captions. |
 | `voice`, `voiceSpeed` | Override the house voice for this episode. |
+| `pacing` | Silence around lines: `lead`, `tail`, `sentenceGap`, `minScene` (seconds). |
+| `thumbnails` | Reel covers, rendered by `npm run thumbnail`. |
 | `captions` | `false` hides burned-in captions. |
 | `music`, `musicVolume` | Background track in `public/audio/`. |
 | `scenes` | The beats, in order. |
