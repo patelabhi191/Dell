@@ -98,8 +98,8 @@ export const episodeSchema = z.object({
    * src/stages/index.ts `fullStages` draws everything; no slide text, captions only.
    */
   canvas: z.enum(["stage", "full"]).default("stage"),
-  /** "pill": dark caption pill under the stage. "top": small captions near the top. */
-  captionStyle: z.enum(["pill", "top"]).default("pill"),
+  /** "pill": dark pill under the stage. "top": small, near the top. "box": cyan-bordered box low in the frame (reference style). */
+  captionStyle: z.enum(["pill", "top", "box"]).default("pill"),
   /** Name of a custom animated stage registered in src/stages/index.ts. */
   stage: z.string().optional(),
   /** Channel handle, shown on the outro. */

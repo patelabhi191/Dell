@@ -34,7 +34,7 @@ const toPhrases = (words: CaptionWord[]) => {
  * Words turn white as they are spoken; numbers and the episode's keywords are cyan throughout,
  * so the point still lands with the sound off.
  */
-export const Captions: React.FC<{ words: CaptionWord[]; keywords?: string[]; variant?: "pill" | "top" }> = ({
+export const Captions: React.FC<{ words: CaptionWord[]; keywords?: string[]; variant?: "pill" | "top" | "box" }> = ({
   words,
   keywords = [],
   variant = "pill",
@@ -53,6 +53,43 @@ export const Captions: React.FC<{ words: CaptionWord[]; keywords?: string[]; var
   });
   if (index === -1) return null;
   const size = (vertical ? 50 : 40) * u;
+  if (variant === "box") {
+    // Reference style: white words in a dark box with a cyan border, key words in cyan,
+    // sitting low in the frame but above the platform's caption area.
+    const boxSize = (vertical ? 48 : 38) * u;
+    const popBox = spring({ frame: frame - phrases[index][0].start * fps, fps, config: { damping: 12, mass: 0.5 } });
+    return (
+      <div style={{ position: "absolute", left: side, right: side, top: (vertical ? 1330 : 960) * u, display: "flex", justifyContent: "center" }}>
+        <div
+          style={{
+            fontFamily: BODY,
+            fontSize: boxSize,
+            fontWeight: 900,
+            lineHeight: 1.15,
+            whiteSpace: "nowrap",
+            padding: `${boxSize * 0.28}px ${boxSize * 0.5}px`,
+            background: "rgba(8,12,24,0.92)",
+            border: `${3 * u}px solid #2ED3FF`,
+            borderRadius: 6 * u,
+            boxShadow: `0 0 ${18 * u}px rgba(46,211,255,0.35)`,
+            transform: `scale(${0.9 + 0.1 * popBox})`,
+          }}
+        >
+          {phrases[index].map((word, i) => {
+            const bare = word.text.toLowerCase().replace(/[^a-z0-9']/g, "");
+            const key = /\d/.test(word.text) || keys.has(bare) || keys.has(bare.replace(/'?s$/, ""));
+            const spoken = t >= word.start - 0.05;
+            return (
+              <span key={i} style={{ color: key && spoken ? "#2ED3FF" : spoken ? "#FFFFFF" : "rgba(255,255,255,0.5)" }}>
+                {word.text}
+                {i < phrases[index].length - 1 ? " " : ""}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
   if (variant === "top") {
     // Benchmark style: small white words near the top, key words in a filled yellow box.
     const topSize = (vertical ? 46 : 38) * u;

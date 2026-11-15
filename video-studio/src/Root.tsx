@@ -7,6 +7,7 @@ import "@fontsource/nunito/900.css";
 import React from "react";
 import { Composition, Folder, Still, continueRender, delayRender } from "remotion";
 import { EpisodeVideo, FPS, Thumbnail, episodeFrames } from "./EpisodeVideo";
+import { KitEndCard, KitGallery } from "./kit/Gallery";
 import type { CaptionWord } from "./Captions";
 import { episodeSchema, type Episode } from "./types";
 
@@ -67,5 +68,20 @@ export const Root: React.FC = () => (
         ))}
       </Folder>
     ))}
+    <Folder name="kit">
+      {[1, 2, 3].map((page) => (
+        <Composition
+          key={page}
+          id={`kit-gallery-${page}`}
+          component={KitGallery}
+          defaultProps={{ page }}
+          durationInFrames={90}
+          fps={FPS}
+          width={1080}
+          height={1920}
+        />
+      ))}
+      <Composition id="kit-endcard" component={KitEndCard} durationInFrames={90} fps={FPS} width={1080} height={1920} />
+    </Folder>
   </>
 );

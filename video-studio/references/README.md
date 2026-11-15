@@ -1,14 +1,15 @@
 # Reference clips
 
-Put the four reference videos here under these exact names. They are for studying style,
-pacing and voice only (see `../PLAYBOOK.md`, section 2); nothing from them is reused.
+The five reels that define our look, captions and script structure (see `../PLAYBOOK.md`,
+section 2). Keep them here on your machine; video files in this folder are not committed
+because they are other creators' work. Nothing from them is reused: we copy techniques only.
 
-| File | What it is the reference for |
+| File (suggested name) | Topic |
 | --- | --- |
-| `Animation_Style.mp4` | the visual style |
-| `For_Knowledge_Info.mp4` | structure of informative videos |
-| `For_Story_Time.mp4` | structure of story videos |
-| `Voice.mp4` | the narration voice |
+| `R1_gta6_downloads.mp4` | GTA 6 preload downloads (neon city + globe) |
+| `R2_airdrop_offline.mp4` | How AirDrop works offline (voxel landscape) |
+| `R3_newsletter_spam.mp4` | How newsletters avoid spam and track opens (isometric grid world) |
+| `R4_microsoft_outage.mp4` | Why the Microsoft outage spread (isometric server rows) |
+| `R5_shop_alarm_tags.mp4` | Why shop alarms beep after you paid (3D shop) |
 
-Video files in this folder are ignored by git: they are other creators' work and should stay
-on your machine rather than in the repository.
+Earlier references are retired (PLAYBOOK.md, "Archive").

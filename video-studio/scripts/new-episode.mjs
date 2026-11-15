@@ -16,31 +16,45 @@ if (existsSync(file)) {
   process.exit(1);
 }
 
-const s = (type, fields) => ({ type, seconds: 4, ...fields, narration: "" });
+const s = (beat, narration) => ({ type: "show", seconds: 3, beat, narration });
 const scenes =
   format === "info"
     ? [
-        s("show", { heading: "The *hook* question?", tag: "and the second question" }),
-        s("show", { tag: "What you need first" }),
-        s("show", { tag: "How it works" }),
-        s("stat", { value: 10, suffix: "x", label: "The one number worth *remembering*" }),
-        s("statement", { tag: "Here's the odd part", tagTone: "accent", text: "The *turn*" }),
-        s("show", { tag: "The payoff" }),
-        s("statement", { text: "One line that ties back to *the hook*" }),
-        s("outro", { title: "Now you *know*", cta: "Follow", ctaNote: "for more" }),
+        s("hook", "SURPRISING FACT about something the viewer uses."),
+        s("question", "So how does that work?"),
+        s("imagine", "Imagine... (put the viewer in a scene, or an everyday analogy)."),
+        s("happens", "Here's what happens."),
+        s("step1", "First, ..."),
+        s("step2", "But ... So ..."),
+        s("twist", "But here's the twist: ..."),
+        s("callback", "So, that ___? (one-line answer)"),
+        s("comment", "Question answerable in one word?"),
+        s("share", "Send this to the friend who ..."),
       ]
     : [
-        s("statement", { tag: "True story", tagTone: "accent", text: "The most *surprising* fact" }),
-        s("show", { tag: "Place, year" }),
-        s("show", { tag: "The plan" }),
-        s("show", { tag: "The stakes" }),
-        s("show", { tag: "The move", tagTone: "alert" }),
-        s("statement", { text: "The *twist*" }),
-        s("outro", { title: "A question to *comment*?", cta: "Follow", ctaNote: "for more true stories" }),
+        s("cold", "The most surprising fact, stated flat."),
+        s("place", "Where, when, who."),
+        s("plan", "What they set out to do."),
+        s("stakes", "A number, a risk, a secret."),
+        s("move", "It happens."),
+        s("twist", "What nobody expected."),
+        s("comment", "One-word question? Send this to the friend who ..."),
       ];
 
-const episode = { id, title, format, theme: format === "story" ? "night" : "light", keywords: [], scenes };
+// New videos use the reference look (PLAYBOOK.md, section 2): full-screen world, boxed captions.
+const episode = {
+  id,
+  title,
+  format,
+  theme: "cinema",
+  canvas: "full",
+  captionStyle: "box",
+  stage: `${slug}`,
+  keywords: [],
+  pacing: { lead: 0.08, tail: 0.18, sentenceGap: 0.12, minScene: 1.8 },
+  scenes,
+};
 writeFileSync(file, JSON.stringify(episode, null, 2) + "\n");
 console.log(`Created ${file}`);
-console.log('Fill in each "narration", then follow PLAYBOOK.md section 6.');
-console.log('For custom visuals add a stage in src/stages/ and set "stage" plus per-scene "beat".');
+console.log('Fill in each "narration", then follow PLAYBOOK.md section 7 (9 beats, one world).');
+console.log(`Next: build src/stages/${slug}.tsx from src/kit and register it in fullStages (PLAYBOOK.md section 7).`);
