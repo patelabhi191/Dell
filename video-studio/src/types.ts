@@ -12,6 +12,8 @@ const base = {
    * fires "fail" when the voice says "started". Needs captions; falls back to scene start.
    */
   cues: z.record(z.string(), z.string()).optional(),
+  /** Extra silent seconds after the narration, set by `npm run voiceover`. */
+  hold: z.number().min(0).max(3).optional(),
   /** "top" puts the text in the upper part of the frame so the stage stays visible below. */
   layout: z.enum(["center", "top"]).default("center"),
   /** "full" keeps the stage at full strength behind this scene; "dim" fades it back. */

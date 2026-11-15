@@ -49,7 +49,7 @@ Two pilots are included: `001-why-is-the-sky-blue` (informative, white) and
 
 Every scene has `type`, `seconds`, and optionally `narration`, `beat` (a name the stage
 animates on), `cues` (beats that fire on a spoken word, e.g. `{"fail": "started"}`),
-`layout` (`"top"` puts the text high so the stage shows below) and `stage` (`"full"` or
+`hold` (extra silent seconds after the line, so a visual can land), `layout` (`"top"` puts the text high so the stage shows below) and `stage` (`"full"` or
 `"dim"`, how strongly the stage shows behind this scene). Wrap words in
 `*asterisks*` to highlight them.
 

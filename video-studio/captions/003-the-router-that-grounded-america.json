@@ -505,320 +505,326 @@
   },
   {
     "text": "stopped.",
-    "start": 34.37,
-    "end": 34.64,
+    "start": 34.34,
+    "end": 34.6,
     "id": "w84"
   },
   {
     "text": "Was",
-    "start": 34.87,
-    "end": 34.88,
+    "start": 34.83,
+    "end": 34.85,
     "id": "w85"
   },
   {
     "text": "it",
-    "start": 34.88,
-    "end": 35.04,
+    "start": 34.85,
+    "end": 35.01,
     "id": "w86"
   },
   {
     "text": "a",
-    "start": 35.04,
-    "end": 35.12,
+    "start": 35.01,
+    "end": 35.09,
     "id": "w87"
   },
   {
     "text": "cyber",
-    "start": 35.12,
-    "end": 35.45,
+    "start": 35.09,
+    "end": 35.41,
     "id": "w88"
   },
   {
     "text": "attack?",
-    "start": 35.59,
-    "end": 36.23,
+    "start": 35.55,
+    "end": 36.19,
     "id": "w89"
   },
   {
     "text": "Officials",
     "start": 36.51,
-    "end": 37.29,
+    "end": 37.82,
     "id": "w90"
   },
   {
     "text": "say",
-    "start": 37.29,
-    "end": 37.62,
+    "start": 37.82,
+    "end": 38.33,
     "id": "w91"
   },
   {
     "text": "no.",
-    "start": 37.62,
-    "end": 38.2,
+    "start": 38.33,
+    "end": 39.2,
     "id": "w92"
   },
   {
     "text": "At",
-    "start": 38.2,
-    "end": 38.43,
+    "start": 39.2,
+    "end": 39.43,
     "id": "w93"
   },
   {
     "text": "one",
-    "start": 38.43,
-    "end": 38.55,
+    "start": 39.43,
+    "end": 39.55,
     "id": "w94"
   },
   {
     "text": "site,",
-    "start": 38.55,
-    "end": 38.97,
+    "start": 39.55,
+    "end": 39.96,
     "id": "w95"
   },
   {
     "text": "contractor",
-    "start": 38.97,
-    "end": 39.62,
+    "start": 39.96,
+    "end": 40.62,
     "id": "w96"
   },
   {
     "text": "L3",
-    "start": 39.66,
-    "end": 39.8,
+    "start": 40.63,
+    "end": 40.8,
     "id": "w97"
   },
   {
     "text": "Harris",
-    "start": 40.08,
-    "end": 40.37,
+    "start": 41.08,
+    "end": 41.33,
     "id": "w98"
   },
   {
     "text": "was",
-    "start": 40.37,
-    "end": 40.58,
+    "start": 41.33,
+    "end": 41.54,
     "id": "w99"
   },
   {
     "text": "switching",
-    "start": 40.58,
-    "end": 41.2,
+    "start": 41.54,
+    "end": 42.12,
     "id": "w100"
   },
   {
     "text": "copper",
-    "start": 41.21,
-    "end": 41.63,
+    "start": 42.17,
+    "end": 42.57,
     "id": "w101"
   },
   {
     "text": "lines",
-    "start": 41.63,
-    "end": 41.98,
+    "start": 42.57,
+    "end": 42.92,
     "id": "w102"
   },
   {
     "text": "to",
-    "start": 41.98,
-    "end": 42.11,
+    "start": 42.92,
+    "end": 43.06,
     "id": "w103"
   },
   {
     "text": "fiber.",
-    "start": 42.11,
-    "end": 42.72,
+    "start": 43.06,
+    "end": 43.68,
     "id": "w104"
   },
   {
     "text": "One",
-    "start": 42.72,
-    "end": 42.95,
+    "start": 43.68,
+    "end": 43.91,
     "id": "w105"
   },
   {
     "text": "router",
-    "start": 42.95,
-    "end": 43.3,
+    "start": 43.91,
+    "end": 44.26,
     "id": "w106"
   },
   {
     "text": "began",
-    "start": 43.3,
-    "end": 43.53,
+    "start": 44.26,
+    "end": 44.49,
     "id": "w107"
   },
   {
     "text": "flooding",
-    "start": 43.67,
-    "end": 44.15,
+    "start": 44.63,
+    "end": 45.11,
     "id": "w108"
   },
   {
     "text": "the",
-    "start": 44.15,
-    "end": 44.31,
+    "start": 45.11,
+    "end": 45.27,
     "id": "w109"
   },
   {
     "text": "network.",
-    "start": 44.6,
-    "end": 45.04,
+    "start": 45.56,
+    "end": 46,
     "id": "w110"
   },
   {
     "text": "Over",
-    "start": 45.27,
-    "end": 45.32,
+    "start": 46.23,
+    "end": 46.32,
     "id": "w111"
   },
   {
-    "text": "1,000",
-    "start": 45.32,
-    "end": 46.3,
+    "text": "a",
+    "start": 46.32,
+    "end": 46.4,
     "id": "w112"
   },
   {
-    "text": "requests",
-    "start": 46.3,
-    "end": 46.63,
+    "text": "thousand",
+    "start": 46.4,
+    "end": 47.03,
     "id": "w113"
   },
   {
-    "text": "every",
-    "start": 46.92,
-    "end": 47.21,
+    "text": "requests",
+    "start": 47.03,
+    "end": 47.57,
     "id": "w114"
   },
   {
-    "text": "five",
-    "start": 47.21,
-    "end": 47.49,
+    "text": "every",
+    "start": 47.88,
+    "end": 48.06,
     "id": "w115"
   },
   {
-    "text": "seconds.",
-    "start": 47.49,
-    "end": 48.2,
+    "text": "five",
+    "start": 48.06,
+    "end": 48.38,
     "id": "w116"
   },
   {
-    "text": "Investigators",
-    "start": 48.43,
-    "end": 49.02,
+    "text": "seconds.",
+    "start": 48.38,
+    "end": 49.2,
     "id": "w117"
   },
   {
-    "text": "still",
-    "start": 49.15,
-    "end": 49.43,
+    "text": "Investigators",
+    "start": 49.43,
+    "end": 50.02,
     "id": "w118"
   },
   {
-    "text": "don't",
-    "start": 49.43,
-    "end": 49.76,
+    "text": "still",
+    "start": 50.15,
+    "end": 50.43,
     "id": "w119"
   },
   {
-    "text": "know",
-    "start": 49.76,
-    "end": 49.79,
+    "text": "don't",
+    "start": 50.43,
+    "end": 50.76,
     "id": "w120"
   },
   {
-    "text": "if",
-    "start": 50.08,
-    "end": 50.16,
+    "text": "know",
+    "start": 50.76,
+    "end": 50.79,
     "id": "w121"
   },
   {
-    "text": "it",
-    "start": 50.16,
-    "end": 50.29,
+    "text": "if",
+    "start": 51.08,
+    "end": 51.16,
     "id": "w122"
   },
   {
-    "text": "was",
-    "start": 50.29,
-    "end": 50.49,
+    "text": "it",
+    "start": 51.16,
+    "end": 51.29,
     "id": "w123"
   },
   {
-    "text": "faulty",
-    "start": 50.49,
-    "end": 50.9,
+    "text": "was",
+    "start": 51.29,
+    "end": 51.49,
     "id": "w124"
   },
   {
-    "text": "or",
-    "start": 50.9,
-    "end": 51.03,
+    "text": "faulty",
+    "start": 51.49,
+    "end": 51.9,
     "id": "w125"
   },
   {
-    "text": "installed",
-    "start": 51.03,
-    "end": 51.65,
+    "text": "or",
+    "start": 51.9,
+    "end": 52.03,
     "id": "w126"
   },
   {
-    "text": "wrong.",
-    "start": 51.65,
-    "end": 52.23,
+    "text": "installed",
+    "start": 52.03,
+    "end": 52.65,
     "id": "w127"
   },
   {
-    "text": "One",
-    "start": 52.51,
-    "end": 52.58,
+    "text": "wrong.",
+    "start": 52.65,
+    "end": 53.23,
     "id": "w128"
   },
   {
-    "text": "box,",
-    "start": 52.58,
-    "end": 53.08,
+    "text": "One",
+    "start": 53.51,
+    "end": 53.59,
     "id": "w129"
   },
   {
-    "text": "a",
-    "start": 53.08,
-    "end": 53.09,
+    "text": "box,",
+    "start": 53.59,
+    "end": 54.09,
     "id": "w130"
   },
   {
-    "text": "whole",
-    "start": 53.23,
-    "end": 53.69,
+    "text": "a",
+    "start": 54.09,
+    "end": 54.23,
     "id": "w131"
   },
   {
-    "text": "country",
-    "start": 53.69,
-    "end": 54.4,
+    "text": "whole",
+    "start": 54.23,
+    "end": 54.71,
     "id": "w132"
   },
   {
-    "text": "grounded.",
-    "start": 54.4,
-    "end": 55.55,
+    "text": "country",
+    "start": 54.71,
+    "end": 55.43,
     "id": "w133"
   },
   {
-    "text": "Follow",
-    "start": 55.79,
-    "end": 56.19,
+    "text": "grounded.",
+    "start": 55.43,
+    "end": 56.6,
     "id": "w134"
   },
   {
-    "text": "for",
-    "start": 56.19,
-    "end": 56.37,
+    "text": "Follow",
+    "start": 56.83,
+    "end": 57.42,
     "id": "w135"
   },
   {
-    "text": "more.",
-    "start": 56.51,
-    "end": 57.15,
+    "text": "for",
+    "start": 57.55,
+    "end": 57.92,
     "id": "w136"
+  },
+  {
+    "text": "more.",
+    "start": 57.92,
+    "end": 59.07,
+    "id": "w137"
   }
 ]

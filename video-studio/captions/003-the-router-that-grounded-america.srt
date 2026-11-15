@@ -59,45 +59,49 @@ losing those lines.
 A controller who can't talk can't keep
 
 16
-00:00:31,810 --> 00:00:34,640
+00:00:31,810 --> 00:00:34,600
 planes apart, so departures stopped.
 
 17
-00:00:34,870 --> 00:00:36,230
+00:00:34,830 --> 00:00:36,190
 Was it a cyber attack?
 
 18
-00:00:36,510 --> 00:00:38,200
+00:00:36,510 --> 00:00:39,200
 Officials say no.
 
 19
-00:00:38,200 --> 00:00:40,580
+00:00:39,200 --> 00:00:41,540
 At one site, contractor L3 Harris was
 
 20
-00:00:40,580 --> 00:00:42,720
+00:00:41,540 --> 00:00:43,680
 switching copper lines to fiber.
 
 21
-00:00:42,720 --> 00:00:45,040
+00:00:43,680 --> 00:00:46,000
 One router began flooding the network.
 
 22
-00:00:45,270 --> 00:00:48,200
-Over 1,000 requests every five seconds.
+00:00:46,230 --> 00:00:48,380
+Over a thousand requests every five
 
 23
-00:00:48,430 --> 00:00:50,490
-Investigators still don't know if it was
+00:00:48,380 --> 00:00:49,200
+seconds.
 
 24
-00:00:50,490 --> 00:00:52,230
-faulty or installed wrong.
+00:00:49,430 --> 00:00:51,490
+Investigators still don't know if it was
 
 25
-00:00:52,510 --> 00:00:55,550
-One box, a whole country grounded.
+00:00:51,490 --> 00:00:53,230
+faulty or installed wrong.
 
 26
-00:00:55,790 --> 00:00:57,150
+00:00:53,510 --> 00:00:56,600
+One box, a whole country grounded.
+
+27
+00:00:56,830 --> 00:00:59,070
 Follow for more.

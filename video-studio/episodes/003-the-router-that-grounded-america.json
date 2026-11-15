@@ -109,11 +109,18 @@
     },
     {
       "type": "statement",
-      "seconds": 3.6,
+      "seconds": 4.6,
       "tag": "Cyberattack?",
       "tagTone": "alert",
       "text": "Officials say *no*",
-      "narration": "Was it a cyberattack? Officials say no."
+      "narration": "Was it a cyberattack? Officials say no.",
+      "beat": "cyber",
+      "cues": {
+        "safe": "no"
+      },
+      "layout": "top",
+      "stage": "full",
+      "hold": 1
     },
     {
       "type": "show",
@@ -135,13 +142,26 @@
       "seconds": 4.1,
       "tag": "Still under investigation",
       "text": "Faulty? Or *installed wrong*?",
-      "narration": "Investigators still don't know if it was faulty, or installed wrong."
+      "narration": "Investigators still don't know if it was faulty, or installed wrong.",
+      "beat": "faulty",
+      "cues": {
+        "isfaulty": "faulty",
+        "wrong": "installed"
+      },
+      "layout": "top",
+      "stage": "full"
     },
     {
       "type": "statement",
       "seconds": 3.3,
       "text": "One box. *A whole country grounded.*",
-      "narration": "One box. A whole country, grounded."
+      "narration": "One box. A whole country, grounded.",
+      "beat": "finale",
+      "cues": {
+        "spread": "whole"
+      },
+      "layout": "top",
+      "stage": "full"
     },
     {
       "type": "outro",

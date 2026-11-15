@@ -349,6 +349,195 @@ const Tarmac: React.FC<{ t: number; enter: (d: number, damping?: number) => numb
   );
 };
 
+
+// ---------------------------------------------------------------- late scenes
+
+const MONO = '"DejaVu Sans Mono", "Courier New", monospace';
+const TERM_LINES = [
+  "> scan atc-network --all-centers", "connecting 10.42.7.1:22 ...", "> sudo inject payload.bin",
+  "ACCESS DENIED", "> brute-force --user admin", "trying key 0x7F3A9C2E ...", "> trace route ZAU-CENTER",
+  "packet loss: 0%", "> decrypt radio_freq.cfg", "firewall check ........ OK", "> ls /secure/flightplans",
+  "permission denied", "> nmap -sS 172.16.0.0/12", "open ports: 22 443 8443", "> exploit --cve 2026-1113",
+  "handshake failed", "> whoami", "unknown", "> cat /var/log/intrusion", "0 threats in last 24h",
+  "> ping atc-zdc.faa.net", "64 bytes: time=12ms", "> send --flood 10.0.0.0/8", "blocked by policy",
+];
+
+/** Hacker-movie terminal: green commands scroll until officials say "no". */
+const Terminal: React.FC<{ t: number; safeT: number | null; enter: number }> = ({ t, safeT, enter }) => {
+  const theme = useTheme();
+  const frozenT = safeT === null ? t : t - safeT;
+  const typed = Math.floor(frozenT / 0.16);
+  const shown = TERM_LINES.slice(0, Math.min(typed + 1, TERM_LINES.length * 3)).map((_, i) => TERM_LINES[i % TERM_LINES.length]);
+  const visible = shown.slice(-10);
+  const calm = safeT !== null && t >= safeT;
+  const check = calm ? clamp01((t - safeT!) / 0.35) : 0;
+  const pop = calm ? Math.min(1.15, 1.15 * ease((t - safeT!) / 0.25)) - Math.max(0, (t - safeT! - 0.25) * 0.6) : 0;
+  return (
+    <g transform={`translate(500 560) scale(${enter}) translate(-500 -560)`}>
+      <rect x={110} y={340} width={780} height={470} rx={26} fill={theme.shadow} transform="translate(0 12)" />
+      <rect x={110} y={340} width={780} height={470} rx={26} fill="#0B100D" />
+      <rect x={110} y={340} width={780} height={52} rx={26} fill="#1E2420" />
+      <rect x={110} y={366} width={780} height={26} fill="#1E2420" />
+      {["#FF5F57", "#FEBC2E", "#28C840"].map((c, i) => (
+        <circle key={c} cx={150 + i * 32} cy={366} r={10} fill={c} />
+      ))}
+      <text x={500} y={374} textAnchor="middle" fontFamily={MONO} fontSize={20} fill="#8A9A8E">root@unknown: ~/atc-network</text>
+      {visible.map((line, i) => {
+        const red = /DENIED|denied|failed|blocked/.test(line);
+        return (
+          <text key={i} x={140} y={432 + i * 36} fontFamily={MONO} fontSize={24} fill={calm ? "#3C5A45" : red ? "#FF5A4F" : "#39FF6A"}>
+            {line}
+          </text>
+        );
+      })}
+      {!calm && Math.sin(t * 12) > 0 ? <rect x={140 + (visible[visible.length - 1]?.length ?? 0) * 14.5} y={412 + (visible.length - 1) * 36} width={14} height={26} fill="#39FF6A" /> : null}
+      {calm ? (
+        <g>
+          <rect x={110} y={340} width={780} height={470} rx={26} fill="#000000" opacity={0.45 * check} />
+          <g transform={`translate(500 520) scale(${Math.max(0, pop)})`}>
+            <path d="M 0 -88 L 74 -60 L 74 6 Q 74 66 0 96 Q -74 66 -74 6 L -74 -60 Z" fill="#22B573" />
+            <path d="M -32 4 L -8 28 L 36 -22" fill="none" stroke="#FFFFFF" strokeWidth={16} strokeLinecap="round" strokeLinejoin="round" />
+          </g>
+          <g transform={`translate(500 690) rotate(-5) scale(${clamp01(((t - safeT!) - 0.3) / 0.25)})`}>
+            <rect x={-250} y={-36} width={500} height={72} rx={18} fill="#FFFFFF" stroke="#22B573" strokeWidth={6} />
+            <text x={0} y={13} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={34} fill="#22B573">NO SIGN OF AN ATTACK</text>
+          </g>
+        </g>
+      ) : null}
+    </g>
+  );
+};
+
+/** Controller's screen: radar, then flicker, then "no connection". */
+const Monitor: React.FC<{ x: number; y: number; t: number; offAt: number; scale?: number }> = ({ x, y, t, offAt, scale = 1 }) => {
+  const theme = useTheme();
+  const since = t - offAt;
+  const flicker = since > 0 && since < 0.35;
+  const off = since >= 0.35;
+  const sweep = t * 3;
+  return (
+    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+      <rect x={-20} y={96} width={40} height={36} fill={theme.slateDark} />
+      <rect x={-70} y={128} width={140} height={14} rx={7} fill={theme.slateDark} />
+      <rect x={-140} y={-100} width={280} height={200} rx={20} fill={theme.ink} />
+      <rect x={-124} y={-84} width={248} height={168} rx={10} fill={flicker ? (Math.sin(since * 80) > 0 ? "#FFFFFF" : "#000") : off ? "#05070A" : "#06281A"} />
+      {!off && !flicker ? (
+        <g>
+          {[24, 48, 72].map((r) => (
+            <circle key={r} cx={0} cy={0} r={r} fill="none" stroke="#2DFF8C" strokeWidth={2} opacity={0.45} />
+          ))}
+          <line x1={0} y1={0} x2={Math.cos(sweep) * 72} y2={Math.sin(sweep) * 72} stroke="#2DFF8C" strokeWidth={4} />
+          {[[30, -20], [-40, 30], [50, 40], [-20, -50]].map(([bx, by], i) => (
+            <circle key={i} cx={bx} cy={by} r={5} fill="#2DFF8C" opacity={0.5 + 0.5 * Math.sin(t * 4 + i)} />
+          ))}
+        </g>
+      ) : null}
+      {off ? (
+        <g opacity={clamp01((since - 0.35) / 0.2)}>
+          <path d="M -46 -22 Q 0 -60 46 -22" fill="none" stroke="#6B6D7C" strokeWidth={9} strokeLinecap="round" />
+          <path d="M -28 -2 Q 0 -26 28 -2" fill="none" stroke="#6B6D7C" strokeWidth={9} strokeLinecap="round" />
+          <circle cx={0} cy={18} r={8} fill="#6B6D7C" />
+          <line x1={-50} y1={-52} x2={50} y2={34} stroke={theme.alert} strokeWidth={10} strokeLinecap="round" />
+          <text x={0} y={66} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={22} fill={theme.alert} opacity={Math.sin(t * 8) > -0.4 ? 1 : 0.3}>
+            NO CONNECTION
+          </text>
+        </g>
+      ) : null}
+    </g>
+  );
+};
+
+/** Two suspects: a broken router and a badly wired one, with a magnifying glass between them. */
+const Suspects: React.FC<{ t: number; left: number; right: number }> = ({ t, left, right }) => {
+  const theme = useTheme();
+  const gx = 500 + Math.sin(t * 1.6) * 250;
+  const wrench = Math.sin(t * 6) * 25;
+  return (
+    <g>
+      {/* faulty */}
+      <g transform={`translate(255 700) scale(${0.78 * left})`}>
+        <RouterBox color="#F5B700" mood="panic" t={t} lights={theme.alert} />
+        <path d="M -40 -66 L -10 -20 L -34 6 L 4 50 L -12 74" fill="none" stroke={theme.ink} strokeWidth={8} strokeLinejoin="round" />
+        {[0, 1, 2].map((k) => {
+          const q = (t * 0.9 + k / 3) % 1;
+          return <circle key={k} cx={-60 + k * 30 + Math.sin(q * 6) * 10} cy={-150 - q * 140} r={18 + q * 26} fill={theme.slateLight} opacity={0.75 * (1 - q)} />;
+        })}
+        <polygon points="120,-150 90,-80 120,-84 100,-20 160,-110 128,-104 150,-150" fill="#F5B700" stroke={theme.ink} strokeWidth={5} opacity={Math.sin(t * 9) > 0 ? 1 : 0.3} />
+      </g>
+      <Tag x={250} y={480} text="FAULTY?" tone="alert" size={48} display rotate={-6} scale={left} />
+
+      {/* installed wrong */}
+      <g transform={`translate(735 700) scale(${0.78 * right})`}>
+        <RouterBox color="#8B5CF6" mood="curious" t={t + 1.3} lights="#F5B700" />
+        <path d="M 260 220 Q 200 120 150 40" fill="none" stroke={theme.ink} strokeWidth={14} strokeLinecap="round" />
+        <rect x={130} y={20} width={44} height={30} rx={6} fill={theme.slateDark} transform="rotate(-30 150 35)" />
+        {Array.from({ length: 5 }, (_, k) => {
+          const a = (k / 5) * Math.PI * 2 + t * 8;
+          const r = 30 + 14 * Math.sin(t * 20 + k);
+          return <line key={k} x1={150} y1={30} x2={150 + Math.cos(a) * r} y2={30 + Math.sin(a) * r} stroke="#F5B700" strokeWidth={6} strokeLinecap="round" />;
+        })}
+        <g transform={`translate(-210 -140) rotate(${wrench})`}>
+          <rect x={-12} y={-10} width={24} height={150} rx={12} fill={theme.slate} />
+          <path d="M -34 -40 A 34 34 0 1 1 34 -40 L 14 -40 L 14 -10 L -14 -10 L -14 -40 Z" fill={theme.slate} />
+        </g>
+      </g>
+      <Tag x={740} y={480} text="INSTALLED WRONG?" tone="accent" size={40} display rotate={5} scale={right} />
+
+      {/* the investigation */}
+      <g transform={`translate(${gx} ${640 + Math.cos(t * 3.2) * 20}) rotate(-25) scale(1.15)`} opacity={Math.max(left, right)}>
+        <rect x={-14} y={70} width={28} height={120} rx={14} fill={theme.ink} />
+        <circle cx={0} cy={0} r={78} fill="#BFE6FF" opacity={0.45} />
+        <circle cx={0} cy={0} r={78} fill="none" stroke={theme.ink} strokeWidth={16} />
+        <path d="M -40 -30 Q -30 -50 -6 -56" fill="none" stroke="#FFFFFF" strokeWidth={9} strokeLinecap="round" />
+      </g>
+    </g>
+  );
+};
+
+/** Finale: one box sends a shock wave across the map and every airport goes red. */
+const Finale: React.FC<{ t: number; spreadT: number | null }> = ({ t, spreadT }) => {
+  const theme = useTheme();
+  const ox = 500;
+  const oy = 600;
+  const s = 0.82;
+  const at = (x: number, y: number) => [ox + (x - 495) * s, oy + (y - 440) * s];
+  const [bx, by] = at(560, 420);
+  const radius = spreadT === null ? 0 : Math.max(0, t - spreadT) * 520;
+  return (
+    <g>
+      <polygon points={US.map(([x, y]) => at(x, y).join(",")).join(" ")} fill={theme.card} />
+      <polygon points={US.map(([x, y]) => at(x, y).join(",")).join(" ")} fill="none" stroke={theme.slateLight} strokeWidth={5} strokeLinejoin="round" />
+      {radius > 0 && radius < 900
+        ? [0, 1, 2].map((k) => {
+            const r = radius - k * 70;
+            return r > 0 ? <circle key={k} cx={bx} cy={by} r={r} fill="none" stroke={theme.alert} strokeWidth={10 - k * 3} opacity={(1 - r / 900) * 0.8} /> : null;
+          })
+        : null}
+      {AIRPORTS.map(([name, x, y], i) => {
+        const [px, py] = at(x, y);
+        const d = Math.hypot(px - bx, py - by);
+        const hitAt = spreadT === null ? Infinity : spreadT + d / 520;
+        const red = t >= hitAt;
+        const bump = red ? 1 + 0.8 * Math.max(0, 1 - (t - hitAt) / 0.3) : 1;
+        return (
+          <g key={name} transform={`translate(${px} ${py}) scale(${bump})`}>
+            <circle r={16} fill={red ? theme.alert : theme.accent} opacity={0.2} />
+            <circle r={9} fill={red ? theme.alert : theme.accent} />
+            {red ? (
+              <g transform="translate(0 -26) scale(0.55)">
+                <MapPlane x={0} y={0} angle={0} color={theme.slate} />
+              </g>
+            ) : null}
+          </g>
+        );
+      })}
+      <g transform={`translate(${bx} ${by - 8}) scale(${0.3 + 0.03 * Math.sin(t * 8)})`}>
+        <RouterBox color="#F5B700" mood={spreadT !== null && t > spreadT ? "panic" : "curious"} t={t} lights={theme.alert} />
+      </g>
+    </g>
+  );
+};
+
 // ---------------------------------------------------------------- stage
 
 export const GroundStopStage: React.FC = () => {
@@ -369,13 +558,23 @@ export const GroundStopStage: React.FC = () => {
   const notalk = useBeat("notalk");
   const router = useBeat("router");
   const flood = useBeat("flood");
+  const cyber = useBeat("cyber");
+  const safe = useBeat("safe");
+  const faulty = useBeat("faulty");
+  const isFaulty = useBeat("isfaulty");
+  const wrong = useBeat("wrong");
+  const finale = useBeat("finale");
+  const spread = useBeat("spread");
 
   const cockpitOn = 1 - grounded.ramp(0, 0.35);
   const tarmacOn = grounded.ramp(0, 0.35) * (1 - box.ramp(0, 0.35));
   const timelineOn = grounded.ramp(0, 0.3) * (1 - box.ramp(0, 0.3));
   const boxOn = box.ramp(0, 0.2) * (1 - flights.ramp(0, 0.3));
-  const mapOn = flights.ramp(0, 0.3) * (1 - router.ramp(0, 0.5));
-  const roomOn = router.ramp(0.3, 0.8);
+  const mapOn = flights.ramp(0, 0.3) * (1 - cyber.ramp(0, 0.3));
+  const terminalOn = cyber.ramp(0, 0.2) * (1 - router.ramp(0, 0.3));
+  const roomOn = router.ramp(0.3, 0.8) * (1 - faulty.ramp(0, 0.3));
+  const suspectsOn = faulty.ramp(0, 0.3) * (1 - finale.ramp(0, 0.3));
+  const finaleOn = finale.ramp(0, 0.3);
 
   // Map placement: large while it is the subject, smaller and lower once text sits on top.
   const move = lost.enter(0, 16);
@@ -595,6 +794,27 @@ export const GroundStopStage: React.FC = () => {
         </g>
       ) : null}
 
+      {/* ---------------- CYBERATTACK? ---------------- */}
+      {terminalOn > 0.01 ? (
+        <g opacity={terminalOn}>
+          <Terminal t={cyber.t} safeT={safe.on ? (safe.start! - cyber.start!) / fps : null} enter={cyber.enter(0, 11)} />
+        </g>
+      ) : null}
+
+      {/* ---------------- FAULTY OR INSTALLED WRONG ---------------- */}
+      {suspectsOn > 0.01 ? (
+        <g opacity={suspectsOn}>
+          <Suspects t={faulty.t} left={isFaulty.enter(0, 9)} right={wrong.enter(0, 9)} />
+        </g>
+      ) : null}
+
+      {/* ---------------- ONE BOX, WHOLE COUNTRY ---------------- */}
+      {finaleOn > 0.01 ? (
+        <g opacity={finaleOn} transform={`translate(500 600) scale(${finale.enter(0, 11)}) translate(-500 -600)`}>
+          <Finale t={finale.t} spreadT={spread.on ? (spread.start! - finale.start!) / fps : spread.start !== undefined ? 999 : null} />
+        </g>
+      ) : null}
+
       {/* ---------------- REMOTE SITE ---------------- */}
       {roomOn > 0.01 ? <RemoteSite t={t} router={router} flood={flood} opacity={roomOn} /> : null}
     </g>
@@ -645,7 +865,13 @@ const RemoteSite: React.FC<{
         <Person x={200} ground={690} h={150} color={theme.ink} hat />
         <Tag x={250} y={732} text="CONTRACTOR: L3HARRIS" size={30} scale={router.enter(1.2, 10)} />
       </g>
-      <Tag x={430} y={255} text="1,000+ REQUESTS EVERY 5 SEC" tone="alert" size={34} scale={flood.enter(0.5, 8)} />
+      <Tag x={600} y={50} text="1,000+ REQUESTS EVERY 5 SEC" tone="alert" size={34} scale={flood.enter(0.5, 8)} />
+      {flood.on ? (
+        <g opacity={flood.ramp(0.2, 0.5)}>
+          <Monitor x={150} y={190} t={flood.t} offAt={1.6} scale={0.85 * flood.enter(0.2, 10)} />
+          <Monitor x={160} y={620} t={flood.t} offAt={2.6} scale={0.85 * flood.enter(0.5, 10)} />
+        </g>
+      ) : null}
     </g>
   );
 };

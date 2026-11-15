@@ -111,7 +111,8 @@ for (const [i, scene] of episode.scenes.entries()) {
     const clip = await speakLine(text);
     sampleRate = clip.sampleRate;
     const spoken = clip.samples.length / sampleRate;
-    scene.seconds = Math.max(MIN_SCENE, Math.ceil((LEAD + spoken + TAIL) * 10) / 10);
+    // "hold" adds silent seconds after the line, so a visual can land before the next scene.
+    scene.seconds = Math.max(MIN_SCENE, Math.ceil((LEAD + spoken + TAIL + (scene.hold ?? 0)) * 10) / 10);
     clips.push({ at: start + LEAD, samples: clip.samples });
     console.log(`scene ${i + 1}: ${spoken.toFixed(1)}s spoken -> ${scene.seconds}s on screen`);
   } else {
