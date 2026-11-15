@@ -34,9 +34,10 @@ const toPhrases = (words: CaptionWord[]) => {
  * Words turn white as they are spoken; numbers and the episode's keywords are cyan throughout,
  * so the point still lands with the sound off.
  */
-export const Captions: React.FC<{ words: CaptionWord[]; keywords?: string[] }> = ({
+export const Captions: React.FC<{ words: CaptionWord[]; keywords?: string[]; variant?: "pill" | "top" }> = ({
   words,
   keywords = [],
+  variant = "pill",
 }) => {
   const keys = useMemo(() => new Set(keywords.map((k) => k.toLowerCase())), [keywords]);
   const frame = useCurrentFrame();
@@ -52,6 +53,51 @@ export const Captions: React.FC<{ words: CaptionWord[]; keywords?: string[] }> =
   });
   if (index === -1) return null;
   const size = (vertical ? 50 : 40) * u;
+  if (variant === "top") {
+    // Benchmark style: small white words near the top, key words in a filled yellow box.
+    const topSize = (vertical ? 46 : 38) * u;
+    const popTop = spring({ frame: frame - phrases[index][0].start * fps, fps, config: { damping: 12, mass: 0.5 } });
+    return (
+      <div style={{ position: "absolute", left: side, right: side, top: (vertical ? 300 : 60) * u, display: "flex", justifyContent: "center" }}>
+        <div
+          style={{
+            fontFamily: BODY,
+            fontSize: topSize,
+            fontWeight: 900,
+            lineHeight: 1.25,
+            textAlign: "center",
+            color: "#FFFFFF",
+            textShadow: `0 ${3 * u}px ${12 * u}px rgba(0,0,0,0.85)`,
+            transform: `scale(${0.9 + 0.1 * popTop})`,
+            maxWidth: 760 * u,
+          }}
+        >
+          {phrases[index].map((word, i) => {
+            const bare = word.text.toLowerCase().replace(/[^a-z0-9']/g, "");
+            const key = /\d/.test(word.text) || keys.has(bare) || keys.has(bare.replace(/'?s$/, ""));
+            const spoken = t >= word.start - 0.05;
+            return (
+              <span key={i} style={{ whiteSpace: "pre" }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    padding: key ? `0 ${8 * u}px` : 0,
+                    borderRadius: 8 * u,
+                    background: key && spoken ? theme.captionHighlight : "transparent",
+                    color: key && spoken ? "#111111" : spoken ? "#FFFFFF" : "rgba(255,255,255,0.55)",
+                    textShadow: key && spoken ? "none" : undefined,
+                  }}
+                >
+                  {word.text}
+                </span>
+                {i < phrases[index].length - 1 ? " " : ""}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
   // Each new phrase pops in; the word being spoken lifts slightly.
   const pop = spring({ frame: frame - phrases[index][0].start * fps, fps, config: { damping: 11, mass: 0.5 } });
 

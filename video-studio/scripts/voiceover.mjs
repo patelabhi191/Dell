@@ -58,7 +58,8 @@ if (!providers[providerName]) {
 }
 // House voices (see PLAYBOOK.md): am_liam for info videos, am_puck (slower) for stories.
 const voice = flag("voice", episode.voice ?? (episode.format === "story" ? "am_puck" : "am_liam"));
-const defaultSpeed = episode.voiceSpeed ?? (episode.format === "story" ? 0.88 : 1.0);
+// Info videos run at 1.2x to match the benchmark pace (about 180-195 words/min).
+const defaultSpeed = episode.voiceSpeed ?? (episode.format === "story" ? 0.88 : 1.2);
 const speed = Number(flag("speed", defaultSpeed));
 const tts = await providers[providerName]({ voice, speed });
 

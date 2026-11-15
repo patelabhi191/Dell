@@ -13,7 +13,7 @@ import { BeatsContext } from "./beats";
 import { Captions, type CaptionWord } from "./Captions";
 import { StillContext } from "./motion";
 import { Pill, Rich, SceneView } from "./scenes";
-import { stages } from "./stages";
+import { fullStages, stages } from "./stages";
 import { DISPLAY, STAGE, ThemeContext, themes, useLayout } from "./theme";
 import type { Episode } from "./types";
 
@@ -62,6 +62,17 @@ const SceneFade: React.FC<{
   return (
     <AbsoluteFill style={{ opacity: Math.min(fadeIn, fadeOut), transform }}>
       <StillContext.Provider value={first}>{children}</StillContext.Provider>
+    </AbsoluteFill>
+  );
+};
+
+/** A full-screen stage: it owns the whole frame (background, camera, graphics). */
+const FullCanvas: React.FC<{ name?: string }> = ({ name }) => {
+  const Stage = name ? fullStages[name] : undefined;
+  if (!Stage) throw new Error(`Unknown full-screen stage "${name}". Register it in src/stages/index.ts`);
+  return (
+    <AbsoluteFill>
+      <Stage />
     </AbsoluteFill>
   );
 };
@@ -212,16 +223,22 @@ export const EpisodeVideo: React.FC<{ episode: Episode; words?: CaptionWord[] }>
   return (
     <ThemeContext.Provider value={theme}>
       <BeatsContext.Provider value={beats}>
-        <Backdrop />
-        {episode.stage ? <StageLayer name={episode.stage} opacity={stageOpacity} zoom={zoom} /> : null}
-        {timeline.map(({ scene, start, frames }, i) => (
+        {episode.canvas === "full" ? (
+          <FullCanvas name={episode.stage} />
+        ) : (
+          <>
+            <Backdrop />
+            {episode.stage ? <StageLayer name={episode.stage} opacity={stageOpacity} zoom={zoom} /> : null}
+          </>
+        )}
+        {episode.canvas === "full" ? null : timeline.map(({ scene, start, frames }, i) => (
           <Sequence key={i} from={start} durationInFrames={frames}>
             <SceneFade frames={frames} index={i} first={i === 0} last={i === timeline.length - 1}>
               <SceneView scene={scene} handle={episode.handle} />
             </SceneFade>
           </Sequence>
         ))}
-        {words && episode.captions ? <Captions words={words} keywords={episode.keywords} /> : null}
+        {words && episode.captions ? <Captions words={words} keywords={episode.keywords} variant={episode.captionStyle} /> : null}
         {episode.voiceover ? <Audio src={staticFile(`audio/${episode.voiceover}`)} /> : null}
         {episode.music ? (
           <Audio src={staticFile(`audio/${episode.music}`)} volume={episode.musicVolume} loop />

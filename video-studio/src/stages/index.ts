@@ -1,6 +1,7 @@
 import type React from "react";
 import { EiffelStage } from "./eiffel";
 import { GroundStopStage } from "./groundstop";
+import { GroundStopCinema } from "./groundstop-cinema";
 import { SkyStage } from "./sky";
 
 /**
@@ -12,4 +13,12 @@ export const stages: Record<string, React.FC> = {
   sky: SkyStage,
   eiffel: EiffelStage,
   groundstop: GroundStopStage,
+};
+
+/**
+ * Full-screen stages (episode `"canvas": "full"`): they draw the whole frame themselves,
+ * including the background and any text, on a 1080x1920 canvas.
+ */
+export const fullStages: Record<string, React.FC> = {
+  "groundstop-cinema": GroundStopCinema,
 };

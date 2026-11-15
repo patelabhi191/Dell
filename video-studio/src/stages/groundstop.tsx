@@ -22,55 +22,55 @@ import { BODY, DISPLAY, useTheme } from "../theme";
 
 const SKY = "#BFE6FF";
 const GRASS = "#86D97B";
-const LIVERY = ["#2563FF", "#F5B700", "#F04E23", "#22B573", "#8B5CF6", "#FF7AB6"];
+export const LIVERY = ["#2563FF", "#F5B700", "#F04E23", "#22B573", "#8B5CF6", "#FF7AB6"];
 
-const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-const ease = (v: number) => 1 - Math.pow(1 - clamp01(v), 3);
+export const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+export const ease = (v: number) => 1 - Math.pow(1 - clamp01(v), 3);
 
 // ---------------------------------------------------------------- map data
-const US = [
+export const US = [
   [95, 215], [480, 225], [560, 235], [600, 255], [650, 250], [690, 285], [735, 300], [770, 280],
   [880, 215], [905, 235], [880, 290], [850, 330], [835, 380], [800, 440], [770, 500], [790, 560],
   [810, 640], [790, 650], [760, 590], [730, 560], [660, 565], [600, 575], [560, 600], [520, 670],
   [490, 640], [450, 590], [410, 585], [330, 560], [250, 545], [200, 535], [150, 470], [110, 400],
   [90, 320], [85, 260],
 ];
-const AIRPORTS: [string, number, number][] = [
+export const AIRPORTS: [string, number, number][] = [
   ["SEA", 125, 240], ["SFO", 125, 375], ["LAX", 175, 470], ["LAS", 205, 420], ["PHX", 255, 495],
   ["SLC", 270, 320], ["DEN", 360, 370], ["DFW", 470, 535], ["IAH", 515, 595], ["MSP", 520, 268],
   ["ORD", 615, 300], ["DTW", 685, 308], ["ATL", 715, 495], ["CLT", 768, 445], ["MIA", 790, 612],
   ["DCA", 812, 365], ["JFK", 852, 300], ["BOS", 876, 248],
 ];
-const LABELED = new Set(["SEA", "LAX", "DEN", "DFW", "ORD", "ATL", "JFK", "MIA"]);
-const FLIGHTS: [number, number][] = [
+export const LABELED = new Set(["SEA", "LAX", "DEN", "DFW", "ORD", "ATL", "JFK", "MIA"]);
+export const FLIGHTS: [number, number][] = [
   [16, 2], [0, 12], [10, 7], [17, 14], [1, 6], [3, 13], [9, 8], [15, 4], [11, 5], [12, 1],
   [6, 16], [7, 0], [2, 10], [14, 11], [5, 17], [8, 15],
 ];
 // The 22 en-route control centers (positions are illustrative).
-const CENTERS = [
+export const CENTERS = [
   [130, 260], [150, 420], [215, 500], [250, 330], [300, 250], [340, 430], [390, 530], [420, 330],
   [470, 440], [500, 270], [520, 560], [570, 370], [610, 480], [640, 300], [670, 400], [700, 520],
   [730, 340], [760, 430], [780, 580], [800, 320], [840, 280], [690, 460],
 ];
-const LINKS = [
+export const LINKS = [
   [0, 3], [3, 4], [1, 2], [2, 5], [3, 7], [5, 8], [7, 9], [8, 11], [6, 10], [9, 13], [11, 14],
   [10, 12], [12, 15], [13, 16], [14, 17], [16, 19], [19, 20], [15, 18], [17, 21], [5, 6], [7, 8],
   [1, 5], [4, 9], [16, 17], [12, 21],
 ];
 // 17 of the 22 fail, each at its own moment within 2 seconds of the cue.
 const ORDER = CENTERS.map((_, i) => i).sort((a, b) => random(`o${a}`) - random(`o${b}`));
-const FAIL_AT: (number | null)[] = CENTERS.map((_, i) => {
+export const FAIL_AT: (number | null)[] = CENTERS.map((_, i) => {
   const rank = ORDER.indexOf(i);
   return rank < 17 ? (rank / 16) * 1.8 + random(`f${i}`) * 0.2 : null;
 });
-const SKY_PLANES = Array.from({ length: 30 }, (_, i) => {
+export const SKY_PLANES = Array.from({ length: 30 }, (_, i) => {
   const a = Math.floor(random(`pa${i}`) * CENTERS.length);
   let b = Math.floor(random(`pb${i}`) * CENTERS.length);
   if (b === a) b = (a + 7) % CENTERS.length;
   return { a, b, speed: 0.06 + random(`ps${i}`) * 0.05, offset: random(`po${i}`), color: LIVERY[i % LIVERY.length] };
 });
 
-const curve = (from: number[], to: number[], bend: number) => {
+export const curve = (from: number[], to: number[], bend: number) => {
   const dx = to[0] - from[0];
   const dy = to[1] - from[1];
   const len = Math.hypot(dx, dy) || 1;
@@ -85,7 +85,7 @@ const curve = (from: number[], to: number[], bend: number) => {
 // ---------------------------------------------------------------- characters
 
 /** Top-down plane for the map. */
-const MapPlane: React.FC<{ x: number; y: number; angle: number; color: string; scale?: number; opacity?: number }> = ({
+export const MapPlane: React.FC<{ x: number; y: number; angle: number; color: string; scale?: number; opacity?: number }> = ({
   x,
   y,
   angle,
@@ -136,7 +136,7 @@ const SidePlane: React.FC<{ color: string; mood: "happy" | "sad"; blink?: boolea
 };
 
 /** The router, as a character. */
-const RouterBox: React.FC<{ color: string; mood: "curious" | "happy" | "panic"; t: number; lights?: string }> = ({
+export const RouterBox: React.FC<{ color: string; mood: "curious" | "happy" | "panic"; t: number; lights?: string }> = ({
   color,
   mood,
   t,
@@ -363,7 +363,7 @@ const TERM_LINES = [
 ];
 
 /** Hacker-movie terminal: green commands scroll until officials say "no". */
-const Terminal: React.FC<{ t: number; safeT: number | null; enter: number }> = ({ t, safeT, enter }) => {
+export const Terminal: React.FC<{ t: number; safeT: number | null; enter: number }> = ({ t, safeT, enter }) => {
   const theme = useTheme();
   const frozenT = safeT === null ? t : t - safeT;
   const typed = Math.floor(frozenT / 0.16);
@@ -409,7 +409,7 @@ const Terminal: React.FC<{ t: number; safeT: number | null; enter: number }> = (
 };
 
 /** Controller's screen: radar, then flicker, then "no connection". */
-const Monitor: React.FC<{ x: number; y: number; t: number; offAt: number; scale?: number }> = ({ x, y, t, offAt, scale = 1 }) => {
+export const Monitor: React.FC<{ x: number; y: number; t: number; offAt: number; scale?: number }> = ({ x, y, t, offAt, scale = 1 }) => {
   const theme = useTheme();
   const since = t - offAt;
   const flicker = since > 0 && since < 0.35;
@@ -603,7 +603,7 @@ const Cover: React.FC<{ t: number }> = ({ t }) => {
 
 
 /** "Older than the iPhone": a beige 2002 network box next to a phone from 2007. */
-const OlderThan: React.FC<{ t: number; enter: (d: number, damping?: number) => number }> = ({ t, enter }) => {
+export const OlderThan: React.FC<{ t: number; enter: (d: number, damping?: number) => number }> = ({ t, enter }) => {
   const theme = useTheme();
   const box = enter(0.05, 9);
   const phone = enter(0.55, 8);
@@ -649,7 +649,7 @@ const OlderThan: React.FC<{ t: number; enter: (d: number, damping?: number) => n
 };
 
 /** Big red ground-stop button, pressed once. */
-const StopButton: React.FC<{ t: number; s: number }> = ({ t, s }) => {
+export const StopButton: React.FC<{ t: number; s: number }> = ({ t, s }) => {
   const theme = useTheme();
   const press = t > 0.35 && t < 0.6 ? 16 : 0;
   const ring = t > 0.45 ? (t - 0.45) % 1 : 1;

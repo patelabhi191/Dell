@@ -92,7 +92,14 @@ export const episodeSchema = z.object({
   /** "info" = knowledge explainer, "story" = narrative. See PLAYBOOK.md. */
   format: z.enum(["info", "story"]).default("info"),
   /** "light" (white) or "night" (black). Defaults to light for info, night for story. */
-  theme: z.enum(["light", "night"]).optional(),
+  theme: z.enum(["light", "night", "cinema"]).optional(),
+  /**
+   * "stage" (default): text slides over a 1000x900 stage. "full": a full-screen stage from
+   * src/stages/index.ts `fullStages` draws everything; no slide text, captions only.
+   */
+  canvas: z.enum(["stage", "full"]).default("stage"),
+  /** "pill": dark caption pill under the stage. "top": small captions near the top. */
+  captionStyle: z.enum(["pill", "top"]).default("pill"),
   /** Name of a custom animated stage registered in src/stages/index.ts. */
   stage: z.string().optional(),
   /** Channel handle, shown on the outro. */

@@ -2,7 +2,7 @@ import { createContext, useContext } from "react";
 import { useVideoConfig } from "remotion";
 
 export type Theme = {
-  name: "light" | "night";
+  name: "light" | "night" | "cinema";
   bg: string;
   bgEdge: string;
   grid: string;
@@ -78,6 +78,30 @@ export const themes: Record<Theme["name"], Theme> = {
     card: "#17191F",
     shadow: "rgba(0,0,0,0.5)",
     palette: ["#4D8DFF", "#F5B700", "#FF5A36", "#8A8C9B", "#F4F3EE"],
+  },
+  /** Test look modelled on the benchmark reel: dark night map, glowing lights, yellow keys. */
+  cinema: {
+    name: "cinema",
+    bg: "#0A1022",
+    bgEdge: "#03050C",
+    grid: "rgba(140,170,255,0.08)",
+    ink: "#F4F3EE",
+    muted: "#8C93AD",
+    accent: "#FFC531",
+    accentDeep: "#B8860B",
+    onAccent: "#111111",
+    alert: "#FF4B3E",
+    slate: "#5D6685",
+    slateDark: "#3B4260",
+    slateLight: "#8A93B5",
+    pill: "#141A30",
+    pillText: "#FFFFFF",
+    pillMuted: "#8C93AD",
+    pillBorder: "rgba(255,255,255,0.22)",
+    captionHighlight: "#FFC531",
+    card: "#141A30",
+    shadow: "rgba(0,0,0,0.55)",
+    palette: ["#FFC531", "#4DA3FF", "#FF4B3E", "#3DFF9A", "#C77DFF"],
   },
 };
 
