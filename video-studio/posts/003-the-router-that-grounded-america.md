@@ -18,7 +18,7 @@ Investigators are still working out whether the router was faulty or installed w
 Did your flight get stuck? Tell us below 👇
 Follow @frontierin60 for the world explained in under 60 seconds.
 
-#FAA #GroundStop #AirTravel #Aviation #AirTrafficControl #FlightDelays #Explained #TechNews #NewsExplained #DidYouKnow #LearnOnInstagram #Infrastructure #Router #Frontierin60 #ReelsExplained
+#FAA #AirTravel #Aviation #GroundStop #Explained
 
 ## Sources
 

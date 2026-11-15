@@ -332,7 +332,8 @@ npm run render -- <id> short   # out/<id>-short.mp4 (drop "short" for 16:9 too)
    character inside the middle 4:5 area, which is what the profile grid shows.
 6. **Post caption**: write `posts/<id>.md` with the caption, hashtags and sources: first line
    repeats the hook, then 3-4 short factual lines, a question to comment on, the follow line,
-   and 10-15 hashtags (topic, format, channel).
+   and **exactly 5 hashtags** (Instagram's limit): 3 for the topic, 1 for the field, 1 for the
+   format (e.g. `#FAA #AirTravel #Aviation #GroundStop #Explained`).
 7. **Check** (section 7), **render**, upload. Upload the `.srt` from `captions/` to YouTube.
 
 Scene types: `show` (stage plays, optional headline and tag), `statement` (big line over the

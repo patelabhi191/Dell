@@ -18,7 +18,7 @@ Congress has approved $12.5 billion to fix air traffic control. Would you trust 
 
 Follow @frontierin60 for the world explained in under 60 seconds.
 
-#FAA #GroundStop #AirTravel #Aviation #AirTrafficControl #FlightDelays #Explained #TechNews #NewsExplained #DidYouKnow #LearnOnInstagram #Infrastructure #Frontierin60 #ReelsExplained #Travel
+#FAA #AirTravel #Aviation #GroundStop #Explained
 
 ## Sources
 

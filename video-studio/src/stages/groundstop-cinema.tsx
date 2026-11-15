@@ -10,6 +10,7 @@ import {
   LINKS,
   MapPlane,
   Monitor,
+  MysteryBox,
   OlderThan,
   SKY_PLANES,
   StopButton,
@@ -226,6 +227,7 @@ export const GroundStopCinema: React.FC = () => {
   const warned = useBeat("warned");
   const money = useBeat("money");
   const question = useBeat("question");
+  const still = useBeat("still").start !== undefined;
   const camBeats = CAMS.map(([name]) => useBeat(name)); // fixed list, same order every frame
 
   // Camera: glide from target to target as each beat starts.
@@ -502,7 +504,7 @@ export const GroundStopCinema: React.FC = () => {
         })()}
         {(() => {
           const o = between(frozen, centers);
-          if (o <= 0.01) return null;
+          if (o <= 0.01 || still) return null;
           const hrs = Math.min(4, Math.floor(frozen.t * 1.8) + 1);
           return (
             <g opacity={o}>
@@ -641,6 +643,27 @@ export const GroundStopCinema: React.FC = () => {
             </g>
             <Big x={540} y={760} text="?" color={GOLD} size={300} s={question.enter(1.2, 7) * (1 + Math.sin(t * 5) * 0.05)} font={BODY} />
             <Label x={540} y={1340} text="COMMENT: YES OR NO" size={30} color={GOLD} s={question.enter(1.8, 9)} />
+          </g>
+        ) : null}
+
+        {/* cover only: the mystery box glowing over the frozen map */}
+        {still ? (
+          <g>
+            <defs>
+              <linearGradient id="titleScrim" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#03050C" stopOpacity="0.85" />
+                <stop offset="1" stopColor="#03050C" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <rect x={0} y={0} width={1080} height={980} fill="url(#titleScrim)" />
+            <ellipse cx={540} cy={1330} rx={330} ry={60} fill="#000" opacity={0.55} />
+            <circle cx={540} cy={1170} r={300} fill={GOLD} opacity={0.12} filter="url(#oglow)" />
+            <g transform="translate(525 1190) scale(1.55)">
+              <MysteryBox t={1.5} />
+            </g>
+            {[[300, 1010, 0], [790, 980, 1], [700, 880, 2], [380, 900, 3]].map(([x, y, k]) => (
+              <Big key={k} x={x} y={y} text="?" color={[GOLD, "#FF4B3E", CYAN, GREEN][k]} size={k % 2 ? 120 : 96} font={BODY} />
+            ))}
           </g>
         ) : null}
 

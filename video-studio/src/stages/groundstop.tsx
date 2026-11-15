@@ -540,7 +540,7 @@ const Finale: React.FC<{ t: number; spreadT: number | null }> = ({ t, spreadT })
 
 
 /** A plain cardboard box with a face: the culprit, before we say what it is. */
-const MysteryBox: React.FC<{ t: number }> = ({ t }) => {
+export const MysteryBox: React.FC<{ t: number }> = ({ t }) => {
   const theme = useTheme();
   const blink = t % 3 < 0.12;
   return (

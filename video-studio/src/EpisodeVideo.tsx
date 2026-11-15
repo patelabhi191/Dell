@@ -148,6 +148,8 @@ export const Thumbnail: React.FC<{ episode: Episode; words?: CaptionWord[]; name
   const { u, width } = useLayout();
   if (!thumb) throw new Error(`${episode.id} has no thumbnail named "${name}"`);
   if (thumb.at === "cover") beats.cover = 0;
+  // Lets a stage tell it is drawing a cover (e.g. to hide labels or add a mystery prop).
+  beats.still = Math.round(beats[thumb.at] ?? 0) + Math.round(thumb.offset * FPS);
   if (beats[thumb.at] === undefined) throw new Error(`Thumbnail beat "${thumb.at}" is not in ${episode.id}`);
   const at = Math.round(beats[thumb.at] + thumb.offset * FPS);
   // Shift every beat back by `at`, so frame 0 of this still shows the stage at that moment.
@@ -157,8 +159,8 @@ export const Thumbnail: React.FC<{ episode: Episode; words?: CaptionWord[]; name
     <ThemeContext.Provider value={theme}>
       <BeatsContext.Provider value={shifted}>
         <>
-          <Backdrop />
-          {episode.stage ? (
+          {episode.canvas === "full" ? <FullCanvas name={episode.stage} /> : <Backdrop />}
+          {episode.stage && episode.canvas !== "full" ? (
             <StageLayer
               name={episode.stage}
               opacity={1}

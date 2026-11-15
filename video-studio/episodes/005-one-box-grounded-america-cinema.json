@@ -151,5 +151,14 @@
   ],
   "canvas": "full",
   "captionStyle": "top",
-  "voiceover": "005-one-box-grounded-america-cinema.mp3"
+  "voiceover": "005-one-box-grounded-america-cinema.mp3",
+  "thumbnails": [
+    {
+      "name": "mystery",
+      "title": "One box grounded *every US plane*",
+      "tag": "Nov 13, 2026",
+      "at": "frozen",
+      "offset": 1.3
+    }
+  ]
 }
