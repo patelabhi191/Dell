@@ -125,7 +125,22 @@ cartoon style with faces, blue accent. And we only state facts we can verify: th
 verified alternatives (the 2009 outage on the same network, the $12.5B Congress approved).
 
 **Versions to compare.** `003` (our first take, 141 words/min) vs `004` (rebuilt on these
-rules, 181 words/min). Post both at different times and log the results in section 9.
+rules, 181 words/min) vs `005` (same script, benchmark-style presentation, 187 words/min).
+Post them at different times and log the results in section 9.
+
+**Test look: "cinema" (episode 005).** Same content as 004, but presented the way the
+benchmark presents: `"theme": "cinema"`, `"canvas": "full"`, `"captionStyle": "top"`.
+- A full-screen stage owns the whole frame: a tilted night map of ~650 glowing city lights,
+  airports, glowing flight paths and planes with light trails, drawn in CSS 3D perspective.
+- A virtual camera glides between shots (tilt, rotate, zoom), including a close-up zoom onto
+  two planes for "5 miles apart". The map fills most of the frame; nothing sits on a blank page.
+- Every scene's facts are graphics inside the picture: dated plaques, a big red button, a
+  glowing clock, "22", a live failed-center counter, the network rack with fiber pulses,
+  screens dropping to NO CONNECTION, a report card, a hologram cube with a dollar counter.
+- Text is small: captions of 1-3 words at the top (white, key words in a yellow box), plus
+  small monospace labels. No headline slides.
+- Palette: navy/black, warm city lights, yellow keys, green radar, cyan network, red alerts.
+If 005 outperforms 004, this becomes the default look and the white style the alternative.
 
 ## Doom-scroll animation (CoComelon-inspired)
 
@@ -235,7 +250,7 @@ fine for monetised videos) and runs locally.
 | Setting | Informative | Story |
 | --- | --- | --- |
 | Voice | `am_liam` | `am_puck` |
-| Speed | 1.2, with tight pacing (`"pacing"` in the episode) | 0.88 |
+| Speed | 1.2 default (1.25 in the 005 test), with tight pacing (`"pacing"` in the episode) | 0.88 |
 | Resulting pace | about 180 words/min (benchmark: 197) | about 160 words/min |
 | Reference pace | 167-173 | 142 |
 
@@ -376,6 +391,7 @@ Sign-off:    (follow line, or a question to comment)
 | `002-the-man-who-sold-the-eiffel-tower` | story | night | 46 s | 159 words/min |
 | `003-the-router-that-grounded-america` | info (news explainer) | light | 58 s | 141 words/min |
 | `004-one-box-grounded-america-v2` | info, rebuilt on the benchmark rules | light | 53 s | 181 words/min |
+| `005-one-box-grounded-america-cinema` | info, benchmark-style presentation (test) | cinema | 52 s | 187 words/min |
 
 Published results:
 
