@@ -20,7 +20,12 @@ if (names.length === 0) {
 const browser = process.env.REMOTION_BROWSER
   ? ["--browser-executable", process.env.REMOTION_BROWSER, "--chrome-mode", "chrome-for-testing"]
   : [];
+// On Windows, npx is a .cmd file and must run through the shell.
+const shell = process.platform === "win32";
+// REMOTION_GL picks the graphics backend, e.g. "angle" to render on an NVIDIA GPU on Windows,
+// "angle-egl" or "vulkan" on Linux. Unset = Remotion's default (CPU-friendly).
+const gl = process.env.REMOTION_GL ? [`--gl=${process.env.REMOTION_GL}`] : [];
 for (const name of names) {
   const still = `${id}-thumb-${name}`;
-  execFileSync("npx", ["remotion", "still", still, `out/${still}.png`, ...browser], { stdio: "inherit" });
+  execFileSync("npx", ["remotion", "still", still, `out/${still}.png`, ...browser, ...gl], { stdio: "inherit", shell });
 }

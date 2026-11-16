@@ -24,7 +24,9 @@ const m = args.indexOf("--model");
 const model = m === -1 ? "base.en" : args[m + 1];
 const audio = resolve("public/audio", episode.voiceover);
 const env = { ...process.env, DO_NOT_TRACK: "1" };
-const hyperframes = (...a) => execFileSync("npx", ["hyperframes", ...a], { stdio: "inherit", env });
+// On Windows, npx is a .cmd file and must run through the shell.
+const hyperframes = (...a) =>
+  execFileSync("npx", ["hyperframes", ...a], { stdio: "inherit", env, shell: process.platform === "win32" });
 
 // HyperFrames writes transcript.json into its project dir; use a throwaway one.
 const work = mkdtempSync(join(tmpdir(), "captions-"));

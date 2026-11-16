@@ -20,6 +20,24 @@ npm run render -- 001-why-is-the-sky-blue              # both 9:16 and 16:9
 Requires Node 22+ and ffmpeg. The first render downloads a headless Chrome; to reuse one you
 already have, set `REMOTION_BROWSER=/path/to/chrome`.
 
+## Running on your own computer (GPU)
+
+The pipeline runs the same on a laptop as in the cloud. Install Node.js 22+, Git and ffmpeg
+(on your PATH), clone the repository, run `npm install` in `video-studio/`, and work from there
+(for example with the Claude desktop app, or `claude remote-control` in the `dell` folder to
+drive it from the Claude app).
+
+To render on an NVIDIA graphics card, set `REMOTION_GL` before rendering:
+
+```bash
+# Windows PowerShell
+$env:REMOTION_GL = "angle"
+npm run render -- <id> short
+```
+
+On Linux use `REMOTION_GL=angle-egl` (or `vulkan`). Leave it unset to use the default. The
+first render downloads Remotion's own Chrome; `REMOTION_BROWSER` points at a different one.
+
 ## Making a video
 
 ```bash
