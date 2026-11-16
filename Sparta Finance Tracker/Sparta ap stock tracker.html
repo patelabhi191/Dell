@@ -1105,6 +1105,25 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 .lg-t{background:var(--teal);box-shadow:0 0 8px rgba(94,234,212,.6)}
 .lg-f{background:var(--violet);box-shadow:0 0 8px rgba(167,139,250,.6)}
 
+/* ON A PHONE THE CHARTS WERE A PICTURE OF A CHART. Each is drawn in a fixed
+   1100- or 700-unit viewBox and scaled to the card, so at 390px the whole
+   thing came out 72-86px tall with axis labels 3 to 5px high: you could see
+   that there were bars and not what any of them said. Below 560px the chart is
+   drawn at a width its labels can be read at (about 8px) and the card scrolls
+   it sideways -- the same thing the twelve-month table under the Yearly chart
+   already does. The cost is known and was chosen: about five months show at
+   once rather than twelve, so each chart opens on the part that matters (see
+   chartScrollTo).
+   The scroller wraps the SVG ONLY. The tooltip stays its sibling, outside it:
+   overflow-x:auto would clip a tooltip that rises above the plot, and every
+   tooltip is placed from bounding rects, which are right wherever this has
+   scrolled to. */
+.chart-scroll{min-width:0}
+@media(max-width:560px){
+  .chart-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+  .chart-scroll>svg{width:760px!important;max-width:none}
+  .chart-scroll>#cChart{width:520px!important}
+}
 .ctip{position:absolute;transform:translate(-50%,-100%);pointer-events:none;opacity:0;
   transition:opacity .15s ease;background:rgba(9,20,32,.95);border:1px solid var(--stroke-top);
   border-radius:10px;padding:7px 11px;font-size:12px;line-height:1.45;white-space:nowrap;
@@ -3814,7 +3833,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
       </h3>
       <div id="cContribSummary" class="note" style="margin:-4px 0 10px"></div>
       <div style="position:relative">
-        <svg id="cChart" viewBox="0 0 700 190" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;max-height:210px"></svg>
+        <div class="chart-scroll"><svg id="cChart" viewBox="0 0 700 190" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;max-height:210px"></svg></div>
         <div id="cTip" class="ctip"></div>
         <div id="cChartEmpty" class="empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">Log a deposit to see your yearly contribution trend.</div>
       </div>
@@ -3927,7 +3946,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
     <div class="yf-cards">
       <section class="panel stat" style="min-width:0">
         <div style="position:relative">
-          <svg id="yfChart" viewBox="0 0 1100 260" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block"></svg>
+          <div class="chart-scroll"><svg id="yfChart" viewBox="0 0 1100 260" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block"></svg></div>
           <div id="yfTip" class="ctip"></div>
         </div>
         <div class="tscroll" style="margin-top:10px">
@@ -4258,7 +4277,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
         </span>
       </h3>
       <div style="position:relative">
-        <svg id="meChart" viewBox="0 0 1100 260" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block"></svg>
+        <div class="chart-scroll"><svg id="meChart" viewBox="0 0 1100 260" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block"></svg></div>
         <div id="meChartTip" class="ctip"></div>
       </div>
       <div id="meLegend" class="me-legend"></div>
@@ -6957,6 +6976,8 @@ function applyView(view){
   $('monthlyView').style.display=view==='monthly'?'block':'none';
   $('archiveView').style.display=view==='archive'?'block':'none';
   $('planView').style.display=view==='plan'?'block':'none';
+  // the tab has a width now: place any phone chart that was drawn while hidden
+  if(typeof chartScrollPending==='function') chartScrollPending();
   // appendChild MOVES the node, it does not copy it, so the notepad is the
   // same element on both tabs and cannot fall out of step with itself.
   if(view==='dash'||view==='contrib'){
@@ -7659,6 +7680,41 @@ window.addEventListener('pageshow',e=>{ if(e.persisted) fbRecheckOnWake() });   
 
 
 /* ============ contributions chart ============ */
+/* Where a phone's sideways-scrolling chart OPENS. `frac` is the point of
+   interest as a fraction of the chart's width (1 = the right-hand end), and it
+   is brought to the middle of the card. Done once per `key` -- the year being
+   shown -- and not on every render: these charts are redrawn on any edit, and
+   snapping back each time would take the chart out of the hand of someone
+   scrolling it. A chart on a hidden tab has no width yet, so it records
+   nothing and is placed on the first render that can see it. On a laptop the
+   scroller does not scroll and this does nothing. */
+function chartScrollTo(svgId, frac, key){
+  const svg=$(svgId), sc=svg&&svg.parentElement;
+  if(!sc || !sc.classList.contains('chart-scroll')) return;
+  const max=sc.scrollWidth-sc.clientWidth;
+  /* Not measurable yet: applyView() renders a tab BEFORE it un-hides it, so
+     the first render of Yearly and Monthly always lands here. The request is
+     kept on the element and applyView() replays it once the tab is showing. */
+  if(max<=1){ delete sc.dataset.pos; sc.dataset.want=frac+'|'+key; return }
+  delete sc.dataset.want;
+  if(sc.dataset.pos===String(key)) return;
+  sc.dataset.pos=String(key);
+  sc.scrollLeft=Math.max(0, Math.min(max, frac*sc.scrollWidth - sc.clientWidth/2));
+}
+function chartScrollPending(){
+  document.querySelectorAll('.chart-scroll[data-want]').forEach(sc=>{
+    const svg=sc.querySelector('svg'), i=sc.dataset.want.indexOf('|');
+    if(svg) chartScrollTo(svg.id, +sc.dataset.want.slice(0,i), sc.dataset.want.slice(i+1));
+  });
+}
+/* A tooltip is pinned to where its bar WAS. Scroll the chart and it would
+   hang over whatever slid underneath, labelled with the wrong month. */
+document.addEventListener('scroll',e=>{
+  const t=e.target;
+  if(!t || !t.classList || !t.classList.contains('chart-scroll')) return;
+  const tip=t.parentElement && t.parentElement.querySelector('.ctip');
+  if(tip) tip.style.opacity='0';
+},true);
 function renderContribChart(){
   const svg=$('cChart'); if(!svg) return;
   const years=[...new Set(state.contribs.map(c=>c.y))].sort((a,b)=>a-b);
@@ -7774,6 +7830,8 @@ function renderContribChart(){
     b.addEventListener('click',show);
     b.addEventListener('mouseleave',hide);
   });
+  // years run left to right, so the current one is at the far end
+  chartScrollTo('cChart', 1, years[years.length-1]);
 }
 
 /* ============ Wealthsimple CSV import ============ */
@@ -9274,6 +9332,8 @@ function renderYF(){
     b.addEventListener('mouseenter',show); b.addEventListener('click',show);
     b.addEventListener('mouseleave',()=>tip.style.opacity='0');
   });
+  // this year opens on this month; a past year opens on January
+  chartScrollTo('yfChart', +state.yfYear===new Date().getFullYear() ? (new Date().getMonth()+.5)/12 : 0, state.yfYear);
 
   // ----- monthly table -----
   $('yfMHead').innerHTML='<th style="text-align:left"></th>'+YF_MONTHS.map(m=>`<th>${m}</th>`).join('')+'<th>TOTAL</th>';
@@ -10405,6 +10465,7 @@ function renderMEChart(){
     h.addEventListener('mouseenter',show); h.addEventListener('click',show);
     h.addEventListener('mouseleave',()=>tip.style.opacity='0');
   });
+  chartScrollTo('meChart', +year===new Date().getFullYear() ? (new Date().getMonth()+.5)/12 : 0, year);
   $('meLegend').innerHTML=chosen.map(c=>`<span><i style="background:${meColor(c)}"></i>${tagEsc(c)}</span>`).join('')
     || '<span style="color:var(--text-dim)">No categories selected</span>';
 }

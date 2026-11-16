@@ -2384,6 +2384,20 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Charts are readable on a phone** (2026-11-16). Each chart is a fixed viewBox scaled to its
+  card, so at 390px the Yearly, Monthly and Contributions charts came out 72 to 86px tall with axis
+  labels 3 to 5px high. Below 560px each SVG now sits in a `.chart-scroll` box and is drawn 760px
+  wide (520px for Contributions); the card scrolls it sideways, as the twelve-month table already
+  did. Labels measure 9 to 10px. The owner chose this knowing the trade-off: about five months
+  show at once instead of twelve. Laptop widths are unchanged.
+  - **Where it opens:** `chartScrollTo()` centres the current month (Yearly, Monthly) or the newest
+    year (Contributions), once per year shown, so a redraw never yanks a chart out of the hand of
+    someone scrolling it. `applyView()` renders a tab before un-hiding it, so a chart drawn while
+    hidden records its request and `chartScrollPending()` places it once the tab is showing.
+  - **Tooltips:** the scroller wraps the SVG only; the tooltip stays its sibling, so it is not
+    clipped, and it is placed from bounding rects so it lands on its mark at any scroll position.
+    Scrolling a chart hides its tooltip, which would otherwise hang over the wrong month.
+  Pinned in `test-mobile.js` (the chart section).
 - **Yearly's figures are right-aligned** (2026-11-15). This REVERSES the earlier decision to
   centre the three Yearly tables (`#yfExpTable`, `#yfIncTable`, `.yf-mtable`). Centred, the right
   edges of one column's figures were up to 18px apart, so `$9,383` and `$18,508` could not be

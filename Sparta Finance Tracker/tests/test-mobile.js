@@ -415,6 +415,98 @@ const VIEWS = ['dash', 'contrib', 'yearly', 'monthly', 'archive', 'plan'];
     const sc = document.querySelector('#holdingsCard .tscroll'); if (sc) sc.scrollLeft = 0;
   });
 
+  /* ── the charts can be READ on a phone ────────────────────────────────── */
+  section('charts are drawn at a readable size and scroll inside their card');
+  /* By the function, not by clicking the tab: the section above leaves the
+     page in a state where the tab buttons cannot be clicked, and how the tab
+     was reached is not what is being tested here. */
+  const show = async v => { await page.evaluate(v => applyView(v), v); await page.waitForTimeout(320) };
+  /* Each chart is a fixed viewBox scaled to the card, so at 390px the axis
+     labels came out 3 to 5px tall. They are drawn wider now and the card
+     scrolls them sideways. */
+  for (const [view, id, hit, min] of [['yearly', 'yfChart', '.yfb', 760], ['monthly', 'meChart', '.mehit', 760],
+                                       ['contrib', 'cChart', '.bar', 520]]) {
+    /* This fixture has no Monthly rows, so its chart would be empty with
+       nothing to tap. Three itemised lines in the year on screen give it one
+       line to read; they are taken out again after this section. */
+    if (view === 'monthly') await page.evaluate(() => {
+      const y = String(new Date().getFullYear());
+      ['01', '02', '03'].forEach((m, i) => state.yf.txns.push({ id: 'mchk' + i, tab: 'me', type: 'expense',
+        cat: 'Groceries', date: y + '-' + m + '-10', amt: 80 + i * 40, desc: 'chart check', who: 'ABI' }));
+      normalizeYF();
+    });
+    await show(view);
+    await page.mouse.move(0, 0); await page.waitForTimeout(450);
+    const c = await page.evaluate(async ({ id, hit }) => {
+      const svg = document.getElementById(id), sc = svg.parentElement, wrap = sc.parentElement;
+      const tip = wrap.querySelector('.ctip');
+      const labels = [...svg.querySelectorAll('text')].map(t => t.getBoundingClientRect().height).filter(Boolean);
+      const box = sc.getBoundingClientRect();
+      const opened = sc.scrollLeft, max = sc.scrollWidth - sc.clientWidth;
+      const inView = () => [...svg.querySelectorAll(hit)].filter(b => { const q = b.getBoundingClientRect();
+        return q.width > 0 && q.left > box.left + 16 && q.right < box.right - 16 });
+      /* This fixture's rows are January to March, and the chart opens on the
+         current month -- so the window it opens on can hold no marks at all.
+         Go to where the data is; where it OPENS is checked separately below. */
+      let marks = inView();
+      if (!marks.length) { sc.scrollLeft = 0; await new Promise(r => setTimeout(r, 120)); marks = inView(); }
+      const from = sc.scrollLeft;
+      let off = null;
+      if (marks.length) { const b = marks[Math.floor(marks.length / 2)];
+        b.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        const q = b.getBoundingClientRect(), t = tip.getBoundingClientRect();
+        off = Math.abs((t.left + t.width / 2) - (q.left + q.width / 2)); }
+      const shown = tip.style.opacity;
+      sc.scrollLeft = from > 60 ? from - 60 : from + 60;
+      await new Promise(r => setTimeout(r, 150));
+      return { w: Math.round(svg.getBoundingClientRect().width), label: labels.length ? Math.min(...labels) : 0,
+        max, opened, marks: marks.length, off, shown, afterScroll: tip.style.opacity,
+        tipInScroller: sc.contains(tip),
+        page: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+    }, { id, hit });
+    check(c.w >= min, `${view}: the chart is drawn ${min}px wide, not squeezed into the card`, `${c.w}px`);
+    check(c.label >= 8, `${view}: its smallest label is readable`, `${c.label.toFixed(1)}px tall (was 3 to 5)`);
+    check(c.max > 100 && c.page <= 0, `${view}: the CARD scrolls sideways, the page does not`,
+      `card ${c.max}px, page ${c.page}px`);
+    /* The tooltip is placed from bounding rects and lives OUTSIDE the scroller,
+       so it has to land on its mark wherever the chart has scrolled to. */
+    check(c.marks > 0 && c.off !== null && c.off <= 2 && c.shown === '1' && c.tipInScroller === false,
+      `${view}: a tapped mark gets its tooltip directly above it`, JSON.stringify({ off: c.off, shown: c.shown }));
+    check(c.afterScroll === '0', `${view}: and scrolling the chart puts the tooltip away`, String(c.afterScroll));
+  }
+  await page.evaluate(() => { state.yf.txns = state.yf.txns.filter(t => !/^mchk/.test(t.id)); normalizeYF() });
+
+  /* Where each chart OPENS. Twelve months do not fit, so the part that matters
+     has to be the part showing. */
+  const opens = await page.evaluate(() => {
+    const at = id => { const sc = document.getElementById(id).parentElement;
+      return { key: sc.dataset.pos, max: sc.scrollWidth - sc.clientWidth } };
+    return { c: at('cChart'), yf: at('yfChart'), yr: String(state.yfYear) };
+  });
+  await show('contrib'); await page.waitForTimeout(200);
+  const cEnd = await page.evaluate(() => { const sc = document.getElementById('cChart').parentElement;
+    sc.dataset.pos = ''; renderContribChart();
+    return { left: Math.round(sc.scrollLeft), max: sc.scrollWidth - sc.clientWidth } });
+  check(cEnd.max > 0 && cEnd.left === cEnd.max,
+    'contrib: opens on the newest year, which is at the right-hand end', JSON.stringify(cEnd));
+  check(opens.yf.key === opens.yr, 'yearly: placed once for the year being shown', JSON.stringify(opens.yf));
+  /* ...and only once: these charts redraw on every edit, and snapping back
+     each time would take the chart out of the hand of someone scrolling it. */
+  await show('yearly'); await page.waitForTimeout(200);
+  const held = await page.evaluate(() => { const sc = document.getElementById('yfChart').parentElement;
+    sc.scrollLeft = 37; renderYF(); return Math.round(sc.scrollLeft) });
+  check(held === 37, 'yearly: a redraw leaves the chart where the reader scrolled it', `${held}px`);
+
+  /* And none of it reaches a laptop. */
+  await page.setViewportSize({ width: 1280, height: 850 });
+  await show('yearly'); await page.waitForTimeout(250);
+  const wide = await page.evaluate(() => { const svg = document.getElementById('yfChart'), sc = svg.parentElement;
+    return { max: sc.scrollWidth - sc.clientWidth,
+      fills: Math.abs(svg.getBoundingClientRect().width - sc.getBoundingClientRect().width) <= 1 } });
+  check(wide.max <= 0 && wide.fills, 'at 1280px the chart fills its card and nothing scrolls',
+    JSON.stringify(wide));
+  await page.setViewportSize({ width: 390, height: 850 });
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nMOBILE: ${pass} passed, ${fail} failed`);
