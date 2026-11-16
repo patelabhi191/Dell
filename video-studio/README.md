@@ -27,6 +27,9 @@ The pipeline runs the same on a laptop as in the cloud. Install Node.js 22+, Git
 (for example with the Claude desktop app, or `claude remote-control` in the `dell` folder to
 drive it from the Claude app).
 
+Then run `npm run setup` once: it checks the tools and downloads the Kokoro voice model
+(Liam and Puck) and Whisper for captions, so later runs work offline.
+
 To render on an NVIDIA graphics card, set `REMOTION_GL` before rendering:
 
 ```bash

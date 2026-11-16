@@ -4,6 +4,7 @@
   "private": true,
   "description": "Code-driven flat-vector explainer videos for Instagram Reels and YouTube",
   "scripts": {
+    "setup": "node scripts/setup.mjs",
     "studio": "remotion studio",
     "render": "node scripts/render.mjs",
     "narration": "node scripts/narration.mjs",

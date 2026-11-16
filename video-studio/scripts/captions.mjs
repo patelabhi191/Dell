@@ -5,7 +5,6 @@
 // (upload to YouTube as subtitles). Run it after `npm run voiceover`.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const args = process.argv.slice(2);
@@ -29,7 +28,9 @@ const hyperframes = (...a) =>
   execFileSync("npx", ["hyperframes", ...a], { stdio: "inherit", env, shell: process.platform === "win32" });
 
 // HyperFrames writes transcript.json into its project dir; use a throwaway one.
-const work = mkdtempSync(join(tmpdir(), "captions-"));
+// Temp dir inside the project (Windows temp paths can contain spaces, which break shell calls).
+mkdirSync(".tmp", { recursive: true });
+const work = mkdtempSync(join(".tmp", "captions-"));
 mkdirSync("captions", { recursive: true });
 try {
   hyperframes("transcribe", audio, "--dir", work, "--model", model, "--engine", "whisper");
