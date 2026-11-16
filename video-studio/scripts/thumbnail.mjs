@@ -1,8 +1,10 @@
 // Usage: npm run thumbnail -- <episode-id> [cover-name]
 // Renders every cover in the episode's "thumbnails" (or just the named one) to
-// out/<id>-thumb-<name>.png, 1080x1920.
+// <outDir>/<id>-thumb-<name>.png, 1080x1920 (outDir: see paths.mjs).
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { outDir } from "./paths.mjs";
 
 const [id, only] = process.argv.slice(2);
 let episode;
@@ -27,5 +29,5 @@ const shell = process.platform === "win32";
 const gl = process.env.REMOTION_GL ? [`--gl=${process.env.REMOTION_GL}`] : [];
 for (const name of names) {
   const still = `${id}-thumb-${name}`;
-  execFileSync("npx", ["remotion", "still", still, `out/${still}.png`, ...browser, ...gl], { stdio: "inherit", shell });
+  execFileSync("npx", ["remotion", "still", still, join(outDir, `${still}.png`), ...browser, ...gl], { stdio: "inherit", shell });
 }

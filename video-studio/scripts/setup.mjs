@@ -4,8 +4,9 @@
 // (the house voices am_liam and am_puck) and the Whisper speech-to-text runtime + model used
 // for captions, so later runs work offline. Safe to run again: cached files are reused.
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "./paths.mjs";
 
 const shell = process.platform === "win32";
 const ok = (msg) => console.log(`  ok  ${msg}`);
@@ -23,10 +24,9 @@ spawnSync("git", ["--version"]).status === 0 ? ok("git") : fail("git not found (
 console.log("\n2. Voice model (Kokoro, about 90 MB on first run)");
 const { KokoroTTS } = await import("kokoro-js");
 const tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", { dtype: "q8", device: "cpu" });
-// Temp files live inside the project: Windows temp paths can contain spaces (user names),
-// which break commands run through the shell.
-mkdirSync(".tmp", { recursive: true });
-const work = mkdtempSync(join(".tmp", "setup-"));
+// Temp files go to tempDir (see paths.mjs), not the system temp: Windows temp paths can
+// contain spaces (user names), which break commands run through the shell.
+const work = mkdtempSync(join(tempDir, "setup-"));
 for (const voice of ["am_liam", "am_puck"]) {
   if (!tts.voices[voice]) fail(`voice ${voice} missing from the model`);
 }

@@ -47,8 +47,15 @@ default. The first render downloads Remotion's own Chrome; `REMOTION_BROWSER` po
 different one.
 
 Whisper: if `npm run setup` cannot build whisper.cpp (no cmake), download `whisper-bin-x64.zip`
-from the whisper.cpp releases, unzip it outside the repo, and set `HYPERFRAMES_WHISPER_PATH`
-to its `whisper-cli.exe`.
+from the whisper.cpp releases, unzip it outside the repo, and put its `whisper-cli.exe` in
+`studio.local.json` as `whisperPath` (or set `HYPERFRAMES_WHISPER_PATH`).
+
+### Where files go (`studio.local.json`)
+
+Copy `studio.local.example.json` to `studio.local.json` (git-ignored) and set this machine's
+folders. `outDir` receives rendered videos and covers (`npm run render`, `npm run thumbnail`);
+`tempDir` holds scratch files (setup, captions). Without the file they default to `out/` and
+`.tmp/`. `STUDIO_OUT_DIR` / `STUDIO_TEMP_DIR` override it. Keep these paths free of spaces.
 
 ### 3D scenes (`src/three/`)
 

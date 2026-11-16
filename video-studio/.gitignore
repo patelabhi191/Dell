@@ -6,3 +6,4 @@ hyperframes/renders/
 references/*.mp4
 references/*.mov
 .tmp/
+studio.local.json

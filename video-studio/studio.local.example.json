@@ -1,0 +1,5 @@
+{
+  "outDir": "D:\\Claude\\output",
+  "tempDir": "D:\\Claude\\output\\temp",
+  "whisperPath": "D:\\Claude\\tools\\whisper\\Release\\whisper-cli.exe"
+}

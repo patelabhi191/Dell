@@ -4,8 +4,9 @@
 // captions/<id>.json (word timings, burned into the video) and captions/<id>.srt
 // (upload to YouTube as subtitles). Run it after `npm run voiceover`.
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { tempDir } from "./paths.mjs";
 
 const args = process.argv.slice(2);
 const id = args[0];
@@ -28,14 +29,14 @@ const hyperframes = (...a) =>
   execFileSync("npx", ["hyperframes", ...a], { stdio: "inherit", env, shell: process.platform === "win32" });
 
 // HyperFrames writes transcript.json into its project dir; use a throwaway one.
-// Temp dir inside the project (Windows temp paths can contain spaces, which break shell calls).
-mkdirSync(".tmp", { recursive: true });
-const work = mkdtempSync(join(".tmp", "captions-"));
+// Temp dir from paths.mjs (Windows temp paths can contain spaces, which break shell calls).
+const work = mkdtempSync(join(tempDir, "captions-"));
 mkdirSync("captions", { recursive: true });
 try {
   hyperframes("transcribe", audio, "--dir", work, "--model", model, "--engine", "whisper");
   const json = `captions/${id}.json`;
-  renameSync(join(work, "transcript.json"), json);
+  // Copy, not rename: the temp dir may be on another drive.
+  copyFileSync(join(work, "transcript.json"), json);
   hyperframes("transcribe", json, "--dir", work, "--to", "srt", "--output", resolve(`captions/${id}.srt`));
   const words = JSON.parse(readFileSync(json, "utf8"));
   console.log(`\nWrote ${json} (${words.length} words) and captions/${id}.srt`);
