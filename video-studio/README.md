@@ -30,16 +30,32 @@ drive it from the Claude app).
 Then run `npm run setup` once: it checks the tools and downloads the Kokoro voice model
 (Liam and Puck) and Whisper for captions, so later runs work offline.
 
-To render on an NVIDIA graphics card, set `REMOTION_GL` before rendering:
+To render on an NVIDIA graphics card, set `REMOTION_GL` before rendering. It applies to the npm
+scripts and to plain `npx remotion still/render/studio` (via `remotion.config.ts`):
 
 ```bash
 # Windows PowerShell
-$env:REMOTION_GL = "angle"
+$env:REMOTION_GL = "vulkan"
 npm run render -- <id> short
 ```
 
-On Linux use `REMOTION_GL=angle-egl` (or `vulkan`). Leave it unset to use the default. The
-first render downloads Remotion's own Chrome; `REMOTION_BROWSER` points at a different one.
+On laptops with two GPUs (Intel + NVIDIA), `angle` uses Direct3D and lands on the Intel chip;
+`vulkan` picks the NVIDIA card. The 3D test shot (`three-shop-test`) logs which GPU WebGL got:
+`npx remotion still three-shop-test out/t.png --frame=30 --log=verbose` and look for
+`[three] WebGL renderer`. On Linux use `angle-egl` or `vulkan`. Leave it unset for the
+default. The first render downloads Remotion's own Chrome; `REMOTION_BROWSER` points at a
+different one.
+
+Whisper: if `npm run setup` cannot build whisper.cpp (no cmake), download `whisper-bin-x64.zip`
+from the whisper.cpp releases, unzip it outside the repo, and set `HYPERFRAMES_WHISPER_PATH`
+to its `whisper-cli.exe`.
+
+### 3D scenes (`src/three/`)
+
+Real 3D with `@remotion/three` (React Three Fiber), drei and postprocessing (bloom, depth of
+field). `ShopNight3D.tsx` is the reference test shot: a night shop with security gates, a
+reflective floor, neon rim lights and particles. Drive everything from `useCurrentFrame()`
+(no clocks or `useFrame` timers) so renders are deterministic.
 
 ## Making a video
 
