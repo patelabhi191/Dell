@@ -154,6 +154,13 @@
   "voiceover": "006-one-box-grounded-america-3d.mp3",
   "thumbnails": [
     {
+      "name": "router",
+      "title": "One box. *Zero takeoffs.*",
+      "tag": "4+ hours",
+      "at": "hook",
+      "offset": 0.15
+    },
+    {
       "name": "mystery",
       "title": "One box grounded *every US plane*",
       "tag": "Nov 13, 2026",
@@ -166,13 +173,6 @@
       "tag": "Nov 13, 2026",
       "at": "flood",
       "offset": 0.75
-    },
-    {
-      "name": "router",
-      "title": "One box. *Zero takeoffs.*",
-      "tag": "4+ hours",
-      "at": "hook",
-      "offset": 0.15
     }
   ]
 }

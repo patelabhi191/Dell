@@ -1,7 +1,8 @@
 ﻿# Instagram post: 006 One box grounded America (3D)
 
 Video: `D:\Claude\output\006-one-box-grounded-america-3d-short.mp4` (outDir on the owner's machine)
-Covers: `D:\Claude\output\006-one-box-grounded-america-3d-thumb-{mystery,flood,router}.png` (pick one)
+Cover: `D:\Claude\output\006-one-box-grounded-america-3d-thumb-router.png` ("One box. Zero takeoffs.")
+Alternates: `-thumb-flood.png`, `-thumb-mystery.png`
 Voice: am_liam, speed 1.25 (same voiceover as 005)
 Same script and facts as 004/005; new look: one real 3D world rendered on the GPU
 (`src/stages/groundstop-3d.tsx`), kit HUD and pinned labels on top, boxed captions low.
