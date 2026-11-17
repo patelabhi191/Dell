@@ -111,7 +111,7 @@ const StageLayer: React.FC<{
 const themeOf = (episode: Episode) => themes[episode.theme ?? (episode.format === "story" ? "night" : "light")];
 
 /** Scene start frames and beat frames (including word cues) for an episode. */
-const buildTimeline = (episode: Episode, words?: CaptionWord[]) => {
+export const buildTimeline = (episode: Episode, words?: CaptionWord[]) => {
   let cursor = 0;
   const timeline = episode.scenes.map((scene) => {
     const start = cursor;

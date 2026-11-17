@@ -9,6 +9,7 @@ import { Composition, Folder, Still, continueRender, delayRender } from "remotio
 import { EpisodeVideo, FPS, Thumbnail, episodeFrames } from "./EpisodeVideo";
 import { KitEndCard, KitGallery } from "./kit/Gallery";
 import { ShopNight3D } from "./three/ShopNight3D";
+import { DAY_DEMO_FRAMES, GroundStopDayDemo } from "./three/DayDemo";
 import type { CaptionWord } from "./Captions";
 import { episodeSchema, type Episode } from "./types";
 
@@ -86,6 +87,7 @@ export const Root: React.FC = () => (
     </Folder>
     <Folder name="three">
       <Composition id="three-shop-test" component={ShopNight3D} durationInFrames={120} fps={FPS} width={1080} height={1920} />
+      <Composition id="groundstop-day-demo" component={GroundStopDayDemo} durationInFrames={DAY_DEMO_FRAMES} fps={FPS} width={1080} height={1920} />
     </Folder>
   </>
 );

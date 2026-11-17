@@ -24,7 +24,57 @@ import { AIRPORTS, CENTERS, FAIL_AT, FLIGHTS, LINKS, US } from "./groundstop";
 const W = 1080;
 const H = 1920;
 const FOV = 50;
-const C = { cyan: K.cyan, red: K.red, amber: K.amber, green: K.green, white: K.white, bg: "#05080F" };
+/**
+ * Looks. "night": dark world lit by neon (episode 006). "day": broad sun-like key light and sky
+ * fill over a soft grey-blue world, matte materials, colour kept for the subject (closer to
+ * R5's look). Colours and light levels for the 3D parts all come from the active look.
+ */
+type Look = {
+  name: "night" | "day";
+  cyan: string;
+  red: string;
+  amber: string;
+  green: string;
+  white: string;
+  bg: string;
+  /** Multiplier on every emissive glow. */
+  glow: number;
+  land: string;
+  landLine: string;
+  landMinor: string;
+  landEmissive: number;
+  body: string;
+  body2: string;
+  runway: string;
+  plane: string;
+  floor: string;
+  mirror: number;
+  mixStrength: number;
+  grid: [string, string];
+  fog: [number, number];
+  city: number;
+  exposure: number;
+  bloom: { threshold: number; intensity: number };
+  dust: number;
+};
+const LOOKS: Record<Look["name"], Look> = {
+  night: {
+    name: "night", cyan: K.cyan, red: K.red, amber: K.amber, green: K.green, white: K.white, bg: "#05080F",
+    glow: 1, land: "#0E1A33", landLine: "rgba(46,211,255,0.32)", landMinor: "rgba(46,211,255,0.10)", landEmissive: 0.55,
+    body: "#1A2440", body2: "#2A3557", runway: "#2A3352", plane: "#E9EEF8",
+    floor: "#070C18", mirror: 0.6, mixStrength: 14, grid: ["#16223D", "#101A30"], fog: [14, 38],
+    city: 1, exposure: 1.25, bloom: { threshold: 0.5, intensity: 1.3 }, dust: 0.45,
+  },
+  day: {
+    name: "day", cyan: "#1C8CC2", red: "#D2504F", amber: "#D9902E", green: "#2E9E68", white: "#F4F6FA", bg: "#93A4BC",
+    glow: 0.45, land: "#B7C1CF", landLine: "rgba(60,80,115,0.30)", landMinor: "rgba(60,80,115,0.10)", landEmissive: 0,
+    body: "#E6EAF0", body2: "#F1F3F7", runway: "#5C6779", plane: "#FFFFFF",
+    floor: "#55627A", mirror: 0.35, mixStrength: 5, grid: ["#6A7890", "#606E86"], fog: [24, 62],
+    city: 0, exposure: 0.95, bloom: { threshold: 0.92, intensity: 0.45 }, dust: 0.12,
+  },
+};
+/** Active look. Set by the stage at the top of each render, before any part reads it. */
+let C: Look = LOOKS.night;
 
 // ---------------------------------------------------------------- map space
 // The 2D map (x 85-905, y 215-670) becomes the ground plane: x -> X, y -> Z, 40 px per unit.
@@ -251,7 +301,7 @@ const sinceFail = (beats: Beats, frame: number) => since(beats, frame, "lost") -
 
 // ---------------------------------------------------------------- 3D parts
 const glow = (color: string, intensity: number, opacity = 1) => (
-  <meshStandardMaterial color={color} emissive={color} emissiveIntensity={intensity} toneMapped={false} transparent={opacity < 1} opacity={opacity} />
+  <meshStandardMaterial color={color} emissive={color} emissiveIntensity={intensity * C.glow} toneMapped={false} transparent={opacity < 1} opacity={opacity} />
 );
 
 const Land: React.FC = () => {
@@ -273,9 +323,9 @@ const Land: React.FC = () => {
     const cv = document.createElement("canvas");
     cv.width = cv.height = n;
     const g = cv.getContext("2d")!;
-    g.fillStyle = "#0E1A33";
+    g.fillStyle = C.land;
     g.fillRect(0, 0, n, n);
-    g.strokeStyle = "rgba(46,211,255,0.10)";
+    g.strokeStyle = C.landMinor;
     g.lineWidth = 1;
     for (let k = 1; k < 4; k++) {
       g.beginPath();
@@ -285,7 +335,7 @@ const Land: React.FC = () => {
       g.lineTo(n, (k * n) / 4);
       g.stroke();
     }
-    g.strokeStyle = "rgba(46,211,255,0.32)";
+    g.strokeStyle = C.landLine;
     g.lineWidth = 2;
     g.strokeRect(0, 0, n, n);
     for (let k = 0; k < 40; k++) {
@@ -297,11 +347,11 @@ const Land: React.FC = () => {
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 8;
     return t;
-  }, []);
+  }, [C.name]);
   return (
     <group>
-      <mesh geometry={geo} rotation={[-Math.PI / 2, 0, 0]}>
-        <meshStandardMaterial map={tex} emissiveMap={tex} emissive="#3A7BFF" emissiveIntensity={0.55} metalness={0.35} roughness={0.75} />
+      <mesh geometry={geo} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <meshStandardMaterial map={tex} emissiveMap={tex} emissive="#3A7BFF" emissiveIntensity={C.landEmissive} metalness={C.name === "day" ? 0.05 : 0.35} roughness={C.name === "day" ? 0.9 : 0.75} />
       </mesh>
       <Line points={outline} color={C.cyan} lineWidth={2.5} transparent opacity={0.75} />
     </group>
@@ -319,13 +369,13 @@ const CityLights: React.FC<{ level: number }> = ({ level }) => (
 );
 
 /** A small airliner with its nose along +Z. */
-const PlaneModel: React.FC<{ color?: string; nav?: boolean }> = ({ color = "#E9EEF8", nav = true }) => (
+const PlaneModel: React.FC<{ color?: string; nav?: boolean }> = ({ color = C.plane, nav = true }) => (
   <group>
-    <mesh rotation={[Math.PI / 2, 0, 0]}>
+    <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
       <capsuleGeometry args={[0.035, 0.26, 4, 10]} />
       <meshStandardMaterial color={color} metalness={0.4} roughness={0.35} emissive={color} emissiveIntensity={0.15} />
     </mesh>
-    <mesh position={[0, 0, 0.01]}>
+    <mesh position={[0, 0, 0.01]} castShadow>
       <boxGeometry args={[0.38, 0.012, 0.075]} />
       <meshStandardMaterial color={color} metalness={0.4} roughness={0.35} />
     </mesh>
@@ -368,7 +418,7 @@ const Airports: React.FC<{ tStop: number; frame: number }> = ({ tStop, frame }) 
         <group key={i} position={[x, MAP_TOP, z]}>
           <mesh rotation={[0, ang, 0]} position={[0, 0.006, 0]}>
             <boxGeometry args={[0.7, 0.012, 0.07]} />
-            <meshStandardMaterial color="#2A3352" roughness={0.6} />
+            <meshStandardMaterial color={C.runway} roughness={0.6} />
           </mesh>
           <mesh rotation={[0, ang, 0]} position={[0, 0.014, 0]}>
             <boxGeometry args={[0.66, 0.004, 0.008]} />
@@ -433,9 +483,9 @@ const Towers: React.FC<{ beats: Beats; frame: number }> = ({ beats, frame }) => 
         const lit = (failed ? flick : 1) * (0.6 + 0.4 * rise);
         return (
           <group key={i} position={[x, MAP_TOP, z]}>
-            <mesh position={[0, h / 2, 0]}>
+            <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
               <boxGeometry args={[0.13, h, 0.13]} />
-              <meshStandardMaterial color="#1A2440" metalness={0.8} roughness={0.3} />
+              <meshStandardMaterial color={C.body} metalness={C.name === "day" ? 0.2 : 0.8} roughness={C.name === "day" ? 0.55 : 0.3} />
             </mesh>
             <mesh position={[0, h / 2, 0.067]}>
               <boxGeometry args={[0.03, h * 0.92, 0.004]} />
@@ -542,13 +592,13 @@ const Router: React.FC<{ beats: Beats; frame: number }> = ({ beats, frame }) => 
   return (
     <group>
       <group position={ROUTER}>
-        <mesh position={[0, 0.06, 0]}>
+        <mesh position={[0, 0.06, 0]} castShadow receiveShadow>
           <boxGeometry args={[0.62, 0.12, 0.46]} />
-          <meshStandardMaterial color="#1C2540" metalness={0.85} roughness={0.25} />
+          <meshStandardMaterial color={C.body} metalness={C.name === "day" ? 0.25 : 0.85} roughness={C.name === "day" ? 0.5 : 0.25} />
         </mesh>
-        <mesh position={[0, 0.2, 0]}>
+        <mesh position={[0, 0.2, 0]} castShadow>
           <boxGeometry args={[0.5, 0.15, 0.34]} />
-          <meshStandardMaterial color={mix("#2A3557", "#4A1622", hot)} metalness={0.7} roughness={0.3} />
+          <meshStandardMaterial color={mix(C.body2, C.name === "day" ? "#E7B3B3" : "#4A1622", hot)} metalness={C.name === "day" ? 0.2 : 0.7} roughness={C.name === "day" ? 0.45 : 0.3} />
         </mesh>
         {/* front LEDs */}
         {Array.from({ length: 8 }, (_, k) => {
@@ -570,7 +620,7 @@ const Router: React.FC<{ beats: Beats; frame: number }> = ({ beats, frame }) => 
             <meshStandardMaterial color="#10162A" metalness={0.6} roughness={0.4} />
           </mesh>
         ))}
-        <pointLight position={[0, 0.5, 0.5]} color={flooding ? C.red : C.cyan} intensity={flooding ? 3 + 3 * hot : 2} distance={3} />
+        <pointLight position={[0, 0.5, 0.5]} color={flooding ? C.red : C.cyan} intensity={(flooding ? 3 + 3 * hot : 2) * C.glow} distance={3} />
       </group>
       {copper > 0.01
         ? COPPER.map((g, k) => (
@@ -674,7 +724,7 @@ const Dust: React.FC<{ frame: number }> = ({ frame }) => {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[pos, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={0.035} color="#9FCBFF" transparent opacity={0.45} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+      <pointsMaterial size={0.035} color={C.name === "day" ? "#FFFFFF" : "#9FCBFF"} transparent opacity={C.dust} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </points>
   );
 };
@@ -687,39 +737,70 @@ const CameraRig: React.FC<{ pose: Pose }> = ({ pose }) => {
   return null;
 };
 
-const World: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats, frame, pose }) => {
+const World: React.FC<{ beats: Beats; frame: number; pose: Pose; look: Look["name"] }> = ({ beats, frame, pose, look }) => {
+  C = LOOKS[look];
+  const gl = useThree((st) => st.gl);
+  gl.toneMappingExposure = C.exposure;
+  const day = C.name === "day";
   const t = frame / FPS;
   const stopT = beats.hit !== undefined ? beats.hit / FPS : 999;
   const tStop = since(beats, frame, "hit");
   return (
     <>
       <color attach="background" args={[C.bg]} />
-      <fog attach="fog" args={[C.bg, 14, 38]} />
+      <fog attach="fog" args={[C.bg, C.fog[0], C.fog[1]]} />
       <CameraRig pose={pose} />
-      <ambientLight color="#41508A" intensity={0.55} />
-      <hemisphereLight args={["#6A7CFF", "#120818", 0.5]} />
-      <directionalLight position={[6, 12, 8]} intensity={0.9} color="#9DB8FF" />
-      <pointLight position={[-8, 4, -6]} color="#FF4FD8" intensity={30} distance={22} />
-      <pointLight position={[9, 4, 4]} color={C.cyan} intensity={30} distance={22} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]}>
+      {day ? (
+        <>
+          {/* Sun: one warm key light with soft shadows, plus a cool sky fill. */}
+          <ambientLight color="#FFFFFF" intensity={0.55} />
+          <hemisphereLight args={["#EAF1FF", "#7D8698", 1.1]} />
+          <directionalLight
+            position={[9, 16, 7]}
+            intensity={2.6}
+            color="#FFF0D8"
+            castShadow
+            shadow-mapSize={[2048, 2048]}
+            shadow-bias={-0.0004}
+            shadow-normalBias={0.02}
+            shadow-radius={4}
+            shadow-camera-left={-14}
+            shadow-camera-right={14}
+            shadow-camera-top={10}
+            shadow-camera-bottom={-10}
+            shadow-camera-near={1}
+            shadow-camera-far={45}
+          />
+          <directionalLight position={[-8, 6, -6]} intensity={0.5} color="#CFE0FF" />
+        </>
+      ) : (
+        <>
+          <ambientLight color="#41508A" intensity={0.55} />
+          <hemisphereLight args={["#6A7CFF", "#120818", 0.5]} />
+          <directionalLight position={[6, 12, 8]} intensity={0.9} color="#9DB8FF" />
+          <pointLight position={[-8, 4, -6]} color="#FF4FD8" intensity={30} distance={22} />
+          <pointLight position={[9, 4, 4]} color={C.cyan} intensity={30} distance={22} />
+        </>
+      )}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
         <planeGeometry args={[90, 90]} />
         <MeshReflectorMaterial
           blur={[400, 120]}
           resolution={1024}
           mixBlur={1}
-          mixStrength={14}
+          mixStrength={C.mixStrength}
           roughness={0.7}
           depthScale={1}
           minDepthThreshold={0.4}
           maxDepthThreshold={1.4}
-          color="#070C18"
+          color={C.floor}
           metalness={0.6}
-          mirror={0.6}
+          mirror={C.mirror}
         />
       </mesh>
-      <gridHelper args={[60, 120, "#16223D", "#101A30"]} position={[0, 0.002, 0]} />
+      <gridHelper args={[60, 120, C.grid[0], C.grid[1]]} position={[0, 0.002, 0]} />
       <Land />
-      <CityLights level={1} />
+      {C.city > 0 ? <CityLights level={C.city} /> : null}
       <Network beats={beats} frame={frame} />
       <Towers beats={beats} frame={frame} />
       <Airports tStop={tStop} frame={frame} />
@@ -731,8 +812,8 @@ const World: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats, f
       <WarmUp />
       <EffectComposer multisampling={4}>
         <DepthOfField target={pose.t.toArray() as [number, number, number]} focalLength={0.025} bokehScale={2.6} />
-        <Bloom mipmapBlur luminanceThreshold={0.5} luminanceSmoothing={0.25} intensity={1.3} />
-        <Vignette eskil={false} offset={0.3} darkness={0.7} />
+        <Bloom mipmapBlur luminanceThreshold={C.bloom.threshold} luminanceSmoothing={0.25} intensity={C.bloom.intensity} />
+        <Vignette eskil={false} offset={0.3} darkness={day ? 0.35 : 0.7} />
       </EffectComposer>
     </>
   );
@@ -813,6 +894,8 @@ const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats,
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ position: "absolute", inset: 0 }}>
       <KitDefs />
+      {/* On the light daytime world, back the HUD row with a panel so its text stays readable. */}
+      {C.name === "day" ? <rect x={96} y={266} width={888} height={68} rx={34} fill={K.panel} opacity={0.82} /> : null}
       <StatusBar y={300} label="AIRSPACE" states={lights} right={state} rightTone={tone} />
 
       {/* 1 hook */}
@@ -879,7 +962,8 @@ const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats,
 };
 
 // ---------------------------------------------------------------- stage
-export const GroundStop3D: React.FC = () => {
+export const GroundStop3D: React.FC<{ look?: Look["name"] }> = ({ look = "night" }) => {
+  C = LOOKS[look];
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const beats = useContext(BeatsContext);
@@ -890,13 +974,17 @@ export const GroundStop3D: React.FC = () => {
         width={W}
         height={H}
         camera={{ fov: FOV, near: 0.05, far: 120, position: pose.p.toArray() as [number, number, number] }}
-        gl={{ antialias: true, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.25 }}
+        shadows={look === "day" ? "soft" : false}
+        gl={{ antialias: true, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: C.exposure }}
         onCreated={logRenderer}
       >
-        <World beats={beats} frame={frame} pose={pose} />
+        <World beats={beats} frame={frame} pose={pose} look={look} />
       </ThreeCanvas>
       {/* Covers (beats.still is set) show the world only; the cover adds its own title. */}
       {beats.still === undefined ? <Overlay beats={beats} frame={frame} pose={pose} /> : null}
     </AbsoluteFill>
   );
 };
+
+/** The same stage in the daylight look. */
+export const GroundStop3DDay: React.FC = () => <GroundStop3D look="day" />;
