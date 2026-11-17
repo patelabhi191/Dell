@@ -8,7 +8,7 @@ Same script and facts as 004/005; new look: one real 3D world rendered on the GP
 
 ## Caption
 
-One small box stopped every plane in America from taking off. ðŸ“¦âœˆï¸
+One small box stopped every plane in America from taking off. 📦✈️
 
 Nov 13, 2026: for 4+ hours, nothing took off. Only the third nationwide ground stop ever. The first was 9/11.
 
@@ -16,7 +16,7 @@ Not hackers. One router, during a routine copper-to-fiber upgrade, flooded the a
 
 The network is older than the iPhone. And in 2009, a router mistake on it knocked out 129 facilities.
 
-Would you trust it? Comment YES or NO ðŸ‘‡
+Would you trust it? Comment YES or NO 👇
 Follow @frontierin60 for the world explained in 60 seconds.
 
 #FAA #AirTravel #Aviation #GroundStop #Explained
