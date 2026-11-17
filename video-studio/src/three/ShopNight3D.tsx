@@ -2,13 +2,14 @@
 // light, drifting particles and depth of field. Rendered with @remotion/three (WebGL); set
 // REMOTION_GL=angle to render it on the NVIDIA GPU. Everything is driven by the frame number,
 // so every render is identical.
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useMemo } from "react";
 import { ThreeCanvas } from "@remotion/three";
 import { MeshReflectorMaterial } from "@react-three/drei";
 import { Bloom, DepthOfField, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { interpolate, useCurrentFrame, useDelayRender, useVideoConfig, Easing } from "remotion";
+import { interpolate, useCurrentFrame, useVideoConfig, Easing } from "remotion";
+import { WarmUp, logRenderer } from "./common";
 
 const C = {
   bg: "#070B14",
@@ -298,36 +299,6 @@ const Lights: React.FC = () => (
     <pointLight position={[2.5, 1.5, 6]} color={C.amber} intensity={10} distance={10} />
   </>
 );
-
-// The post-processing composer is not ready on the very first advance() in a fresh browser
-// tab, so that frame came out blank. On the first frame each tab renders, advance a couple more
-// times (holding the render until done) so the composer has drawn the picture.
-const WarmUp: React.FC = () => {
-  const advance = useThree((s) => s.advance);
-  const { delayRender, continueRender } = useDelayRender();
-  const done = useRef(false);
-  useEffect(() => {
-    if (done.current) return;
-    done.current = true;
-    const handle = delayRender("Warming up post-processing");
-    let n = 0;
-    const tick = () => {
-      advance(performance.now());
-      if (++n < 3) requestAnimationFrame(tick);
-      else continueRender(handle);
-    };
-    requestAnimationFrame(tick);
-  }, [advance, delayRender, continueRender]);
-  return null;
-};
-
-// Logs which graphics card WebGL is using, so a render log shows GPU vs software rendering.
-const logRenderer = ({ gl }: { gl: THREE.WebGLRenderer }) => {
-  const ctx = gl.getContext();
-  const ext = ctx.getExtension("WEBGL_debug_renderer_info");
-  const name = ext ? ctx.getParameter(ext.UNMASKED_RENDERER_WEBGL) : ctx.getParameter(ctx.RENDERER);
-  console.log(`[three] WebGL renderer: ${name}`);
-};
 
 export const ShopNight3D: React.FC<{ post?: boolean }> = ({ post = true }) => {
   const { width, height } = useVideoConfig();

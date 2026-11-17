@@ -2,6 +2,7 @@ import type React from "react";
 import { EiffelStage } from "./eiffel";
 import { GroundStopStage } from "./groundstop";
 import { GroundStopCinema } from "./groundstop-cinema";
+import { GroundStop3D } from "./groundstop-3d";
 import { SkyStage } from "./sky";
 
 /**
@@ -21,4 +22,5 @@ export const stages: Record<string, React.FC> = {
  */
 export const fullStages: Record<string, React.FC> = {
   "groundstop-cinema": GroundStopCinema,
+  "groundstop-3d": GroundStop3D,
 };

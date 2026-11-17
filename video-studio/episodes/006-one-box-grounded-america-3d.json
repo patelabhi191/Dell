@@ -1,0 +1,164 @@
+{
+  "id": "006-one-box-grounded-america-3d",
+  "title": "One box grounded America (3D)",
+  "format": "info",
+  "theme": "cinema",
+  "stage": "groundstop-3d",
+  "voiceSpeed": 1.25,
+  "pacing": {
+    "lead": 0.08,
+    "tail": 0.18,
+    "sentenceGap": 0.12,
+    "minScene": 1.8
+  },
+  "keywords": [
+    "box",
+    "plane",
+    "planes",
+    "america",
+    "network",
+    "iphone",
+    "stop",
+    "nothing",
+    "centers",
+    "radar",
+    "radio",
+    "miles",
+    "hackers",
+    "router",
+    "fiber",
+    "copper",
+    "flooded",
+    "bother",
+    "mistake",
+    "billion",
+    "trust",
+    "eleven",
+    "nine"
+  ],
+  "scenes": [
+    {
+      "type": "show",
+      "seconds": 3.3,
+      "beat": "hook",
+      "speed": 1.24,
+      "narration": "One small box just stopped every plane in America from taking off."
+    },
+    {
+      "type": "show",
+      "seconds": 3.4,
+      "beat": "grounded",
+      "narration": "It's only happened twice before. The first was nine eleven."
+    },
+    {
+      "type": "show",
+      "seconds": 2.6,
+      "beat": "older",
+      "narration": "And the network behind it is older than the iPhone."
+    },
+    {
+      "type": "show",
+      "seconds": 2,
+      "beat": "flights",
+      "narration": "Planes already flying kept going."
+    },
+    {
+      "type": "show",
+      "seconds": 4.5,
+      "beat": "stop",
+      "cues": {
+        "hit": "stop",
+        "frozen": "nothing"
+      },
+      "narration": "But at three fifty-four, the FAA hit stop. Nothing new took off for over four hours."
+    },
+    {
+      "type": "show",
+      "seconds": 4.2,
+      "beat": "centers",
+      "narration": "Here's why. In the air, you're handed to one of twenty-two hidden control centers."
+    },
+    {
+      "type": "show",
+      "seconds": 4.5,
+      "beat": "talk",
+      "cues": {
+        "apart": "five"
+      },
+      "narration": "They keep you five miles from other planes. By radar and radio, on one network."
+    },
+    {
+      "type": "stat",
+      "seconds": 2.7,
+      "beat": "lost",
+      "cues": {
+        "fail": "started"
+      },
+      "layout": "top",
+      "stage": "full",
+      "value": 17,
+      "label": "of 22 centers lost *their lines*",
+      "narration": "On Friday, seventeen of those centers started losing it."
+    },
+    {
+      "type": "statement",
+      "seconds": 2.1,
+      "beat": "cyber",
+      "cues": {
+        "safe": "no"
+      },
+      "layout": "top",
+      "stage": "full",
+      "text": "Officials say *no*",
+      "narration": "Hackers? Officials say no."
+    },
+    {
+      "type": "show",
+      "seconds": 3.3,
+      "beat": "router",
+      "narration": "Contractor L three Harris was swapping copper lines for fiber."
+    },
+    {
+      "type": "show",
+      "seconds": 4.2,
+      "beat": "flood",
+      "narration": "Then one router flooded the network. A thousand requests every five seconds."
+    },
+    {
+      "type": "show",
+      "seconds": 7,
+      "beat": "warned",
+      "narration": "Here's what should bother you. In 2009, a router mistake on this same network knocked out 129 air traffic facilities."
+    },
+    {
+      "type": "stat",
+      "seconds": 3,
+      "value": 12.5,
+      "decimals": 1,
+      "prefix": "$",
+      "suffix": "B",
+      "label": "approved to *fix air traffic control*",
+      "narration": "Congress has approved twelve and a half billion dollars to fix it.",
+      "beat": "money"
+    },
+    {
+      "type": "statement",
+      "seconds": 4.8,
+      "text": "Would you *trust it*?",
+      "narration": "Same network. Same kind of mistake. Would you trust it? Comment below.",
+      "beat": "question"
+    }
+  ],
+  "canvas": "full",
+  "captionStyle": "box",
+  "voiceover": "006-one-box-grounded-america-3d.mp3",
+  "thumbnails": [
+    {
+      "name": "mystery",
+      "title": "One box grounded *every US plane*",
+      "tag": "Nov 13, 2026",
+      "at": "frozen",
+      "offset": 1.3
+    }
+  ]
+}
