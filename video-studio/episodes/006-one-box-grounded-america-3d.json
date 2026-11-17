@@ -1,4 +1,4 @@
-{
+﻿{
   "id": "006-one-box-grounded-america-3d",
   "title": "One box grounded America (3D)",
   "format": "info",
@@ -159,6 +159,20 @@
       "tag": "Nov 13, 2026",
       "at": "frozen",
       "offset": 1.3
+    },
+    {
+      "name": "flood",
+      "title": "This box grounded *every US plane*",
+      "tag": "Nov 13, 2026",
+      "at": "flood",
+      "offset": 0.75
+    },
+    {
+      "name": "router",
+      "title": "One box. *Zero takeoffs.*",
+      "tag": "4+ hours",
+      "at": "hook",
+      "offset": 0.15
     }
   ]
 }
