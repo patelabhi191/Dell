@@ -1,0 +1,177 @@
+<title>Growth Portfolio Planner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: one narrow column. Summary tiles first, then allocation table, then scenario chart, then market notes. */
+:root{
+  --bg:#f5f7fa; --surface:#ffffff; --fg:#14202e; --muted:#5d6b7c; --line:#dde3ea;
+  --accent:#2b4fd8; --accent-soft:#e6ecfd; --good:#12804a; --bad:#c23b3b; --warn:#a86a00;
+  --f-display:'Space Grotesk',system-ui,sans-serif; --f-body:'Inter',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e141c; --surface:#161e29; --fg:#e8edf3; --muted:#93a1b3; --line:#27323f;
+  --accent:#7d9bff; --accent-soft:#1d2a4d; --good:#43c785; --bad:#ef7b7b; --warn:#e0a947; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e141c; --surface:#161e29; --fg:#e8edf3; --muted:#93a1b3; --line:#27323f;
+  --accent:#7d9bff; --accent-soft:#1d2a4d; --good:#43c785; --bad:#ef7b7b; --warn:#e0a947; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2{font-family:var(--f-display);font-weight:600;margin:0;text-wrap:balance}
+h1{font-size:28px;letter-spacing:-.01em} h2{font-size:18px}
+p{margin:0}.muted{color:var(--muted)}
+.top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+.amt{display:flex;flex-direction:column;gap:4px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.amt input{font:600 20px var(--f-display);color:var(--fg);background:var(--surface);border:1px solid var(--line);
+  border-radius:6px;padding:8px 12px;width:170px;font-variant-numeric:tabular-nums}
+.amt input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.tile .l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tile .v{font:600 24px var(--f-display);font-variant-numeric:tabular-nums;margin-top:2px}
+.tile .s{font-size:13px;color:var(--muted)}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.bar{display:flex;height:14px;border-radius:4px;overflow:hidden;gap:2px}
+.bar i{display:block;min-width:2px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}.legend b{width:10px;height:10px;border-radius:2px;display:inline-block}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-variant-numeric:tabular-nums}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right}
+.tk{font-family:var(--f-display);font-weight:600}
+.why{color:var(--muted);font-size:13px}
+.chartbox{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+svg{width:100%;height:auto;display:block}
+svg text{fill:var(--muted);font:11px var(--f-body)}
+.gridline{stroke:var(--line);stroke-width:1}
+.callout{border-left:3px solid var(--warn);padding:2px 0 2px 14px}
+ul.notes{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+a{color:var(--accent)}
+section{display:flex;flex-direction:column;gap:12px}
+.fine{font-size:12.5px;color:var(--muted)}
+</style>
+
+<main>
+  <header class="top">
+    <div style="min-width:0">
+      <h1>Growth Portfolio Planner</h1>
+      <p class="muted">Where I would put the money today, and what a 25% year would take.</p>
+    </div>
+    <label class="amt" for="amount">Starting amount (USD)
+      <input id="amount" type="number" min="100" step="100" value="10000" inputmode="decimal">
+    </label>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section>
+    <h2>Proposed allocation</h2>
+    <div>
+      <div class="bar" id="bar" role="img" aria-label="Allocation by sleeve"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Ticker</th><th>Sleeve</th><th class="n">Weight</th><th class="n">Invest</th><th>Why it is here</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <p class="fine">Dollar amounts only. Share counts depend on live prices; buy fractional shares or round down to whole shares. Prices on this page are not live.</p>
+  </section>
+
+  <section>
+    <h2>One year, three outcomes</h2>
+    <div class="chartbox"><svg id="chart" viewBox="0 0 640 300" role="img" aria-label="Portfolio value over 12 months in bear, base and bull cases against the 25% target"></svg></div>
+    <div class="callout">
+      <p id="verdict"></p>
+    </div>
+    <p class="fine">Bear, base and bull returns per holding are my own assumptions for a year, not forecasts or data. Edit them in the page source if you disagree.</p>
+  </section>
+
+  <section>
+    <h2>Market backdrop (mid-November 2026)</h2>
+    <ul class="notes">
+      <li>AI stocks are driving the swings. The S&amp;P 500 fell 1.9% and the Nasdaq 2.5% on Nov 16, though the S&amp;P was still above its Nov 5 close. Concentration is high: the ten largest companies are about 38% of the index.</li>
+      <li>Big catalysts ahead: Nvidia earnings and the return of official US economic data. Rising Treasury yields are the main risk to valuations.</li>
+      <li>Large caps trade near 21.5x forward earnings. Small caps (S&amp;P 600) are near 16x, which is why the plan holds some small-cap exposure.</li>
+      <li>Wall Street year-end S&amp;P 500 targets of about 8,000 were set earlier in the year. The index was reported near 7,700 in early November.</li>
+    </ul>
+    <p class="fine">These notes come from a quick web search. Several results were undated or from 2025, so check levels on a live quote source before trading.
+      Sources: <a href="https://www.adn.com/business-economy/2026/11/13/stocks-sway-as-wall-street-heads-for-winning-week-after-several-turbulent-days/">AP via ADN</a>,
+      <a href="https://www.khaleejtimes.com/wall-st-week-ahead-as-tech-swoon-roils-market-us-inflation-data-on-tap-3">Reuters via Khaleej Times</a>,
+      <a href="https://beinsure.com/news/sp500-forecast-goldman-sachs-jpmorgan-morgan-stanley-target/">Beinsure</a>,
+      <a href="https://www.morningstar.com/markets/november-stock-market-outlook-how-position-your-portfolio-remainder-2026">Morningstar</a>.</p>
+  </section>
+
+  <p class="fine">Educational planning tool, not financial advice. A 25% yearly return is not guaranteed and is well above the long-run stock market average of roughly 10%. You can lose money, and this mix can fall 20% or more in a bad year. Consider testing it in a paper-trading account first.</p>
+</main>
+
+<script>
+// sleeve colors use theme-safe tokens via inline hex pairs chosen to work on both themes
+const SLEEVES={
+  "Core index":"#3f6fe0","Growth index":"#7a5ce0","AI / chips":"#d9590b",
+  "Mega-cap stocks":"#1a9a8a","Small caps":"#c49a0a","International":"#6b8e23","Hedge & cash":"#7b8794"};
+// ticker, sleeve, weight %, bear/base/bull yearly return % (assumptions), reason
+const H=[
+ ["VOO","Core index",18,-18,9,24,"S&P 500 foundation at a very low fee."],
+ ["QQQ","Growth index",20,-25,11,30,"Nasdaq-100: heavy in the earnings growth leaders."],
+ ["SMH","AI / chips",14,-40,14,45,"Semiconductors, the picks-and-shovels of AI spending."],
+ ["NVDA","Mega-cap stocks",7,-45,18,55,"Highest-conviction AI name; earnings next week, so size is capped."],
+ ["MSFT","Mega-cap stocks",6,-22,12,30,"Cloud and AI software with steady cash flow."],
+ ["AMZN","Mega-cap stocks",5,-25,13,35,"Cloud plus retail; cheaper growth than most AI names."],
+ ["GOOGL","Mega-cap stocks",5,-22,12,32,"Search, cloud and its own AI chips at a moderate multiple."],
+ ["IWM","Small caps",8,-22,10,28,"Lower valuations; benefits if rate worries ease."],
+ ["VXUS","International",6,-18,8,22,"Spreads risk away from US tech concentration."],
+ ["GLD","Hedge & cash",5,-5,4,15,"Gold tends to hold up when stocks fall."],
+ ["SGOV","Hedge & cash",6,4,4,4,"Treasury bills: dry powder to buy a dip."]
+];
+const $=id=>document.getElementById(id);
+const usd=n=>"$"+Math.round(n).toLocaleString("en-US");
+const pct=n=>(n>=0?"+":"")+n.toFixed(1)+"%";
+const cls=n=>n>=0?"good":"bad";
+
+function render(){
+  let V=parseFloat($("amount").value); if(!(V>0)) V=10000;
+  const ret=i=>H.reduce((s,h)=>s+h[2]/100*h[i],0);
+  const bear=ret(3),base=ret(4),bull=ret(5);
+
+  $("tiles").innerHTML=[
+    ["Invested",usd(V),"11 positions"],
+    ["Target (25%)",usd(V*1.25),"+"+usd(V*.25)+" in a year"],
+    ["Base case",usd(V*(1+base/100)),`<span class="${cls(base)}">${pct(base)}</span> assumed`],
+    ["Bull / bear",`${usd(V*(1+bull/100))}`,`<span class="${cls(bear)}">${usd(V*(1+bear/100))}</span> in the bear case`]
+  ].map(t=>`<div class="tile"><div class="l">${t[0]}</div><div class="v">${t[1]}</div><div class="s">${t[2]}</div></div>`).join("");
+
+  const sl={}; H.forEach(h=>sl[h[1]]=(sl[h[1]]||0)+h[2]);
+  $("bar").innerHTML=Object.entries(sl).map(([k,w])=>`<i style="flex:${w};background:${SLEEVES[k]}" title="${k} ${w}%"></i>`).join("");
+  $("legend").innerHTML=Object.entries(sl).map(([k,w])=>`<span><b style="background:${SLEEVES[k]}"></b>${k} ${w}%</span>`).join("");
+  $("rows").innerHTML=H.map(h=>`<tr><td class="tk">${h[0]}</td><td>${h[1]}</td><td class="n">${h[2]}%</td><td class="n">${usd(V*h[2]/100)}</td><td class="why">${h[6]}</td></tr>`).join("");
+
+  // chart
+  const W=640,Ht=300,L=58,R=70,T=14,B=30,months=12;
+  const val=(r,m)=>V*Math.pow(1+r/100,m/months);
+  const lo=Math.min(val(bear,months),V)*0.96, hi=Math.max(val(bull,months),V*1.25)*1.04;
+  const x=m=>L+(W-L-R)*m/months, y=v=>T+(Ht-T-B)*(1-(v-lo)/(hi-lo));
+  const path=r=>Array.from({length:months+1},(_,m)=>(m?"L":"M")+x(m).toFixed(1)+" "+y(val(r,m)).toFixed(1)).join(" ");
+  let g="";
+  const step=niceStep((hi-lo)/4);
+  for(let t=Math.ceil(lo/step)*step;t<=hi;t+=step) g+=`<line class="gridline" x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}"/><text x="${L-8}" y="${y(t)+4}" text-anchor="end">${usd(t)}</text>`;
+  [0,3,6,9,12].forEach(m=>g+=`<text x="${x(m)}" y="${Ht-8}" text-anchor="middle">${m===0?"Now":m+" mo"}</text>`);
+  const series=[["Bull",bull,"var(--good)",""],["Base",base,"var(--accent)",""],["Bear",bear,"var(--bad)",""]];
+  series.forEach(s=>{g+=`<path d="${path(s[1])}" fill="none" stroke="${s[2]}" stroke-width="2.5"/>
+    <circle cx="${x(months)}" cy="${y(val(s[1],months))}" r="4" fill="${s[2]}"/>
+    <text x="${x(months)+8}" y="${y(val(s[1],months))+4}">${s[0]} ${usd(val(s[1],months))}</text>`});
+  g+=`<line x1="${L}" x2="${W-R}" y1="${y(V*1.25)}" y2="${y(V*1.25)}" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="${L+4}" y="${y(V*1.25)-6}" style="fill:var(--warn)">25% target ${usd(V*1.25)}</text>`;
+  $("chart").innerHTML=g;
+
+  $("verdict").innerHTML=`This mix is built for growth, yet its base case is about <b>${pct(base)}</b>. Reaching 25% needs something close to the bull case (<b>${pct(bull)}</b>), while the bear case loses about <b class="bad">${Math.abs(bear).toFixed(0)}%</b>. Chasing 25% with more NVDA or chip exposure raises the target odds but also deepens the losses in a bad year. Treat 25% as a stretch goal and decide the loss you can live with first.`;
+}
+function niceStep(r){const p=Math.pow(10,Math.floor(Math.log10(r)));const f=r/p;return (f<1.5?1:f<3.5?2:f<7.5?5:10)*p}
+$("amount").addEventListener("input",render);
+render();
+</script>
