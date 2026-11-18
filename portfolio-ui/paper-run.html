@@ -1,0 +1,257 @@
+<title>Paper Trading Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: one column. Summary tiles, then plan + signals, trade form, positions, ledger, risk table. */
+:root{
+  --bg:#f5f7fa; --surface:#ffffff; --fg:#14202e; --muted:#5d6b7c; --line:#dde3ea;
+  --accent:#2b4fd8; --accent-soft:#e6ecfd; --good:#12804a; --bad:#c23b3b; --warn:#a86a00;
+  --f-display:'Space Grotesk',system-ui,sans-serif; --f-body:'Inter',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e141c; --surface:#161e29; --fg:#e8edf3; --muted:#93a1b3; --line:#27323f;
+  --accent:#7d9bff; --accent-soft:#1d2a4d; --good:#43c785; --bad:#ef7b7b; --warn:#e0a947; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e141c; --surface:#161e29; --fg:#e8edf3; --muted:#93a1b3; --line:#27323f;
+  --accent:#7d9bff; --accent-soft:#1d2a4d; --good:#43c785; --bad:#ef7b7b; --warn:#e0a947; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2{font-family:var(--f-display);font-weight:600;margin:0;text-wrap:balance}
+h1{font-size:28px;letter-spacing:-.01em}h2{font-size:18px}p{margin:0}
+.muted{color:var(--muted)}.fine{font-size:12.5px;color:var(--muted)}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+section{display:flex;flex-direction:column;gap:12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.tile .l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tile .v{font:600 24px var(--f-display);font-variant-numeric:tabular-nums;margin-top:2px}
+.tile .s{font-size:13px;color:var(--muted)}
+.prog{height:10px;border-radius:5px;background:var(--line);overflow:hidden;position:relative}
+.prog i{display:block;height:100%;background:var(--accent)}
+.controls{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+input,select{font:500 15px var(--f-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 10px;min-width:0;font-variant-numeric:tabular-nums}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input[type=range]{padding:0;accent-color:var(--accent);width:220px;max-width:100%}
+td input{width:92px}
+button{font:600 13px var(--f-body);border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button{color:#0e141c}}
+:root[data-theme="dark"] button{color:#0e141c}
+button.ghost{background:transparent;color:var(--accent)}
+button.sm{padding:4px 9px;font-size:12px}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:700px;font-variant-numeric:tabular-nums}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+tr:last-child td{border-bottom:0}.n{text-align:right}
+.tk{font-family:var(--f-display);font-weight:600}
+.pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600;border:1px solid var(--line);white-space:nowrap}
+.pill.buy{color:var(--good);border-color:var(--good)}.pill.sell{color:var(--bad);border-color:var(--bad)}.pill.wait{color:var(--muted)}
+.rules{background:var(--accent-soft);border-radius:8px;padding:12px 16px;font-size:14px}
+.rules b{font-weight:600}
+#msg{min-height:20px;font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+</style>
+
+<main>
+  <header>
+    <h1>Paper Trading Desk</h1>
+    <p class="muted">Practise a $10,000 plan with fake money: a core portfolio plus an active sleeve that buys dips and sells into strength.</p>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="controls">
+    <label class="f" for="start">Starting cash (USD)
+      <input id="start" type="number" min="1000" step="500" style="width:140px"></label>
+    <label class="f" for="active">Active trading share: <b id="activeLbl"></b>
+      <input id="active" type="range" min="0" max="50" step="5"></label>
+    <span class="fine" style="flex:1;min-width:200px">Starting cash locks after your first trade. The active share can move any time; it sets how much you may put into dip trades.</span>
+  </div>
+
+  <section>
+    <h2>Plan and signals</h2>
+    <div class="rules" id="rules"></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Ticker</th><th>Sleeve</th><th class="n">Target</th><th>Price now</th><th>Recent high</th><th>Signal</th><th></th></tr></thead>
+      <tbody id="plan"></tbody></table></div>
+    <p class="fine">Prices are typed by you from any quote source (your broker, Google Finance). Nothing here is live. Press Enter or click away after typing to refresh signals. Recent high: use the highest close of the last 20 trading days.</p>
+  </section>
+
+  <section>
+    <h2>Log a paper trade</h2>
+    <div class="row">
+      <label class="f" for="t-tk">Ticker<select id="t-tk"></select></label>
+      <label class="f" for="t-side">Side<select id="t-side"><option value="buy">Buy</option><option value="sell">Sell</option></select></label>
+      <label class="f" for="t-qty">Shares<input id="t-qty" type="number" min="0" step="any" style="width:110px"></label>
+      <label class="f" for="t-px">Price<input id="t-px" type="number" min="0" step="any" style="width:110px"></label>
+      <button id="t-go" type="button">Log trade</button>
+    </div>
+    <p id="msg" class="muted" role="status"></p>
+  </section>
+
+  <section>
+    <h2>Positions</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Ticker</th><th class="n">Shares</th><th class="n">Avg cost</th><th class="n">Price</th><th class="n">Value</th><th class="n">Gain / loss</th></tr></thead>
+      <tbody id="pos"></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>Trade ledger</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Date</th><th>Ticker</th><th>Side</th><th class="n">Shares</th><th class="n">Price</th><th class="n">Amount</th></tr></thead>
+      <tbody id="ledger"></tbody></table></div>
+    <div class="row"><button class="ghost sm" id="undo" type="button">Undo last trade</button>
+      <button class="ghost sm" id="reset" type="button">Reset paper run</button>
+      <span class="fine">Saved in this browser only.</span></div>
+  </section>
+
+  <section>
+    <h2>Does more active trading help?</h2>
+    <div class="tablewrap"><table style="min-width:520px">
+      <thead><tr><th>Active share</th><th class="n">Bear year</th><th class="n">Base year</th><th class="n">Bull year</th><th class="n">Reaches 25%?</th></tr></thead>
+      <tbody id="risk"></tbody></table></div>
+    <p class="fine" id="riskNote"></p>
+  </section>
+
+  <p class="fine">Educational simulation, not financial advice. Scenario returns are my assumptions, not forecasts. Studies of retail traders repeatedly find that most underperform simple index funds, so test your dip rules with paper money for a few months before risking real money.</p>
+</main>
+
+<script>
+const START_DEFAULT=10000;
+// core: ticker, name weight in the full core mix (sums to 100), bear/base/bull % assumptions
+const CORE=[["VOO",18,-18,9,24],["QQQ",20,-25,11,30],["SMH",14,-40,14,45],["NVDA",7,-45,18,55],["MSFT",6,-22,12,30],
+ ["AMZN",5,-25,13,35],["GOOGL",5,-22,12,32],["IWM",8,-22,10,28],["VXUS",6,-18,8,22],["GLD",5,-5,4,15],["SGOV",6,4,4,4]];
+const ACTIVE=["AMD","AVGO","PLTR","TSLA","META","NFLX"];
+const ACT_RET=[-35,10,50];           // active sleeve bear/base/bull assumption (no trading edge assumed)
+const R={dip:8,take:15,stop:8,maxPos:5,posPct:10}; // rules
+const $=id=>document.getElementById(id);
+const usd=(n,d=0)=>(n<0?"-":"")+"$"+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=n=>(n>=0?"+":"")+n.toFixed(1)+"%", cls=n=>n>=0?"good":"bad";
+const KEY="paper-desk-v1";
+let S={start:START_DEFAULT,active:30,prices:{},highs:{},trades:[]};
+try{const raw=localStorage.getItem(KEY);if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const say=(t,bad)=>{$("msg").textContent=t;$("msg").className=bad?"bad":"muted"};
+const allTk=()=>[...CORE.map(c=>c[0]),...ACTIVE];
+const isActive=t=>ACTIVE.includes(t);
+
+function book(){
+  const pos={};let cash=S.start,realized=0;
+  for(const x of S.trades){
+    const p=pos[x.tk]||(pos[x.tk]={qty:0,cost:0});
+    if(x.side==="buy"){p.qty+=x.qty;p.cost+=x.qty*x.px;cash-=x.qty*x.px}
+    else{const avg=p.qty?p.cost/p.qty:0;realized+=x.qty*(x.px-avg);p.cost-=avg*x.qty;p.qty-=x.qty;cash+=x.qty*x.px;if(p.qty<1e-9){p.qty=0;p.cost=0}}
+  }
+  return{pos,cash,realized};
+}
+function price(t,b){const p=S.prices[t];if(p>0)return p;const q=b.pos[t];return q&&q.qty?q.cost/q.qty:0}
+
+function render(){
+  const b=book();const a=S.active/100;
+  let held=0,deployedActive=0;
+  for(const t in b.pos){const q=b.pos[t];if(!q.qty)continue;held+=q.qty*price(t,b);if(isActive(t))deployedActive+=q.cost}
+  const total=b.cash+held, ret=(total/S.start-1)*100;
+  const budget=S.start*a, avail=Math.max(0,Math.min(budget-deployedActive,b.cash));
+  const nActive=ACTIVE.filter(t=>b.pos[t]&&b.pos[t].qty>0).length;
+
+  $("start").value=S.start;$("start").disabled=S.trades.length>0;
+  $("active").value=S.active;$("activeLbl").textContent=S.active+"% ("+usd(budget)+")";
+  $("tiles").innerHTML=[
+    ["Portfolio value",usd(total),`<span class="${cls(ret)}">${pct(ret)}</span> since start`],
+    ["Goal: +25%",usd(S.start*1.25),`<div class="prog" aria-label="Progress to 25%"><i style="width:${Math.max(0,Math.min(100,ret/25*100)).toFixed(0)}%"></i></div>${Math.max(0,ret/25*100).toFixed(0)}% of the way`],
+    ["Cash",usd(b.cash),"no margin: buys cannot exceed this"],
+    ["Active budget left",usd(avail),`${nActive} of ${R.maxPos} active slots used`]
+  ].map(t=>`<div class="tile"><div class="l">${t[0]}</div><div class="v">${t[1]}</div><div class="s">${t[2]}</div></div>`).join("");
+
+  $("rules").innerHTML=`<b>Active sleeve rules.</b> Buy a dip when a stock is ${R.dip}% or more below its recent high, using at most ${R.posPct}% of total value per stock and up to ${R.maxPos} stocks. Sell half at +${R.take}% from your average cost. Sell everything at -${R.stop}% (stop loss). The stop is what stops a dip from becoming a bigger loss.`;
+
+  // plan rows
+  const rows=[];
+  for(const [t,w] of CORE){
+    const tgt=S.start*(w/100)*(1-a), px=S.prices[t]>0?S.prices[t]:0, have=b.pos[t]&&b.pos[t].qty>0;
+    let sig='<span class="pill wait">Wait for price</span>',btn="";
+    if(have)sig='<span class="pill wait">Held</span>';
+    else if(px>0){const q=Math.floor(tgt/px*1e4)/1e4;sig=`<span class="pill buy">Buy ${usd(tgt)} (${q} sh)</span>`;btn=`<button class="sm ghost" data-fill="buy|${t}|${q}">Fill form</button>`}
+    rows.push([t,"Core",tgt,sig,btn,false]);
+  }
+  for(const t of ACTIVE){
+    const px=S.prices[t]>0?S.prices[t]:0,hi=S.highs[t]>0?S.highs[t]:0,q=b.pos[t],have=q&&q.qty>0;
+    let sig='<span class="pill wait">Enter price and high</span>',btn="";
+    if(have&&px>0){
+      const avg=q.cost/q.qty,g=(px/avg-1)*100;
+      if(g<=-R.stop){sig=`<span class="pill sell">Stop: sell all (${pct(g)})</span>`;btn=`<button class="sm ghost" data-fill="sell|${t}|${q.qty}">Fill form</button>`}
+      else if(g>=R.take){const h=Math.floor(q.qty/2*1e4)/1e4;sig=`<span class="pill sell">Take profit: sell half (${pct(g)})</span>`;btn=`<button class="sm ghost" data-fill="sell|${t}|${h}">Fill form</button>`}
+      else sig=`<span class="pill wait">Hold (${pct(g)})</span>`;
+    }else if(px>0&&hi>0){
+      const dd=(px/hi-1)*100;
+      if(dd<=-R.dip){
+        const size=Math.min(avail,total*R.posPct/100);
+        if(nActive>=R.maxPos)sig=`<span class="pill wait">Dip ${pct(dd)} but slots full</span>`;
+        else if(size<1)sig=`<span class="pill wait">Dip ${pct(dd)} but no active cash</span>`;
+        else{const qq=Math.floor(size/px*1e4)/1e4;sig=`<span class="pill buy">Dip ${pct(dd)}: buy ${usd(size)} (${qq} sh)</span>`;btn=`<button class="sm ghost" data-fill="buy|${t}|${qq}">Fill form</button>`}
+      }else sig=`<span class="pill wait">No dip (${pct(dd)})</span>`;
+    }
+    rows.push([t,"Active",null,sig,btn,true]);
+  }
+  $("plan").innerHTML=rows.map(r=>{const t=r[0];return `<tr><td class="tk">${t}</td><td>${r[1]}</td><td class="n">${r[2]==null?"on dips":usd(r[2])}</td>
+    <td><input id="p-${t}" data-price="${t}" type="number" min="0" step="any" value="${S.prices[t]||""}" aria-label="${t} price"></td>
+    <td>${r[5]?`<input id="h-${t}" data-high="${t}" type="number" min="0" step="any" value="${S.highs[t]||""}" aria-label="${t} recent high">`:'<span class="muted">n/a</span>'}</td>
+    <td>${r[3]}</td><td>${r[4]}</td></tr>`}).join("");
+
+  // trade form options (keep selection)
+  const sel=$("t-tk"),cur=sel.value;
+  if(!sel.options.length)sel.innerHTML=allTk().map(t=>`<option>${t}</option>`).join("");
+  if(cur)sel.value=cur;
+
+  // positions
+  const pr=Object.entries(b.pos).filter(([,q])=>q.qty>0).map(([t,q])=>{
+    const px=price(t,b),v=q.qty*px,g=v-q.cost;
+    return `<tr><td class="tk">${t}</td><td class="n">${+q.qty.toFixed(4)}</td><td class="n">${usd(q.cost/q.qty,2)}</td><td class="n">${usd(px,2)}</td><td class="n">${usd(v)}</td><td class="n ${cls(g)}">${usd(g)} (${pct(g/q.cost*100)})</td></tr>`});
+  if(b.realized)pr.push(`<tr><td colspan="5" class="muted">Realized gain / loss from sales</td><td class="n ${cls(b.realized)}">${usd(b.realized)}</td></tr>`);
+  $("pos").innerHTML=pr.join("")||`<tr><td colspan="6" class="muted">No positions yet. Enter prices above, then use Fill form and Log trade to buy your core portfolio.</td></tr>`;
+
+  $("ledger").innerHTML=S.trades.slice().reverse().map(x=>`<tr><td>${x.d}</td><td class="tk">${x.tk}</td><td>${x.side==="buy"?"Buy":"Sell"}</td><td class="n">${+x.qty.toFixed(4)}</td><td class="n">${usd(x.px,2)}</td><td class="n">${usd(x.qty*x.px,2)}</td></tr>`).join("")
+    ||`<tr><td colspan="6" class="muted">No trades logged.</td></tr>`;
+
+  // risk table
+  const core=i=>CORE.reduce((s,c)=>s+c[1]/100*c[i],0);
+  const mix=(ap,i)=>ap/100*ACT_RET[i]+(1-ap/100)*core(i+2);
+  const levels=[...new Set([0,30,50,S.active])].sort((x,y)=>x-y);
+  $("risk").innerHTML=levels.map(ap=>{const be=mix(ap,0),ba=mix(ap,1),bu=mix(ap,2);
+    return `<tr${ap===S.active?' style="font-weight:600"':""}><td>${ap}% active${ap===S.active?" (current)":""}</td><td class="n ${cls(be)}">${pct(be)}</td><td class="n ${cls(ba)}">${pct(ba)}</td><td class="n ${cls(bu)}">${pct(bu)}</td><td class="n">${bu>=25?"Only in a bull year":"No"}</td></tr>`}).join("");
+  $("riskNote").textContent=`The base year barely moves with a larger active share because I assume no trading edge. What grows is the gap between the bear and bull years. A bigger active share only helps if your dip entries and exits beat simply holding, and that is exactly what this paper run will show you.`;
+}
+
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.dataset.price){S.prices[t.dataset.price]=parseFloat(t.value)||0;save();render()}
+  else if(t.dataset.high){S.highs[t.dataset.high]=parseFloat(t.value)||0;save();render()}
+  else if(t.id==="start"){const v=parseFloat(t.value);if(v>=1000){S.start=v;save();render()}}
+  else if(t.id==="t-tk"&&S.prices[t.value]>0)$("t-px").value=S.prices[t.value];
+});
+$("active").addEventListener("input",e=>{S.active=parseInt(e.target.value);save();render()});
+document.addEventListener("click",e=>{
+  const f=e.target.dataset&&e.target.dataset.fill;
+  if(f){const [side,tk,qty]=f.split("|");$("t-tk").value=tk;$("t-side").value=side;$("t-qty").value=qty;$("t-px").value=S.prices[tk]||"";$("t-go").scrollIntoView({block:"center"})}
+});
+$("t-go").addEventListener("click",()=>{
+  const tk=$("t-tk").value,side=$("t-side").value,qty=parseFloat($("t-qty").value),px=parseFloat($("t-px").value),b=book();
+  if(!(qty>0)||!(px>0))return say("Enter shares and a price greater than zero.",1);
+  if(side==="buy"&&qty*px>b.cash+1e-6)return say(`Not enough cash: this buy costs ${usd(qty*px,2)} and you have ${usd(b.cash,2)}. Margin is not allowed.`,1);
+  if(side==="sell"&&qty>((b.pos[tk]||{}).qty||0)+1e-9)return say("You cannot sell more shares than you hold (no shorting).",1);
+  S.trades.push({d:new Date().toISOString().slice(0,10),tk,side,qty,px});
+  if(!(S.prices[tk]>0))S.prices[tk]=px;
+  save();say(`Logged: ${side} ${qty} ${tk} at ${usd(px,2)}.`);$("t-qty").value="";render();
+});
+let armed=false;
+$("undo").addEventListener("click",()=>{if(S.trades.length){const x=S.trades.pop();save();say(`Removed ${x.side} ${x.tk}.`);render()}});
+$("reset").addEventListener("click",()=>{
+  if(!armed){armed=true;$("reset").textContent="Click again to erase everything";setTimeout(()=>{armed=false;$("reset").textContent="Reset paper run"},4000);return}
+  S={start:START_DEFAULT,active:30,prices:{},highs:{},trades:[]};save();armed=false;$("reset").textContent="Reset paper run";say("Paper run reset.");render();
+});
+render();
+</script>
