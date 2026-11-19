@@ -6,9 +6,10 @@ import { Line } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { BeatsContext } from "../beats";
-import { BigStat, Callout, Checklist, Disclaimer, K, KitDefs, MONO, TitleCard } from "../kit";
+import { BigStat, Checklist, Disclaimer, K, KitDefs, MONO, TitleCard } from "../kit";
 import { BODY } from "../theme";
 import { WarmUp, logRenderer } from "../three/common";
+import { EventPopups, EventSet, SET_SHOTS } from "./outage-sets";
 
 /**
  * Episode 007 "The week everything went down": one isometric 3D world (R3/R4 look: slate
@@ -51,18 +52,23 @@ type Beats = Record<string, number>;
 const since = (beats: Beats, frame: number, name: string) => (beats[name] === undefined ? -999 : (frame - beats[name]) / FPS);
 
 // ---------------------------------------------------------------- the city
-type District = { id: string; beat: string; hit?: string; x: number; z: number; tag: string };
+/** In story (date) order: the counter and the date timeline follow this order. */
+type District = { id: string; beat: string; hit?: string; x: number; z: number; tag: string; date: string; name: string };
 const DISTRICTS: District[] = [
-  { id: "faa", beat: "faa", hit: "faaHit", x: -4.3, z: -3.0, tag: "FAA · AIR TRAFFIC CONTROL" },
-  { id: "microsoft", beat: "microsoft", x: 0.2, z: -4.6, tag: "MICROSOFT 365" },
-  { id: "banks", beat: "banks", x: 4.5, z: -2.6, tag: "CHASE · SOFTWARE BUG" },
-  { id: "united", beat: "united", x: -4.7, z: 1.9, tag: "UNITED · DEPARTURES" },
-  { id: "nsa", beat: "nsa", x: 4.7, z: 2.1, tag: "NSA · CLASSIFIED NETWORK" },
-  { id: "apple", beat: "apple", x: -1.5, z: 4.7, tag: "APPLE · INTERNAL UPDATE" },
-  { id: "sony", beat: "sony", x: 2.7, z: 4.9, tag: "PLAYSTATION NETWORK" },
+  { id: "microsoft", beat: "microsoft", x: 0.2, z: -4.6, tag: "MICROSOFT 365", date: "NOV 12", name: "MICROSOFT 365" },
+  { id: "faa", beat: "faa", hit: "faaHit", x: -4.3, z: -3.0, tag: "FAA · AIR TRAFFIC CONTROL", date: "NOV 13", name: "FAA GROUND STOP" },
+  { id: "banks", beat: "banks", x: 4.5, z: -2.6, tag: "CHASE · SOFTWARE BUG", date: "NOV 16", name: "CHASE · ZELLE" },
+  { id: "united", beat: "united", x: -4.7, z: 1.9, tag: "UNITED · DEPARTURES", date: "NOV 16", name: "UNITED AIRLINES" },
+  { id: "nsa", beat: "nsa", x: 4.7, z: 2.1, tag: "NSA · CLASSIFIED NETWORK", date: "NOV 17", name: "NSA NETWORK" },
+  { id: "apple", beat: "apple", x: -1.5, z: 4.7, tag: "APPLE · INTERNAL UPDATE", date: "NOV 17", name: "APPLE SERVICES" },
+  { id: "sony", beat: "sony", x: 2.7, z: 4.9, tag: "PLAYSTATION NETWORK", date: "NOV 18", name: "PLAYSTATION NETWORK" },
 ];
 const HUB = { x: 0, z: 0.1 };
 const TOP: Record<string, number> = { faa: 2.1, microsoft: 2.6, banks: 1.3, united: 1.1, nsa: 1.3, apple: 1.1, sony: 1.6 };
+
+/** Hook montage: after the title, one quick cut per outage while the counter races to 07. */
+const MONTAGE_START = 1.3;
+const MONTAGE_CUT = 0.45;
 
 type State = "ok" | "down" | "upgrade" | "restored";
 type DState = { state: State; age: number; scaffold: number };
@@ -75,6 +81,13 @@ const stateOf = (i: number, beats: Beats, frame: number): DState => {
   const tOwn = since(beats, frame, d.hit ?? d.beat) - (d.hit ? 0 : 0.35);
   const tUp = since(beats, frame, "upgrades") - i * 0.12;
   const tBack = since(beats, frame, "callback") - 0.4 - i * 0.22;
+  const tEnd = since(beats, frame, "end");
+  if (tEnd >= 0) {
+    // "Will it continue?": districts flicker back to red one after another, with sparks.
+    const step = tEnd * 2.6;
+    const pick = Math.floor(random(`flk${Math.floor(step)}`) * DISTRICTS.length);
+    if (pick === i && step % 1 < 0.6) return { state: "down", age: (step % 1) / 2.6, scaffold: 0 };
+  }
   if (tBack >= 0) return { state: "restored", age: tBack, scaffold: 0 };
   if (tUp >= 0) return { state: "upgrade", age: tUp, scaffold: smooth(ramp(tUp, 0, 0.5)) };
   if (tImagine >= 0) {
@@ -82,15 +95,15 @@ const stateOf = (i: number, beats: Beats, frame: number): DState => {
     // Imagine: every building gets scaffolding (being rewired), until its own outage.
     return { state: "ok", age: tImagine, scaffold: smooth(ramp(tImagine, 0.15 + i * 0.08, 0.7 + i * 0.08)) };
   }
-  // Hook preview: all seven fall in quick succession.
-  const tFall = tHook - 0.3 - i * 0.42;
+  // Hook montage: all seven fall in quick succession.
+  const tFall = tHook - MONTAGE_START - i * MONTAGE_CUT - 0.08;
   if (tFall >= 0) return { state: "down", age: tFall, scaffold: 0 };
   return { state: "ok", age: tHook, scaffold: 0 };
 };
 const colorOf = (s: State) => (s === "down" ? P.red : s === "upgrade" ? P.amber : s === "restored" ? P.green : P.cyan);
 
 // ---------------------------------------------------------------- camera (orthographic iso)
-type Shot = { x: number; z: number; zoom: number; az: number };
+type Shot = { x: number; z: number; zoom: number; az: number; y?: number };
 type Pair = [Shot, Shot];
 const D = (id: string) => DISTRICTS.find((d) => d.id === id)!;
 const at = (id: string, zoom: number, az: number, dz = 0): Shot => ({ x: D(id).x, z: D(id).z + dz, zoom, az });
@@ -98,9 +111,9 @@ const SHOTS: Record<string, Pair> = {
   hook: [{ x: 0, z: 0.6, zoom: 68, az: 40 }, { x: 0, z: 0.4, zoom: 80, az: 52 }],
   question: [{ x: HUB.x, z: HUB.z, zoom: 120, az: 52 }, { x: HUB.x, z: HUB.z, zoom: 140, az: 40 }],
   imagine: [{ x: 0, z: 0.4, zoom: 80, az: 34 }, { x: 0, z: 0.4, zoom: 72, az: 46 }],
-  here: [{ x: -2, z: -1.2, zoom: 85, az: 46 }, { x: -3.4, z: -2.4, zoom: 130, az: 44 }],
-  faa: [at("faa", 185, 42), at("faa", 215, 54)],
+  here: [{ x: 0, z: -1.6, zoom: 85, az: 46 }, { x: 0.1, z: -3.6, zoom: 130, az: 44 }],
   microsoft: [at("microsoft", 175, 52), at("microsoft", 200, 40)],
+  faa: [at("faa", 185, 42), at("faa", 215, 54)],
   banks: [at("banks", 180, 44), at("banks", 205, 32)],
   united: [at("united", 190, 36), at("united", 215, 50)],
   nsa: [at("nsa", 190, 52), at("nsa", 215, 40)],
@@ -108,8 +121,7 @@ const SHOTS: Record<string, Pair> = {
   sony: [at("sony", 190, 54), at("sony", 215, 42)],
   twist: [{ x: 0, z: 0.5, zoom: 78, az: 44 }, { x: 0, z: 0.5, zoom: 70, az: 60 }],
   callback: [{ x: 0, z: 0.5, zoom: 70, az: 60 }, { x: 0, z: 0.5, zoom: 82, az: 44 }],
-  comment: [{ x: HUB.x, z: HUB.z + 0.4, zoom: 90, az: 44 }, { x: HUB.x, z: HUB.z + 0.4, zoom: 100, az: 34 }],
-  share: [{ x: 0, z: 0.5, zoom: 84, az: 34 }, { x: 0, z: 0.5, zoom: 72, az: 46 }],
+  end: [{ x: 0, z: 0.5, zoom: 84, az: 44 }, { x: 0, z: 0.5, zoom: 70, az: 30 }],
 };
 const ORDER = Object.keys(SHOTS);
 const lerpShot = (a: Shot, b: Shot, t: number): Shot => ({
@@ -117,10 +129,49 @@ const lerpShot = (a: Shot, b: Shot, t: number): Shot => ({
   z: a.z + (b.z - a.z) * t,
   zoom: a.zoom + (b.zoom - a.zoom) * t,
   az: a.az + (b.az - a.az) * t,
+  y: (a.y ?? 0.4) + ((b.y ?? 0.4) - (a.y ?? 0.4)) * t,
 });
 const TRANSITION = 0.7;
+const CITY_BEATS = new Set(["question", "imagine", "here", "twist", "callback", "end"]);
+
+/** Seconds into each event beat when its failure lands (matches the narration). */
+const FAIL_AT: Record<string, number> = { microsoft: 1.5, banks: 1.6, united: 1.4, nsa: 2.0, apple: 1.3, sony: 1.7 };
+
+type Mode = { set: string | null; t: number; f: number; g: number; montage: boolean; dur: number; cutAt: number; cut: boolean };
+const beatNow = (beats: Beats, frame: number) => {
+  let cur = ORDER[0];
+  ORDER.forEach((b) => {
+    if (beats[b] !== undefined && frame >= beats[b]) cur = b;
+  });
+  return cur;
+};
+/** What fills the screen: the city, or one event set with its own timings. */
+const modeAt = (beats: Beats, frame: number, total: number): Mode => {
+  const cur = beatNow(beats, frame);
+  const start = beats[cur] ?? 0;
+  const tc = (frame - start) / FPS;
+  if (cur === "hook" && tc >= MONTAGE_START) {
+    const k = Math.min(DISTRICTS.length - 1, Math.floor((tc - MONTAGE_START) / MONTAGE_CUT));
+    const local = tc - MONTAGE_START - k * MONTAGE_CUT;
+    return { set: DISTRICTS[k].id, t: local + 0.6, f: local - 0.08, g: local, montage: true, dur: MONTAGE_CUT, cutAt: start + (MONTAGE_START + k * MONTAGE_CUT) * FPS, cut: true };
+  }
+  const d = DISTRICTS.find((x) => x.beat === cur);
+  if (d) {
+    const nx = ORDER.slice(ORDER.indexOf(cur) + 1).find((b) => beats[b] !== undefined);
+    const end = nx ? beats[nx] : total;
+    const f = d.id === "faa" ? since(beats, frame, "faaHit") : tc - FAIL_AT[d.id];
+    const g = d.id === "faa" ? since(beats, frame, "grounded") : d.id === "banks" ? since(beats, frame, "zelle") : -1;
+    return { set: d.id, t: tc, f, g, montage: false, dur: (end - start) / FPS, cutAt: start, cut: true };
+  }
+  return { set: null, t: tc, f: 0, g: 0, montage: false, dur: 0, cutAt: start, cut: cur === "question" || cur === "twist" };
+};
 
 const shotAt = (beats: Beats, frame: number, total: number): Shot => {
+  const m = modeAt(beats, frame, total);
+  if (m.set) {
+    const [a, b] = SET_SHOTS[m.set];
+    return lerpShot(a, b, Easing.inOut(Easing.quad)(clamp01((frame - m.cutAt) / FPS / Math.max(0.1, m.dur))));
+  }
   let i = 0;
   ORDER.forEach((b, k) => {
     if (beats[b] !== undefined && frame >= beats[b]) i = k;
@@ -133,7 +184,8 @@ const shotAt = (beats: Beats, frame: number, total: number): Shot => {
   };
   const here = within(frame, i);
   const local = (frame - (beats[ORDER[i]] ?? 0)) / FPS;
-  if (i === 0 || local >= TRANSITION) return here;
+  // Ease between city shots only; coming from an event set (or the montage) is a hard cut.
+  if (i === 0 || local >= TRANSITION || !CITY_BEATS.has(ORDER[i - 1])) return here;
   const prev = within(beats[ORDER[i]], i - 1);
   const u = Easing.inOut(Easing.cubic)(local / TRANSITION);
   // Zoom eases in log space so pull-outs and push-ins feel even.
@@ -145,7 +197,7 @@ const EL = Math.atan(1 / Math.SQRT2); // true isometric elevation (35.26 deg)
 const camPose = (s: Shot) => {
   const a = (s.az * Math.PI) / 180;
   const dir = v3(Math.sin(a) * Math.cos(EL), Math.sin(EL), Math.cos(a) * Math.cos(EL));
-  const target = v3(s.x, 0.4, s.z);
+  const target = v3(s.x, s.y ?? 0.4, s.z);
   return { pos: target.clone().add(dir.multiplyScalar(40)), target, zoom: s.zoom };
 };
 
@@ -659,7 +711,7 @@ const Rig: React.FC<{ shot: Shot }> = ({ shot }) => {
   return null;
 };
 
-const World: React.FC<{ beats: Beats; frame: number; shot: Shot }> = ({ beats, frame, shot }) => {
+const World: React.FC<{ beats: Beats; frame: number; shot: Shot; mode: Mode }> = ({ beats, frame, shot, mode }) => {
   const t = frame / FPS;
   const states = DISTRICTS.map((_, i) => stateOf(i, beats, frame));
   return (
@@ -691,9 +743,10 @@ const World: React.FC<{ beats: Beats; frame: number; shot: Shot }> = ({ beats, f
       </mesh>
       <gridHelper args={[60, 60, P.grid1, P.grid2]} position={[0, 0.003, 0]} />
       <gridHelper args={[60, 240, P.grid2, P.grid2]} position={[0, 0.002, 0]} />
-      <Cables states={states} t={t} />
-      <Hub frame={frame} />
-      {DISTRICTS.map((d, i) => {
+      {mode.set ? <EventSet id={mode.set} t={mode.t} f={mode.f} g={mode.g} frame={frame} montage={mode.montage} /> : null}
+      {mode.set ? null : <Cables states={states} t={t} />}
+      {mode.set ? null : <Hub frame={frame} />}
+      {mode.set ? null : DISTRICTS.map((d, i) => {
         const st = states[i];
         const color = colorOf(st.state);
         const down = st.state === "down";
@@ -724,21 +777,6 @@ const World: React.FC<{ beats: Beats; frame: number; shot: Shot }> = ({ beats, f
 };
 
 // ---------------------------------------------------------------- HUD overlay
-const projector = (shot: Shot) => {
-  const { pos, target, zoom } = camPose(shot);
-  const cam = new THREE.OrthographicCamera(-W / 2, W / 2, H / 2, -H / 2, 0.1, 200);
-  cam.position.copy(pos);
-  cam.zoom = zoom;
-  cam.lookAt(target);
-  cam.updateProjectionMatrix();
-  cam.updateMatrixWorld();
-  return (p: THREE.Vector3) => {
-    const q = p.clone().project(cam);
-    return { x: (q.x * 0.5 + 0.5) * W, y: (1 - (q.y * 0.5 + 0.5)) * H };
-  };
-};
-const safe = (x: number, y: number) => ({ x: Math.max(260, Math.min(820, x)), y: Math.max(400, Math.min(1230, y)) });
-
 const Chip: React.FC<{ x: number; y: number; text: string; color?: string; s?: number; size?: number }> = ({ x, y, text, color = K.white, s = 1, size = 24 }) => {
   if (s <= 0.01) return null;
   const w = text.length * size * 0.62 + 40;
@@ -752,43 +790,85 @@ const Chip: React.FC<{ x: number; y: number; text: string; color?: string; s?: n
   );
 };
 
-/** Top HUD: one light per service (cyan up, red down, amber upgrading, green restored) + state text. */
-const Hud: React.FC<{ states: DState[]; text: string; tone: string }> = ({ states, text, tone }) => (
-  <g>
-    <rect x={110} y={274} width={190} height={52} rx={26} fill={K.panel} stroke="rgba(255,255,255,0.3)" strokeWidth={2} />
-    <text x={205} y={309} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={22} fill={K.white}>
-      SERVICES
-    </text>
-    {states.map((s, k) => (
-      <rect key={k} x={318 + k * 44} y={284} width={34} height={32} rx={4} fill={colorOf(s.state)} filter="url(#kglow)" />
-    ))}
-    <circle cx={634} cy={300} r={7} fill={tone} filter="url(#kglow)" />
-    <text x={650} y={308} fontFamily={MONO} fontWeight={700} fontSize={22} fill={tone}>
-      {text}
-    </text>
-  </g>
-);
-
-const HUD_TEXT: Record<string, [string, string]> = {
-  hook: ["NOV 13-18", K.red],
-  question: ["CAUSE: ?", K.red],
-  imagine: ["UPGRADES EVERYWHERE", K.amber],
-  here: ["NOV 13", K.cyan],
-  faa: ["NOV 13 · FAA", K.red],
-  microsoft: ["SAME WEEK · MICROSOFT", K.red],
-  banks: ["NOV 16 · CHASE", K.red],
-  united: ["NOV 16 · UNITED", K.red],
-  nsa: ["NOV 17 · NSA", K.red],
-  apple: ["NOV 17 · APPLE", K.red],
-  sony: ["NOV 18 · PLAYSTATION", K.red],
-  twist: ["CAUSE: UPGRADES", K.amber],
-  callback: ["RESTORED", K.green],
-  comment: ["7 OUTAGES · 6 DAYS", K.white],
-  share: ["7 OUTAGES · 6 DAYS", K.white],
+/**
+ * Header: an outage counter ("OUTAGE 03 / 07") that ticks up as each event lands, the current
+ * date and event, and a 7-stop date timeline underneath (one node per outage, in order).
+ */
+const Header: React.FC<{ states: DState[]; count: number; bump: number; date: string; event: string; tone: string; current: number; frame: number }> = ({
+  states,
+  count,
+  bump,
+  date,
+  event,
+  tone,
+  current,
+  frame,
+}) => {
+  const x0 = 150;
+  const x1 = 930;
+  const step = (x1 - x0) / (DISTRICTS.length - 1);
+  const filled = Math.max(0, count - 1);
+  return (
+    <g>
+      {/* counter */}
+      <rect x={110} y={250} width={330} height={96} rx={18} fill={K.panel} stroke={count > 0 ? tone : "rgba(255,255,255,0.3)"} strokeWidth={2.5} />
+      <text x={146} y={300} fontFamily={BODY} fontWeight={900} fontSize={20} fill={K.muted} letterSpacing={2} transform="rotate(-90 146 300)" textAnchor="middle">
+        OUTAGE
+      </text>
+      <g transform={`translate(230 ${322}) scale(${1 + bump * 0.25})`}>
+        <text x={0} y={0} textAnchor="middle" fontFamily={MONO} fontWeight={700} fontSize={72} fill={count > 0 ? tone : K.white} filter="url(#kglow)">
+          {String(count).padStart(2, "0")}
+        </text>
+      </g>
+      <text x={300} y={320} fontFamily={MONO} fontWeight={700} fontSize={36} fill={K.muted}>
+        / 07
+      </text>
+      {/* date + event */}
+      <rect x={458} y={250} width={512} height={96} rx={18} fill={K.panel} stroke="rgba(255,255,255,0.22)" strokeWidth={2} />
+      <circle cx={490} cy={281} r={8} fill={tone} filter="url(#kglow)" opacity={0.6 + 0.4 * Math.abs(Math.sin(frame * 0.15))} />
+      <text x={510} y={290} fontFamily={MONO} fontWeight={700} fontSize={30} fill={tone}>
+        {date}
+      </text>
+      <text x={486} y={330} fontFamily={BODY} fontWeight={900} fontSize={24} fill={K.white} letterSpacing={1}>
+        {event}
+      </text>
+      {/* timeline */}
+      <line x1={x0} y1={392} x2={x1} y2={392} stroke="#2A3850" strokeWidth={4} strokeLinecap="round" />
+      {filled > 0 ? <line x1={x0} y1={392} x2={x0 + filled * step} y2={392} stroke={tone} strokeWidth={4} strokeLinecap="round" filter="url(#kglow)" /> : null}
+      {DISTRICTS.map((d, k) => {
+        const st = states[k];
+        const hit = st.state !== "ok";
+        const isCur = k === current;
+        const c = hit ? colorOf(st.state) : "#3A4864";
+        return (
+          <g key={d.id} transform={`translate(${x0 + k * step} 392)`}>
+            {isCur ? <circle r={20 + 4 * Math.sin(frame * 0.25)} fill="none" stroke={c} strokeWidth={2} opacity={0.7} /> : null}
+            <circle r={isCur ? 12 : 9} fill={hit ? c : K.bg} stroke={c} strokeWidth={3} filter={hit ? "url(#kglow)" : undefined} />
+            <text y={36} textAnchor="middle" fontFamily={MONO} fontWeight={700} fontSize={18} fill={hit ? K.white : K.muted}>
+              {d.date.replace("NOV ", "")}
+            </text>
+          </g>
+        );
+      })}
+      <text x={x0 - 22} y={428} textAnchor="end" fontFamily={MONO} fontWeight={700} fontSize={16} fill={K.muted}>
+        NOV
+      </text>
+    </g>
+  );
 };
 
-const Overlay: React.FC<{ beats: Beats; frame: number; shot: Shot }> = ({ beats, frame, shot }) => {
-  const proj = projector(shot);
+/** Header date / event text per beat ("" = use the district's own). */
+const HEAD: Record<string, [string, string, string]> = {
+  hook: ["NOV 12-18", "ONE WEEK", K.red],
+  question: ["NOV 12-18", "CAUSE: UNKNOWN", K.red],
+  imagine: ["SAME WEEK", "UPGRADES EVERYWHERE", K.amber],
+  here: ["NOV 12", "THE TIMELINE", K.cyan],
+  twist: ["NOV 12-18", "CAUSE: UPGRADES", K.amber],
+  callback: ["NOV 12-18", "NO ATTACK FOUND", K.green],
+  end: ["WHAT'S NEXT?", "WILL IT CONTINUE?", K.red],
+};
+
+const Overlay: React.FC<{ beats: Beats; frame: number; mode: Mode }> = ({ beats, frame, mode }) => {
   const states = DISTRICTS.map((_, i) => stateOf(i, beats, frame));
   const s = (name: string, delay = 0, len = 0.3) => smooth(ramp(since(beats, frame, name), delay, delay + len));
   const out = (name: string) => 1 - smooth(ramp(since(beats, frame, name), -0.2, 0.05));
@@ -797,86 +877,51 @@ const Overlay: React.FC<{ beats: Beats; frame: number; shot: Shot }> = ({ beats,
   ORDER.forEach((b) => {
     if (beats[b] !== undefined && frame >= beats[b]) cur = b;
   });
-  const [hudText, hudTone] = HUD_TEXT[cur];
-  const top = (id: string) => {
-    const d = D(id);
-    return proj(v3(d.x, TOP[id] + 0.45, d.z));
-  };
+  const di = mode.set ? DISTRICTS.findIndex((d) => d.id === mode.set) : -1;
+  const [date, event, tone] = di >= 0 ? [DISTRICTS[di].date, DISTRICTS[di].name, K.red] : HEAD[cur];
+  const count = states.filter((st) => st.state !== "ok").length;
+  // Counter bump: the newest outage's age (story beats and the hook cascade).
+  const ages = states.filter((st) => st.state === "down").map((st) => st.age);
+  const bump = ages.length ? clamp01(1 - Math.min(...ages) / 0.35) : 0;
   const t = frame / FPS;
-  const hookCard = 1 - smooth(ramp(t, 3.1, 3.6));
-  const pin = (id: string, text: string, tone: "red" | "amber" | "cyan" | "green", sc: number, dx = -150, dy = -230) => {
-    const a = top(id);
-    const tag = safe(a.x + dx, a.y + dy);
-    return <Callout x={a.x} y={a.y} tx={tag.x} ty={tag.y} text={text} tone={tone} s={sc} />;
-  };
-  const zelleMid = (() => {
-    const d = D("banks");
-    const p = ZELLE_A[0].getPoint(0.6);
-    return proj(v3(d.x + p.x, p.y, d.z + p.z));
-  })();
+  const hookCard = 1 - smooth(ramp(t, 1.05, 1.3));
+  const flash = mode.cut ? clamp01(1 - (frame - mode.cutAt) / FPS / 0.22) : 0;
 
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ position: "absolute", inset: 0 }}>
       <KitDefs />
-      <Hud states={states} text={hudText} tone={hudTone} />
+      <Header states={states} count={count} bump={bump} date={date} event={event} tone={tone} current={di} frame={frame} />
 
       {/* hook + question */}
-      <TitleCard y={500} line1="7 OUTAGES" line2="IN 6 DAYS" s={hookCard} accent={K.red} />
-      <BigStat x={540} y={560} value="HACKED?" color={K.red} size={150} s={during("question", "imagine")} />
+      <TitleCard y={560} line1="7 OUTAGES" line2="1 WEEK" sub="YOUR FLIGHT · YOUR BANK · EVEN THE NSA" s={hookCard} accent={K.red} />
+      <BigStat x={540} y={600} value="HACKED?" color={K.red} size={150} s={during("question", "imagine")} />
 
       {/* imagine */}
-      <Chip x={540} y={440} text="EVERY BUILDING · SAME WEEK" color={K.amber} s={during("imagine", "here", 0.4)} />
+      <Chip x={540} y={500} text="EVERY BUILDING · SAME WEEK" color={K.amber} s={during("imagine", "here", 0.4)} />
 
-      {/* faa */}
-      {pin("faa", "AIR TRAFFIC CONTROL", "red", during("faa", "microsoft", 0.2), -120, -260)}
-      <Chip x={540} y={1050} text="NEW ROUTER FLOODED THE NETWORK" color={K.red} s={s("faaHit", 0.1) * out("microsoft")} />
-      <Chip x={540} y={1120} text="ALL US FLIGHTS GROUNDED" color={K.white} s={s("grounded") * out("microsoft")} />
-      <Chip x={540} y={1190} text="THOUSANDS CANCELED" color={K.amber} s={s("grounded", 0.9) * out("microsoft")} />
-
-      {/* microsoft */}
-      {pin("microsoft", "MICROSOFT 365", "red", during("microsoft", "banks", 0.15), -160, -200)}
-      <Chip x={420} y={1150} text="OUTLOOK ✕" color={K.red} s={during("microsoft", "banks", 0.6)} />
-      <Chip x={660} y={1150} text="TEAMS ✕" color={K.red} s={during("microsoft", "banks", 0.9)} />
-
-      {/* banks */}
-      {pin("banks", "CHASE · SOFTWARE BUG", "red", during("banks", "united", 0.3), -170, -260)}
-      {(() => {
-        const tag = safe(zelleMid.x - 120, zelleMid.y + 260);
-        return <Callout x={zelleMid.x} y={zelleMid.y} tx={tag.x} ty={tag.y} text="ZELLE TRANSFERS STUCK" tone="amber" s={s("zelle", 0.1) * out("united")} />;
-      })()}
-
-      {/* united */}
-      {pin("united", "UNITED · DEPARTURES HELD", "red", during("united", "nsa", 0.2), 150, -240)}
-      <Chip x={540} y={1150} text="FINAL WEIGHT: ?" color={K.amber} s={during("united", "nsa", 1.0)} />
-
-      {/* nsa */}
-      {pin("nsa", "NSA · CLASSIFIED NETWORK", "red", during("nsa", "apple", 0.25), -170, -240)}
-      <Chip x={540} y={1150} text="ROUTINE MAINTENANCE" color={K.amber} s={during("nsa", "apple", 1.1)} />
-
-      {/* apple */}
-      {pin("apple", "APPLE · INTERNAL UPDATE", "red", during("apple", "sony", 0.25), 230, 30)}
-      <Chip x={300} y={1150} text="ICLOUD ✕" color={K.red} s={during("apple", "sony", 1.0)} />
-      <Chip x={540} y={1150} text="APPLE PAY ✕" color={K.red} s={during("apple", "sony", 1.3)} />
-      <Chip x={790} y={1150} text="APP STORE ✕" color={K.red} s={during("apple", "sony", 1.6)} />
-
-      {/* sony */}
-      {pin("sony", "PLAYSTATION NETWORK", "red", during("sony", "twist", 0.3), -170, -250)}
-      <Chip x={540} y={1150} text="HOURS BEFORE GTA VI" color={K.amber} s={during("sony", "twist", 1.4)} />
+      {mode.set ? <EventPopups id={mode.set} t={mode.t} f={mode.f} g={mode.g} frame={frame} montage={mode.montage} /> : null}
 
       {/* twist */}
       <g opacity={during("twist", "callback")}>
-        <Checklist x={160} y={430} w={760} items={[{ text: "HACKERS", ok: false }, { text: "UPGRADES", ok: true }]} reveal={0.5 * s("notHackers", -0.2) + 0.5 * s("upgrades")} />
+        <Checklist x={160} y={490} w={760} items={[{ text: "HACKERS", ok: false }, { text: "UPGRADES", ok: true }]} reveal={0.5 * s("notHackers", -0.2) + 0.5 * s("upgrades")} />
       </g>
       <Chip x={540} y={1190} text="DNI: MAINTENANCE & TECHNICAL CHANGES" color={K.white} size={20} s={during("twist", "callback", 2.2)} />
 
       {/* callback */}
-      <Chip x={540} y={460} text="NO CYBERATTACK FOUND" color={K.green} size={30} s={during("callback", "comment", 0.6)} />
-      <Chip x={540} y={540} text="SERVICES RESTORED" color={K.green} s={during("callback", "comment", 1.4)} />
+      <Chip x={540} y={510} text="NO CYBERATTACK FOUND" color={K.green} size={30} s={during("callback", "end", 0.6)} />
+      <Chip x={540} y={590} text="SERVICES RESTORED" color={K.green} s={during("callback", "end", 1.4)} />
 
-      {/* comment + share */}
-      <TitleCard y={520} line1="WHICH ONE" line2="GOT YOU?" sub="BANK · FLIGHT · PLAYSTATION" s={s("comment", 0.1)} />
+      {/* ending */}
+      <TitleCard y={580} line1="WILL IT" line2="CONTINUE?" accent={K.red} s={s("end", 0.1)} />
+      <g opacity={s("end", 1.4)}>
+        <rect x={330} y={1060} width={420} height={90} rx={22} fill={K.red} filter="url(#kglow)" />
+        <text x={540} y={1118} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={40} fill={K.white}>FOLLOW FOR MORE</text>
+        <text x={540} y={1190} textAnchor="middle" fontFamily={MONO} fontWeight={700} fontSize={26} fill={K.cyan}>@frontierin60</text>
+      </g>
 
       <Disclaimer text="ILLUSTRATION · SIMPLIFIED · AI VOICE · SOURCES IN CAPTION" />
+      {/* hard-cut flash */}
+      {flash > 0 ? <rect x={0} y={0} width={W} height={H} fill="#DFF6FF" opacity={0.42 * flash} /> : null}
     </svg>
   );
 };
@@ -886,7 +931,11 @@ export const OutageCity: React.FC = () => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const beats = useContext(BeatsContext);
-  const shot = shotAt(beats, frame, durationInFrames);
+  const mode = modeAt(beats, frame, durationInFrames);
+  const base = shotAt(beats, frame, durationInFrames);
+  // Small punch-in on every hard cut.
+  const punch = mode.cut ? clamp01(1 - (frame - mode.cutAt) / FPS / 0.3) : 0;
+  const shot = { ...base, zoom: base.zoom * (1 + 0.07 * punch) };
   const pose = camPose(shot);
   return (
     <AbsoluteFill style={{ background: P.bg }}>
@@ -899,9 +948,9 @@ export const OutageCity: React.FC = () => {
         gl={{ antialias: true, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.15 }}
         onCreated={logRenderer}
       >
-        <World beats={beats} frame={frame} shot={shot} />
+        <World beats={beats} frame={frame} shot={shot} mode={mode} />
       </ThreeCanvas>
-      {beats.still === undefined ? <Overlay beats={beats} frame={frame} shot={shot} /> : null}
+      {beats.still === undefined ? <Overlay beats={beats} frame={frame} mode={mode} /> : null}
     </AbsoluteFill>
   );
 };

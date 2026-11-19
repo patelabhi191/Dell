@@ -15,44 +15,50 @@
     "minScene": 1.6
   },
   "keywords": [
-    "six",
-    "flights",
-    "banks",
-    "apple",
+    "seven",
+    "week",
+    "flight",
+    "bank",
+    "icloud",
     "nsa",
     "attacking",
     "rewiring",
+    "twelfth",
+    "thirteenth",
+    "sixteenth",
+    "seventeenth",
+    "eighteenth",
+    "microsoft",
     "router",
     "grounded",
     "thousands",
-    "outlook",
-    "teams",
     "chase",
     "zelle",
     "united",
     "weights",
     "maintenance",
     "classified",
-    "icloud",
+    "apple",
     "playstation",
     "hackers",
     "upgrades",
     "attack",
-    "wi-fi"
+    "continue",
+    "follow"
   ],
   "scenes": [
     {
       "type": "show",
-      "seconds": 3.8,
+      "seconds": 4.5,
       "beat": "hook",
-      "speed": 1.24,
-      "narration": "In six days, America's flights, banks, Apple, and even the NSA went down."
+      "narration": "Seven outages. One week. Your flight, your bank, your iCloud, even the NSA.",
+      "speed": 1.24
     },
     {
       "type": "show",
-      "seconds": 1.7,
+      "seconds": 1.8,
       "beat": "question",
-      "narration": "So, is someone attacking us?"
+      "narration": "Is someone attacking America?"
     },
     {
       "type": "show",
@@ -68,28 +74,28 @@
     },
     {
       "type": "show",
-      "seconds": 6.7,
+      "seconds": 4.7,
+      "beat": "microsoft",
+      "narration": "November twelfth, Microsoft 365 went down. Outlook and Teams went dark."
+    },
+    {
+      "type": "show",
+      "seconds": 5.9,
       "beat": "faa",
+      "narration": "November thirteenth, a new router flooded air traffic control. Every U.S. flight was grounded.",
       "cues": {
         "faaHit": "flooded",
         "grounded": "grounded"
-      },
-      "narration": "Thursday, a new router flooded air traffic control. Every U.S. flight was grounded. Thousands were canceled."
+      }
     },
     {
       "type": "show",
-      "seconds": 2.5,
-      "beat": "microsoft",
-      "narration": "That same week, Outlook and Teams went dark."
-    },
-    {
-      "type": "show",
-      "seconds": 4.8,
+      "seconds": 5.1,
       "beat": "banks",
+      "narration": "November sixteenth, a software bug at Chase stalled payments. Zelle transfers from other banks got stuck.",
       "cues": {
         "zelle": "zelle"
-      },
-      "narration": "Monday, a software bug at Chase stalled payments. Zelle transfers from other banks got stuck too."
+      }
     },
     {
       "type": "show",
@@ -99,58 +105,66 @@
     },
     {
       "type": "show",
-      "seconds": 3.6,
+      "seconds": 4.4,
       "beat": "nsa",
-      "narration": "Tuesday, routine maintenance knocked out the NSA's classified network."
+      "narration": "November seventeenth, routine maintenance knocked out the NSA's classified network."
     },
     {
       "type": "show",
-      "seconds": 3.2,
+      "seconds": 3.4,
       "beat": "apple",
-      "narration": "Then an Apple update broke iCloud, Apple Pay, and the App Store."
+      "narration": "Same day, an Apple update broke iCloud, Apple Pay, and the App Store."
     },
     {
       "type": "show",
-      "seconds": 3.8,
+      "seconds": 4.1,
       "beat": "sony",
-      "narration": "Wednesday, PlayStation Network went down, hours before GTA Six."
+      "narration": "November eighteenth, PlayStation Network went down, hours before GTA Six."
     },
     {
       "type": "show",
       "seconds": 6.1,
       "beat": "twist",
+      "narration": "Here's the twist. Every cause found so far? Upgrades, not hackers. Old systems, all patched at once.",
       "cues": {
         "notHackers": "hackers",
         "upgrades": "upgrades"
-      },
-      "narration": "Here's the twist. Every cause found so far? Upgrades, not hackers. Old systems, all patched at once."
+      }
     },
     {
       "type": "show",
-      "seconds": 4.3,
+      "seconds": 3.9,
       "beat": "callback",
-      "narration": "So, those outages? No attack. Just upgrades, landing the same week."
+      "narration": "So, seven outages? No attack found. Just upgrades."
     },
     {
       "type": "show",
-      "seconds": 2.9,
-      "beat": "comment",
-      "narration": "Which one got you? Bank, flight, or PlayStation?"
-    },
-    {
-      "type": "show",
-      "seconds": 2.3,
-      "beat": "share",
-      "narration": "Send this to the friend who blamed their Wi-Fi."
+      "seconds": 3.3,
+      "beat": "end",
+      "narration": "Will this series of outages continue? Follow for more."
     }
   ],
   "thumbnails": [
     {
-      "name": "city",
-      "title": "7 outages. *6 days.*",
-      "tag": "Nov 13-18, 2026",
-      "at": "twist",
-      "offset": 0.4
+      "name": "red",
+      "title": "7 outages. *1 week.*",
+      "tag": "Nov 12-18, 2026",
+      "at": "question",
+      "offset": 0.9
+    },
+    {
+      "name": "nsa",
+      "title": "Even the *NSA* went down",
+      "tag": "Nov 17, 2026",
+      "at": "nsa",
+      "offset": 3.4
+    },
+    {
+      "name": "hacked",
+      "title": "Hacked? *Not quite.*",
+      "tag": "7 outages · 1 week",
+      "at": "upgrades",
+      "offset": 0.9
     }
   ],
   "voiceover": "007-the-week-everything-went-down.mp3"
