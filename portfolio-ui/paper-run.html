@@ -48,6 +48,29 @@ tr:last-child td{border-bottom:0}.n{text-align:right}
 .sig div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:13px;min-width:0}
 .rules{background:var(--accent-soft);border-radius:8px;padding:12px 16px;font-size:14px}
 .empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.split{display:grid;grid-template-columns:minmax(0,65fr) minmax(0,35fr);gap:16px;align-items:start}
+@media (max-width:760px){.split{grid-template-columns:minmax(0,1fr)}}
+.pie-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:center}
+@media (max-width:520px){.pie-wrap{grid-template-columns:minmax(0,1fr)}}
+#pie{max-width:320px;margin:0 auto;overflow:visible}
+#pie path{cursor:pointer;transition:transform .18s ease,filter .18s ease;outline:none}
+#pie path.on{filter:drop-shadow(0 0 7px var(--glow,rgba(0,0,0,.3)))}
+@media (prefers-reduced-motion:reduce){#pie path{transition:none}}
+#pie .c1{font:600 22px var(--f-display);fill:var(--fg)}
+#pie .c2{font:12px var(--f-body);fill:var(--muted)}
+.detail{display:flex;flex-direction:column;gap:6px;font-size:13px;min-width:0}
+.detail .hd{display:flex;align-items:center;gap:8px;font:600 17px var(--f-display)}
+.detail .sw{width:12px;height:12px;border-radius:3px;flex:none}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-variant-numeric:tabular-nums}
+.kv span:nth-child(odd){color:var(--muted)}.kv span:nth-child(even){text-align:right}
+.legend{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:12px}
+.legend button{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--f-body);color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:3px 9px;cursor:pointer}
+.legend button:hover,.legend button.on{border-color:var(--accent)}
+.legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.plan{font-size:14px;display:flex;flex-direction:column;gap:12px}
+.plan h3{font:600 14px var(--f-display);margin:0;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.plan ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+button:focus-visible,#pie path:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 
 <main>
@@ -58,6 +81,34 @@ tr:last-child td{border-bottom:0}.n{text-align:right}
   </header>
 
   <div class="tiles" id="tiles"></div>
+
+  <div class="split">
+    <section>
+      <h2>Where the money is</h2>
+      <div class="box">
+        <div class="pie-wrap">
+          <svg id="pie" viewBox="-120 -120 240 240" role="img" aria-label="Allocation of the portfolio by holding"><text class="c2" text-anchor="middle" y="4">Waiting for the first run</text></svg>
+          <div class="detail" id="detail" aria-live="polite"></div>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </section>
+    <section>
+      <h2>Strategy and plan</h2>
+      <div class="box plan" id="plan">
+        <div><h3>Goal</h3><p>Grow $10,000 by 25% in 12 months ($12,500). That is a stretch target: the core mix alone assumes about +11% in a normal year.</p></div>
+        <div><h3>Core sleeve, 70%</h3><p>Bought once on day one and held: index funds (VOO, QQQ, IWM, VXUS), semiconductors (SMH), four large tech stocks, plus gold and Treasury bills as a cushion.</p></div>
+        <div><h3>Active sleeve, 30%</h3><ul>
+          <li>Watches AMD, AVGO, PLTR, TSLA, META and NFLX.</li>
+          <li>Buys when a stock is 8% or more below its recent high.</li>
+          <li>Up to 10% of the portfolio per stock, 5 stocks at most.</li>
+          <li>Sells half at +15%, the rest after an 8% drop from its peak.</li>
+          <li>Sells everything at -8% from cost.</li></ul></div>
+        <div><h3>Safety</h3><p>Never spends more than the cash on hand, never shorts, paper money only.</p></div>
+        <div><h3>Right now</h3><p id="now">Waiting for the first run.</p></div>
+      </div>
+    </section>
+  </div>
 
   <section>
     <h2>Portfolio value</h2>
@@ -113,6 +164,47 @@ function renderState(s){
   $("pos").innerHTML=rows.join("")||'<tr><td colspan="7" class="empty">No open positions.</td></tr>';
   $("sig").innerHTML=Object.entries(s.signals||{}).map(([t,v])=>`<div><span class="tk">${esc(t)}</span> <span class="muted">${usd((s.last||{})[t]||0,2)}</span><br>${esc(v)}</div>`).join("")||'<div class="muted">No signals yet.</div>';
   drawChart(s.startCash);
+  drawPie(s);
+}
+const PAL=["#3f6fe0","#7a5ce0","#1a9a8a","#d9590b","#c49a0a","#5f8f2a","#c2417a","#2f8fc2","#9a6b2f","#6a7fa3","#b84a32","#3d9f6a","#9a4fb0","#d0453f","#4b6b8a","#a1882b","#5a5fc8"];
+const NAMES={VOO:"S&P 500 index fund",QQQ:"Nasdaq-100 index fund",SMH:"Semiconductor fund",NVDA:"Nvidia",MSFT:"Microsoft",AMZN:"Amazon",GOOGL:"Alphabet",IWM:"Small-cap index fund",VXUS:"International stock fund",GLD:"Gold fund",SGOV:"Treasury bill fund",AMD:"AMD",AVGO:"Broadcom",PLTR:"Palantir",TSLA:"Tesla",META:"Meta",NFLX:"Netflix"};
+let pieSel=null;
+function drawPie(s){
+  const items=Object.entries(s.positions||{}).filter(([,p])=>p.qty>0).map(([t,p])=>{const last=(s.last||{})[t]||p.cost/p.qty;return{t,p,last,v:p.qty*last}}).sort((a,b)=>b.v-a.v);
+  const total=s.totalValue||items.reduce((x,i)=>x+i.v,0)+s.cash;
+  items.forEach((i,k)=>i.col=PAL[k%PAL.length]);
+  if(s.cash>0)items.push({t:"Cash",v:s.cash,col:"#8a96a6"});
+  const R=100,r=62;let a0=-Math.PI/2,g="";
+  const pt=(a,rad)=>[(Math.cos(a)*rad).toFixed(2),(Math.sin(a)*rad).toFixed(2)];
+  items.forEach((i,k)=>{
+    const f=i.v/total,a1=a0+f*2*Math.PI,big=f>.5?1:0,mid=(a0+a1)/2;
+    const [x0,y0]=pt(a0,R),[x1,y1]=pt(a1,R),[x2,y2]=pt(a1,r),[x3,y3]=pt(a0,r);
+    i.dx=(Math.cos(mid)*8).toFixed(2);i.dy=(Math.sin(mid)*8).toFixed(2);i.f=f;
+    g+=`<path data-k="${k}" tabindex="0" fill="${i.col}" stroke="var(--surface)" stroke-width="1.5" d="M${x0} ${y0} A${R} ${R} 0 ${big} 1 ${x1} ${y1} L${x2} ${y2} A${r} ${r} 0 ${big} 0 ${x3} ${y3} Z" aria-label="${esc(i.t)} ${(f*100).toFixed(1)}%"></path>`;
+    a0=a1;
+  });
+  g+=`<text class="c1" id="pc1" text-anchor="middle" y="2">${usd(total)}</text><text class="c2" id="pc2" text-anchor="middle" y="20">total value</text>`;
+  const svg=$("pie");svg.innerHTML=g;
+  $("legend").innerHTML=items.map((i,k)=>`<button type="button" data-k="${k}"><i style="background:${i.col}"></i>${esc(i.t)} ${(i.f*100).toFixed(1)}%</button>`).join("");
+  const show=k=>{
+    svg.querySelectorAll("path").forEach(p=>{const on=+p.dataset.k===k;p.classList.toggle("on",on);p.style.transform=on?`translate(${items[k].dx}px,${items[k].dy}px) scale(1.04)`:"";if(on)p.style.setProperty("--glow",items[k].col)});
+    $("legend").querySelectorAll("button").forEach(b=>b.classList.toggle("on",+b.dataset.k===k));
+    const i=items[k];$("pc1").textContent=(i.f*100).toFixed(1)+"%";$("pc2").textContent=i.t;
+    let rows=[["Value",usd(i.v,2)],["Share of portfolio",(i.f*100).toFixed(2)+"%"]];
+    if(i.p){const g=i.v-i.p.cost;rows=rows.concat([["Sleeve",i.p.sleeve==="active"?"Active (dip trades)":"Core (buy and hold)"],["Shares",i.p.qty.toFixed(4)],["Avg cost",usd(i.p.cost/i.p.qty,2)],["Last price",usd(i.last,2)],["Invested",usd(i.p.cost,2)],["Gain / loss",`<b class="${cls(g)}">${g>=0?"+":""}${usd(g,2)} (${pct(g/i.p.cost*100)})</b>`],["Bought on",esc(i.p.opened||"—")]])}
+    else rows.push(["Role","Reserved for active-sleeve dip buys"]);
+    $("detail").innerHTML=`<div class="hd"><span class="sw" style="background:${i.col}"></span>${esc(i.t)}</div><div class="muted">${esc(NAMES[i.t]||"Uninvested cash")}</div><div class="kv">${rows.map(r=>`<span>${r[0]}</span><span>${r[1]}</span>`).join("")}</div>`;
+  };
+  const reset=()=>{svg.querySelectorAll("path").forEach(p=>{p.classList.remove("on");p.style.transform=""});$("legend").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
+    if(pieSel!=null&&items[pieSel])return show(pieSel);
+    $("pc1").textContent=usd(total);$("pc2").textContent="total value";
+    const core=items.filter(i=>i.p&&i.p.sleeve==="core").reduce((x,i)=>x+i.v,0),act=items.filter(i=>i.p&&i.p.sleeve==="active").reduce((x,i)=>x+i.v,0);
+    $("detail").innerHTML=`<div class="hd">${items.length} slices</div><div class="muted">Hover or tap a slice for details.</div><div class="kv"><span>Core holdings</span><span>${usd(core,2)} (${(core/total*100).toFixed(1)}%)</span><span>Active trades</span><span>${usd(act,2)} (${(act/total*100).toFixed(1)}%)</span><span>Cash</span><span>${usd(s.cash,2)} (${(s.cash/total*100).toFixed(1)}%)</span></div>`};
+  const bind=el=>{el.addEventListener("mouseenter",()=>show(+el.dataset.k));el.addEventListener("focus",()=>show(+el.dataset.k));el.addEventListener("mouseleave",reset);el.addEventListener("blur",reset);el.addEventListener("click",()=>{pieSel=pieSel===+el.dataset.k?null:+el.dataset.k;pieSel==null?reset():show(pieSel)})};
+  svg.querySelectorAll("path").forEach(bind);$("legend").querySelectorAll("button").forEach(bind);
+  reset();
+  const nAct=Object.entries(s.positions||{}).filter(([t,p])=>p.sleeve==="active"&&p.qty>0).length;
+  $("now").innerHTML=`${nAct?`${nAct} of 5 active slots in use.`:"No dip buys yet; every active stock is above the -8% trigger."} ${usd(s.cash,2)} in cash is ready for dip buys. Next check at the next scheduled time on a weekday (9:42, 11:42, 1:42 or 3:42 ET).`;
 }
 function renderTrades(docs){
   const sells=docs.filter(x=>x.side==="sell"&&typeof x.pnl==="number"),wins=sells.filter(x=>x.pnl>0).length,net=sells.reduce((s,x)=>s+x.pnl,0);
