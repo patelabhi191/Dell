@@ -271,6 +271,7 @@ direction like "aerial shot" or "footage" becomes a camera move in our built wor
 | `004-one-box-grounded-america-v2` | white (old), benchmark pacing | 53 s | 181 | |
 | `005-one-box-grounded-america-cinema` | cinema (first step toward the new look) | 52 s | 187 | |
 | `006-one-box-grounded-america-3d` | real 3D world on the GPU (`@remotion/three`) + kit HUD, box captions | 52 s | 187 | |
+| `007-the-week-everything-went-down` | 3D isometric "outage city" (R3/R4 look, R1 energy), preview | 55 s | 172 | |
 
 Open decisions: logo file for the end card (add to `public/`); an original character (owner
 thinking); music and sound effects (none in the references we can hear clearly; none yet);

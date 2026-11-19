@@ -1,0 +1,143 @@
+1
+00:00:00,030 --> 00:00:01,810
+In six days, America's flights, banks,
+
+2
+00:00:01,810 --> 00:00:03,880
+Apple, and even the NSA went down.
+
+3
+00:00:03,910 --> 00:00:05,600
+So is someone attacking us?
+
+4
+00:00:05,630 --> 00:00:07,690
+Imagine a city rewiring every building in
+
+5
+00:00:07,850 --> 00:00:08,680
+the same week.
+
+6
+00:00:08,710 --> 00:00:10,280
+Here's what happened.
+
+7
+00:00:10,310 --> 00:00:12,170
+Thursday, a new router flooded air traffic
+
+8
+00:00:12,170 --> 00:00:12,720
+control.
+
+9
+00:00:12,750 --> 00:00:14,260
+Every U.S.
+
+10
+00:00:14,260 --> 00:00:15,440
+flight was grounded.
+
+11
+00:00:15,470 --> 00:00:16,960
+Thousands were canceled.
+
+12
+00:00:16,990 --> 00:00:19,010
+That same week, Outlook and Teams went
+
+13
+00:00:19,010 --> 00:00:19,480
+dark.
+
+14
+00:00:19,510 --> 00:00:21,220
+Monday, a software bug at Chase stalled
+
+15
+00:00:21,220 --> 00:00:21,830
+payments.
+
+16
+00:00:21,870 --> 00:00:23,860
+Zelle transfers from other banks got stuck
+
+17
+00:00:23,860 --> 00:00:24,280
+too.
+
+18
+00:00:24,310 --> 00:00:26,020
+Same day, United's pilots couldn't get
+
+19
+00:00:26,090 --> 00:00:27,160
+final plane weights.
+
+20
+00:00:27,190 --> 00:00:28,540
+Departures waited.
+
+21
+00:00:28,630 --> 00:00:30,340
+Tuesday, routine maintenance knocked out
+
+22
+00:00:30,360 --> 00:00:32,140
+the NSA's classified network.
+
+23
+00:00:32,270 --> 00:00:34,160
+Then an Apple update broke iCloud, Apple
+
+24
+00:00:34,220 --> 00:00:35,400
+Pay, and the App Store.
+
+25
+00:00:35,430 --> 00:00:37,830
+Wednesday, PlayStation Network went down
+
+26
+00:00:37,830 --> 00:00:38,990
+hours before GTA 6.
+
+27
+00:00:39,230 --> 00:00:40,210
+Here's the twist.
+
+28
+00:00:40,350 --> 00:00:42,600
+Every cause found so far, upgrades not
+
+29
+00:00:42,600 --> 00:00:43,230
+hackers.
+
+30
+00:00:43,270 --> 00:00:45,320
+Old systems all patched at once.
+
+31
+00:00:45,350 --> 00:00:48,210
+So those outages, no attack, just upgrades
+
+32
+00:00:48,210 --> 00:00:49,540
+landing the same week.
+
+33
+00:00:49,630 --> 00:00:51,480
+Which one got you, bank flight or
+
+34
+00:00:51,480 --> 00:00:52,510
+PlayStation?
+
+35
+00:00:52,550 --> 00:00:53,890
+Send this to the friend who blamed their
+
+36
+00:00:54,000 --> 00:00:54,400
+Wi-Fi.

@@ -1,0 +1,157 @@
+{
+  "id": "007-the-week-everything-went-down",
+  "title": "The week everything went down",
+  "format": "info",
+  "theme": "cinema",
+  "stage": "outage-city",
+  "canvas": "full",
+  "captionStyle": "box",
+  "voice": "am_liam",
+  "voiceSpeed": 1.25,
+  "pacing": {
+    "lead": 0.08,
+    "tail": 0.18,
+    "sentenceGap": 0.12,
+    "minScene": 1.6
+  },
+  "keywords": [
+    "six",
+    "flights",
+    "banks",
+    "apple",
+    "nsa",
+    "attacking",
+    "rewiring",
+    "router",
+    "grounded",
+    "thousands",
+    "outlook",
+    "teams",
+    "chase",
+    "zelle",
+    "united",
+    "weights",
+    "maintenance",
+    "classified",
+    "icloud",
+    "playstation",
+    "hackers",
+    "upgrades",
+    "attack",
+    "wi-fi"
+  ],
+  "scenes": [
+    {
+      "type": "show",
+      "seconds": 3.8,
+      "beat": "hook",
+      "speed": 1.24,
+      "narration": "In six days, America's flights, banks, Apple, and even the NSA went down."
+    },
+    {
+      "type": "show",
+      "seconds": 1.7,
+      "beat": "question",
+      "narration": "So, is someone attacking us?"
+    },
+    {
+      "type": "show",
+      "seconds": 3.1,
+      "beat": "imagine",
+      "narration": "Imagine a city rewiring every building in the same week."
+    },
+    {
+      "type": "show",
+      "seconds": 1.6,
+      "beat": "here",
+      "narration": "Here's what happened."
+    },
+    {
+      "type": "show",
+      "seconds": 6.7,
+      "beat": "faa",
+      "cues": {
+        "faaHit": "flooded",
+        "grounded": "grounded"
+      },
+      "narration": "Thursday, a new router flooded air traffic control. Every U.S. flight was grounded. Thousands were canceled."
+    },
+    {
+      "type": "show",
+      "seconds": 2.5,
+      "beat": "microsoft",
+      "narration": "That same week, Outlook and Teams went dark."
+    },
+    {
+      "type": "show",
+      "seconds": 4.8,
+      "beat": "banks",
+      "cues": {
+        "zelle": "zelle"
+      },
+      "narration": "Monday, a software bug at Chase stalled payments. Zelle transfers from other banks got stuck too."
+    },
+    {
+      "type": "show",
+      "seconds": 4.3,
+      "beat": "united",
+      "narration": "Same day, United's pilots couldn't get final plane weights. Departures waited."
+    },
+    {
+      "type": "show",
+      "seconds": 3.6,
+      "beat": "nsa",
+      "narration": "Tuesday, routine maintenance knocked out the NSA's classified network."
+    },
+    {
+      "type": "show",
+      "seconds": 3.2,
+      "beat": "apple",
+      "narration": "Then an Apple update broke iCloud, Apple Pay, and the App Store."
+    },
+    {
+      "type": "show",
+      "seconds": 3.8,
+      "beat": "sony",
+      "narration": "Wednesday, PlayStation Network went down, hours before GTA Six."
+    },
+    {
+      "type": "show",
+      "seconds": 6.1,
+      "beat": "twist",
+      "cues": {
+        "notHackers": "hackers",
+        "upgrades": "upgrades"
+      },
+      "narration": "Here's the twist. Every cause found so far? Upgrades, not hackers. Old systems, all patched at once."
+    },
+    {
+      "type": "show",
+      "seconds": 4.3,
+      "beat": "callback",
+      "narration": "So, those outages? No attack. Just upgrades, landing the same week."
+    },
+    {
+      "type": "show",
+      "seconds": 2.9,
+      "beat": "comment",
+      "narration": "Which one got you? Bank, flight, or PlayStation?"
+    },
+    {
+      "type": "show",
+      "seconds": 2.3,
+      "beat": "share",
+      "narration": "Send this to the friend who blamed their Wi-Fi."
+    }
+  ],
+  "thumbnails": [
+    {
+      "name": "city",
+      "title": "7 outages. *6 days.*",
+      "tag": "Nov 13-18, 2026",
+      "at": "twist",
+      "offset": 0.4
+    }
+  ],
+  "voiceover": "007-the-week-everything-went-down.mp3"
+}

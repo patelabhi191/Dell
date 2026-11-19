@@ -1,0 +1,944 @@
+[
+  {
+    "text": "In",
+    "start": 0.03,
+    "end": 0.09,
+    "id": "w0"
+  },
+  {
+    "text": "six",
+    "start": 0.09,
+    "end": 0.23,
+    "id": "w1"
+  },
+  {
+    "text": "days,",
+    "start": 0.23,
+    "end": 0.51,
+    "id": "w2"
+  },
+  {
+    "text": "America's",
+    "start": 0.51,
+    "end": 0.94,
+    "id": "w3"
+  },
+  {
+    "text": "flights,",
+    "start": 0.94,
+    "end": 1.38,
+    "id": "w4"
+  },
+  {
+    "text": "banks,",
+    "start": 1.48,
+    "end": 1.81,
+    "id": "w5"
+  },
+  {
+    "text": "Apple,",
+    "start": 1.81,
+    "end": 2.28,
+    "id": "w6"
+  },
+  {
+    "text": "and",
+    "start": 2.28,
+    "end": 2.41,
+    "id": "w7"
+  },
+  {
+    "text": "even",
+    "start": 2.41,
+    "end": 2.6,
+    "id": "w8"
+  },
+  {
+    "text": "the",
+    "start": 2.6,
+    "end": 2.85,
+    "id": "w9"
+  },
+  {
+    "text": "NSA",
+    "start": 2.85,
+    "end": 3.1,
+    "id": "w10"
+  },
+  {
+    "text": "went",
+    "start": 3.1,
+    "end": 3.38,
+    "id": "w11"
+  },
+  {
+    "text": "down.",
+    "start": 3.38,
+    "end": 3.88,
+    "id": "w12"
+  },
+  {
+    "text": "So",
+    "start": 3.91,
+    "end": 4.01,
+    "id": "w13"
+  },
+  {
+    "text": "is",
+    "start": 4.01,
+    "end": 4.13,
+    "id": "w14"
+  },
+  {
+    "text": "someone",
+    "start": 4.15,
+    "end": 4.62,
+    "id": "w15"
+  },
+  {
+    "text": "attacking",
+    "start": 4.62,
+    "end": 5.19,
+    "id": "w16"
+  },
+  {
+    "text": "us?",
+    "start": 5.22,
+    "end": 5.6,
+    "id": "w17"
+  },
+  {
+    "text": "Imagine",
+    "start": 5.63,
+    "end": 6.03,
+    "id": "w18"
+  },
+  {
+    "text": "a",
+    "start": 6.03,
+    "end": 6.09,
+    "id": "w19"
+  },
+  {
+    "text": "city",
+    "start": 6.09,
+    "end": 6.34,
+    "id": "w20"
+  },
+  {
+    "text": "rewiring",
+    "start": 6.34,
+    "end": 6.83,
+    "id": "w21"
+  },
+  {
+    "text": "every",
+    "start": 6.83,
+    "end": 7.14,
+    "id": "w22"
+  },
+  {
+    "text": "building",
+    "start": 7.14,
+    "end": 7.64,
+    "id": "w23"
+  },
+  {
+    "text": "in",
+    "start": 7.64,
+    "end": 7.69,
+    "id": "w24"
+  },
+  {
+    "text": "the",
+    "start": 7.85,
+    "end": 7.94,
+    "id": "w25"
+  },
+  {
+    "text": "same",
+    "start": 7.98,
+    "end": 8.19,
+    "id": "w26"
+  },
+  {
+    "text": "week.",
+    "start": 8.19,
+    "end": 8.68,
+    "id": "w27"
+  },
+  {
+    "text": "Here's",
+    "start": 8.71,
+    "end": 9.13,
+    "id": "w28"
+  },
+  {
+    "text": "what",
+    "start": 9.13,
+    "end": 9.43,
+    "id": "w29"
+  },
+  {
+    "text": "happened.",
+    "start": 9.43,
+    "end": 10.28,
+    "id": "w30"
+  },
+  {
+    "text": "Thursday,",
+    "start": 10.31,
+    "end": 10.79,
+    "id": "w31"
+  },
+  {
+    "text": "a",
+    "start": 10.79,
+    "end": 10.84,
+    "id": "w32"
+  },
+  {
+    "text": "new",
+    "start": 10.84,
+    "end": 10.99,
+    "id": "w33"
+  },
+  {
+    "text": "router",
+    "start": 10.99,
+    "end": 11.29,
+    "id": "w34"
+  },
+  {
+    "text": "flooded",
+    "start": 11.29,
+    "end": 11.66,
+    "id": "w35"
+  },
+  {
+    "text": "air",
+    "start": 11.66,
+    "end": 11.81,
+    "id": "w36"
+  },
+  {
+    "text": "traffic",
+    "start": 11.81,
+    "end": 12.17,
+    "id": "w37"
+  },
+  {
+    "text": "control.",
+    "start": 12.17,
+    "end": 12.72,
+    "id": "w38"
+  },
+  {
+    "text": "Every",
+    "start": 12.75,
+    "end": 13.31,
+    "id": "w39"
+  },
+  {
+    "text": "U.S.",
+    "start": 13.31,
+    "end": 14.26,
+    "id": "w40"
+  },
+  {
+    "text": "flight",
+    "start": 14.26,
+    "end": 14.61,
+    "id": "w41"
+  },
+  {
+    "text": "was",
+    "start": 14.61,
+    "end": 14.78,
+    "id": "w42"
+  },
+  {
+    "text": "grounded.",
+    "start": 14.78,
+    "end": 15.44,
+    "id": "w43"
+  },
+  {
+    "text": "Thousands",
+    "start": 15.47,
+    "end": 16,
+    "id": "w44"
+  },
+  {
+    "text": "were",
+    "start": 16,
+    "end": 16.25,
+    "id": "w45"
+  },
+  {
+    "text": "canceled.",
+    "start": 16.25,
+    "end": 16.96,
+    "id": "w46"
+  },
+  {
+    "text": "That",
+    "start": 16.99,
+    "end": 17.2,
+    "id": "w47"
+  },
+  {
+    "text": "same",
+    "start": 17.21,
+    "end": 17.46,
+    "id": "w48"
+  },
+  {
+    "text": "week,",
+    "start": 17.46,
+    "end": 17.81,
+    "id": "w49"
+  },
+  {
+    "text": "Outlook",
+    "start": 17.85,
+    "end": 18.27,
+    "id": "w50"
+  },
+  {
+    "text": "and",
+    "start": 18.27,
+    "end": 18.45,
+    "id": "w51"
+  },
+  {
+    "text": "Teams",
+    "start": 18.45,
+    "end": 18.73,
+    "id": "w52"
+  },
+  {
+    "text": "went",
+    "start": 18.77,
+    "end": 19.01,
+    "id": "w53"
+  },
+  {
+    "text": "dark.",
+    "start": 19.01,
+    "end": 19.48,
+    "id": "w54"
+  },
+  {
+    "text": "Monday,",
+    "start": 19.51,
+    "end": 19.89,
+    "id": "w55"
+  },
+  {
+    "text": "a",
+    "start": 19.89,
+    "end": 19.94,
+    "id": "w56"
+  },
+  {
+    "text": "software",
+    "start": 19.94,
+    "end": 20.33,
+    "id": "w57"
+  },
+  {
+    "text": "bug",
+    "start": 20.37,
+    "end": 20.5,
+    "id": "w58"
+  },
+  {
+    "text": "at",
+    "start": 20.5,
+    "end": 20.6,
+    "id": "w59"
+  },
+  {
+    "text": "Chase",
+    "start": 20.6,
+    "end": 20.86,
+    "id": "w60"
+  },
+  {
+    "text": "stalled",
+    "start": 20.86,
+    "end": 21.22,
+    "id": "w61"
+  },
+  {
+    "text": "payments.",
+    "start": 21.22,
+    "end": 21.83,
+    "id": "w62"
+  },
+  {
+    "text": "Zelle",
+    "start": 21.87,
+    "end": 22.06,
+    "id": "w63"
+  },
+  {
+    "text": "transfers",
+    "start": 22.06,
+    "end": 22.59,
+    "id": "w64"
+  },
+  {
+    "text": "from",
+    "start": 22.59,
+    "end": 22.82,
+    "id": "w65"
+  },
+  {
+    "text": "other",
+    "start": 22.82,
+    "end": 23.11,
+    "id": "w66"
+  },
+  {
+    "text": "banks",
+    "start": 23.11,
+    "end": 23.4,
+    "id": "w67"
+  },
+  {
+    "text": "got",
+    "start": 23.4,
+    "end": 23.57,
+    "id": "w68"
+  },
+  {
+    "text": "stuck",
+    "start": 23.57,
+    "end": 23.86,
+    "id": "w69"
+  },
+  {
+    "text": "too.",
+    "start": 23.86,
+    "end": 24.28,
+    "id": "w70"
+  },
+  {
+    "text": "Same",
+    "start": 24.31,
+    "end": 24.49,
+    "id": "w71"
+  },
+  {
+    "text": "day,",
+    "start": 24.49,
+    "end": 24.75,
+    "id": "w72"
+  },
+  {
+    "text": "United's",
+    "start": 24.75,
+    "end": 25.14,
+    "id": "w73"
+  },
+  {
+    "text": "pilots",
+    "start": 25.2,
+    "end": 25.49,
+    "id": "w74"
+  },
+  {
+    "text": "couldn't",
+    "start": 25.49,
+    "end": 25.91,
+    "id": "w75"
+  },
+  {
+    "text": "get",
+    "start": 25.91,
+    "end": 26.02,
+    "id": "w76"
+  },
+  {
+    "text": "final",
+    "start": 26.09,
+    "end": 26.33,
+    "id": "w77"
+  },
+  {
+    "text": "plane",
+    "start": 26.33,
+    "end": 26.59,
+    "id": "w78"
+  },
+  {
+    "text": "weights.",
+    "start": 26.59,
+    "end": 27.16,
+    "id": "w79"
+  },
+  {
+    "text": "Departures",
+    "start": 27.19,
+    "end": 27.9,
+    "id": "w80"
+  },
+  {
+    "text": "waited.",
+    "start": 27.9,
+    "end": 28.54,
+    "id": "w81"
+  },
+  {
+    "text": "Tuesday,",
+    "start": 28.63,
+    "end": 29.02,
+    "id": "w82"
+  },
+  {
+    "text": "routine",
+    "start": 29.02,
+    "end": 29.35,
+    "id": "w83"
+  },
+  {
+    "text": "maintenance",
+    "start": 29.35,
+    "end": 29.87,
+    "id": "w84"
+  },
+  {
+    "text": "knocked",
+    "start": 29.87,
+    "end": 30.2,
+    "id": "w85"
+  },
+  {
+    "text": "out",
+    "start": 30.2,
+    "end": 30.34,
+    "id": "w86"
+  },
+  {
+    "text": "the",
+    "start": 30.36,
+    "end": 30.52,
+    "id": "w87"
+  },
+  {
+    "text": "NSA's",
+    "start": 30.58,
+    "end": 30.9,
+    "id": "w88"
+  },
+  {
+    "text": "classified",
+    "start": 30.9,
+    "end": 31.54,
+    "id": "w89"
+  },
+  {
+    "text": "network.",
+    "start": 31.58,
+    "end": 32.14,
+    "id": "w90"
+  },
+  {
+    "text": "Then",
+    "start": 32.27,
+    "end": 32.48,
+    "id": "w91"
+  },
+  {
+    "text": "an",
+    "start": 32.48,
+    "end": 32.54,
+    "id": "w92"
+  },
+  {
+    "text": "Apple",
+    "start": 32.6,
+    "end": 32.9,
+    "id": "w93"
+  },
+  {
+    "text": "update",
+    "start": 32.9,
+    "end": 33.25,
+    "id": "w94"
+  },
+  {
+    "text": "broke",
+    "start": 33.25,
+    "end": 33.55,
+    "id": "w95"
+  },
+  {
+    "text": "iCloud,",
+    "start": 33.58,
+    "end": 33.91,
+    "id": "w96"
+  },
+  {
+    "text": "Apple",
+    "start": 33.92,
+    "end": 34.16,
+    "id": "w97"
+  },
+  {
+    "text": "Pay",
+    "start": 34.22,
+    "end": 34.33,
+    "id": "w98"
+  },
+  {
+    "text": "and",
+    "start": 34.49,
+    "end": 34.52,
+    "id": "w99"
+  },
+  {
+    "text": "the",
+    "start": 34.52,
+    "end": 34.7,
+    "id": "w100"
+  },
+  {
+    "text": "App",
+    "start": 34.7,
+    "end": 34.88,
+    "id": "w101"
+  },
+  {
+    "text": "Store.",
+    "start": 34.88,
+    "end": 35.4,
+    "id": "w102"
+  },
+  {
+    "text": "Wednesday,",
+    "start": 35.43,
+    "end": 36.12,
+    "id": "w103"
+  },
+  {
+    "text": "PlayStation",
+    "start": 36.12,
+    "end": 36.77,
+    "id": "w104"
+  },
+  {
+    "text": "Network",
+    "start": 36.88,
+    "end": 37.31,
+    "id": "w105"
+  },
+  {
+    "text": "went",
+    "start": 37.31,
+    "end": 37.49,
+    "id": "w106"
+  },
+  {
+    "text": "down",
+    "start": 37.65,
+    "end": 37.83,
+    "id": "w107"
+  },
+  {
+    "text": "hours",
+    "start": 37.83,
+    "end": 38.16,
+    "id": "w108"
+  },
+  {
+    "text": "before",
+    "start": 38.16,
+    "end": 38.56,
+    "id": "w109"
+  },
+  {
+    "text": "GTA",
+    "start": 38.56,
+    "end": 38.76,
+    "id": "w110"
+  },
+  {
+    "text": "6.",
+    "start": 38.76,
+    "end": 38.99,
+    "id": "w111"
+  },
+  {
+    "text": "Here's",
+    "start": 39.23,
+    "end": 39.59,
+    "id": "w112"
+  },
+  {
+    "text": "the",
+    "start": 39.59,
+    "end": 39.78,
+    "id": "w113"
+  },
+  {
+    "text": "twist.",
+    "start": 39.78,
+    "end": 40.21,
+    "id": "w114"
+  },
+  {
+    "text": "Every",
+    "start": 40.35,
+    "end": 40.61,
+    "id": "w115"
+  },
+  {
+    "text": "cause",
+    "start": 40.68,
+    "end": 41.04,
+    "id": "w116"
+  },
+  {
+    "text": "found",
+    "start": 41.04,
+    "end": 41.33,
+    "id": "w117"
+  },
+  {
+    "text": "so",
+    "start": 41.45,
+    "end": 41.54,
+    "id": "w118"
+  },
+  {
+    "text": "far,",
+    "start": 41.54,
+    "end": 41.92,
+    "id": "w119"
+  },
+  {
+    "text": "upgrades",
+    "start": 41.92,
+    "end": 42.41,
+    "id": "w120"
+  },
+  {
+    "text": "not",
+    "start": 42.57,
+    "end": 42.6,
+    "id": "w121"
+  },
+  {
+    "text": "hackers.",
+    "start": 42.6,
+    "end": 43.23,
+    "id": "w122"
+  },
+  {
+    "text": "Old",
+    "start": 43.27,
+    "end": 43.45,
+    "id": "w123"
+  },
+  {
+    "text": "systems",
+    "start": 43.45,
+    "end": 43.95,
+    "id": "w124"
+  },
+  {
+    "text": "all",
+    "start": 43.95,
+    "end": 44.09,
+    "id": "w125"
+  },
+  {
+    "text": "patched",
+    "start": 44.16,
+    "end": 44.62,
+    "id": "w126"
+  },
+  {
+    "text": "at",
+    "start": 44.72,
+    "end": 44.8,
+    "id": "w127"
+  },
+  {
+    "text": "once.",
+    "start": 44.8,
+    "end": 45.32,
+    "id": "w128"
+  },
+  {
+    "text": "So",
+    "start": 45.35,
+    "end": 45.49,
+    "id": "w129"
+  },
+  {
+    "text": "those",
+    "start": 45.49,
+    "end": 45.92,
+    "id": "w130"
+  },
+  {
+    "text": "outages,",
+    "start": 45.92,
+    "end": 46.68,
+    "id": "w131"
+  },
+  {
+    "text": "no",
+    "start": 46.68,
+    "end": 46.85,
+    "id": "w132"
+  },
+  {
+    "text": "attack,",
+    "start": 46.85,
+    "end": 47.41,
+    "id": "w133"
+  },
+  {
+    "text": "just",
+    "start": 47.57,
+    "end": 47.74,
+    "id": "w134"
+  },
+  {
+    "text": "upgrades",
+    "start": 47.74,
+    "end": 48.21,
+    "id": "w135"
+  },
+  {
+    "text": "landing",
+    "start": 48.21,
+    "end": 48.59,
+    "id": "w136"
+  },
+  {
+    "text": "the",
+    "start": 48.64,
+    "end": 48.84,
+    "id": "w137"
+  },
+  {
+    "text": "same",
+    "start": 48.84,
+    "end": 48.91,
+    "id": "w138"
+  },
+  {
+    "text": "week.",
+    "start": 49.25,
+    "end": 49.54,
+    "id": "w139"
+  },
+  {
+    "text": "Which",
+    "start": 49.63,
+    "end": 49.9,
+    "id": "w140"
+  },
+  {
+    "text": "one",
+    "start": 49.96,
+    "end": 50.14,
+    "id": "w141"
+  },
+  {
+    "text": "got",
+    "start": 50.14,
+    "end": 50.34,
+    "id": "w142"
+  },
+  {
+    "text": "you,",
+    "start": 50.34,
+    "end": 50.62,
+    "id": "w143"
+  },
+  {
+    "text": "bank",
+    "start": 50.72,
+    "end": 50.91,
+    "id": "w144"
+  },
+  {
+    "text": "flight",
+    "start": 50.94,
+    "end": 51.34,
+    "id": "w145"
+  },
+  {
+    "text": "or",
+    "start": 51.36,
+    "end": 51.48,
+    "id": "w146"
+  },
+  {
+    "text": "PlayStation?",
+    "start": 51.48,
+    "end": 52.51,
+    "id": "w147"
+  },
+  {
+    "text": "Send",
+    "start": 52.55,
+    "end": 52.69,
+    "id": "w148"
+  },
+  {
+    "text": "this",
+    "start": 52.7,
+    "end": 52.81,
+    "id": "w149"
+  },
+  {
+    "text": "to",
+    "start": 52.88,
+    "end": 52.97,
+    "id": "w150"
+  },
+  {
+    "text": "the",
+    "start": 52.97,
+    "end": 53.1,
+    "id": "w151"
+  },
+  {
+    "text": "friend",
+    "start": 53.1,
+    "end": 53.37,
+    "id": "w152"
+  },
+  {
+    "text": "who",
+    "start": 53.37,
+    "end": 53.5,
+    "id": "w153"
+  },
+  {
+    "text": "blamed",
+    "start": 53.5,
+    "end": 53.77,
+    "id": "w154"
+  },
+  {
+    "text": "their",
+    "start": 53.77,
+    "end": 53.89,
+    "id": "w155"
+  },
+  {
+    "text": "Wi-Fi.",
+    "start": 54,
+    "end": 54.4,
+    "id": "w156"
+  }
+]
