@@ -1,7 +1,8 @@
 # Instagram post: 007 The week everything went down
 
 Video: `D:\Claude\output\007-the-week-everything-went-down-short.mp4` (56.2 s)
-Covers (pick one): `D:\Claude\output\007-the-week-everything-went-down-thumb-{red,nsa,hacked}.png`
+Cover: `D:\Claude\output\007-the-week-everything-went-down-thumb-red.png` ("7 outages. 1 week.")
+Alternates: `-thumb-nsa.png`, `-thumb-hacked.png`
 Earlier city-only cut kept for comparison: `D:\Claude\output\007-the-week-everything-went-down-v1-city.mp4`
 Voice: am_liam, speed 1.25 (159 words/min). Look: R3/R4 isometric 3D with R1 energy; one 3D set
 per outage with pop-ups and hard cuts (`src/stages/outage-city.tsx`, `src/stages/outage-sets.tsx`).
