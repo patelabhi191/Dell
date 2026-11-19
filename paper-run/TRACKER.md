@@ -34,3 +34,10 @@ Start date: 2026-11-18 | Starting cash: $10,000 (paper) | Goal: +25% in 12 month
 | Date | Cash | Positions value | Total | Return | Note |
 |---|---|---|---|---|---|
 | 2026-11-18 | 10,000 | 0 | 10,000 | 0.0% | Run created, nothing bought yet |
+
+## Live tracking with Finnhub (script: tracker.py)
+1. `copy .env.example .env` and put your Finnhub key in `.env` (stays on your machine, git-ignored).
+2. Start the run once: `python tracker.py --buy-core` (logs core buys at today's prices into `trades.csv`).
+3. Each day: `python tracker.py` (updates `history.csv`, prints and saves `REPORT.txt`).
+4. When you act on a signal, add a line to `trades.csv`: `date,ticker,side,shares,price`.
+Note: Finnhub's free plan has no historical candles, so the 20-day high is built from the daily prices the script saves. Dip signals become reliable after about 20 days of runs.
