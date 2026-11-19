@@ -70,6 +70,7 @@ def main():
         qty = r4(qty); amt = round(qty * px, 2)
         if qty <= 0 or amt < 1: return
         p = P.setdefault(t, {"qty": 0.0, "cost": 0.0, "sleeve": "core" if t in CORE else "active"})
+        extra = {}
         if side == "buy":
             if amt > st["cash"] + 1e-6: return             # no margin
             p["qty"] = r4(p["qty"] + qty); p["cost"] = round(p["cost"] + amt, 2); st["cash"] = round(st["cash"] - amt, 2)
@@ -77,11 +78,14 @@ def main():
         else:
             qty = min(qty, p["qty"]); amt = round(qty * px, 2)  # no shorting
             avg = p["cost"] / p["qty"]; pnl = round(qty * (px - avg), 2)
+            share = qty / p["qty"]
+            extra = {"avgCost": round(avg, 4), "pnl": pnl, "pnlPct": round((px / avg - 1) * 100, 2),
+                     "portion": "all" if share > 0.999 else f"{share * 100:.0f}%"}
             st["realized"] = round(st["realized"] + pnl, 2)
             p["cost"] = round(p["cost"] - avg * qty, 2); p["qty"] = r4(p["qty"] - qty); st["cash"] = round(st["cash"] + amt, 2)
             if p["qty"] <= 1e-4: p.update(qty=0.0, cost=0.0, closed=today)
         trades.append({"ts": now.isoformat(timespec="minutes"), "ticker": t, "side": side, "qty": qty, "price": px,
-                       "amount": amt, "sleeve": p["sleeve"], "reason": why, "cashAfter": st["cash"]})
+                       "amount": amt, "sleeve": p["sleeve"], "reason": why, "cashAfter": st["cash"], **extra})
 
     # core: buy anything not yet held
     for t, w in CORE.items():

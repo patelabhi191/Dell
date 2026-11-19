@@ -77,9 +77,10 @@ tr:last-child td{border-bottom:0}.n{text-align:right}
   </section>
 
   <section>
-    <h2>Trade ledger</h2>
+    <h2>Transaction history</h2>
+    <p class="muted" id="histsum"></p>
     <div class="tablewrap"><table>
-      <thead><tr><th>When (ET)</th><th>Ticker</th><th>Side</th><th class="n">Shares</th><th class="n">Price</th><th class="n">Amount</th><th>Reason</th><th class="n">Cash after</th></tr></thead>
+      <thead><tr><th>Date (ET)</th><th>Action</th><th>Ticker</th><th class="n">Shares</th><th class="n">Price</th><th class="n">Amount</th><th class="n">Profit / loss</th><th>Reason</th></tr></thead>
       <tbody id="ledger"><tr><td colspan="8" class="empty">No trades yet.</td></tr></tbody></table></div>
   </section>
 
@@ -114,7 +115,13 @@ function renderState(s){
   drawChart(s.startCash);
 }
 function renderTrades(docs){
-  $("ledger").innerHTML=docs.map(x=>`<tr><td>${when(x.ts)}</td><td class="tk">${esc(x.ticker)}</td><td><span class="pill ${x.side==="buy"?"buy":"sell"}">${x.side==="buy"?"Buy":"Sell"}</span></td><td class="n">${(+x.qty).toFixed(4)}</td><td class="n">${usd(x.price,2)}</td><td class="n">${usd(x.amount,2)}</td><td>${esc(x.reason||"")}</td><td class="n">${usd(x.cashAfter,2)}</td></tr>`).join("")
+  const sells=docs.filter(x=>x.side==="sell"&&typeof x.pnl==="number"),wins=sells.filter(x=>x.pnl>0).length,net=sells.reduce((s,x)=>s+x.pnl,0);
+  $("histsum").innerHTML=docs.length?`${docs.length} transactions. ${sells.length} sales: ${wins} at a profit, ${sells.length-wins} at a loss or break-even, net <b class="${cls(net)}">${net>=0?"+":""}${usd(net,2)}</b>.`:"";
+  $("ledger").innerHTML=docs.map(x=>{
+    const buy=x.side==="buy";
+    const act=buy?"Bought":(x.portion&&x.portion!=="all"?`Sold ${esc(x.portion)}`:"Sold all");
+    const pl=buy||typeof x.pnl!=="number"?'<span class="muted">—</span>':`<b class="${cls(x.pnl)}">${x.pnl>=0?"+":""}${usd(x.pnl,2)} (${pct(x.pnlPct)})</b>`;
+    return `<tr><td>${when(x.ts)}</td><td><span class="pill ${buy?"buy":"sell"}">${act}</span></td><td class="tk">${esc(x.ticker)}</td><td class="n">${(+x.qty).toFixed(4)}</td><td class="n">${usd(x.price,2)}</td><td class="n">${usd(x.amount,2)}</td><td class="n">${pl}</td><td class="muted">${esc(x.reason||"")}</td></tr>`}).join("")
     ||'<tr><td colspan="8" class="empty">No trades yet.</td></tr>';
 }
 let startCash=10000;
