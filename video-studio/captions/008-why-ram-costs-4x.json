@@ -1,914 +1,920 @@
 [
   {
-    "text": "Why",
+    "text": "Have",
     "start": 0.03,
-    "end": 0.233,
+    "end": 0.208,
     "id": "w0"
   },
   {
-    "text": "are",
-    "start": 0.233,
-    "end": 0.435,
+    "text": "you",
+    "start": 0.208,
+    "end": 0.386,
     "id": "w1"
   },
   {
-    "text": "RAM",
-    "start": 0.435,
-    "end": 0.638,
+    "text": "ever",
+    "start": 0.386,
+    "end": 0.742,
     "id": "w2"
   },
   {
-    "text": "prices",
-    "start": 0.638,
-    "end": 1.044,
+    "text": "wondered",
+    "start": 0.742,
+    "end": 1.276,
     "id": "w3"
   },
   {
-    "text": "four",
-    "start": 1.044,
-    "end": 1.246,
+    "text": "why",
+    "start": 1.276,
+    "end": 1.454,
     "id": "w4"
   },
   {
-    "text": "times",
-    "start": 1.246,
-    "end": 1.652,
+    "text": "RAM",
+    "start": 1.454,
+    "end": 1.632,
     "id": "w5"
   },
   {
-    "text": "higher?",
-    "start": 1.652,
-    "end": 2.057,
+    "text": "prices",
+    "start": 1.632,
+    "end": 1.987,
     "id": "w6"
   },
   {
-    "text": "Chip",
-    "start": 2.277,
-    "end": 2.489,
+    "text": "are",
+    "start": 1.987,
+    "end": 2.165,
     "id": "w7"
   },
   {
-    "text": "prices",
-    "start": 2.489,
-    "end": 2.914,
+    "text": "so",
+    "start": 2.165,
+    "end": 2.343,
     "id": "w8"
   },
   {
-    "text": "nearly",
-    "start": 2.914,
-    "end": 3.338,
+    "text": "high?",
+    "start": 2.343,
+    "end": 2.521,
     "id": "w9"
   },
   {
-    "text": "quadrupled",
-    "start": 3.338,
-    "end": 3.975,
+    "text": "They've",
+    "start": 2.741,
+    "end": 2.961,
     "id": "w10"
   },
   {
-    "text": "in",
-    "start": 3.975,
-    "end": 4.187,
+    "text": "quadrupled",
+    "start": 2.961,
+    "end": 3.619,
     "id": "w11"
   },
   {
-    "text": "just",
-    "start": 4.187,
-    "end": 4.4,
+    "text": "in",
+    "start": 3.619,
+    "end": 3.838,
     "id": "w12"
   },
   {
-    "text": "three",
-    "start": 4.4,
-    "end": 4.612,
+    "text": "just",
+    "start": 3.838,
+    "end": 4.058,
     "id": "w13"
   },
   {
-    "text": "months.",
-    "start": 4.612,
-    "end": 4.824,
+    "text": "three",
+    "start": 4.058,
+    "end": 4.277,
     "id": "w14"
   },
   {
-    "text": "The",
-    "start": 5.63,
-    "end": 5.87,
+    "text": "months.",
+    "start": 4.277,
+    "end": 4.496,
     "id": "w15"
   },
   {
-    "text": "reason?",
-    "start": 5.87,
-    "end": 6.35,
+    "text": "The",
+    "start": 5.53,
+    "end": 5.77,
     "id": "w16"
   },
   {
-    "text": "AI",
-    "start": 6.57,
-    "end": 6.772,
+    "text": "reason?",
+    "start": 5.77,
+    "end": 6.25,
     "id": "w17"
   },
   {
-    "text": "companies",
-    "start": 6.772,
-    "end": 7.377,
+    "text": "AI",
+    "start": 6.47,
+    "end": 6.672,
     "id": "w18"
   },
   {
-    "text": "are",
-    "start": 7.377,
-    "end": 7.579,
+    "text": "companies",
+    "start": 6.672,
+    "end": 7.277,
     "id": "w19"
   },
   {
-    "text": "buying",
-    "start": 7.579,
-    "end": 7.781,
+    "text": "are",
+    "start": 7.277,
+    "end": 7.479,
     "id": "w20"
   },
   {
-    "text": "memory",
-    "start": 7.781,
-    "end": 8.386,
+    "text": "buying",
+    "start": 7.479,
+    "end": 7.681,
     "id": "w21"
   },
   {
-    "text": "that",
-    "start": 8.386,
-    "end": 8.588,
+    "text": "memory",
+    "start": 7.681,
+    "end": 8.286,
     "id": "w22"
   },
   {
-    "text": "hasn't",
-    "start": 8.588,
-    "end": 8.79,
+    "text": "that",
+    "start": 8.286,
+    "end": 8.488,
     "id": "w23"
   },
   {
-    "text": "even",
-    "start": 8.79,
-    "end": 9.193,
+    "text": "hasn't",
+    "start": 8.488,
+    "end": 8.69,
     "id": "w24"
   },
   {
-    "text": "been",
-    "start": 9.193,
-    "end": 9.395,
+    "text": "even",
+    "start": 8.69,
+    "end": 9.093,
     "id": "w25"
   },
   {
-    "text": "made",
-    "start": 9.395,
-    "end": 9.597,
+    "text": "been",
+    "start": 9.093,
+    "end": 9.295,
     "id": "w26"
   },
   {
-    "text": "yet.",
-    "start": 9.597,
-    "end": 9.798,
+    "text": "made",
+    "start": 9.295,
+    "end": 9.497,
     "id": "w27"
   },
   {
-    "text": "OpenAI",
-    "start": 11.23,
-    "end": 11.765,
+    "text": "yet.",
+    "start": 9.497,
+    "end": 9.698,
     "id": "w28"
   },
   {
-    "text": "signed",
-    "start": 11.765,
-    "end": 12.121,
+    "text": "OpenAI",
+    "start": 11.13,
+    "end": 11.665,
     "id": "w29"
   },
   {
-    "text": "letters",
-    "start": 12.121,
-    "end": 12.478,
+    "text": "signed",
+    "start": 11.665,
+    "end": 12.021,
     "id": "w30"
   },
   {
-    "text": "with",
-    "start": 12.478,
-    "end": 12.656,
+    "text": "letters",
+    "start": 12.021,
+    "end": 12.378,
     "id": "w31"
   },
   {
-    "text": "Samsung",
-    "start": 12.656,
-    "end": 13.013,
+    "text": "with",
+    "start": 12.378,
+    "end": 12.556,
     "id": "w32"
   },
   {
-    "text": "and",
-    "start": 13.013,
-    "end": 13.191,
+    "text": "Samsung",
+    "start": 12.556,
+    "end": 12.913,
     "id": "w33"
   },
   {
-    "text": "SK",
-    "start": 13.191,
-    "end": 13.369,
+    "text": "and",
+    "start": 12.913,
+    "end": 13.091,
     "id": "w34"
   },
   {
-    "text": "Hynix",
-    "start": 13.369,
-    "end": 13.726,
+    "text": "SK",
+    "start": 13.091,
+    "end": 13.269,
     "id": "w35"
   },
   {
-    "text": "for",
-    "start": 13.726,
-    "end": 13.904,
+    "text": "Hynix",
+    "start": 13.269,
+    "end": 13.626,
     "id": "w36"
   },
   {
-    "text": "up",
-    "start": 13.904,
-    "end": 14.083,
+    "text": "for",
+    "start": 13.626,
+    "end": 13.804,
     "id": "w37"
   },
   {
-    "text": "to",
-    "start": 14.083,
-    "end": 14.261,
+    "text": "up",
+    "start": 13.804,
+    "end": 13.983,
     "id": "w38"
   },
   {
-    "text": "900,000",
-    "start": 14.261,
-    "end": 15.509,
+    "text": "to",
+    "start": 13.983,
+    "end": 14.161,
     "id": "w39"
   },
   {
-    "text": "memory",
-    "start": 15.509,
-    "end": 16.044,
+    "text": "900,000",
+    "start": 14.161,
+    "end": 15.409,
     "id": "w40"
   },
   {
-    "text": "wafers",
-    "start": 16.044,
-    "end": 16.4,
+    "text": "memory",
+    "start": 15.409,
+    "end": 15.944,
     "id": "w41"
   },
   {
-    "text": "a",
-    "start": 16.4,
-    "end": 16.579,
+    "text": "wafers",
+    "start": 15.944,
+    "end": 16.3,
     "id": "w42"
   },
   {
-    "text": "month.",
-    "start": 16.579,
-    "end": 16.757,
+    "text": "a",
+    "start": 16.3,
+    "end": 16.479,
     "id": "w43"
   },
   {
-    "text": "Analysts",
-    "start": 16.977,
-    "end": 17.442,
+    "text": "month.",
+    "start": 16.479,
+    "end": 16.657,
     "id": "w44"
   },
   {
-    "text": "say",
-    "start": 17.442,
-    "end": 17.597,
+    "text": "Analysts",
+    "start": 16.877,
+    "end": 17.342,
     "id": "w45"
   },
   {
-    "text": "that's",
-    "start": 17.597,
-    "end": 17.752,
+    "text": "say",
+    "start": 17.342,
+    "end": 17.497,
     "id": "w46"
   },
   {
-    "text": "up",
-    "start": 17.752,
-    "end": 17.907,
+    "text": "that's",
+    "start": 17.497,
+    "end": 17.652,
     "id": "w47"
   },
   {
-    "text": "to",
-    "start": 17.907,
-    "end": 18.062,
+    "text": "up",
+    "start": 17.652,
+    "end": 17.807,
     "id": "w48"
   },
   {
-    "text": "40%",
-    "start": 18.062,
-    "end": 18.838,
+    "text": "to",
+    "start": 17.807,
+    "end": 17.962,
     "id": "w49"
   },
   {
-    "text": "of",
-    "start": 18.838,
-    "end": 18.993,
+    "text": "40%",
+    "start": 17.962,
+    "end": 18.738,
     "id": "w50"
   },
   {
-    "text": "the",
-    "start": 18.993,
-    "end": 19.148,
+    "text": "of",
+    "start": 18.738,
+    "end": 18.893,
     "id": "w51"
   },
   {
-    "text": "world's",
-    "start": 19.148,
-    "end": 19.303,
+    "text": "the",
+    "start": 18.893,
+    "end": 19.048,
     "id": "w52"
   },
   {
-    "text": "supply.",
-    "start": 19.303,
-    "end": 19.613,
+    "text": "world's",
+    "start": 19.048,
+    "end": 19.203,
     "id": "w53"
   },
   {
-    "text": "And",
-    "start": 21.03,
-    "end": 21.245,
+    "text": "supply.",
+    "start": 19.203,
+    "end": 19.513,
     "id": "w54"
   },
   {
-    "text": "the",
-    "start": 21.245,
-    "end": 21.46,
+    "text": "And",
+    "start": 20.93,
+    "end": 21.145,
     "id": "w55"
   },
   {
-    "text": "chip",
-    "start": 21.46,
-    "end": 21.675,
+    "text": "the",
+    "start": 21.145,
+    "end": 21.36,
     "id": "w56"
   },
   {
-    "text": "maker?",
-    "start": 21.675,
-    "end": 22.105,
+    "text": "chip",
+    "start": 21.36,
+    "end": 21.575,
     "id": "w57"
   },
   {
-    "text": "Nvidia",
-    "start": 22.325,
-    "end": 22.673,
+    "text": "maker?",
+    "start": 21.575,
+    "end": 22.005,
     "id": "w58"
   },
   {
-    "text": "put",
-    "start": 22.673,
-    "end": 22.847,
+    "text": "Nvidia",
+    "start": 22.225,
+    "end": 22.573,
     "id": "w59"
   },
   {
-    "text": "$30",
-    "start": 22.847,
-    "end": 23.629,
+    "text": "put",
+    "start": 22.573,
+    "end": 22.747,
     "id": "w60"
   },
   {
-    "text": "billion",
-    "start": 23.629,
-    "end": 23.976,
+    "text": "$30",
+    "start": 22.747,
+    "end": 23.529,
     "id": "w61"
   },
   {
-    "text": "into",
-    "start": 23.976,
-    "end": 24.324,
+    "text": "billion",
+    "start": 23.529,
+    "end": 23.876,
     "id": "w62"
   },
   {
-    "text": "OpenAI,",
-    "start": 24.324,
-    "end": 24.845,
+    "text": "into",
+    "start": 23.876,
+    "end": 24.224,
     "id": "w63"
   },
   {
-    "text": "a",
-    "start": 25.054,
-    "end": 25.227,
+    "text": "OpenAI,",
+    "start": 24.224,
+    "end": 24.745,
     "id": "w64"
   },
   {
-    "text": "company",
-    "start": 25.227,
-    "end": 25.749,
+    "text": "a",
+    "start": 24.954,
+    "end": 25.127,
     "id": "w65"
   },
   {
-    "text": "that",
-    "start": 25.749,
-    "end": 25.923,
+    "text": "company",
+    "start": 25.127,
+    "end": 25.649,
     "id": "w66"
   },
   {
-    "text": "runs",
-    "start": 25.923,
-    "end": 26.096,
+    "text": "that",
+    "start": 25.649,
+    "end": 25.823,
     "id": "w67"
   },
   {
-    "text": "on",
-    "start": 26.096,
-    "end": 26.27,
+    "text": "runs",
+    "start": 25.823,
+    "end": 25.996,
     "id": "w68"
   },
   {
-    "text": "its",
-    "start": 26.27,
-    "end": 26.444,
+    "text": "on",
+    "start": 25.996,
+    "end": 26.17,
     "id": "w69"
   },
   {
-    "text": "chips.",
-    "start": 26.444,
-    "end": 26.618,
+    "text": "its",
+    "start": 26.17,
+    "end": 26.344,
     "id": "w70"
   },
   {
-    "text": "It's",
-    "start": 27.03,
-    "end": 27.185,
+    "text": "chips.",
+    "start": 26.344,
+    "end": 26.518,
     "id": "w71"
   },
   {
-    "text": "like",
-    "start": 27.185,
-    "end": 27.339,
+    "text": "It's",
+    "start": 26.93,
+    "end": 27.085,
     "id": "w72"
   },
   {
-    "text": "I",
-    "start": 27.339,
-    "end": 27.494,
+    "text": "like",
+    "start": 27.085,
+    "end": 27.239,
     "id": "w73"
   },
   {
-    "text": "pay",
-    "start": 27.494,
-    "end": 27.649,
+    "text": "I",
+    "start": 27.239,
+    "end": 27.394,
     "id": "w74"
   },
   {
-    "text": "you",
-    "start": 27.649,
-    "end": 27.803,
+    "text": "pay",
+    "start": 27.394,
+    "end": 27.549,
     "id": "w75"
   },
   {
-    "text": "$1,000,",
-    "start": 27.803,
-    "end": 28.963,
+    "text": "you",
+    "start": 27.549,
+    "end": 27.703,
     "id": "w76"
   },
   {
-    "text": "you",
-    "start": 29.149,
-    "end": 29.303,
+    "text": "$1,000,",
+    "start": 27.703,
+    "end": 28.863,
     "id": "w77"
   },
   {
-    "text": "spend",
-    "start": 29.303,
-    "end": 29.458,
+    "text": "you",
+    "start": 29.049,
+    "end": 29.203,
     "id": "w78"
   },
   {
-    "text": "it",
-    "start": 29.458,
-    "end": 29.613,
+    "text": "spend",
+    "start": 29.203,
+    "end": 29.358,
     "id": "w79"
   },
   {
-    "text": "on",
-    "start": 29.613,
-    "end": 29.767,
+    "text": "it",
+    "start": 29.358,
+    "end": 29.513,
     "id": "w80"
   },
   {
-    "text": "my",
-    "start": 29.767,
-    "end": 29.922,
+    "text": "on",
+    "start": 29.513,
+    "end": 29.667,
     "id": "w81"
   },
   {
-    "text": "flowers,",
-    "start": 29.922,
-    "end": 30.231,
+    "text": "my",
+    "start": 29.667,
+    "end": 29.822,
     "id": "w82"
   },
   {
-    "text": "and",
-    "start": 30.417,
-    "end": 30.572,
+    "text": "flowers,",
+    "start": 29.822,
+    "end": 30.131,
     "id": "w83"
   },
   {
-    "text": "I",
-    "start": 30.572,
-    "end": 30.726,
+    "text": "and",
+    "start": 30.317,
+    "end": 30.472,
     "id": "w84"
   },
   {
-    "text": "tell",
-    "start": 30.726,
-    "end": 30.881,
+    "text": "I",
+    "start": 30.472,
+    "end": 30.626,
     "id": "w85"
   },
   {
-    "text": "the",
-    "start": 30.881,
-    "end": 31.036,
+    "text": "tell",
+    "start": 30.626,
+    "end": 30.781,
     "id": "w86"
   },
   {
-    "text": "bank",
-    "start": 31.036,
-    "end": 31.19,
+    "text": "the",
+    "start": 30.781,
+    "end": 30.936,
     "id": "w87"
   },
   {
-    "text": "my",
-    "start": 31.19,
-    "end": 31.345,
+    "text": "bank",
+    "start": 30.936,
+    "end": 31.09,
     "id": "w88"
   },
   {
-    "text": "shop",
-    "start": 31.345,
-    "end": 31.5,
+    "text": "my",
+    "start": 31.09,
+    "end": 31.245,
     "id": "w89"
   },
   {
-    "text": "is",
-    "start": 31.5,
-    "end": 31.654,
+    "text": "shop",
+    "start": 31.245,
+    "end": 31.4,
     "id": "w90"
   },
   {
-    "text": "worth",
-    "start": 31.654,
-    "end": 31.809,
+    "text": "is",
+    "start": 31.4,
+    "end": 31.554,
     "id": "w91"
   },
   {
-    "text": "a",
-    "start": 31.809,
-    "end": 31.964,
+    "text": "worth",
+    "start": 31.554,
+    "end": 31.709,
     "id": "w92"
   },
   {
-    "text": "billion.",
-    "start": 31.964,
-    "end": 32.273,
+    "text": "a",
+    "start": 31.709,
+    "end": 31.864,
     "id": "w93"
   },
   {
-    "text": "And",
-    "start": 32.73,
-    "end": 32.978,
+    "text": "billion.",
+    "start": 31.864,
+    "end": 32.173,
     "id": "w94"
   },
   {
-    "text": "the",
-    "start": 32.978,
-    "end": 33.226,
+    "text": "And",
+    "start": 32.63,
+    "end": 32.878,
     "id": "w95"
   },
   {
-    "text": "math?",
-    "start": 33.226,
-    "end": 33.474,
+    "text": "the",
+    "start": 32.878,
+    "end": 33.126,
     "id": "w96"
   },
   {
-    "text": "Bain",
-    "start": 33.694,
-    "end": 33.856,
+    "text": "math?",
+    "start": 33.126,
+    "end": 33.374,
     "id": "w97"
   },
   {
-    "text": "says",
-    "start": 33.856,
-    "end": 34.017,
+    "text": "Bain",
+    "start": 33.594,
+    "end": 33.756,
     "id": "w98"
   },
   {
-    "text": "AI",
-    "start": 34.017,
-    "end": 34.178,
+    "text": "says",
+    "start": 33.756,
+    "end": 33.917,
     "id": "w99"
   },
   {
-    "text": "needs",
-    "start": 34.178,
-    "end": 34.339,
+    "text": "AI",
+    "start": 33.917,
+    "end": 34.078,
     "id": "w100"
   },
   {
-    "text": "$2",
-    "start": 34.339,
-    "end": 34.822,
+    "text": "needs",
+    "start": 34.078,
+    "end": 34.239,
     "id": "w101"
   },
   {
-    "text": "trillion",
-    "start": 34.822,
-    "end": 35.145,
+    "text": "$2",
+    "start": 34.239,
+    "end": 34.722,
     "id": "w102"
   },
   {
-    "text": "a",
-    "start": 35.145,
-    "end": 35.306,
+    "text": "trillion",
+    "start": 34.722,
+    "end": 35.045,
     "id": "w103"
   },
   {
-    "text": "year",
-    "start": 35.306,
-    "end": 35.467,
+    "text": "a",
+    "start": 35.045,
+    "end": 35.206,
     "id": "w104"
   },
   {
-    "text": "in",
-    "start": 35.467,
-    "end": 35.628,
+    "text": "year",
+    "start": 35.206,
+    "end": 35.367,
     "id": "w105"
   },
   {
-    "text": "revenue",
-    "start": 35.628,
-    "end": 36.111,
+    "text": "in",
+    "start": 35.367,
+    "end": 35.528,
     "id": "w106"
   },
   {
-    "text": "by",
-    "start": 36.111,
-    "end": 36.272,
+    "text": "revenue",
+    "start": 35.528,
+    "end": 36.011,
     "id": "w107"
   },
   {
-    "text": "2030.",
-    "start": 36.272,
-    "end": 37.239,
+    "text": "by",
+    "start": 36.011,
+    "end": 36.172,
     "id": "w108"
   },
   {
-    "text": "It's",
-    "start": 37.459,
-    "end": 37.645,
+    "text": "2030.",
+    "start": 36.172,
+    "end": 37.139,
     "id": "w109"
   },
   {
-    "text": "on",
-    "start": 37.645,
-    "end": 37.831,
+    "text": "It's",
+    "start": 37.359,
+    "end": 37.545,
     "id": "w110"
   },
   {
-    "text": "track",
-    "start": 37.831,
-    "end": 38.017,
+    "text": "on",
+    "start": 37.545,
+    "end": 37.731,
     "id": "w111"
   },
   {
-    "text": "to",
-    "start": 38.017,
-    "end": 38.203,
+    "text": "track",
+    "start": 37.731,
+    "end": 37.917,
     "id": "w112"
   },
   {
-    "text": "fall",
-    "start": 38.203,
-    "end": 38.389,
+    "text": "to",
+    "start": 37.917,
+    "end": 38.103,
     "id": "w113"
   },
   {
-    "text": "$800",
-    "start": 38.389,
-    "end": 39.504,
+    "text": "fall",
+    "start": 38.103,
+    "end": 38.289,
     "id": "w114"
   },
   {
-    "text": "billion",
-    "start": 39.504,
-    "end": 39.876,
+    "text": "$800",
+    "start": 38.289,
+    "end": 39.404,
     "id": "w115"
   },
   {
-    "text": "short.",
-    "start": 39.876,
-    "end": 40.061,
+    "text": "billion",
+    "start": 39.404,
+    "end": 39.776,
     "id": "w116"
   },
   {
-    "text": "If",
-    "start": 41.83,
-    "end": 42.028,
+    "text": "short.",
+    "start": 39.776,
+    "end": 39.961,
     "id": "w117"
   },
   {
-    "text": "the",
-    "start": 42.028,
-    "end": 42.225,
+    "text": "If",
+    "start": 41.73,
+    "end": 41.928,
     "id": "w118"
   },
   {
-    "text": "boom",
-    "start": 42.225,
-    "end": 42.423,
+    "text": "the",
+    "start": 41.928,
+    "end": 42.125,
     "id": "w119"
   },
   {
-    "text": "is",
-    "start": 42.423,
-    "end": 42.621,
+    "text": "boom",
+    "start": 42.125,
+    "end": 42.323,
     "id": "w120"
   },
   {
-    "text": "real,",
-    "start": 42.621,
-    "end": 42.818,
+    "text": "is",
+    "start": 42.323,
+    "end": 42.521,
     "id": "w121"
   },
   {
-    "text": "RAM",
-    "start": 43.055,
-    "end": 43.253,
+    "text": "real,",
+    "start": 42.521,
+    "end": 42.718,
     "id": "w122"
   },
   {
-    "text": "stays",
-    "start": 43.253,
-    "end": 43.451,
+    "text": "RAM",
+    "start": 42.955,
+    "end": 43.153,
     "id": "w123"
   },
   {
-    "text": "expensive.",
-    "start": 43.451,
-    "end": 44.044,
+    "text": "stays",
+    "start": 43.153,
+    "end": 43.351,
     "id": "w124"
   },
   {
-    "text": "If",
-    "start": 44.264,
-    "end": 44.444,
+    "text": "expensive.",
+    "start": 43.351,
+    "end": 43.944,
     "id": "w125"
   },
   {
-    "text": "it's",
-    "start": 44.444,
-    "end": 44.624,
+    "text": "If",
+    "start": 44.164,
+    "end": 44.344,
     "id": "w126"
   },
   {
-    "text": "a",
-    "start": 44.624,
-    "end": 44.804,
+    "text": "it's",
+    "start": 44.344,
+    "end": 44.524,
     "id": "w127"
   },
   {
-    "text": "bubble,",
-    "start": 44.804,
-    "end": 44.984,
+    "text": "a",
+    "start": 44.524,
+    "end": 44.704,
     "id": "w128"
   },
   {
-    "text": "prices",
-    "start": 45.2,
-    "end": 45.56,
+    "text": "bubble,",
+    "start": 44.704,
+    "end": 44.884,
     "id": "w129"
   },
   {
-    "text": "could",
-    "start": 45.56,
-    "end": 45.74,
+    "text": "prices",
+    "start": 45.1,
+    "end": 45.46,
     "id": "w130"
   },
   {
-    "text": "crash.",
-    "start": 45.74,
-    "end": 45.92,
+    "text": "could",
+    "start": 45.46,
+    "end": 45.64,
     "id": "w131"
   },
   {
-    "text": "In",
-    "start": 47.33,
-    "end": 47.536,
+    "text": "crash.",
+    "start": 45.64,
+    "end": 45.82,
     "id": "w132"
   },
   {
-    "text": "this",
-    "start": 47.536,
-    "end": 47.743,
+    "text": "In",
+    "start": 47.23,
+    "end": 47.436,
     "id": "w133"
   },
   {
-    "text": "whole",
-    "start": 47.743,
-    "end": 47.949,
+    "text": "this",
+    "start": 47.436,
+    "end": 47.643,
     "id": "w134"
   },
   {
-    "text": "chain,",
-    "start": 47.949,
-    "end": 48.156,
+    "text": "whole",
+    "start": 47.643,
+    "end": 47.849,
     "id": "w135"
   },
   {
-    "text": "only",
-    "start": 48.403,
-    "end": 48.816,
+    "text": "chain,",
+    "start": 47.849,
+    "end": 48.056,
     "id": "w136"
   },
   {
-    "text": "one",
-    "start": 48.816,
-    "end": 49.022,
+    "text": "only",
+    "start": 48.303,
+    "end": 48.716,
     "id": "w137"
   },
   {
-    "text": "thing",
-    "start": 49.022,
-    "end": 49.229,
+    "text": "one",
+    "start": 48.716,
+    "end": 48.922,
     "id": "w138"
   },
   {
-    "text": "is",
-    "start": 49.229,
-    "end": 49.435,
+    "text": "thing",
+    "start": 48.922,
+    "end": 49.129,
     "id": "w139"
   },
   {
-    "text": "real.",
-    "start": 49.435,
-    "end": 49.642,
+    "text": "is",
+    "start": 49.129,
+    "end": 49.335,
     "id": "w140"
   },
   {
-    "text": "Your",
-    "start": 49.862,
-    "end": 50.03,
+    "text": "real.",
+    "start": 49.335,
+    "end": 49.542,
     "id": "w141"
   },
   {
-    "text": "investment",
-    "start": 50.03,
-    "end": 50.535,
+    "text": "Your",
+    "start": 49.762,
+    "end": 49.93,
     "id": "w142"
   },
   {
-    "text": "in",
-    "start": 50.535,
-    "end": 50.703,
+    "text": "investment",
+    "start": 49.93,
+    "end": 50.435,
     "id": "w143"
   },
   {
-    "text": "RAM,",
-    "start": 50.703,
-    "end": 50.871,
+    "text": "in",
+    "start": 50.435,
+    "end": 50.603,
     "id": "w144"
   },
   {
-    "text": "if",
-    "start": 51.073,
-    "end": 51.241,
+    "text": "RAM,",
+    "start": 50.603,
+    "end": 50.771,
     "id": "w145"
   },
   {
-    "text": "you",
-    "start": 51.241,
-    "end": 51.409,
+    "text": "if",
+    "start": 50.973,
+    "end": 51.141,
     "id": "w146"
   },
   {
-    "text": "have",
-    "start": 51.409,
-    "end": 51.578,
+    "text": "you",
+    "start": 51.141,
+    "end": 51.309,
     "id": "w147"
   },
   {
-    "text": "one.",
-    "start": 51.578,
-    "end": 51.746,
+    "text": "have",
+    "start": 51.309,
+    "end": 51.478,
     "id": "w148"
   },
   {
-    "text": "Follow",
-    "start": 51.966,
-    "end": 52.452,
+    "text": "one.",
+    "start": 51.478,
+    "end": 51.646,
     "id": "w149"
   },
   {
-    "text": "for",
-    "start": 52.452,
-    "end": 52.696,
+    "text": "Follow",
+    "start": 51.866,
+    "end": 52.352,
     "id": "w150"
   },
   {
-    "text": "more.",
-    "start": 52.696,
-    "end": 52.939,
+    "text": "for",
+    "start": 52.352,
+    "end": 52.596,
     "id": "w151"
+  },
+  {
+    "text": "more.",
+    "start": 52.596,
+    "end": 52.839,
+    "id": "w152"
   }
 ]

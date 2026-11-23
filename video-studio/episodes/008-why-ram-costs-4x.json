@@ -3,7 +3,7 @@
   "title": "Why RAM costs 4x (draft)",
   "format": "info",
   "theme": "cinema",
-  "stage": "ram-demo",
+  "stage": "ram-iso",
   "canvas": "full",
   "captionStyle": "box",
   "voice": "am_liam",
@@ -50,13 +50,12 @@
   "scenes": [
     {
       "type": "show",
-      "seconds": 5.5,
+      "seconds": 5.4,
       "beat": "price",
-      "narration": "Why are RAM prices four times higher? Chip prices nearly quadrupled in just three months.",
-      "speed": 1.15,
-      "hold": 0.4,
+      "narration": "Have you ever wondered why RAM prices are so high? They've quadrupled in just three months.",
+      "hold": 0.6,
       "cues": {
-        "sacks": "four"
+        "x4": "quadrupled"
       }
     },
     {
@@ -66,7 +65,7 @@
       "narration": "The reason? AI companies are buying memory that hasn't even been made yet.",
       "hold": 1,
       "cues": {
-        "appear": "buying",
+        "buy": "buying",
         "vanish": "made"
       }
     },
@@ -84,7 +83,10 @@
       "type": "show",
       "seconds": 6,
       "beat": "loop",
-      "narration": "And the chip maker? Nvidia put $30 billion into OpenAI, a company that runs on its chips."
+      "narration": "And the chip maker? Nvidia put $30 billion into OpenAI, a company that runs on its chips.",
+      "cues": {
+        "stake": "$30"
+      }
     },
     {
       "type": "show",

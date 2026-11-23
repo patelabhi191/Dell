@@ -1,103 +1,103 @@
 1
-00:00:00,030 --> 00:00:01,652
-Why are RAM prices four times
+00:00:00,030 --> 00:00:01,632
+Have you ever wondered why RAM
 
 2
-00:00:01,652 --> 00:00:04,187
-higher? Chip prices nearly quadrupled in
+00:00:01,632 --> 00:00:03,619
+prices are so high? They've quadrupled
 
 3
-00:00:04,187 --> 00:00:06,772
-just three months. The reason? AI
+00:00:03,619 --> 00:00:06,250
+in just three months. The reason?
 
 4
-00:00:06,772 --> 00:00:08,790
-companies are buying memory that hasn't
+00:00:06,470 --> 00:00:08,488
+AI companies are buying memory that
 
 5
-00:00:08,790 --> 00:00:12,121
-even been made yet. OpenAI signed
+00:00:08,488 --> 00:00:11,665
+hasn't even been made yet. OpenAI
 
 6
-00:00:12,121 --> 00:00:13,726
-letters with Samsung and SK Hynix
+00:00:11,665 --> 00:00:13,269
+signed letters with Samsung and SK
 
 7
-00:00:13,726 --> 00:00:16,400
-for up to 900,000 memory wafers
+00:00:13,269 --> 00:00:15,944
+Hynix for up to 900,000 memory
 
 8
-00:00:16,400 --> 00:00:17,907
-a month. Analysts say that's up
+00:00:15,944 --> 00:00:17,652
+wafers a month. Analysts say that's
 
 9
-00:00:17,907 --> 00:00:19,613
-to 40% of the world's supply.
+00:00:17,652 --> 00:00:19,203
+up to 40% of the world's
 
 10
-00:00:21,030 --> 00:00:22,847
-And the chip maker? Nvidia put
+00:00:19,203 --> 00:00:22,573
+supply. And the chip maker? Nvidia
 
 11
-00:00:22,847 --> 00:00:25,749
-$30 billion into OpenAI, a company
+00:00:22,573 --> 00:00:25,127
+put $30 billion into OpenAI, a
 
 12
-00:00:25,749 --> 00:00:27,185
-that runs on its chips. It's
+00:00:25,127 --> 00:00:26,518
+company that runs on its chips.
 
 13
-00:00:27,185 --> 00:00:29,303
-like I pay you $1,000, you
+00:00:26,930 --> 00:00:28,863
+It's like I pay you $1,000,
 
 14
-00:00:29,303 --> 00:00:30,572
-spend it on my flowers, and
+00:00:29,049 --> 00:00:30,131
+you spend it on my flowers,
 
 15
-00:00:30,572 --> 00:00:31,500
-I tell the bank my shop
+00:00:30,317 --> 00:00:31,245
+and I tell the bank my
 
 16
-00:00:31,500 --> 00:00:33,226
-is worth a billion. And the
+00:00:31,245 --> 00:00:32,878
+shop is worth a billion. And
 
 17
-00:00:33,226 --> 00:00:34,822
-math? Bain says AI needs $2
+00:00:32,878 --> 00:00:34,239
+the math? Bain says AI needs
 
 18
-00:00:34,822 --> 00:00:36,272
-trillion a year in revenue by
+00:00:34,239 --> 00:00:36,011
+$2 trillion a year in revenue
 
 19
-00:00:36,272 --> 00:00:38,389
-2030. It's on track to fall
+00:00:36,011 --> 00:00:38,103
+by 2030. It's on track to
 
 20
-00:00:38,389 --> 00:00:42,423
-$800 billion short. If the boom
+00:00:38,103 --> 00:00:42,125
+fall $800 billion short. If the
 
 21
-00:00:42,423 --> 00:00:44,444
-is real, RAM stays expensive. If
+00:00:42,125 --> 00:00:43,944
+boom is real, RAM stays expensive.
 
 22
-00:00:44,444 --> 00:00:45,920
-it's a bubble, prices could crash.
+00:00:44,164 --> 00:00:45,640
+If it's a bubble, prices could
 
 23
-00:00:47,330 --> 00:00:49,022
-In this whole chain, only one
+00:00:45,640 --> 00:00:48,716
+crash. In this whole chain, only
 
 24
-00:00:49,022 --> 00:00:50,703
-thing is real. Your investment in
+00:00:48,716 --> 00:00:50,435
+one thing is real. Your investment
 
 25
-00:00:50,703 --> 00:00:52,452
-RAM, if you have one. Follow
+00:00:50,435 --> 00:00:51,646
+in RAM, if you have one.
 
 26
-00:00:52,452 --> 00:00:52,939
-for more.
+00:00:51,866 --> 00:00:52,839
+Follow for more.
