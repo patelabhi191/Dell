@@ -3,7 +3,7 @@ import { AbsoluteFill, Easing, random, useCurrentFrame, useVideoConfig } from "r
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import { Line, MeshReflectorMaterial } from "@react-three/drei";
-import { Bloom, DepthOfField, EffectComposer, Vignette } from "@react-three/postprocessing";
+import { Bloom, ChromaticAberration, DepthOfField, EffectComposer, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { BeatsContext } from "../beats";
 import { BigStat, Callout, K, KitDefs, MONO, TitleCard } from "../kit";
@@ -11,11 +11,15 @@ import { BODY } from "../theme";
 import { WarmUp, logRenderer } from "../three/common";
 
 /**
- * Episode 008 demo (UI check): why RAM costs 4x, in three shots modelled on R5 (macro 3D
- * objects, soft key light, grey-blue matte world, depth of field) with R4/R5 interface: chapter
- * tabs, pinned labels, a live price panel, source cards, boxed captions.
- * Facts are the checked versions (chip spot price; OpenAI letters of intent with the 40% as an
- * analyst estimate; Nvidia's $30B stake that replaced the $100B letter of intent).
+ * Episode 008 "Why RAM costs 4x": one 3D set per beat in the R4/R5 look (macro product shots,
+ * soft key light with rim lights, grey-blue world, depth of field) and the R4/R5 interface
+ * (chapter tabs showing finished + current only, pinned labels, live panels, source cards,
+ * boxed captions). Creator-style edit: punch-in and colour split on every cut, camera shake on
+ * impacts, (no film grain: it speckled bright colours).
+ *
+ * Facts are the checked versions (DDR5 chip spot price; OpenAI letters of intent with the 40%
+ * as an analyst estimate; Nvidia's $30B stake; Bain's $2T / $800B). Brands appear as names in
+ * their colours; no logo artwork is drawn.
  */
 
 const W = 1080;
@@ -30,6 +34,7 @@ const P = {
   light: "#D9DFE8",
   pcb: "#1E4A3C",
   gold: "#D9A845",
+  nvidia: "#76B900",
   cyan: K.cyan,
   red: K.red,
   amber: K.amber,
@@ -47,8 +52,6 @@ type Beats = Record<string, number>;
 const since = (beats: Beats, frame: number, name: string) => (beats[name] === undefined ? -999 : (frame - beats[name]) / FPS);
 
 const ORDER = ["price", "reason", "deal", "loop", "flower", "math", "bubble", "end"] as const;
-/** Intro shots use a clean, light studio background (owner: "clear background"). */
-const STUDIO: Record<string, boolean> = { price: true, reason: true };
 type Beat = (typeof ORDER)[number];
 /** Chapter tab each beat belongs to (the flower analogy and the ending sit inside a chapter). */
 const CHAPTERS = ["PRICE", "DEAL", "LOOP", "MATH", "BUBBLE"];
@@ -61,42 +64,122 @@ const current = (beats: Beats, frame: number): Beat => {
   return c;
 };
 
+// ---------------------------------------------------------------- textures (drawn once)
+const makeTex = (w: number, h: number, draw: (g: CanvasRenderingContext2D) => void) => {
+  if (typeof document === "undefined") return null;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  draw(c.getContext("2d")!);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+};
+const DOLLAR_TEX = makeTex(128, 128, (g) => {
+  g.fillStyle = "#2F5E2A";
+  g.font = "bold 104px Arial, sans-serif";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.fillText("$", 64, 70);
+});
+/** Silicon wafer: rainbow sheen, grid of dies, flat notch. */
+const WAFER_TEX = makeTex(512, 512, (g) => {
+  const grd = g.createRadialGradient(220, 200, 20, 256, 256, 256);
+  grd.addColorStop(0, "#E6E9F5");
+  grd.addColorStop(0.35, "#A99BF2");
+  grd.addColorStop(0.6, "#6FD0E0");
+  grd.addColorStop(0.82, "#E8C887");
+  grd.addColorStop(1, "#8E9BB8");
+  g.save();
+  g.beginPath();
+  g.arc(256, 256, 252, 0, Math.PI * 2);
+  g.clip();
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 512, 512);
+  g.strokeStyle = "rgba(20,24,40,0.55)";
+  g.lineWidth = 2;
+  for (let x = 12; x < 512; x += 26) {
+    for (let y = 12; y < 512; y += 26) {
+      const dx = x + 11 - 256;
+      const dy = y + 11 - 256;
+      if (dx * dx + dy * dy < 228 * 228) g.strokeRect(x, y, 22, 22);
+    }
+  }
+  g.restore();
+  g.fillStyle = "#1C2430";
+  g.fillRect(170, 496, 172, 16);
+});
+const DDR5_TEX = makeTex(512, 160, (g) => {
+  g.fillStyle = "#121418";
+  g.fillRect(0, 0, 512, 160);
+  g.strokeStyle = "#2A2E36";
+  g.lineWidth = 6;
+  for (let x = -160; x < 512; x += 36) {
+    g.beginPath();
+    g.moveTo(x, 160);
+    g.lineTo(x + 160, 0);
+    g.stroke();
+  }
+  g.fillStyle = "#F4F6FA";
+  g.font = "900 92px Arial, sans-serif";
+  g.textBaseline = "middle";
+  g.fillText("DDR5", 30, 84);
+  g.fillStyle = "#9AA4B8";
+  g.font = "700 30px Arial, sans-serif";
+  g.fillText("MEMORY", 330, 84);
+});
+const NVIDIA_TEX = makeTex(512, 128, (g) => {
+  g.fillStyle = "#0C0E10";
+  g.fillRect(0, 0, 512, 128);
+  g.fillStyle = "#76B900";
+  g.font = "italic 900 84px Arial, sans-serif";
+  g.textBaseline = "middle";
+  g.textAlign = "center";
+  g.fillText("NVIDIA", 256, 68);
+});
+
 // ---------------------------------------------------------------- camera
 type Pose = { p: THREE.Vector3; t: THREE.Vector3 };
 const SHOTS: Record<Beat, [Pose, Pose]> = {
   price: [
-    { p: v3(1.0, 2.0, 7.4), t: v3(0, 0.75, 0.5) },
-    { p: v3(1.8, 2.7, 8.8), t: v3(0, 0.6, 0.7) },
+    { p: v3(0.2, 1.8, 7.4), t: v3(0, 1.3, 0.3) },
+    { p: v3(0.8, 2.1, 8.4), t: v3(0, 1.2, 0.6) },
   ],
   reason: [
-    { p: v3(2.4, 2.6, 6.4), t: v3(0, 0.45, -0.5) },
-    { p: v3(1.5, 2.3, 7.2), t: v3(0, 0.45, -0.5) },
+    { p: v3(2.6, 2.8, 6.8), t: v3(0, 0.45, -0.5) },
+    { p: v3(1.6, 2.4, 7.4), t: v3(0, 0.45, -0.5) },
   ],
   deal: [
-    { p: v3(7.0, 6.0, 8.5), t: v3(0, 0.4, 0) },
-    { p: v3(4.5, 4.6, 9.5), t: v3(0, 0.5, 0) },
+    { p: v3(1.2, 6.0, 9.6), t: v3(0, 0.6, -1.0) },
+    { p: v3(-1.0, 5.2, 9.2), t: v3(0, 0.6, -1.0) },
   ],
   loop: [
-    { p: v3(1.4, 4.4, 11.5), t: v3(0, 0.8, 0) },
-    { p: v3(-2.0, 4.0, 11.0), t: v3(0, 0.8, 0) },
+    { p: v3(0.4, 3.1, 8.8), t: v3(0.35, 1.2, -0.5) },
+    { p: v3(-0.7, 2.9, 8.4), t: v3(0.35, 1.2, -0.5) },
   ],
   flower: [
-    { p: v3(-1.4, 3.8, 10.5), t: v3(0.2, 0.9, -0.8) },
-    { p: v3(1.6, 4.2, 11.0), t: v3(0.3, 0.9, -0.9) },
+    { p: v3(-1.0, 3.2, 9.4), t: v3(0.2, 0.9, -1.0) },
+    { p: v3(1.4, 3.4, 9.8), t: v3(0.2, 0.9, -1.0) },
   ],
   math: [
     { p: v3(4.6, 3.6, 11.5), t: v3(0, 1.6, 0) },
     { p: v3(2.8, 3.2, 10.8), t: v3(0, 1.7, 0) },
   ],
   bubble: [
-    { p: v3(0.8, 1.9, 6.6), t: v3(0, 1.0, 0) },
-    { p: v3(-0.8, 1.7, 6.0), t: v3(0, 1.0, 0) },
+    { p: v3(1.2, 2.0, 7.8), t: v3(0, 1.2, 0) },
+    { p: v3(-0.8, 1.8, 7.2), t: v3(0, 1.2, 0) },
   ],
   end: [
-    { p: v3(2.6, 2.4, 6.4), t: v3(0, 0.75, 0) },
-    { p: v3(1.2, 1.6, 4.6), t: v3(0, 0.8, 0) },
+    { p: v3(1.4, 2.0, 7.6), t: v3(0, 1.3, 0) },
+    { p: v3(0.5, 1.8, 6.6), t: v3(0, 1.3, 0) },
   ],
 };
+
+/** Moments that shake the camera: sacks landing, the 800B gap, the bubble pop. */
+const impacts = (beats: Beats) =>
+  [beats.sacks !== undefined ? beats.sacks + 0.65 * FPS : undefined, beats.gap !== undefined ? beats.gap - 0.4 * FPS : undefined, beats.pop].filter((x): x is number => x !== undefined);
+
 const poseAt = (beats: Beats, frame: number, total: number): Pose => {
   const b = current(beats, frame);
   const s = beats[b] ?? 0;
@@ -105,10 +188,24 @@ const poseAt = (beats: Beats, frame: number, total: number): Pose => {
   const e = nx && beats[nx] !== undefined ? beats[nx] : total;
   const u = Easing.inOut(Easing.quad)(clamp01((frame - s) / Math.max(1, e - s)));
   const [a, z] = SHOTS[b];
-  return { p: a.p.clone().lerp(z.p, u), t: a.t.clone().lerp(z.t, u) };
+  const p = a.p.clone().lerp(z.p, u);
+  const t = a.t.clone().lerp(z.t, u);
+  // Creator-style cut: start a little closer and settle back over 0.35 s.
+  const cut = i === 0 ? 0 : 1 - smooth(ramp((frame - s) / FPS, 0, 0.35));
+  p.lerp(t, 0.1 * cut);
+  // Camera shake on impacts.
+  for (const at of impacts(beats)) {
+    const k = (frame - at) / FPS;
+    if (k >= 0 && k < 0.45) {
+      const amp = 0.06 * (1 - k / 0.45);
+      p.x += Math.sin(frame * 2.7) * amp;
+      p.y += Math.cos(frame * 3.3) * amp;
+    }
+  }
+  return { p, t };
 };
 
-// ---------------------------------------------------------------- 3D bits
+// ---------------------------------------------------------------- shared 3D bits
 const glow = (color: string, intensity: number, opacity = 1) => (
   <meshStandardMaterial color={color} emissive={color} emissiveIntensity={intensity} toneMapped={false} transparent={opacity < 1} opacity={opacity} />
 );
@@ -119,7 +216,7 @@ const Box: React.FC<{ p: V; s: V; c?: string; rot?: V; metal?: number; rough?: n
   </mesh>
 );
 
-/** A DDR5 memory stick standing on its edge. `heat` 0..1 warms the chips (price rising). */
+/** Plain memory stick: green board, black chips, gold contacts. Board centre at (0, 0.9, 0). */
 const Dimm: React.FC<{ heat: number; p?: V; rotY?: number; s?: number }> = ({ heat, p = [0, 0, 0], rotY = 0, s = 1 }) => (
   <group position={p} rotation={[0, rotY, 0]} scale={s}>
     <Box p={[0, 0.9, 0]} s={[3.0, 0.82, 0.045]} c={P.pcb} rough={0.55} />
@@ -132,7 +229,6 @@ const Dimm: React.FC<{ heat: number; p?: V; rotY?: number; s?: number }> = ({ he
         </mesh>
       </group>
     ))}
-    {/* gold contacts */}
     {Array.from({ length: 34 }, (_, k) => (
       <Box key={`g${k}`} p={[-1.4 + k * 0.085 + (k > 16 ? 0.05 : 0), 0.53, 0.024]} s={[0.05, 0.1, 0.004]} c={P.gold} metal={0.95} rough={0.25} />
     ))}
@@ -140,12 +236,79 @@ const Dimm: React.FC<{ heat: number; p?: V; rotY?: number; s?: number }> = ({ he
   </group>
 );
 
-/** Wireframe memory stick: "memory that doesn't exist yet". */
+/**
+ * Premium DDR5 stick: black anodised heat spreader with "DDR5" print and a top RGB light bar
+ * that cycles colour (the look PC builders and hardware channels use in product shots).
+ * Same footprint as Dimm: centre at (0, 0.9, 0), 3.0 wide.
+ */
+const DDR5Stick: React.FC<{ phase: number; heat?: number; p?: V; rotY?: number; s?: number }> = ({ phase, heat = 0, p = [0, 0, 0], rotY = 0, s = 1 }) => (
+  <group position={p} rotation={[0, rotY, 0]} scale={s}>
+    <Box p={[0, 0.88, 0]} s={[3.0, 0.78, 0.03]} c="#18201C" />
+    {[-1, 1].map((side) => (
+      <group key={side} position={[0, 0.92, side * 0.045]}>
+        <Box p={[0, 0, 0]} s={[3.08, 0.82, 0.03]} c="#16181D" metal={0.75} rough={0.32} />
+        {/* angular cut on the spreader */}
+        <Box p={[0.9, 0.3, side * 0.018]} s={[1.0, 0.05, 0.012]} rot={[0, 0, -0.35]} c="#2B2F37" metal={0.8} rough={0.3} />
+        {DDR5_TEX && side === 1 ? (
+          <mesh position={[-0.55, -0.02, 0.017]}>
+            <planeGeometry args={[1.5, 0.47]} />
+            <meshStandardMaterial map={DDR5_TEX} metalness={0.4} roughness={0.45} />
+          </mesh>
+        ) : null}
+      </group>
+    ))}
+    {/* RGB light bar */}
+    <Box p={[0, 1.38, 0]} s={[3.08, 0.12, 0.13]} c="#0E1014" metal={0.5} rough={0.4} />
+    {Array.from({ length: 16 }, (_, k) => {
+      const c = new THREE.Color().setHSL((phase * 0.25 + k / 16) % 1, 0.9, 0.58);
+      return (
+        <mesh key={k} position={[-1.43 + k * 0.19, 1.43, 0]}>
+          <boxGeometry args={[0.18, 0.05, 0.1]} />
+          <meshStandardMaterial color={c} emissive={c} emissiveIntensity={2.4} toneMapped={false} />
+        </mesh>
+      );
+    })}
+    {Array.from({ length: 34 }, (_, k) => (
+      <Box key={`g${k}`} p={[-1.4 + k * 0.085 + (k > 16 ? 0.05 : 0), 0.53, 0.02]} s={[0.05, 0.1, 0.004]} c={P.gold} metal={0.95} rough={0.25} />
+    ))}
+    {heat > 0.01 ? (
+      <mesh position={[0, 0.92, 0.065]}>
+        <planeGeometry args={[3.0, 0.8]} />
+        <meshStandardMaterial color={P.amber} emissive={P.amber} emissiveIntensity={0.6 * heat} transparent opacity={0.12 * heat} toneMapped={false} />
+      </mesh>
+    ) : null}
+  </group>
+);
+
+/** Stand a stick upright (long side vertical), centred on (x, y, z). */
+const Upright: React.FC<{ p: V; rotY: number; s?: number; children: React.ReactNode }> = ({ p, rotY, s = 1, children }) => (
+  <group position={p} rotation={[0, rotY, 0]} scale={s}>
+    <group rotation={[0, 0, Math.PI / 2]}>
+      <group position={[0, -0.9, 0]}>{children}</group>
+    </group>
+  </group>
+);
+
+/** Round display plinth with a glowing rim. */
+const Plinth: React.FC<{ p: V; r?: number; color: string; k?: number }> = ({ p, r = 0.75, color, k = 1.6 }) => (
+  <group position={p}>
+    <mesh position={[0, 0.12, 0]} castShadow receiveShadow>
+      <cylinderGeometry args={[r, r * 1.08, 0.24, 48]} />
+      <meshStandardMaterial color="#2A3242" metalness={0.5} roughness={0.35} />
+    </mesh>
+    <mesh position={[0, 0.245, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[r - 0.05, r, 64]} />
+      {glow(color, k)}
+    </mesh>
+  </group>
+);
+
+/** Wireframe memory stick: memory that hasn't been made yet. */
 const GHOST_BOARD = new THREE.EdgesGeometry(new THREE.BoxGeometry(3.0, 0.82, 0.045));
 const GHOST_CHIP = new THREE.EdgesGeometry(new THREE.BoxGeometry(0.27, 0.36, 0.04));
 const GhostDimm: React.FC<{ p: V; rotY?: number; a: number; color?: string }> = ({ p, rotY = 0, a, color = "#8FD8FF" }) =>
   a <= 0.01 ? null : (
-    <group position={p} rotation={[0, rotY, 0]} scale={[1, 0.6 + 0.4 * a, 1]}>
+    <group position={p} rotation={[0, rotY, 0]}>
       <lineSegments geometry={GHOST_BOARD} position={[0, 0.9, 0]}>
         <lineBasicMaterial color={color} transparent opacity={0.85 * a} toneMapped={false} />
       </lineSegments>
@@ -160,32 +323,8 @@ const GhostDimm: React.FC<{ p: V; rotY?: number; a: number; color?: string }> = 
       </mesh>
     </group>
   );
-const GHOSTS: [number, number, number, number][] = [
-  [-2.6, 1.2, -1.6, 0.4],
-  [2.7, 0.9, -2.2, -0.5],
-  [-0.6, 1.9, -3.4, 0.15],
-  [1.4, 2.4, -1.4, -0.25],
-  [-3.2, 2.2, -3.0, 0.6],
-];
 
-/** "$" decal for the money sacks (drawn once, no font download needed at render time). */
-const DOLLAR_TEX = (() => {
-  if (typeof document === "undefined") return null;
-  const c = document.createElement("canvas");
-  c.width = c.height = 128;
-  const g = c.getContext("2d")!;
-  g.clearRect(0, 0, 128, 128);
-  g.fillStyle = "#2F5E2A";
-  g.font = "bold 104px Arial, sans-serif";
-  g.textAlign = "center";
-  g.textBaseline = "middle";
-  g.fillText("$", 64, 70);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-})();
-
-/** A tied money sack with a "$" on the front. Sits on the floor at y = 0. */
+// ---------------------------------------------------------------- 1. price: RAM vs DDR5, money sacks
 const MoneySack: React.FC<{ s?: number }> = ({ s = 1 }) => (
   <group scale={s}>
     <mesh position={[0, 0.36, 0]} scale={[1, 0.95, 0.92]} castShadow receiveShadow>
@@ -212,35 +351,33 @@ const MoneySack: React.FC<{ s?: number }> = ({ s = 1 }) => (
     ) : null}
   </group>
 );
-
-/** Where the sacks land around the stick (x, z, size, start delay). */
+/** x, z, size, delay */
 const SACKS: [number, number, number, number][] = [
-  [-1.25, 1.2, 0.9, 0],
-  [1.3, 1.45, 0.95, 0.08],
-  [-0.45, 1.9, 0.8, 0.16],
-  [0.55, 2.2, 0.85, 0.22],
-  [-1.5, 2.3, 0.75, 0.3],
-  [1.55, 2.6, 0.8, 0.36],
-  [-0.05, 2.9, 0.9, 0.12],
-  [2.0, 0.7, 0.85, 0.26],
+  [-1.35, 1.2, 0.8, 0],
+  [1.4, 1.35, 0.85, 0.08],
+  [-0.55, 1.9, 0.7, 0.16],
+  [0.6, 2.05, 0.75, 0.22],
+  [-1.6, 2.3, 0.65, 0.3],
+  [1.65, 2.5, 0.7, 0.36],
+  [0.0, 2.8, 0.8, 0.12],
+  [-2.1, 0.6, 0.75, 0.26],
 ];
-
-/** Intro: a clean shot of a RAM stick (DDR5); money sacks drop from the top on "four times". */
 const PriceSet: React.FC<{ t: number; sacks: number }> = ({ t, sacks }) => {
   const heat = smooth(ramp(t, 2.3, 4.5));
   const g = 34;
   return (
     <group>
-      <group rotation={[0, -0.35, 0]}>
-        <Box p={[0, 0.2, 0]} s={[3.6, 0.4, 1.1]} c="#E8ECF2" rough={0.5} />
-        <mesh position={[0, 0.405, 0.55]}>
-          <boxGeometry args={[3.4, 0.01, 0.02]} />
-          {glow(P.cyan, 1.6)}
-        </mesh>
-      </group>
-      <group position={[0, 0.4 - 0.49, 0]} rotation={[0, -0.35, 0]}>
+      {/* rim lights behind each stick */}
+      <pointLight position={[-1.1, 2.2, -1.2]} color={P.cyan} intensity={9} distance={5} />
+      <pointLight position={[1.1, 2.2, -1.2]} color="#B57BFF" intensity={9} distance={5} />
+      <Plinth p={[-0.66, 0, 0]} r={0.6} color={P.cyan} />
+      <Plinth p={[0.66, 0, 0]} r={0.6} color="#B57BFF" />
+      <Upright p={[-0.66, 1.48 + Math.sin(t * 1.6) * 0.04, 0]} rotY={0.35 + Math.sin(t * 0.7) * 0.18} s={0.76}>
         <Dimm heat={heat} />
-      </group>
+      </Upright>
+      <Upright p={[0.66, 1.48 + Math.sin(t * 1.6 + 1.5) * 0.04, 0]} rotY={-0.35 + Math.sin(t * 0.7 + 1) * 0.18} s={0.76}>
+        <DDR5Stick phase={t} heat={heat * 0.4} />
+      </Upright>
       {sacks >= 0
         ? SACKS.map(([x, z, s, d], k) => {
             const tt = sacks - d;
@@ -260,7 +397,7 @@ const PriceSet: React.FC<{ t: number; sacks: number }> = ({ t, sacks }) => {
   );
 };
 
-/** "Buying memory that hasn't even been made yet": sticks rise, then dissolve to outlines and vanish. */
+// ---------------------------------------------------------------- 2. reason: memory that hasn't been made
 const FIELD = Array.from({ length: 9 }, (_, k) => ({ x: -1.5 + (k % 3) * 1.5, z: -2.0 + Math.floor(k / 3) * 1.3, r: 0.12 * Math.sin(k * 1.7) }));
 const ReasonSet: React.FC<{ appear: number; vanish: number }> = ({ appear, vanish }) => (
   <group>
@@ -268,22 +405,22 @@ const ReasonSet: React.FC<{ appear: number; vanish: number }> = ({ appear, vanis
       const up = smooth(ramp(appear, k * 0.05, k * 0.05 + 0.45));
       const v = vanish - (k % 3) * 0.08 - Math.floor(k / 3) * 0.06;
       const solid = up * (1 - smooth(ramp(v, 0, 0.25)));
-      const ghost = smooth(ramp(v, 0, 0.2)) * (1 - smooth(ramp(v, 0.45, 0.95)));
+      const ghost = smooth(ramp(v, 0, 0.2)) * (1 - smooth(ramp(v, 0.5, 1.0)));
       return (
         <group key={k}>
           {solid > 0.01 ? (
             <group position={[x, -0.49 * 0.55, z]} rotation={[0, r, 0]} scale={[0.55, 0.55 * solid, 0.55]}>
-              <Dimm heat={0.3} />
+              {k % 2 ? <DDR5Stick phase={k} /> : <Dimm heat={0.3} />}
             </group>
           ) : null}
           <group position={[x, -0.49 * 0.55, z]} rotation={[0, r, 0]} scale={0.55}>
-            <GhostDimm p={[0, 0, 0]} a={ghost} color="#1F6FC4" />
+            <GhostDimm p={[0, 0, 0]} a={ghost} />
           </group>
           {v > 0.1 && v < 0.9
             ? Array.from({ length: 6 }, (_, j) => (
                 <mesh key={j} position={[x + (random(`fx${k}${j}`) - 0.5) * 1.4, 0.3 + (v - 0.1) * (0.8 + random(`fy${k}${j}`) * 1.2), z + (random(`fz${k}${j}`) - 0.5) * 0.3]}>
                   <sphereGeometry args={[0.03, 6, 6]} />
-                  {glow("#2F8FE0", 2.5, 1 - clamp01((v - 0.1) / 0.8))}
+                  {glow("#8FD8FF", 3, 1 - clamp01((v - 0.1) / 0.8))}
                 </mesh>
               ))
             : null}
@@ -293,87 +430,165 @@ const ReasonSet: React.FC<{ appear: number; vanish: number }> = ({ appear, vanis
   </group>
 );
 
-const WAFER = new THREE.CylinderGeometry(0.42, 0.42, 0.025, 48);
-const Wafer: React.FC<{ p: V; hue: number }> = ({ p, hue }) => (
-  <mesh geometry={WAFER} position={p} castShadow>
-    <meshStandardMaterial color={new THREE.Color().setHSL(0.6 + hue * 0.15, 0.25, 0.72)} metalness={0.9} roughness={0.18} />
-  </mesh>
+// ---------------------------------------------------------------- 3. deal: wafers from Samsung + SK Hynix
+const WAFER_GEO = new THREE.CylinderGeometry(0.42, 0.42, 0.03, 64);
+const WAFER_MATS = [
+  new THREE.MeshStandardMaterial({ color: "#B8C0D0", metalness: 0.9, roughness: 0.25 }),
+  new THREE.MeshStandardMaterial({ map: WAFER_TEX ?? undefined, metalness: 0.75, roughness: 0.22, emissive: "#3A3060", emissiveIntensity: 0.15 }),
+  new THREE.MeshStandardMaterial({ color: "#9AA4B8", metalness: 0.9, roughness: 0.3 }),
+];
+const Wafer: React.FC<{ p: V; s?: number; spin?: number }> = ({ p, s = 1, spin = 0 }) => (
+  <mesh geometry={WAFER_GEO} material={WAFER_MATS} position={p} rotation={[0, spin, 0]} scale={s} castShadow />
 );
-/** `s`: seconds on the share clock (the ring fills from 0.6 s to 2.4 s); defaults to `t`. */
-const DealSet: React.FC<{ t: number; frame: number; s?: number }> = ({ t, frame, s }) => {
-  const share = 0.4 * smooth(ramp(s ?? t, 0.6, 2.4));
+const FAB_A = v3(-2.6, 0, -3.4); // Samsung
+const FAB_B = v3(2.6, 0, -3.4); // SK Hynix
+const GATE = v3(0, 0, 0.6); // OpenAI Stargate
+const Fab: React.FC<{ p: THREE.Vector3; accent: string; frame: number }> = ({ p, accent, frame }) => (
+  <group position={p.toArray() as V}>
+    <Box p={[0, 0.55, 0]} s={[2.2, 1.1, 1.5]} c="#C9D0DA" rough={0.55} />
+    <Box p={[0, 1.13, 0]} s={[2.3, 0.08, 1.6]} c="#8E98A8" />
+    {[-0.7, 0, 0.7].map((x) => (
+      <Box key={x} p={[x, 1.28, -0.2]} s={[0.4, 0.22, 0.5]} c="#A9B2C0" />
+    ))}
+    {[0.75, -0.75].map((x, k) => (
+      <group key={x}>
+        <mesh position={[x, 1.6, 0.45]} castShadow>
+          <cylinderGeometry args={[0.1, 0.12, 1.0, 16]} />
+          <meshStandardMaterial color="#9AA4B4" metalness={0.5} roughness={0.4} />
+        </mesh>
+        {Array.from({ length: 4 }, (_, j) => {
+          const u = ((frame / FPS) * 0.5 + j / 4 + k * 0.3) % 1;
+          return (
+            <mesh key={j} position={[x + u * 0.2, 2.15 + u * 1.0, 0.45]}>
+              <sphereGeometry args={[0.1 + u * 0.18, 12, 12]} />
+              <meshStandardMaterial color="#E8ECF2" transparent opacity={0.35 * (1 - u)} depthWrite={false} />
+            </mesh>
+          );
+        })}
+      </group>
+    ))}
+    <mesh position={[0, 0.55, 0.755]}>
+      <planeGeometry args={[1.9, 0.18]} />
+      {glow(accent, 1.4)}
+    </mesh>
+  </group>
+);
+const LANE_A = new THREE.QuadraticBezierCurve3(FAB_A.clone().add(v3(0.6, 0.1, 0.9)), v3(-1.4, 0.1, -0.6), GATE.clone().add(v3(-0.9, 0.1, -0.4)));
+const LANE_B = new THREE.QuadraticBezierCurve3(FAB_B.clone().add(v3(-0.6, 0.1, 0.9)), v3(1.4, 0.1, -0.6), GATE.clone().add(v3(0.9, 0.1, -0.4)));
+const DealSet: React.FC<{ t: number; frame: number; share: number }> = ({ t, frame, share }) => {
+  const shrink = 1 - 0.55 * smooth(ramp(share, 0, 0.5));
+  const ring = 0.4 * smooth(ramp(share, 0.6, 2.2));
   return (
     <group>
-      {/* the "AI factory" the wafers flow into */}
-      <Box p={[0, 0.8, 0]} s={[2.2, 1.6, 1.8]} c={P.slate2} />
-      <Box p={[0, 1.65, 0]} s={[2.3, 0.1, 1.9]} c={P.light} />
-      {[-0.6, 0, 0.6].map((x) => (
-        <mesh key={x} position={[x, 0.9, 0.905]}>
-          <boxGeometry args={[0.35, 1.0, 0.01]} />
-          {glow(P.cyan, 0.9 + 0.3 * Math.sin(frame * 0.1 + x * 4))}
-        </mesh>
-      ))}
-      {/* conveyor lanes of wafers from the world supply into the building */}
-      {[-1.6, 0, 1.6].map((z, lane) => (
-        <group key={lane}>
-          <Box p={[3.6, 0.06, z * 0.55]} s={[3.6, 0.08, 0.6]} c="#222B37" />
+      <Fab p={FAB_A} accent="#5B8CFF" frame={frame} />
+      <Fab p={FAB_B} accent="#FF6A5B" frame={frame} />
+      {/* Stargate data centre */}
+      <group position={GATE.toArray() as V}>
+        <Box p={[0, 0.8, 0]} s={[2.0, 1.6, 1.6]} c={P.slate2} />
+        <Box p={[0, 1.65, 0]} s={[2.1, 0.1, 1.7]} c={P.light} />
+        {[-0.55, 0, 0.55].map((x) => (
+          <mesh key={x} position={[x, 0.9, 0.805]}>
+            <boxGeometry args={[0.32, 1.0, 0.01]} />
+            {glow(P.cyan, 0.9 + 0.3 * Math.sin(frame * 0.1 + x * 4))}
+          </mesh>
+        ))}
+      </group>
+      {[LANE_A, LANE_B].map((lane, li) => (
+        <group key={li}>
+          <Line points={lane.getPoints(30)} color="#3A4658" lineWidth={14} />
           {Array.from({ length: 6 }, (_, k) => {
-            const u = (t * 0.35 + k / 6 + lane * 0.13) % 1;
-            return <Wafer key={k} p={[5.4 - u * 3.6, 0.13, z * 0.55]} hue={random(`w${lane}${k}`)} />;
+            const u = (t * 0.32 + k / 6 + li * 0.08) % 1;
+            const p = lane.getPoint(u);
+            return <Wafer key={k} p={[p.x, 0.18, p.z]} s={1.35 * shrink} spin={t + k} />;
           })}
         </group>
       ))}
-      {/* world DRAM supply ring: grey 100%, amber share filling to 40% */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-        <ringGeometry args={[2.35, 2.6, 128]} />
-        <meshStandardMaterial color="#3A4558" roughness={0.8} />
-      </mesh>
-      {share > 0.005 ? (
-        <mesh rotation={[-Math.PI / 2, 0, Math.PI / 2]} position={[0, 0.03, 0]}>
-          <ringGeometry args={[2.32, 2.63, 128, 1, 0, Math.PI * 2 * share]} />
-          {glow(P.amber, 2.2)}
+      {/* world DRAM supply ring, filling to 40% after the wafers shrink */}
+      <group position={[GATE.x, 0, GATE.z]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+          <ringGeometry args={[2.0, 2.25, 128]} />
+          <meshStandardMaterial color="#3A4558" roughness={0.8} />
         </mesh>
-      ) : null}
-      {/* wafer stacks on the far side (the rest of the world's supply) */}
-      {Array.from({ length: 7 }, (_, k) => {
-        const a = Math.PI * 0.95 + (k / 6) * Math.PI * 0.85;
-        return (
-          <group key={k} position={[Math.cos(a) * 3.4, 0, Math.sin(a) * 3.4]}>
-            {Array.from({ length: 6 }, (_, j) => (
-              <Wafer key={j} p={[0, 0.04 + j * 0.03, 0]} hue={0.3} />
-            ))}
-          </group>
-        );
-      })}
+        {ring > 0.005 ? (
+          <mesh rotation={[-Math.PI / 2, 0, Math.PI / 2]} position={[0, 0.03, 0]}>
+            <ringGeometry args={[1.97, 2.28, 128, 1, 0, Math.PI * 2 * ring]} />
+            {glow(P.amber, 2.2)}
+          </mesh>
+        ) : null}
+      </group>
     </group>
   );
 };
 
-const GPU_POS = v3(-1.6, 0, 0);
-const AI_POS = v3(1.6, 0, 0);
-const TOP_ARC = new THREE.QuadraticBezierCurve3(v3(-1.0, 1.15, 0), v3(0, 2.7, 0), v3(1.0, 1.35, 0));
-const BOTTOM_ARC = new THREE.QuadraticBezierCurve3(v3(1.0, 0.65, 0.5), v3(0, -0.1, 1.6), v3(-1.0, 0.65, 0.5));
+// ---------------------------------------------------------------- 4. loop: Nvidia graphics card <-> OpenAI
+const Fan: React.FC<{ p: V; spin: number }> = ({ p, spin }) => (
+  <group position={p}>
+    <mesh rotation={[Math.PI / 2, 0, 0]}>
+      <torusGeometry args={[0.38, 0.035, 10, 48]} />
+      <meshStandardMaterial color="#2B2F37" metalness={0.7} roughness={0.3} />
+    </mesh>
+    <group rotation={[0, 0, spin]}>
+      {Array.from({ length: 11 }, (_, k) => {
+        const a = (k / 11) * Math.PI * 2;
+        return (
+          <mesh key={k} rotation={[0.35, 0, a]} position={[Math.cos(a) * 0.21, Math.sin(a) * 0.21, 0]}>
+            <boxGeometry args={[0.3, 0.13, 0.008]} />
+            <meshStandardMaterial color="#2E333C" metalness={0.4} roughness={0.45} />
+          </mesh>
+        );
+      })}
+    </group>
+    <mesh rotation={[Math.PI / 2, 0, 0]}>
+      <cylinderGeometry args={[0.09, 0.09, 0.03, 24]} />
+      <meshStandardMaterial color="#3A3F48" metalness={0.6} roughness={0.3} />
+    </mesh>
+  </group>
+);
+/** A proper graphics card standing on its edge, fans to camera. Centre at origin, 3.0 long. */
+const GraphicsCard: React.FC<{ t: number }> = ({ t }) => (
+  <group>
+    <Box p={[0, 0, 0]} s={[3.0, 1.1, 0.42]} c="#24272E" metal={0.7} rough={0.35} />
+    {/* shroud facets */}
+    <Box p={[0, 0.46, 0.215]} s={[2.9, 0.1, 0.02]} c="#3A3F48" metal={0.8} rough={0.25} />
+    <Box p={[0, -0.46, 0.215]} s={[2.9, 0.1, 0.02]} c="#3A3F48" metal={0.8} rough={0.25} />
+    {[-1.0, 0, 1.0].map((x, k) => (
+      <Fan key={x} p={[x, 0, 0.23]} spin={t * 9 + k} />
+    ))}
+    {/* green light strip and side name */}
+    <mesh position={[0, 0.555, 0]}>
+      <boxGeometry args={[2.8, 0.02, 0.3]} />
+      {glow(P.nvidia, 2.2)}
+    </mesh>
+    {NVIDIA_TEX ? (
+      <mesh position={[0.6, 0.556, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[1.4, 0.35]} />
+        <meshStandardMaterial map={NVIDIA_TEX} emissive={P.nvidia} emissiveIntensity={0.15} />
+      </mesh>
+    ) : null}
+    {NVIDIA_TEX ? (
+      <mesh position={[0.95, -0.47, 0.226]}>
+        <planeGeometry args={[0.8, 0.2]} />
+        <meshStandardMaterial map={NVIDIA_TEX} emissive={P.nvidia} emissiveIntensity={0.25} />
+      </mesh>
+    ) : null}
+    {/* backplate, bracket and PCIe contacts */}
+    <Box p={[0, 0, -0.23]} s={[3.0, 1.1, 0.03]} c="#16181C" metal={0.6} rough={0.4} />
+    <Box p={[-1.53, 0.05, 0]} s={[0.05, 1.25, 0.5]} c="#C8CDD6" metal={0.9} rough={0.2} />
+    <Box p={[-0.2, -0.6, -0.1]} s={[1.6, 0.1, 0.02]} c={P.gold} metal={0.95} rough={0.25} />
+  </group>
+);
+const GPU_POS = v3(0, 1.45, 0.3);
+const AI_POS = v3(1.9, 0, -2.2);
+const TOP_ARC = new THREE.QuadraticBezierCurve3(v3(1.0, 2.1, 0.2), v3(1.9, 3.0, -0.9), v3(1.9, 1.5, -1.9));
+const BOTTOM_ARC = new THREE.QuadraticBezierCurve3(v3(1.5, 0.4, -1.6), v3(1.3, 0.2, 0.2), v3(0.6, 0.7, 0.6));
 const LoopSet: React.FC<{ t: number }> = ({ t }) => (
   <group>
-    {/* GPU maker: a graphics card on a plinth */}
-    <group position={GPU_POS.toArray() as V} scale={0.8}>
-      <Box p={[0, 0.25, 0]} s={[1.6, 0.5, 1.2]} c={P.slate} />
-      <Box p={[0, 0.75, 0]} s={[1.5, 0.3, 0.8]} c="#1A1F28" metal={0.5} rough={0.35} />
-      {[-0.42, 0.42].map((x) => (
-        <group key={x} position={[x, 0.91, 0]}>
-          <mesh rotation={[0, t * 6, 0]}>
-            <cylinderGeometry args={[0.3, 0.3, 0.02, 7]} />
-            <meshStandardMaterial color="#2C3442" metalness={0.4} roughness={0.4} />
-          </mesh>
-          <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.3, 0.33, 40]} />
-            {glow(P.green, 1.5)}
-          </mesh>
-        </group>
-      ))}
+    <pointLight position={[0, 2.6, -1.0]} color={P.nvidia} intensity={12} distance={5} />
+    <Plinth p={[0, 0, 0.3]} r={1.1} color={P.nvidia} k={2} />
+    <group position={GPU_POS.toArray() as V} rotation={[0.18, 0.45 + Math.sin(t * 0.6) * 0.1, 0]} scale={0.78}>
+      <GraphicsCard t={t} />
     </group>
-    {/* AI company: data-centre racks */}
-    <group position={AI_POS.toArray() as V} scale={0.8}>
+    <group position={AI_POS.toArray() as V} scale={0.75}>
       <Box p={[0, 0.06, 0]} s={[1.9, 0.12, 1.4]} c={P.slate} />
       {[-0.55, 0, 0.55].map((x) => (
         <group key={x} position={[x, 0, 0]}>
@@ -387,46 +602,75 @@ const LoopSet: React.FC<{ t: number }> = ({ t }) => (
         </group>
       ))}
     </group>
-    {/* the loop: investment one way, GPU orders the other */}
     {[TOP_ARC, BOTTOM_ARC].map((c, k) => (
       <group key={k}>
         <Line points={c.getPoints(40)} color={P.green} lineWidth={2.5} dashed dashSize={0.12} gapSize={0.08} transparent opacity={0.85} />
-        {Array.from({ length: 7 }, (_, j) => {
-          const u = (t * 0.45 + j / 7) % 1;
-          const p = c.getPoint(u);
+        {Array.from({ length: 6 }, (_, j) => {
+          const u = (t * 0.45 + j / 6) % 1;
           return (
-            <mesh key={j} position={p} rotation={[0.3, u * 3, 0.2]} castShadow>
-              <boxGeometry args={[0.32, 0.015, 0.16]} />
+            <mesh key={j} position={c.getPoint(u)} rotation={[0.3, u * 3, 0.2]} castShadow>
+              <boxGeometry args={[0.3, 0.015, 0.15]} />
               <meshStandardMaterial color="#6CCB92" emissive="#1E6B3E" emissiveIntensity={0.6} roughness={0.6} />
             </mesh>
           );
         })}
-        {/* arrow head at the end of each arc */}
-        <mesh position={c.getPoint(0.97)} rotation={[0, 0, k === 0 ? -Math.PI / 2 - 0.7 : Math.PI / 2 - 0.6]}>
-          <coneGeometry args={[0.12, 0.28, 12]} />
-          {glow(P.green, 2.5)}
-        </mesh>
       </group>
     ))}
   </group>
 );
 
-// ---- flower shop analogy: I pay you, you buy my flowers, I tell the bank I'm worth a billion
+// ---------------------------------------------------------------- 5. flower shop on a street
 const FLOWER_COLORS = ["#E86A8A", "#F2C14E", "#D9536A", "#B57BE0", "#F59B5A"];
-const SHOP = v3(-1.4, 0, 0.2);
-const YOU = v3(1.9, 0, 0.9);
-const BANK = v3(-0.1, 0, -3.3);
-const PAY_ARC = new THREE.QuadraticBezierCurve3(v3(-0.7, 1.3, 0.3), v3(0.6, 2.4, 0.6), v3(1.7, 1.4, 0.9));
-const BUY_ARC = new THREE.QuadraticBezierCurve3(v3(1.6, 0.9, 1.2), v3(0.4, 0.3, 2.1), v3(-0.6, 0.9, 0.7));
-const BANK_ARC = new THREE.QuadraticBezierCurve3(v3(-1.3, 1.9, -0.1), v3(-1.0, 3.2, -1.8), v3(-0.2, 1.7, -3.0));
-const Bill: React.FC<{ p: THREE.Vector3; spin: number }> = ({ p, spin }) => (
-  <mesh position={p} rotation={[0.3, spin, 0.2]} castShadow>
-    <boxGeometry args={[0.36, 0.015, 0.18]} />
-    <meshStandardMaterial color="#6CCB92" emissive="#1E6B3E" emissiveIntensity={0.6} roughness={0.6} />
-  </mesh>
+const SHOP = v3(-1.5, 0, 0.3);
+const YOU = v3(1.8, 0, 0.9);
+const PAY_ARC = new THREE.QuadraticBezierCurve3(v3(1.6, 1.3, 0.9), v3(0.2, 2.5, 0.8), v3(-1.1, 1.2, 0.4));
+const GIVE_ARC = new THREE.QuadraticBezierCurve3(v3(-1.0, 1.0, 0.7), v3(0.3, 0.5, 2.0), v3(1.6, 0.9, 1.2));
+const Bouquet: React.FC<{ s?: number }> = ({ s = 1 }) => (
+  <group scale={s}>
+    <mesh position={[0, -0.12, 0]} rotation={[Math.PI, 0, 0]}>
+      <coneGeometry args={[0.1, 0.28, 12]} />
+      <meshStandardMaterial color="#F2EBDD" roughness={0.8} />
+    </mesh>
+    {[0, 1, 2, 3, 4].map((j) => (
+      <mesh key={j} position={[Math.cos(j * 1.26) * 0.07, 0.06 + (j % 2) * 0.03, Math.sin(j * 1.26) * 0.07]}>
+        <sphereGeometry args={[0.065, 10, 10]} />
+        <meshStandardMaterial color={FLOWER_COLORS[j]} emissive={FLOWER_COLORS[j]} emissiveIntensity={0.2} />
+      </mesh>
+    ))}
+  </group>
 );
-const FlowerSet: React.FC<{ t: number; bank: number }> = ({ t, bank }) => (
+const FlowerSet: React.FC<{ t: number }> = ({ t }) => (
   <group>
+    {/* street behind: road with lane marks, pavement, another shop and a lamp */}
+    <Box p={[0, 0.01, -2.4]} s={[16, 0.02, 2.2]} c="#20262F" rough={0.9} />
+    {Array.from({ length: 9 }, (_, k) => (
+      <mesh key={k} position={[-7 + k * 1.8, 0.025, -2.4]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.8, 0.08]} />
+        {glow("#E8ECF2", 0.8)}
+      </mesh>
+    ))}
+    <Box p={[0, 0.05, -4.0]} s={[16, 0.1, 1.0]} c="#3A4352" />
+    <group position={[1.6, 0, -5.0]}>
+      <Box p={[0, 1.0, 0]} s={[3.0, 2.0, 1.2]} c="#5E6A80" />
+      <Box p={[0, 1.6, 0.62]} s={[2.6, 0.5, 0.04]}>
+        {glow("#FFD58A", 0.7)}
+      </Box>
+      {Array.from({ length: 6 }, (_, k) => (
+        <Box key={k} p={[-1.25 + k * 0.5, 1.25, 0.85]} s={[0.5, 0.05, 0.5]} rot={[0.4, 0, 0]} c={k % 2 ? "#F2F2F2" : "#2E9FD0"} />
+      ))}
+      <Box p={[0, 0.55, 0.62]} s={[1.0, 0.9, 0.03]} c="#1C2430" />
+    </group>
+    <group position={[-3.2, 0, -3.6]}>
+      <mesh position={[0, 1.2, 0]}>
+        <cylinderGeometry args={[0.04, 0.05, 2.4, 10]} />
+        <meshStandardMaterial color="#2A2F38" metalness={0.6} roughness={0.4} />
+      </mesh>
+      <mesh position={[0.25, 2.38, 0]}>
+        <sphereGeometry args={[0.1, 14, 14]} />
+        {glow("#FFE3A8", 3)}
+      </mesh>
+      <pointLight position={[0.25, 2.3, 0.2]} color="#FFD58A" intensity={4} distance={4} />
+    </group>
     {/* my flower shop */}
     <group position={SHOP.toArray() as V}>
       <Box p={[0, 0.4, 0]} s={[1.7, 0.8, 0.9]} c="#7A5A40" rough={0.8} />
@@ -452,7 +696,7 @@ const FlowerSet: React.FC<{ t: number; bank: number }> = ({ t, bank }) => (
         </group>
       ))}
     </group>
-    {/* you */}
+    {/* the customer */}
     <group position={YOU.toArray() as V}>
       <mesh position={[0, 0.55, 0]} castShadow>
         <capsuleGeometry args={[0.22, 0.6, 6, 16]} />
@@ -463,56 +707,37 @@ const FlowerSet: React.FC<{ t: number; bank: number }> = ({ t, bank }) => (
         <meshStandardMaterial color="#E9C8A8" roughness={0.6} />
       </mesh>
     </group>
-    {/* the bank */}
-    <group position={BANK.toArray() as V}>
-      <Box p={[0, 0.06, 0]} s={[1.8, 0.12, 1.2]} />
-      {[-0.6, -0.2, 0.2, 0.6].map((x) => (
-        <mesh key={x} position={[x, 0.6, 0.45]} castShadow>
-          <cylinderGeometry args={[0.07, 0.07, 0.95, 12]} />
-          <meshStandardMaterial color={P.light} roughness={0.5} />
-        </mesh>
-      ))}
-      <Box p={[0, 0.6, -0.1]} s={[1.6, 0.95, 0.7]} c={P.slate2} />
-      <Box p={[0, 1.13, 0]} s={[1.9, 0.12, 1.25]} c={P.light} />
-      <mesh position={[0, 1.33, 0]} rotation={[Math.PI / 2, 0, Math.PI / 2]} castShadow>
-        <cylinderGeometry args={[0.32, 0.32, 1.9, 3]} />
-        <meshStandardMaterial color={P.light} roughness={0.5} />
+    {/* money goes to the shop ... */}
+    <Line points={PAY_ARC.getPoints(30)} color={P.green} lineWidth={2} dashed dashSize={0.1} gapSize={0.08} transparent opacity={0.8} />
+    {Array.from({ length: 4 }, (_, j) => (
+      <mesh key={j} position={PAY_ARC.getPoint((t * 0.5 + j / 4) % 1)} rotation={[0.3, t * 3 + j, 0.2]} castShadow>
+        <boxGeometry args={[0.36, 0.015, 0.18]} />
+        <meshStandardMaterial color="#6CCB92" emissive="#1E6B3E" emissiveIntensity={0.6} roughness={0.6} />
       </mesh>
-    </group>
-    {/* money goes round: I pay you, you pay it back for my flowers */}
-    {[PAY_ARC, BUY_ARC].map((c, k) => (
-      <group key={k}>
-        <Line points={c.getPoints(30)} color={P.green} lineWidth={2} dashed dashSize={0.1} gapSize={0.08} transparent opacity={0.8} />
-        {Array.from({ length: 4 }, (_, j) => (
-          <Bill key={j} p={c.getPoint((t * 0.5 + j / 4) % 1)} spin={t * 3 + j} />
-        ))}
+    ))}
+    {/* ... and flowers come to the customer */}
+    <Line points={GIVE_ARC.getPoints(30)} color="#E86A8A" lineWidth={2} dashed dashSize={0.1} gapSize={0.08} transparent opacity={0.8} />
+    {Array.from({ length: 3 }, (_, j) => (
+      <group key={j} position={GIVE_ARC.getPoint((t * 0.5 + j / 3 + 0.15) % 1).toArray() as V}>
+        <Bouquet s={1.2} />
       </group>
     ))}
-    {/* bouquet travelling to you */}
-    <group position={BUY_ARC.getPoint(1 - ((t * 0.5) % 1)).toArray() as V}>
-      {[0, 1, 2].map((j) => (
-        <mesh key={j} position={[j * 0.08 - 0.08, 0.1, 0]}>
-          <sphereGeometry args={[0.07, 10, 10]} />
-          <meshStandardMaterial color={FLOWER_COLORS[j]} />
-        </mesh>
-      ))}
-    </group>
-    {/* ...and the claim to the bank */}
-    {bank >= 0 ? <Line points={BANK_ARC.getPoints(30).slice(0, Math.max(2, Math.round(31 * smooth(ramp(bank, 0, 0.6)))))} color={P.amber} lineWidth={2.5} dashed dashSize={0.12} gapSize={0.08} /> : null}
   </group>
 );
 
-// ---- the math: $2T needed a year vs revenue on track, $800B short (Bain, Sep 2025)
-const MathSet: React.FC<{ t: number; short: number }> = ({ t, short }) => {
+// ---------------------------------------------------------------- 6. math: $2T needed vs revenue, $800B gap
+const GAP_EDGES = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.0, 1.28, 1.0));
+const MathSet: React.FC<{ t: number; gap: number }> = ({ t, gap }) => {
   const need = 3.2 * smooth(ramp(t, 0.6, 1.8));
   const have = 3.2 * 0.6 * smooth(ramp(t, 1.6, 2.8));
-  const gap = smooth(ramp(short, 0, 0.4));
-  const gapEdges = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.0, 3.2 * 0.4, 1.0));
+  // The red gap arrives just before "$800 billion" is said.
+  const g = smooth(ramp(gap, -0.75, -0.4));
+  const pulse = g > 0 ? 0.5 + 0.5 * Math.abs(Math.sin(gap * 6)) : 0;
   return (
     <group>
       <Box p={[0, 0.06, 0]} s={[4.2, 0.12, 2.0]} />
       {need > 0.01 ? (
-        <Box p={[-1.0, 0.12 + need / 2, 0]} s={[1.0, need, 1.0]} c="#C98A2E" rough={0.5}>
+        <Box p={[-1.0, 0.12 + need / 2, 0]} s={[1.0, need, 1.0]}>
           <meshStandardMaterial color="#C98A2E" emissive={P.amber} emissiveIntensity={0.25} roughness={0.5} />
         </Box>
       ) : null}
@@ -521,14 +746,14 @@ const MathSet: React.FC<{ t: number; short: number }> = ({ t, short }) => {
           <meshStandardMaterial color="#2C8FB8" emissive={P.cyan} emissiveIntensity={0.25} roughness={0.5} />
         </Box>
       ) : null}
-      {gap > 0.01 ? (
-        <group position={[1.0, 0.12 + 3.2 * 0.6 + 0.64, 0]}>
-          <lineSegments geometry={gapEdges}>
-            <lineBasicMaterial color={P.red} transparent opacity={gap} toneMapped={false} />
+      {g > 0.01 ? (
+        <group position={[1.0, 0.12 + 3.2 * 0.6 + 0.64, 0]} scale={[1, g, 1]}>
+          <lineSegments geometry={GAP_EDGES}>
+            <lineBasicMaterial color={P.red} transparent opacity={g} toneMapped={false} />
           </lineSegments>
           <mesh>
             <boxGeometry args={[1.0, 1.28, 1.0]} />
-            <meshStandardMaterial color={P.red} emissive={P.red} emissiveIntensity={0.5} transparent opacity={0.16 * gap} depthWrite={false} toneMapped={false} />
+            <meshStandardMaterial color={P.red} emissive={P.red} emissiveIntensity={0.4 + 0.5 * pulse} transparent opacity={0.2 * g} depthWrite={false} toneMapped={false} />
           </mesh>
         </group>
       ) : null}
@@ -536,45 +761,93 @@ const MathSet: React.FC<{ t: number; short: number }> = ({ t, short }) => {
   );
 };
 
-// ---- the bubble: boom keeps RAM expensive, a pop could crash prices
+// ---------------------------------------------------------------- 7. bubble: boom or pop
 const BubbleSet: React.FC<{ t: number; pop: number; frame: number }> = ({ t, pop, frame }) => {
   const popped = pop >= 0;
   const burst = clamp01(pop / 0.6);
   const wob = 1 + 0.035 * Math.sin(frame * 0.25) + 0.02 * Math.sin(frame * 0.41);
-  const tagY = popped ? Math.max(0.55, 2.25 - burst * 1.7) : 2.25 + Math.sin(t * 2) * 0.05;
+  const tagY = popped ? Math.max(0.55, 2.35 - burst * 1.8) : 2.35 + Math.sin(t * 2) * 0.05;
+  const hue = (frame * 0.004) % 1;
+  const sheen = new THREE.Color().setHSL(hue, 0.6, 0.72);
+  const sheen2 = new THREE.Color().setHSL((hue + 0.35) % 1, 0.7, 0.65);
+  // needle creeping in from the right, touching the bubble when it pops
+  const needleX = popped ? 1.62 : 3.0 - 1.35 * smooth(ramp(t, 0.2, 3.6));
+  // price line inside the bubble: climbs, then drops after the pop
+  const pts: V[] = Array.from({ length: 14 }, (_, k) => {
+    const u = k / 13;
+    const grow = smooth(ramp(t, 0.3 + u * 1.6, 0.6 + u * 1.6));
+    const drop = popped ? burst * u * 1.1 : 0;
+    return [-0.9 + u * 1.8, 0.75 + (Math.pow(u, 1.6) * 1.1 * grow) - drop, 0.45];
+  });
   return (
     <group>
-      <Box p={[0, 0.22, 0]} s={[2.2, 0.44, 1.0]} />
-      <group position={[0, -0.05, 0]} scale={0.6}>
-        <Dimm heat={popped ? 1 - burst * 0.8 : 1} p={[0, 0.2, 0]} />
+      <Plinth p={[0, 0, 0]} r={1.15} color={popped ? P.green : P.amber} k={2} />
+      <group position={[0, 0.25 - 0.49 * 0.55, 0]} scale={0.55}>
+        <DDR5Stick phase={t} heat={popped ? 0 : 0.3} />
       </group>
+      <Line points={pts} color={popped ? P.green : P.amber} lineWidth={4} />
+      {/* coins orbiting inside */}
+      {!popped || burst < 1
+        ? Array.from({ length: 6 }, (_, k) => {
+            const a = t * 1.4 + (k / 6) * Math.PI * 2;
+            return (
+              <mesh key={k} position={[Math.cos(a) * 1.05, 1.15 + Math.sin(a * 2) * 0.25 - (popped ? burst * 1.2 : 0), Math.sin(a) * 0.6]} rotation={[Math.PI / 2, 0, a]}>
+                <cylinderGeometry args={[0.1, 0.1, 0.025, 20]} />
+                <meshStandardMaterial color="#E9B949" metalness={0.85} roughness={0.3} emissive="#7A5A10" emissiveIntensity={0.4} />
+              </mesh>
+            );
+          })
+        : null}
       {!popped || burst < 1 ? (
         <group position={[0, 1.15, 0]} scale={popped ? 1 + burst * 0.5 : wob}>
           <mesh>
             <sphereGeometry args={[1.45, 48, 48]} />
-            <meshStandardMaterial color="#CFEAFF" transparent opacity={(popped ? 1 - burst : 1) * 0.13} roughness={0.05} metalness={0.2} depthWrite={false} />
+            <meshStandardMaterial color={sheen} emissive={sheen2} emissiveIntensity={0.25} transparent opacity={(popped ? 1 - burst : 1) * 0.06} roughness={0.05} metalness={0.3} depthWrite={false} />
           </mesh>
           <mesh>
             <sphereGeometry args={[1.47, 48, 48]} />
-            <meshStandardMaterial color="#9FD8FF" emissive="#9FD8FF" emissiveIntensity={0.6} transparent opacity={(popped ? 1 - burst : 1) * 0.12} side={THREE.BackSide} depthWrite={false} toneMapped={false} />
+            <meshStandardMaterial color="#9FD8FF" emissive={sheen} emissiveIntensity={0.9} transparent opacity={(popped ? 1 - burst : 1) * 0.09} side={THREE.BackSide} depthWrite={false} toneMapped={false} />
+          </mesh>
+          {/* highlight */}
+          <mesh position={[-0.6, 0.7, 1.12]} scale={[1, 0.55, 0.3]}>
+            <sphereGeometry args={[0.12, 16, 16]} />
+            <meshStandardMaterial color="#FFFFFF" emissive="#FFFFFF" emissiveIntensity={1.2} transparent opacity={(popped ? 1 - burst : 1) * 0.5} toneMapped={false} />
           </mesh>
         </group>
       ) : null}
+      {/* needle */}
+      <group position={[needleX, 1.45, 0.2]} rotation={[0, 0, Math.PI / 2 + 0.25]}>
+        <mesh position={[0, -0.45, 0]}>
+          <cylinderGeometry args={[0.012, 0.004, 0.9, 10]} />
+          <meshStandardMaterial color="#D9DFE8" metalness={0.95} roughness={0.15} />
+        </mesh>
+        <mesh position={[0, 0.05, 0]}>
+          <sphereGeometry args={[0.09, 16, 16]} />
+          <meshStandardMaterial color={P.red} roughness={0.4} />
+        </mesh>
+      </group>
+      {/* pop: shockwave and droplets */}
+      {popped && pop < 0.8 ? (
+        <mesh position={[0, 1.15, 0]} rotation={[Math.PI / 2, 0, 0]} scale={1 + pop * 3}>
+          <torusGeometry args={[1.45, 0.03, 8, 64]} />
+          {glow("#CFEAFF", 3, 1 - pop / 0.8)}
+        </mesh>
+      ) : null}
       {popped && pop < 1.4
-        ? Array.from({ length: 48 }, (_, k) => {
+        ? Array.from({ length: 60 }, (_, k) => {
             const a = random(`ba${k}`) * Math.PI * 2;
             const e = (random(`be${k}`) - 0.5) * Math.PI;
-            const r = 1.45 + burst * 1.6;
+            const r = 1.45 + burst * (1.4 + random(`br${k}`));
             return (
-              <mesh key={k} position={[Math.cos(a) * Math.cos(e) * r, 1.15 + Math.sin(e) * r - pop * pop * 0.8, Math.sin(a) * Math.cos(e) * r]}>
+              <mesh key={k} position={[Math.cos(a) * Math.cos(e) * r, 1.15 + Math.sin(e) * r - pop * pop * 0.9, Math.sin(a) * Math.cos(e) * r]}>
                 <sphereGeometry args={[0.03, 6, 6]} />
                 {glow("#BFE8FF", 3, 1 - clamp01(pop / 1.4))}
               </mesh>
             );
           })
         : null}
-      {/* price tag: floats high, drops when it pops */}
-      <group position={[1.15, tagY, 0.3]} rotation={[0, -0.3, popped ? 0.4 * burst : 0.12]}>
+      {/* price tag */}
+      <group position={[1.15, tagY, 0.4]} rotation={[0, -0.3, popped ? 0.4 * burst : 0.12]}>
         <mesh>
           <planeGeometry args={[0.7, 0.36]} />
           {glow(popped ? P.green : P.amber, 1.4)}
@@ -584,31 +857,52 @@ const BubbleSet: React.FC<{ t: number; pop: number; frame: number }> = ({ t, pop
   );
 };
 
-// ---- the end: only one thing is real
-const EndSet: React.FC<{ t: number; real: number; frame: number }> = ({ t, real, frame }) => {
+// ---------------------------------------------------------------- 8. end: your RAM is the real thing
+const END_GHOSTS: [number, number, number, number][] = [
+  [-2.6, 1.2, -1.6, 0.4],
+  [2.7, 0.9, -2.2, -0.5],
+  [-0.6, 2.1, -3.4, 0.15],
+  [1.8, 2.4, -1.4, -0.25],
+  [-3.2, 2.2, -3.0, 0.6],
+];
+const EndSet: React.FC<{ t: number; real: number }> = ({ t, real }) => {
   const fade = 1 - smooth(ramp(real, 0, 0.8));
-  const lit = smooth(ramp(real, 0.2, 0.8));
+  const lit = smooth(ramp(real, 0.1, 0.7));
+  const sweep = ramp(real, 0.2, 1.1);
   return (
     <group>
-      {GHOSTS.map(([x, y, z, r], k) => (
-        <GhostDimm key={`eg${k}`} p={[x, y - 0.5, z]} rotY={r} a={fade} />
+      {END_GHOSTS.map(([x, y, z, r], k) => (
+        <GhostDimm key={k} p={[x, y - 0.5, z]} rotY={r} a={fade} />
       ))}
-      <mesh position={[0, 0.25, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[1.1, 1.2, 0.5, 48]} />
-        <meshStandardMaterial color={P.slate} roughness={0.6} />
-      </mesh>
-      <mesh position={[0, 0.505, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.0, 1.08, 64]} />
-        {glow(lit > 0 ? P.green : P.cyan, 1.5 + lit * 2)}
-      </mesh>
-      <group position={[0, 0.48 - 0.49, 0]} rotation={[0, Math.sin(t * 0.6) * 0.25, 0]} scale={0.62}>
-        <Dimm heat={0.4 + lit * 0.6} />
-      </group>
-      {void frame}
+      <pointLight position={[0, 2.6, -1.2]} color={lit > 0 ? P.green : P.cyan} intensity={8 + 6 * lit} distance={5} />
+      <Plinth p={[0, 0, 0]} r={0.9} color={lit > 0 ? P.green : P.cyan} k={1.6 + lit * 2.4} />
+      <Upright p={[0, 1.42 + Math.sin(t * 1.4) * 0.05, 0]} rotY={Math.sin(t * 0.7) * 0.35} s={0.72}>
+        <DDR5Stick phase={t} />
+        {/* light sweep across the stick */}
+        {sweep > 0 && sweep < 1 ? (
+          <mesh position={[-1.6 + sweep * 3.2, 0.92, 0.09]}>
+            <planeGeometry args={[0.25, 1.0]} />
+            <meshStandardMaterial color="#FFFFFF" emissive="#FFFFFF" emissiveIntensity={2} transparent opacity={0.55 * Math.sin(sweep * Math.PI)} toneMapped={false} depthWrite={false} />
+          </mesh>
+        ) : null}
+      </Upright>
+      {lit > 0
+        ? Array.from({ length: 24 }, (_, k) => {
+            const a = (k / 24) * Math.PI * 2 + t * 0.6;
+            const y = 0.4 + ((t * 0.5 + random(`sy${k}`)) % 1) * 2.6;
+            return (
+              <mesh key={k} position={[Math.cos(a) * 1.0, y, Math.sin(a) * 1.0]}>
+                <sphereGeometry args={[0.025, 6, 6]} />
+                {glow(P.green, 3, lit * 0.8)}
+              </mesh>
+            );
+          })
+        : null}
     </group>
   );
 };
 
+// ---------------------------------------------------------------- world
 const CameraRig: React.FC<{ pose: Pose }> = ({ pose }) => {
   const camera = useThree((s) => s.camera);
   camera.position.copy(pose.p);
@@ -620,19 +914,20 @@ const CameraRig: React.FC<{ pose: Pose }> = ({ pose }) => {
 const World: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats, frame, pose }) => {
   const b = current(beats, frame);
   const t = since(beats, frame, b);
-  const studio = STUDIO[b] === true;
-  const bg = studio ? "#D9DFE7" : P.bg;
+  // colour split spikes on every cut, then settles to a hint
+  const cutAge = b === "price" ? 9 : t;
+  const ca = 0.0006 + 0.005 * (1 - smooth(ramp(cutAge, 0, 0.3)));
   return (
     <>
-      <color attach="background" args={[bg]} />
-      <fog attach="fog" args={[bg, studio ? 10 : 9, studio ? 22 : 26]} />
+      <color attach="background" args={[P.bg]} />
+      <fog attach="fog" args={[P.bg, 9, 26]} />
       <CameraRig pose={pose} />
-      {/* R5-style: one soft key light, cool sky fill, no neon as a light source. */}
-      <ambientLight color={studio ? "#FFFFFF" : "#9AA8C2"} intensity={studio ? 0.75 : 0.45} />
-      <hemisphereLight args={studio ? ["#FFFFFF", "#9AA4B4", 1.0] : ["#C8D6F0", "#1A2230", 0.8]} />
+      {/* R5-style: one soft key light, cool sky fill; neon only as accents and rim lights. */}
+      <ambientLight color="#9AA8C2" intensity={0.5} />
+      <hemisphereLight args={["#C8D6F0", "#1A2230", 0.85]} />
       <directionalLight
         position={[-5, 9, 6]}
-        intensity={2.4}
+        intensity={2.5}
         color="#F4F6FF"
         castShadow
         shadow-mapSize={[2048, 2048]}
@@ -646,25 +941,22 @@ const World: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats, f
       <directionalLight position={[6, 4, -5]} intensity={0.6} color="#9FC4FF" />
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[60, 60]} />
-        {studio ? (
-          <meshStandardMaterial color="#D3DAE3" roughness={0.85} />
-        ) : (
-          <MeshReflectorMaterial blur={[300, 80]} resolution={1024} mixBlur={1} mixStrength={6} roughness={0.7} depthScale={1} minDepthThreshold={0.4} maxDepthThreshold={1.4} color={P.floor} metalness={0.4} mirror={0.35} />
-        )}
+        <MeshReflectorMaterial blur={[300, 80]} resolution={1024} mixBlur={1} mixStrength={6} roughness={0.7} depthScale={1} minDepthThreshold={0.4} maxDepthThreshold={1.4} color={P.floor} metalness={0.4} mirror={0.35} />
       </mesh>
-      {studio ? null : <gridHelper args={[40, 40, "#36404F", "#303A48"]} position={[0, 0.003, 0]} />}
+      <gridHelper args={[40, 40, "#36404F", "#303A48"]} position={[0, 0.003, 0]} />
       {b === "price" ? <PriceSet t={t} sacks={since(beats, frame, "sacks")} /> : null}
       {b === "reason" ? <ReasonSet appear={t} vanish={since(beats, frame, "vanish")} /> : null}
-      {b === "deal" ? <DealSet t={t} s={beats.share !== undefined ? since(beats, frame, "share") + 0.6 : t} frame={frame} /> : null}
+      {b === "deal" ? <DealSet t={t} frame={frame} share={beats.share !== undefined ? since(beats, frame, "share") : t - 2} /> : null}
       {b === "loop" ? <LoopSet t={t} /> : null}
-      {b === "flower" ? <FlowerSet t={t} bank={since(beats, frame, "bank")} /> : null}
-      {b === "math" ? <MathSet t={t} short={since(beats, frame, "short")} /> : null}
+      {b === "flower" ? <FlowerSet t={t} /> : null}
+      {b === "math" ? <MathSet t={t} gap={since(beats, frame, "gap")} /> : null}
       {b === "bubble" ? <BubbleSet t={t} pop={since(beats, frame, "pop")} frame={frame} /> : null}
-      {b === "end" ? <EndSet t={t} real={since(beats, frame, "real")} frame={frame} /> : null}
+      {b === "end" ? <EndSet t={t} real={beats.real !== undefined ? since(beats, frame, "real") : t - 1} /> : null}
       <WarmUp />
       <EffectComposer multisampling={4}>
         <DepthOfField target={pose.t.toArray() as V} focalLength={0.03} bokehScale={3} />
-        <Bloom mipmapBlur luminanceThreshold={0.7} luminanceSmoothing={0.2} intensity={0.8} />
+        <Bloom mipmapBlur luminanceThreshold={0.7} luminanceSmoothing={0.2} intensity={0.85} />
+        <ChromaticAberration offset={new THREE.Vector2(ca, ca * 0.6)} radialModulation={false} modulationOffset={0} />
         <Vignette eskil={false} offset={0.3} darkness={0.55} />
       </EffectComposer>
     </>
@@ -697,11 +989,11 @@ const Source: React.FC<{ y: number; text: string; s: number }> = ({ y, text, s }
   );
 };
 
-const Chip: React.FC<{ y: number; text: string; color?: string; s: number }> = ({ y, text, color = K.white, s }) => {
+const Chip: React.FC<{ y: number; text: string; color?: string; s: number; x?: number }> = ({ y, text, color = K.white, s, x = 540 }) => {
   if (s <= 0.01) return null;
   const w = text.length * 15 + 44;
   return (
-    <g transform={`translate(540 ${y})`} opacity={s}>
+    <g transform={`translate(${x} ${y}) scale(${0.85 + 0.15 * s})`} opacity={s}>
       <rect x={-w / 2} y={-25} width={w} height={50} rx={10} fill={K.panel} stroke={color} strokeWidth={2} />
       <text x={0} y={8} textAnchor="middle" fontFamily={MONO} fontWeight={700} fontSize={24} fill={color} letterSpacing={1}>
         {text}
@@ -710,7 +1002,59 @@ const Chip: React.FC<{ y: number; text: string; color?: string; s: number }> = (
   );
 };
 
-/** R4/R5-style data panel: DDR5 chip spot price, Sep to Dec 2025, counting up to ~4x. */
+const Tag: React.FC<{ y: number; text: string; color: string; s: number }> = ({ y, text, color, s }) => {
+  if (s <= 0.01) return null;
+  const w = Math.min(960, text.length * 21 + 60);
+  return (
+    <g transform={`translate(540 ${y}) scale(${0.85 + 0.15 * s})`} opacity={s}>
+      <rect x={-w / 2} y={-34} width={w} height={68} rx={14} fill={K.panel} stroke={color} strokeWidth={3} />
+      <text x={0} y={10} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={28} fill={color} letterSpacing={1}>
+        {text}
+      </text>
+    </g>
+  );
+};
+
+/** Brand name badge in the brand's colour (no logo artwork). */
+const BrandBadge: React.FC<{ x: number; y: number; name: string; color: string; ink?: string; sub?: string; s: number }> = ({ x, y, name, color, ink = "#0C0E10", sub, s }) => {
+  if (s <= 0.01) return null;
+  const w = name.length * 40 + 80;
+  return (
+    <g transform={`translate(${x} ${y}) scale(${0.8 + 0.2 * s})`} opacity={clamp01(s * 1.5)}>
+      <rect x={-w / 2} y={-48} width={w} height={96} rx={18} fill={color} filter="url(#kglow)" />
+      <text x={0} y={20} textAnchor="middle" fontFamily={BODY} fontStyle="italic" fontWeight={900} fontSize={60} fill={ink} letterSpacing={2}>
+        {name}
+      </text>
+      {sub ? (
+        <text x={0} y={84} textAnchor="middle" fontFamily={MONO} fontWeight={700} fontSize={22} fill={K.white} letterSpacing={2}>
+          {sub}
+        </text>
+      ) : null}
+    </g>
+  );
+};
+
+/** Chapter tabs (owner's rule): current highlighted, finished plain, upcoming hidden. */
+const ProgressTabs: React.FC<{ chapters: string[]; active: number; y?: number }> = ({ chapters, active, y = 300 }) => {
+  const w = Math.min(160, 860 / chapters.length);
+  const x0 = 540 - (w * chapters.length) / 2;
+  return (
+    <g>
+      {chapters.map((c, i) =>
+        i > active ? null : (
+          <g key={c} transform={`translate(${x0 + i * w} ${y})`}>
+            <rect x={4} y={-24} width={w - 8} height={48} rx={6} fill={i === active ? K.cyan : K.panel} stroke={i === active ? "none" : "rgba(255,255,255,0.45)"} strokeWidth={2} filter={i === active ? "url(#kglow)" : undefined} />
+            <text x={w / 2} y={8} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={20} fill={i === active ? "#081020" : K.white}>
+              {c}
+            </text>
+          </g>
+        ),
+      )}
+    </g>
+  );
+};
+
+/** DDR5 chip spot price, Sep to Dec 2025, counting up to ~4x. */
 const PricePanel: React.FC<{ t: number; s: number; top?: number }> = ({ t, s, top = 930 }) => {
   if (s <= 0.01) return null;
   const x0 = 150;
@@ -760,55 +1104,17 @@ const PricePanel: React.FC<{ t: number; s: number; top?: number }> = ({ t, s, to
   );
 };
 
-/** Amber/green statement tag. */
-const Tag: React.FC<{ y: number; text: string; color: string; s: number }> = ({ y, text, color, s }) => {
-  if (s <= 0.01) return null;
-  const w = Math.min(960, text.length * 21 + 60);
-  return (
-    <g transform={`translate(540 ${y}) scale(${0.85 + 0.15 * s})`} opacity={s}>
-      <rect x={-w / 2} y={-34} width={w} height={68} rx={14} fill={K.panel} stroke={color} strokeWidth={3} />
-      <text x={0} y={10} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={28} fill={color} letterSpacing={1}>
-        {text}
-      </text>
-    </g>
-  );
-};
-
-/**
- * Chapter tabs (owner's rule): the current chapter highlighted, finished chapters plain,
- * upcoming chapters hidden. Slots keep fixed positions so tabs never jump.
- */
-const ProgressTabs: React.FC<{ chapters: string[]; active: number; y?: number }> = ({ chapters, active, y = 300 }) => {
-  const w = Math.min(160, 860 / chapters.length);
-  const x0 = 540 - (w * chapters.length) / 2;
-  return (
-    <g>
-      {chapters.map((c, i) =>
-        i > active ? null : (
-          <g key={c} transform={`translate(${x0 + i * w} ${y})`}>
-            <rect x={4} y={-24} width={w - 8} height={48} rx={6} fill={i === active ? K.cyan : K.panel} stroke={i === active ? "none" : "rgba(255,255,255,0.45)"} strokeWidth={2} filter={i === active ? "url(#kglow)" : undefined} />
-            <text x={w / 2} y={8} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={20} fill={i === active ? "#081020" : K.white}>
-              {c}
-            </text>
-          </g>
-        ),
-      )}
-    </g>
-  );
-};
-
 const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats, frame, pose }) => {
   const proj = projector(pose);
   const b = current(beats, frame);
   const t = since(beats, frame, b);
   const sAt = (d: number, len = 0.3) => smooth(ramp(t, d, d + len));
   const T = frame / FPS;
-  const flash = b !== "price" ? clamp01(1 - t / 0.2) : 0;
-  const appearT = since(beats, frame, "appear");
+  const flash = b !== "price" ? clamp01(1 - t / 0.18) : 0;
   const vanishT = since(beats, frame, "vanish");
-  const shareT = beats.share !== undefined ? since(beats, frame, "share") + 0.6 : t;
+  const shareT = beats.share !== undefined ? since(beats, frame, "share") : t - 2;
   const bankT = since(beats, frame, "bank");
-  const shortT = since(beats, frame, "short");
+  const gapT = since(beats, frame, "gap");
   const popT = since(beats, frame, "pop");
   const realT = beats.real !== undefined ? since(beats, frame, "real") : t - 1;
   const pin = (p: THREE.Vector3, text: string, tone: "cyan" | "amber" | "green" | "red" | "plain", s: number, dx: number, dy: number) => {
@@ -822,9 +1128,9 @@ const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats,
 
       {b === "price" ? (
         <>
-          <TitleCard y={500} line1="WHY IS RAM" line2="4X THE PRICE?" accent={K.amber} s={1 - smooth(ramp(T, 2.0, 2.4))} />
-          {pin(v3(-0.8, 1.15, 0.35), "RAM", "plain", sAt(0.5) * (1 - smooth(ramp(t, 2.1, 2.3))), -120, 260)}
-          {pin(v3(1.1, 0.85, -0.3), "DDR5 MEMORY", "cyan", sAt(0.8) * (1 - smooth(ramp(t, 2.1, 2.3))), 80, 280)}
+          <TitleCard y={470} line1="WHY IS RAM" line2="4X THE PRICE?" accent={K.amber} s={1 - smooth(ramp(T, 2.0, 2.4))} />
+          {pin(v3(-0.66, 0.9, 0.1), "RAM", "cyan", sAt(0.5) * (1 - smooth(ramp(t, 2.1, 2.3))), -150, 200)}
+          {pin(v3(0.66, 0.9, 0.1), "DDR5 RAM", "plain", sAt(0.8) * (1 - smooth(ramp(t, 2.1, 2.3))), 150, 200)}
           <PricePanel t={t - 2.2} s={sAt(2.3, 0.4)} top={400} />
           <Source y={740} text="SOURCE: TOM'S HARDWARE RAM PRICE INDEX · 2025" s={sAt(3.2)} />
         </>
@@ -832,48 +1138,50 @@ const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats,
 
       {b === "reason" ? (
         <>
-          <Tag y={520} text="AI COMPANIES ARE BUYING IT" color={K.cyan} s={smooth(ramp(appearT, 0, 0.3)) * (1 - smooth(ramp(vanishT, -0.1, 0.1)))} />
+          <Tag y={520} text="AI COMPANIES ARE BUYING IT" color={K.cyan} s={sAt(0.3) * (1 - smooth(ramp(vanishT, -0.1, 0.1)))} />
           <Tag y={520} text="MEMORY THAT HASN'T BEEN MADE YET" color="#8FD8FF" s={smooth(ramp(vanishT, 0.05, 0.35))} />
         </>
       ) : null}
 
       {b === "deal" ? (
         <>
-          <BigStat x={540} y={600} value={`${Math.round(40 * smooth(ramp(shareT, 0.6, 2.4)))}%`} label="OF WORLD DRAM · ANALYST ESTIMATE" color={K.amber} size={170} s={smooth(ramp(shareT, 0.3, 0.6))} />
-          {pin(v3(0.9, 1.2, 0.9), "OPENAI · STARGATE", "cyan", sAt(0.5), 170, -90)}
-          <Chip y={1140} text="UP TO 900,000 WAFERS / MONTH" color={K.white} s={sAt(1.0)} />
-          <Source y={1210} text="LETTERS OF INTENT · OCT 1, 2025 · SAMSUNG + SK HYNIX" s={sAt(1.6)} />
+          {pin(v3(FAB_A.x, 1.4, FAB_A.z), "SAMSUNG", "cyan", sAt(0.3), -40, -170)}
+          {pin(v3(FAB_B.x, 1.4, FAB_B.z), "SK HYNIX", "red", sAt(0.6), 40, -170)}
+          {pin(v3(GATE.x + 0.6, 1.3, GATE.z + 0.8), "OPENAI · STARGATE", "plain", sAt(1.0), 150, 170)}
+          <Chip y={1150} text="UP TO 900,000 WAFERS / MONTH" color={K.white} s={sAt(1.6) * (1 - smooth(ramp(shareT, -0.2, 0.1)))} />
+          <BigStat x={540} y={1120} value={`${Math.round(40 * smooth(ramp(shareT, 0, 0.6)))}%`} label="OF WORLD SUPPLY · ANALYST ESTIMATE" color={K.amber} size={150} s={smooth(ramp(shareT, 0, 0.3))} />
+          <Source y={1268} text="LETTERS OF INTENT · OCT 1, 2025" s={sAt(2.2)} />
         </>
       ) : null}
 
       {b === "loop" ? (
         <>
-          {pin(v3(-1.6, 0.85, 0), "NVIDIA", "plain", sAt(0.3), -40, -260)}
-          {pin(v3(1.6, 1.3, 0), "OPENAI", "plain", sAt(0.5), 40, -260)}
+          <BrandBadge x={540} y={500} name="NVIDIA" color={P.nvidia} sub="THE AI CHIP GIANT" s={sAt(0.15)} />
+          {pin(v3(AI_POS.x, 1.3, AI_POS.z), "OPENAI", "plain", sAt(0.6), 60, -200)}
           {(() => {
-            const a = proj(TOP_ARC.getPoint(0.5));
+            const a = proj(TOP_ARC.getPoint(0.45));
             const c = proj(BOTTOM_ARC.getPoint(0.5));
             return (
               <>
-                <Chip y={a.y - 60} text="$30B STAKE →" color={K.green} s={sAt(0.9)} />
-                <Chip y={Math.min(1175, c.y + 70)} text="← GPU ORDERS" color={K.green} s={sAt(1.4)} />
+                <Chip x={Math.min(820, a.x + 60)} y={a.y - 50} text="$30B STAKE" color={K.green} s={sAt(1.4)} />
+                <Chip x={Math.min(820, c.x + 40)} y={Math.min(1180, c.y + 60)} text="GPU ORDERS" color={K.green} s={sAt(1.9)} />
               </>
             );
           })()}
-          <Source y={1268} text="FEB 2026 · A $100B PLAN BECAME A $30B STAKE" s={sAt(2.0)} />
+          <Source y={1268} text="FEB 2026 · A $100B PLAN BECAME A $30B STAKE" s={sAt(2.4)} />
         </>
       ) : null}
 
       {b === "flower" ? (
         <>
-          {pin(v3(SHOP.x, 1.9, SHOP.z), "MY FLOWER SHOP", "plain", sAt(0.2), -60, -250)}
-          {pin(v3(YOU.x, 1.5, YOU.z), "YOU", "plain", sAt(0.4), 30, -280)}
-          <Chip y={1100} text="I PAY YOU $1,000 → YOU BUY MY FLOWERS" color={K.green} s={sAt(0.9)} />
+          {pin(v3(SHOP.x, 1.95, SHOP.z), "MY FLOWER SHOP", "plain", sAt(0.2), -40, -230)}
+          {pin(v3(YOU.x, 1.5, YOU.z), "YOU", "plain", sAt(0.4), 20, -260)}
+          <Chip y={1110} text="$1,000 → SHOP · FLOWERS → YOU" color={K.green} s={sAt(0.9)} />
           {(() => {
-            const sb = smooth(ramp(bankT, 0.2, 0.5));
+            const sb = smooth(ramp(bankT, 0.1, 0.4));
             if (sb <= 0.01) return null;
             return (
-              <g transform={`translate(540 640) scale(${0.85 + 0.15 * sb})`} opacity={sb}>
+              <g transform={`translate(540 620) scale(${0.85 + 0.15 * sb})`} opacity={sb}>
                 <rect x={-300} y={-95} width={600} height={190} rx={18} fill="#F5F7FB" />
                 <rect x={-300} y={-95} width={600} height={46} rx={18} fill="#1F3A5F" />
                 <rect x={-300} y={-70} width={600} height={21} fill="#1F3A5F" />
@@ -883,7 +1191,7 @@ const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats,
                 <text x={0} y={40} textAnchor="middle" fontFamily={MONO} fontWeight={700} fontSize={64} fill="#1C7A4A">
                   $1,000,000,000
                 </text>
-                <g transform={`translate(250 -70) rotate(10) scale(${smooth(ramp(bankT, 0.7, 0.9))})`}>
+                <g transform={`translate(250 -70) rotate(10) scale(${smooth(ramp(bankT, 0.6, 0.8))})`}>
                   <circle r={42} fill={K.red} />
                   <text y={22} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={60} fill="#fff">
                     ?
@@ -892,7 +1200,7 @@ const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats,
               </g>
             );
           })()}
-          <Tag y={1180} text="CIRCULAR MONEY, MADE-UP VALUE" color={K.amber} s={smooth(ramp(bankT, 1.0, 1.3))} />
+          <Tag y={1190} text="CIRCULAR MONEY, MADE-UP VALUE" color={K.amber} s={smooth(ramp(bankT, 0.9, 1.2))} />
         </>
       ) : null}
 
@@ -900,32 +1208,55 @@ const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats,
         <>
           {pin(v3(-1.0, 3.35, 0), "$2T NEEDED A YEAR BY 2030", "amber", sAt(1.2), -60, -150)}
           {pin(v3(1.0, 2.05, 0.5), "REVENUE ON TRACK", "cyan", sAt(2.4), 60, 260)}
-          {pin(v3(1.0, 3.0, 0.5), "$800B SHORT", "red", smooth(ramp(shortT, 0.1, 0.4)), 70, -200)}
+          {pin(v3(1.0, 3.0, 0.5), "$800B SHORT", "red", smooth(ramp(gapT, -0.1, 0.2)), 70, -200)}
+          {(() => {
+            const a = proj(v3(1.0, 2.7, 0.5));
+            return [
+              [-150, -40, -12],
+              [140, -110, 10],
+              [-110, -190, -6],
+              [170, 10, 14],
+            ].map(([dx, dy, r], k) => {
+              const s = smooth(ramp(gapT, 1.3 + k * 0.12, 1.55 + k * 0.12));
+              if (s <= 0.01) return null;
+              const bob = Math.sin(T * 6 + k) * 8;
+              return (
+                <text key={k} x={a.x + dx} y={a.y + dy + bob} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={96 * s} fill={K.red} stroke="#000" strokeWidth={6} paintOrder="stroke" transform={`rotate(${r} ${a.x + dx} ${a.y + dy})`}>
+                  ?
+                </text>
+              );
+            });
+          })()}
           <Source y={1272} text="BAIN & COMPANY · GLOBAL TECHNOLOGY REPORT · SEP 2025" s={sAt(1.6)} />
         </>
       ) : null}
 
       {b === "bubble" ? (
         <>
-          <Tag y={560} text="BOOM → RAM STAYS EXPENSIVE" color={K.amber} s={sAt(0.3) * (1 - smooth(ramp(popT, -0.6, -0.3)))} />
-          <Tag y={560} text="BUBBLE → PRICES COULD CRASH" color={K.green} s={smooth(ramp(popT, 0, 0.3))} />
+          <Tag y={520} text="BOOM → RAM STAYS EXPENSIVE" color={K.amber} s={sAt(0.3) * (1 - smooth(ramp(popT, -0.6, -0.3)))} />
+          <Tag y={520} text="BUBBLE → PRICES COULD CRASH" color={K.green} s={smooth(ramp(popT, 0, 0.3))} />
+          {popT > 0.1 ? (
+            <g transform={`translate(${proj(v3(1.15, 1.2, 0.4)).x + 90} ${proj(v3(1.15, 1.2, 0.4)).y})`} opacity={smooth(ramp(popT, 0.1, 0.4))}>
+              <path d="M0 -40 L0 30 M-26 6 L0 34 L26 6" stroke={K.green} strokeWidth={10} fill="none" strokeLinecap="round" strokeLinejoin="round" filter="url(#kglow)" />
+            </g>
+          ) : null}
         </>
       ) : null}
 
       {b === "end" ? (
         <>
-          <TitleCard y={560} line1="ONLY ONE THING" line2="IS REAL" accent={K.green} s={smooth(ramp(realT, 0, 0.3)) * (1 - smooth(ramp(t, 4.3, 4.6)))} />
-          {pin(v3(0, 1.1, 0.1), "YOUR RAM", "green", smooth(ramp(realT, 0.9, 1.2)), 160, 150)}
+          <TitleCard y={470} line1="ONLY ONE THING" line2="IS REAL" accent={K.green} s={smooth(ramp(realT, 0, 0.3)) * (1 - smooth(ramp(t, 4.0, 4.3)))} />
+          {pin(v3(0, 1.3, 0.15), "YOUR RAM", "green", smooth(ramp(realT, 0.8, 1.1)), 230, -40)}
           {(() => {
-            const sf = smooth(ramp(t, 4.4, 4.7));
+            const sf = smooth(ramp(t, 4.15, 4.45));
             if (sf <= 0.01) return null;
             return (
-              <g transform={`translate(540 600) scale(${0.8 + 0.2 * sf})`} opacity={sf}>
-                <rect x={-240} y={-55} width={480} height={110} rx={28} fill={K.red} filter="url(#kglow)" />
-                <text x={0} y={16} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={46} fill="#fff">
+              <g transform={`translate(540 480) scale(${0.8 + 0.2 * sf})`} opacity={sf}>
+                <rect x={-250} y={-58} width={500} height={116} rx={30} fill={K.red} filter="url(#kglow)" />
+                <text x={0} y={17} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={48} fill="#fff">
                   + FOLLOW FOR MORE
                 </text>
-                <text x={0} y={100} textAnchor="middle" fontFamily={MONO} fontWeight={700} fontSize={28} fill={K.cyan}>
+                <text x={0} y={104} textAnchor="middle" fontFamily={MONO} fontWeight={700} fontSize={28} fill={K.cyan}>
                   @frontierin60
                 </text>
               </g>
@@ -934,7 +1265,7 @@ const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats,
         </>
       ) : null}
 
-      {flash > 0 ? <rect x={0} y={0} width={W} height={H} fill="#E8F2FF" opacity={0.4 * flash} /> : null}
+      {flash > 0 ? <rect x={0} y={0} width={W} height={H} fill="#E8F2FF" opacity={0.45 * flash} /> : null}
     </svg>
   );
 };
