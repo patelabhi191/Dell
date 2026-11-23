@@ -1,6 +1,6 @@
 {
   "id": "008-why-ram-costs-4x",
-  "title": "Why RAM costs 4x (draft)",
+  "title": "Why RAM costs 4x",
   "format": "info",
   "theme": "cinema",
   "stage": "ram-iso",
@@ -128,6 +128,28 @@
       }
     }
   ],
-  "thumbnails": [],
+  "thumbnails": [
+    {
+      "name": "4x",
+      "title": "Why RAM costs *4x*",
+      "tag": "Nov 2026",
+      "at": "x4",
+      "offset": 1.5
+    },
+    {
+      "name": "ghost",
+      "title": "RAM that *doesn't exist* yet",
+      "tag": "Why prices quadrupled",
+      "at": "vanish",
+      "offset": 1
+    },
+    {
+      "name": "40",
+      "title": "Up to *40%* of the world's RAM?",
+      "tag": "OpenAI · Samsung · SK Hynix",
+      "at": "share",
+      "offset": 1.8
+    }
+  ],
   "voiceover": "008-why-ram-costs-4x.mp3"
 }

@@ -1,34 +1,33 @@
-# 008 Why RAM costs 4x (draft for owner review)
+# Instagram post: 008 Why RAM costs 4x
 
-Video: `D:\Claude\output\008-why-ram-costs-4x-short.mp4` (54.7 s); shareable copy `-share.mp4`.
-Voice: Kokoro am_michael at 1.15 with "humanize" and "voiceFx"; "RAM" read as "ram".
-Voice samples to compare: `D:\Claude\output\voice-samples\*.mp3`.
-Look: R4/R5 (3D macro objects, soft key light, grey-blue world), chapter tabs that show only
-finished + current chapters, no footer, no source credit on screen. Stage: `src/stages/ram-demo.tsx`.
+Video: `D:\Claude\output\008-why-ram-costs-4x-short.mp4` (53.1 s); phone-size copy `008-why-ram-costs-4x-share.mp4`
+Covers: `D:\Claude\output\008-why-ram-costs-4x-thumb-{4x,ghost,40}.png` (main: `4x`)
+Voice: am_liam 1.18 with humanize + voiceFx; "RAM" said as a word; captions from the script.
+Look: R4 main (isometric, dark slate grid, glowing edges, status bars), R3 for chapter tabs,
+server stacks and lane tiles. Stage: `src/stages/ram-iso.tsx`.
 
-## Script (checked facts only)
+## Caption
 
-1. PRICE: RAM chip prices nearly quadrupled in three months. The reason? Memory that doesn't exist yet.
-2. DEAL: OpenAI signed letters with Samsung and SK Hynix for up to 900,000 memory wafers a month. Analysts say that's up to 40% of the world's supply.
-3. LOOP: And the chip maker? Nvidia put $30 billion into OpenAI, a company that runs on its chips.
-4. LOOP (analogy): It's like I pay you $1,000, you spend it on my flowers, and I tell the bank my shop is worth a billion.
-5. MATH: Bain says AI needs $2 trillion a year in revenue by 2030. It's on track to fall $800 billion short.
-6. BUBBLE: If the boom is real, RAM stays expensive. If it's a bubble, prices could crash.
-7. END: In this whole chain, only one thing is real. Your investment in RAM, if you have one. Follow for more.
+Ever wondered why RAM got so expensive? 💸 Chip prices nearly 4x'd in three months.
 
-## Draft caption (5 hashtags)
-
-RAM prices nearly 4x'd in three months. 💸 Here's the chain behind it:
-
-– OpenAI signed letters of intent for up to 900,000 memory wafers a month (analysts: up to 40% of world supply).
+– AI companies are buying memory that hasn't even been made yet.
+– OpenAI signed letters of intent with Samsung and SK Hynix for up to 900,000 wafers a month (analysts: up to 40% of world supply).
 – Nvidia put $30B into OpenAI, a company that runs on Nvidia chips.
-– Bain: AI needs $2T a year in revenue by 2030, and is on track to be $800B short.
+– Bain: AI needs $2T a year in revenue by 2030, and is on track to fall $800B short.
 
-Boom or bubble? Only your RAM is real. Follow for more.
+Boom or bubble? Only the RAM you already own is real. Follow for more. 👀
 
 #RAM #AI #Nvidia #OpenAI #TechNews
 
-## Fact check
+## Sources
 
-See `posts/008-ram-demo.md` (same facts). "Memory that doesn't exist yet" refers to the letters
-of intent for future wafer output; "prices could crash" is stated as a possibility, not a forecast.
+- DDR5 16Gb chip spot price ~$6.84 (Sep 2025) → ~$27.20 (Dec 2025): Tom's Hardware RAM price index (as cited by tech-insider.org and others).
+- OpenAI letters of intent with Samsung and SK Hynix (Oct 1, 2025), up to 900,000 DRAM wafers/month; 40% is a TechInsights estimate vs 2025 output: Tom's Hardware, OpenAI, The Register, Bloomberg.
+- Nvidia's Sep 2025 letter of intent (up to $100B) was never binding; replaced Feb 27, 2026 by a $30B stake in OpenAI's $110B round: Fortune, Business Standard, TechTimes.
+- Bain & Company Global Technology Report (Sep 23, 2025): ~$2T annual revenue needed by 2030, $800B short: Bain press release, Bloomberg.
+
+## Notes
+
+- "Memory that hasn't even been made yet" refers to the letters of intent for future wafer output.
+- The flower shop is a simplified analogy for circular financing; "prices could crash" is stated as a possibility.
+- No on-screen footer or source credit (owner's rule); sources live here.

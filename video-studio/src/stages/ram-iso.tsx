@@ -224,6 +224,46 @@ const Pool: React.FC<{ p: V; r: number; color: string; k?: number }> = ({ p, r, 
     </mesh>
   ) : null;
 
+/** Expanding ring on the floor that repeats every `period` seconds (arrivals, heartbeats). */
+const Pulse: React.FC<{ p: V; t: number; period: number; color: string; r?: number; y?: number; offset?: number }> = ({ p, t, period, color, r = 0.8, y = 0.015, offset = 0 }) => {
+  if (t < 0) return null;
+  const k = (((t + offset) % period) + period) % period / period;
+  return (
+    <mesh position={[p[0], y, p[2]]} rotation={[-Math.PI / 2, 0, 0]} scale={0.4 + k * 1.2}>
+      <ringGeometry args={[r * 0.92, r, 48]} />
+      {glow(color, 2, (1 - k) * 0.9)}
+    </mesh>
+  );
+};
+/** Slow-drifting dust motes over the whole world (R4 ambience). */
+const MOTES = Array.from({ length: 140 }, (_, k) => [(random(`mx${k}`) - 0.5) * 12, random(`my${k}`) * 4, (random(`mz${k}`) - 0.5) * 12] as V);
+const Motes: React.FC<{ frame: number }> = ({ frame }) => {
+  const pos = new Float32Array(MOTES.length * 3);
+  MOTES.forEach(([x, y, z], k) => {
+    pos[k * 3] = x + Math.sin(frame * 0.01 + k) * 0.15;
+    pos[k * 3 + 1] = (y + frame * 0.004 * (1 + (k % 3))) % 4;
+    pos[k * 3 + 2] = z;
+  });
+  return (
+    <points key={frame}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[pos, 3]} />
+      </bufferGeometry>
+      <pointsMaterial size={2.2} sizeAttenuation={false} color="#9EE6FF" transparent opacity={0.3} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    </points>
+  );
+};
+/** A faint light line sweeping across the floor grid. */
+const Scan: React.FC<{ frame: number }> = ({ frame }) => {
+  const u = ((frame / FPS) * 0.18) % 1;
+  return (
+    <mesh position={[0, 0.005, -6 + u * 12]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[14, 0.035]} />
+      {glow(P.cyan, 0.8, 0.09 * Math.sin(u * Math.PI))}
+    </mesh>
+  );
+};
+
 /** RAM stick standing upright like an R4 rack: PCB, chips, gold contacts, top status light. */
 const RamStick: React.FC<{ p: V; led: string; ledK?: number; s?: number; act?: number; seed?: number }> = ({ p, led, ledK = 2.4, s = 1, act = 0, seed = 0 }) => (
   <group position={p} scale={s}>
@@ -302,7 +342,7 @@ const Fab: React.FC<{ p: V; accent: string; frame: number }> = ({ p, accent, fra
       [0, 1, 2, 3].map((c) => (
         <mesh key={`${r}${c}`} position={[-0.48 + c * 0.32, 0.32 + r * 0.3, 0.652]}>
           <planeGeometry args={[0.2, 0.14]} />
-          {glow(accent, 0.8)}
+          {glow(accent, 0.45 + 0.6 * Math.abs(Math.sin(frame * 0.12 + r * 1.7 + c * 2.3)))}
         </mesh>
       )),
     )}
@@ -448,6 +488,17 @@ const PriceSet: React.FC<{ t: number; x4: number; frame: number }> = ({ t, x4, f
               );
             })}
             <RamStick p={[x, 0, 0]} led={led} ledK={2.2 + 1.5 * h * Math.abs(Math.sin(t * 6 + k))} act={1} seed={Math.floor(frame / 3) + k * 7} />
+            {h > 0.05
+              ? Array.from({ length: 2 }, (_, j) => {
+                  const u = (t * 0.7 + j / 2 + k * 0.23) % 1;
+                  return (
+                    <mesh key={`coin${j}`} position={[x + Math.sin(u * 6 + k) * 0.12, 2.75 + u * 1.1, 0.1]} rotation={[Math.PI / 2, 0, u * 8]}>
+                      <cylinderGeometry args={[0.09, 0.09, 0.02, 16]} />
+                      <meshStandardMaterial color="#E9B949" metalness={0.85} roughness={0.3} emissive="#7A5A10" emissiveIntensity={0.5} transparent opacity={h * (1 - u)} />
+                    </mesh>
+                  );
+                })
+              : null}
           </group>
         );
       })}
@@ -468,6 +519,8 @@ const ReasonSet: React.FC<{ t: number; buy: number; vanish: number; frame: numbe
     <group>
       <Pool p={[DC_R.x, 0, DC_R.z]} r={1.3} color={P.cyan} k={0.8} />
       <ServerStack p={[DC_R.x, 0, DC_R.z]} n={5} w={1.3} k={2 + Math.abs(Math.sin(frame * 0.2))} />
+      <Pulse p={[DC_R.x, 0, DC_R.z]} t={buy} period={0.6} color={vanish >= 0 ? "#8FD8FF" : P.cyan} r={1.0} />
+      <Pulse p={[DC_R.x, 0, DC_R.z]} t={buy} period={0.6} color={P.cyan} r={0.75} y={2.12} offset={0.3} />
       {/* the row of slots the sticks come from */}
       {ROW.map((x, k) => (
         <Block key={`slot${k}`} p={[x, 0, 0]} s={[0.95, 0.16, 0.36]} c="#1A222D" edge={ghost > 0 ? "#8FD8FF" : P.red} edgeK={0.8} />
@@ -519,7 +572,8 @@ const DealSet: React.FC<{ t: number; frame: number; share: number }> = ({ t, fra
   return (
     <group>
       <Pool p={[DC_D.x, 0, DC_D.z]} r={1.5} color={lit > 0 ? P.amber : P.cyan} k={0.8} />
-      <ServerStack p={[DC_D.x, 0, DC_D.z]} n={4} w={1.4} stripe={lit > 0 ? mix(P.cyan, P.amber, lit) : P.cyan} />
+      <ServerStack p={[DC_D.x, 0, DC_D.z]} n={4} w={1.4} stripe={lit > 0 ? mix(P.cyan, P.amber, lit) : P.cyan} k={2 + 0.8 * Math.abs(Math.sin(frame * 0.15))} />
+      <Pulse p={[DC_D.x, 0, DC_D.z]} t={t} period={0.9} color={lit > 0 ? P.amber : P.cyan} r={1.15} />
       <Pool p={[FAB_S.x, 0, FAB_S.z]} r={1.1} color="#4C7DFF" k={0.6} />
       <Fab p={[FAB_S.x, 0, FAB_S.z]} accent="#5B8CFF" frame={frame} />
       <Pool p={[FAB_H.x, 0, FAB_H.z]} r={1.1} color="#FF5B5B" k={0.6} />
@@ -556,7 +610,9 @@ const LoopSet: React.FC<{ t: number; stake: number }> = ({ t, stake }) => {
       <Pool p={[NV.x, 0, NV.z]} r={1.2} color={P.nvidia} k={0.8} />
       <GpuBlock p={[NV.x, 0, NV.z]} t={t} />
       <Pool p={[OA.x, 0, OA.z]} r={1.2} color={P.cyan} k={0.8} />
-      <ServerStack p={[OA.x, 0, OA.z]} n={4} w={1.2} />
+      <ServerStack p={[OA.x, 0, OA.z]} n={4} w={1.2} k={2 + 0.8 * Math.abs(Math.sin(t * 3))} />
+      <Pulse p={[OA.x, 0, OA.z]} t={t} period={0.8} color={P.nvidia} r={1.0} />
+      <Pulse p={[NV.x, 0, NV.z]} t={t} period={0.9} color={P.amber} r={1.1} offset={0.4} />
       <Lane a={chipsA} b={chipsB} color={P.nvidia} t={t} />
       <Lane a={cashA} b={cashB} color={P.amber} t={t} />
       {Array.from({ length: 4 }, (_, k) => {
@@ -622,10 +678,12 @@ const FlowerSet: React.FC<{ t: number; bank: number }> = ({ t, bank }) => {
         </mesh>
       ))}
       {Array.from({ length: 4 }, (_, k) => (
-        <Bunch key={k} p={v3(SHOP.x - 0.45 + k * 0.3, 0.8, SHOP.z - 0.15)} />
+        <group key={k} position={[SHOP.x - 0.45 + k * 0.3, 0.8, SHOP.z - 0.15]} rotation={[0, 0, Math.sin(t * 2.2 + k) * 0.12]}>
+          <Bunch p={v3(0, 0, 0)} />
+        </group>
       ))}
       {/* customer (R2-style voxel figure) */}
-      <group position={YOU.toArray() as V}>
+      <group position={[YOU.x, Math.abs(Math.sin(t * 3.2)) * 0.06, YOU.z]}>
         <Pool p={[0, 0, 0]} r={0.7} color={P.cyan} k={0.5} />
         <RoundedBox args={[0.42, 0.7, 0.3]} radius={0.06} position={[0, 0.55, 0]} castShadow>
           <Matte c="#5B7DB8" />
@@ -642,6 +700,7 @@ const FlowerSet: React.FC<{ t: number; bank: number }> = ({ t, bank }) => {
       {/* bank */}
       <group position={BANK.toArray() as V}>
         <Pool p={[0, 0, 0]} r={1.0} color={P.amber} k={toBank * 0.8} />
+        <Pulse p={[0, 0, 0]} t={bank} period={0.7} color={P.amber} r={0.95} />
         <Block p={[0, 0, 0]} s={[1.3, 0.12, 0.9]} />
         {[-0.45, -0.15, 0.15, 0.45].map((x) => (
           <mesh key={x} position={[x, 0.45, 0.3]} castShadow>
@@ -691,7 +750,20 @@ const MathSet: React.FC<{ t: number; gap: number }> = ({ t, gap }) => {
     <group>
       <Pool p={[-0.8, 0, 0.8]} r={1.0} color={P.amber} k={0.7} />
       <Pool p={[0.8, 0, -0.8]} r={1.0} color={g > 0 ? P.red : P.cyan} k={0.7} />
-      {need > 0.01 ? <Block p={[-0.8, 0, 0.8]} s={[1.0, need, 1.0]} c="#3A3424" edge={P.amber} edgeK={2.2} /> : null}
+      {need > 0.01 ? <Block p={[-0.8, 0, 0.8]} s={[1.0, need, 1.0]} c="#3A3424" edge={P.amber} edgeK={2 + 1.2 * Math.abs(Math.sin(t * 3))} /> : null}
+      {need > 0.5
+        ? Array.from({ length: 10 }, (_, k) => {
+            const u = (t * 0.45 + k / 10) % 1;
+            const a = (k / 10) * Math.PI * 2;
+            return (
+              <mesh key={`sp${k}`} position={[-0.8 + Math.cos(a) * 0.62, u * need, 0.8 + Math.sin(a) * 0.62]}>
+                <boxGeometry args={[0.04, 0.04, 0.04]} />
+                {glow(P.amber, 3, Math.sin(u * Math.PI))}
+              </mesh>
+            );
+          })
+        : null}
+      {have > 0.5 ? <Pulse p={[0.8, 0, -0.8]} t={t} period={1.1} color={P.cyan} r={0.95} /> : null}
       {have > 0.01 ? <Block p={[0.8, 0, -0.8]} s={[1.0, have, 1.0]} c="#1F3444" edge={P.cyan} edgeK={2.2} /> : null}
       {g > 0.01 ? (
         <group position={[0.8, 3.2 * 0.6 + 0.64, -0.8]} scale={[1, g, 1]}>
@@ -731,6 +803,25 @@ const BubbleSet: React.FC<{ t: number; pop: number; frame: number }> = ({ t, pop
           </mesh>
         );
       })}
+      {!popped
+        ? Array.from({ length: 14 }, (_, k) => {
+            const u = (t * 0.35 + random(`bs${k}`)) % 1;
+            const a = random(`ba2${k}`) * Math.PI * 2 + t * 0.3;
+            const r = 0.4 + random(`br2${k}`) * 0.9;
+            return (
+              <mesh key={`spark${k}`} position={[Math.cos(a) * r, 0.5 + u * 1.8, Math.sin(a) * r]}>
+                <sphereGeometry args={[0.025, 6, 6]} />
+                {glow("#FFE7A8", 3, Math.sin(u * Math.PI) * 0.9)}
+              </mesh>
+            );
+          })
+        : null}
+      {!popped ? (
+        <mesh position={[0, 1.35, 0]} rotation={[Math.PI / 2 + 0.35 * Math.sin(t), t * 1.1, 0.3]}>
+          <torusGeometry args={[1.55, 0.012, 8, 96]} />
+          {glow(P.amber, 2.2, 0.7)}
+        </mesh>
+      ) : null}
       {!popped || burst < 1 ? (
         <group position={[0, 1.35, 0]} scale={popped ? 1 + burst * 0.4 : wob}>
           <mesh>
@@ -792,6 +883,15 @@ const EndSet: React.FC<{ t: number; real: number }> = ({ t, real }) => {
       ))}
       <Pool p={[0, 0, 0]} r={1.4} color={lit > 0 ? P.green : P.cyan} k={0.7 + lit * 0.6} />
       <Block p={[0, 0, 0]} s={[1.1, 0.24, 1.1]} edge={lit > 0 ? P.green : P.cyan} edgeK={2 + 2 * lit} />
+      {[0, 0.6].map((o) => {
+        const k = ((t + o) % 1.2) / 1.2;
+        return (
+          <mesh key={o} position={[0, 0.3 + k * 2.4, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.6, 0.64, 48]} />
+            {glow(lit > 0 ? P.green : P.cyan, 2, (1 - k) * (0.4 + 0.5 * lit))}
+          </mesh>
+        );
+      })}
       <group rotation={[0, Math.sin(t * 0.6) * 0.3, 0]}>
         <RamStick p={[0, 0.24, 0]} s={0.95} led={lit > 0 ? P.green : P.cyan} ledK={2.2 + 2 * lit} />
       </group>
@@ -853,6 +953,8 @@ const World: React.FC<{ beats: Beats; frame: number; fit: Fit }> = ({ beats, fra
         <meshStandardMaterial color={P.floor} roughness={0.92} metalness={0.05} />
       </mesh>
       <gridHelper args={[60, 60, P.grid1, P.grid2]} position={[0, 0.003, 0]} />
+      <Scan frame={frame} />
+      <Motes frame={frame} />
       {b === "price" ? <PriceSet t={t} x4={since(beats, frame, "x4")} frame={frame} /> : null}
       {b === "reason" ? <ReasonSet t={t} buy={since(beats, frame, "buy")} vanish={since(beats, frame, "vanish")} frame={frame} /> : null}
       {b === "deal" ? <DealSet t={t} frame={frame} share={since(beats, frame, "share")} /> : null}
