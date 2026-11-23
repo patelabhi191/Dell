@@ -184,7 +184,7 @@ const shotAt = (beats: Beats, frame: number, total: number): Fit => {
   const settle = i === 0 ? 0 : 1 - smooth(ramp((frame - s) / FPS, 0, 0.3));
   const wide = i >= ORDER.indexOf("deal");
   const extra = b === "math" || b === "bubble" ? 1.1 : 1.0;
-  return fitBox(SCENE_BOX[b], a0 + (a1 - a0) * u, (wide ? 0.97 : 1.0) * extra * (1 + 0.04 * u + 0.04 * settle), wide ? WIDE : BAND);
+  return fitBox(SCENE_BOX[b], a0 + (a1 - a0) * u, (wide ? 1.06 : 1.1) * extra * (1 + 0.04 * u + 0.04 * settle), wide ? WIDE : BAND);
 };
 
 // ---------------------------------------------------------------- 3D building blocks
@@ -358,61 +358,28 @@ const GpuBlock: React.FC<{ p: V; t: number }> = ({ p, t }) => (
   </group>
 );
 
-/** Cloth money sack: flat-bottomed bulging body, pinched neck, tie cord, flared top, $ print. */
-const SACK_BODY = new THREE.LatheGeometry(
-  [
-    [0.0, 0.0],
-    [0.2, 0.01],
-    [0.3, 0.08],
-    [0.34, 0.2],
-    [0.33, 0.33],
-    [0.27, 0.45],
-    [0.15, 0.55],
-    [0.08, 0.6],
-  ].map(([x, y]) => new THREE.Vector2(x, y)),
-  36,
-);
-const SACK_TOP = new THREE.LatheGeometry(
-  [
-    [0.07, 0.0],
-    [0.09, 0.05],
-    [0.16, 0.12],
-    [0.19, 0.17],
-    [0.12, 0.19],
-    [0.0, 0.2],
-  ].map(([x, y]) => new THREE.Vector2(x, y)),
-  24,
-);
-const SACK_CLOTH = new THREE.MeshStandardMaterial({ color: "#C8A46E", roughness: 0.95, metalness: 0 });
-const SACK_DARK = new THREE.MeshStandardMaterial({ color: "#A9874F", roughness: 0.95, metalness: 0 });
 const MoneySack: React.FC<{ s?: number }> = ({ s = 1 }) => (
   <group scale={s}>
-    <mesh geometry={SACK_BODY} material={SACK_CLOTH} castShadow receiveShadow />
-    <mesh geometry={SACK_TOP} material={SACK_DARK} position={[0, 0.6, 0]} castShadow />
-    <mesh position={[0, 0.61, 0]} rotation={[Math.PI / 2, 0, 0]}>
-      <torusGeometry args={[0.085, 0.022, 8, 24]} />
-      <meshStandardMaterial color="#6B4A22" roughness={0.8} />
+    <mesh position={[0, 0.3, 0]} scale={[1, 0.92, 0.92]} castShadow>
+      <sphereGeometry args={[0.3, 22, 18]} />
+      <meshStandardMaterial color="#C9A66B" roughness={0.9} />
+    </mesh>
+    <mesh position={[0, 0.6, 0]} castShadow>
+      <cylinderGeometry args={[0.06, 0.12, 0.1, 14]} />
+      <meshStandardMaterial color="#B8945A" roughness={0.9} />
+    </mesh>
+    <mesh position={[0, 0.68, 0]}>
+      <coneGeometry args={[0.1, 0.12, 12]} />
+      <meshStandardMaterial color="#B8945A" roughness={0.9} />
     </mesh>
     {DOLLAR_TEX ? (
-      <mesh position={[0, 0.27, 0.338]} rotation={[-0.08, 0, 0]}>
-        <planeGeometry args={[0.3, 0.3]} />
+      <mesh position={[0, 0.32, 0.28]}>
+        <planeGeometry args={[0.26, 0.26]} />
         <meshStandardMaterial map={DOLLAR_TEX} transparent roughness={0.9} />
       </mesh>
     ) : null}
   </group>
 );
-
-/** An item travelling a lane: hops (bounce) or glides, with a pulse where it lands. */
-const hop = (u: number, hops: number, h: number) => Math.abs(Math.sin(u * Math.PI * hops)) * h;
-const ArrivePulse: React.FC<{ p: THREE.Vector3; t: number; period: number; color: string }> = ({ p, t, period, color }) => {
-  const k = (t % period) / period;
-  return (
-    <mesh position={[p.x, 0.015, p.z]} rotation={[-Math.PI / 2, 0, 0]} scale={0.3 + k * 1.1}>
-      <ringGeometry args={[0.32, 0.36, 40]} />
-      {glow(color, 2, 1 - k)}
-    </mesh>
-  );
-};
 const ChipTile: React.FC<{ p: THREE.Vector3; s?: number; tint?: string }> = ({ p, s = 1, tint }) => (
   <group position={p.toArray() as V} scale={s}>
     <RoundedBox args={[0.42, 0.05, 0.42]} radius={0.012} castShadow>
@@ -508,16 +475,20 @@ const ReasonSet: React.FC<{ t: number; buy: number; vanish: number; frame: numbe
       {buy < 0
         ? ROW.map((x, k) => <RamStick key={k} p={[x, 0, 0]} led={P.red} />)
         : Array.from({ length: STREAM }, (_, i) => {
-            const prog = run + i / STREAM;
-            const u = prog % 1;
+            // Stagger the starts so nothing begins mid-flight: stick i leaves when the stream
+            // has run i/STREAM of a trip; until then the first five wait in their slots.
+            const prog = run - i / STREAM;
             const x0 = ROW[i % ROW.length];
+            if (prog < 0) return i < ROW.length ? <RamStick key={i} p={[x0, 0, 0]} led={P.red} /> : null;
+            const u = prog % 1;
             // lift for the first 25%, then arc over to the data centre and drop in
             const lift = smooth(ramp(u, 0, 0.25));
             const fly = smooth(ramp(u, 0.25, 1));
             const x = x0 + (DC_R.x - x0) * fly;
             const y = 1.0 * lift + Math.sin(fly * Math.PI) * 0.9 + 1.4 * smooth(ramp(u, 0.85, 1)) * 0;
             const sc = 1 - 0.6 * smooth(ramp(u, 0.8, 1));
-            const fade = Math.min(1, u / 0.08, (1 - u) / 0.06);
+            // first trip starts solid from the slot; later trips fade in as the slot refills
+            const fade = prog < 1 ? Math.min(1, (1 - u) / 0.06) : Math.min(1, u / 0.08, (1 - u) / 0.06);
             return ghost > 0.5 ? (
               <group key={i} position={[x, y, 0]} scale={sc}>
                 <GhostStick p={[0, -0.16, 0]} a={fade} />
@@ -588,32 +559,23 @@ const LoopSet: React.FC<{ t: number; stake: number }> = ({ t, stake }) => {
       <ServerStack p={[OA.x, 0, OA.z]} n={4} w={1.2} />
       <Lane a={chipsA} b={chipsB} color={P.nvidia} t={t} />
       <Lane a={cashA} b={cashB} color={P.amber} t={t} />
-      {Array.from({ length: 5 }, (_, k) => {
-        const u = (t * 0.34 + k / 5) % 1;
-        const edge = Math.min(1, u / 0.1, (1 - u) / 0.1);
-        const p = chipsA.clone().lerp(chipsB, Easing.inOut(Easing.sin)(u)).setY(0.08 + Math.sin(u * Math.PI) * 0.25);
-        return (
-          <group key={`c${k}`} position={p.toArray() as V} rotation={[0, u * Math.PI * 2, 0]}>
-            <ChipTile p={v3(0, 0, 0)} s={edge} tint={P.nvidia} />
-          </group>
-        );
-      })}
-      <ArrivePulse p={chipsB} t={t} period={1 / (0.34 * 5)} color={P.nvidia} />
       {Array.from({ length: 4 }, (_, k) => {
-        const u = (t * 0.26 + k / 4 + 0.1) % 1;
+        const u = (t * 0.32 + k / 4) % 1;
+        const edge = Math.min(1, u / 0.1, (1 - u) / 0.1);
+        return <ChipTile key={`c${k}`} p={chipsA.clone().lerp(chipsB, u).setY(0.04)} s={edge} tint={P.nvidia} />;
+      })}
+      {Array.from({ length: 3 }, (_, k) => {
+        const u = (t * 0.28 + k / 3 + 0.15) % 1;
         const edge = Math.min(1, u / 0.12, (1 - u) / 0.12);
         const p = cashA.clone().lerp(cashB, u);
-        const y = hop(u, 3, 0.32);
-        const squash = 1 - 0.18 * Math.max(0, 1 - y / 0.08);
         return (
-          <group key={`m${k}`} position={[p.x, y, p.z]} scale={[edge * 0.62, edge * 0.62 * squash, edge * 0.62]} rotation={[0, -0.6 + u, 0]}>
+          <group key={`m${k}`} position={[p.x, 0, p.z]} scale={edge * 0.75}>
             <MoneySack />
           </group>
         );
       })}
-      <ArrivePulse p={cashB} t={t} period={1 / (0.26 * 4)} color={P.amber} />
       {stake >= 0 && st < 1 ? (
-        <group position={arc.getPoint(st).toArray() as V} scale={1.25} rotation={[0, st * Math.PI * 2, 0]}>
+        <group position={arc.getPoint(st).toArray() as V} scale={1.2}>
           <MoneySack />
         </group>
       ) : null}
@@ -697,25 +659,20 @@ const FlowerSet: React.FC<{ t: number; bank: number }> = ({ t, bank }) => {
       <Lane a={mA} b={mB} color={P.amber} t={t} />
       <Lane a={flA} b={flB} color="#E86A8A" t={t} />
       {Array.from({ length: 3 }, (_, k) => {
-        const u = (t * 0.28 + k / 3) % 1;
+        const u = (t * 0.3 + k / 3) % 1;
         const edge = Math.min(1, u / 0.12, (1 - u) / 0.12);
         const p = mA.clone().lerp(mB, u);
-        const y = hop(u, 3, 0.28);
-        const squash = 1 - 0.18 * Math.max(0, 1 - y / 0.08);
         return (
-          <group key={`m${k}`} position={[p.x, y, p.z]} scale={[edge * 0.55, edge * 0.55 * squash, edge * 0.55]} rotation={[0, 0.6 + u, 0]}>
+          <group key={`m${k}`} position={[p.x, 0, p.z]} scale={edge * 0.6}>
             <MoneySack />
           </group>
         );
       })}
-      <ArrivePulse p={mB} t={t} period={1 / (0.28 * 3)} color={P.amber} />
       {Array.from({ length: 3 }, (_, k) => {
-        const u = (t * 0.28 + k / 3 + 0.17) % 1;
+        const u = (t * 0.3 + k / 3 + 0.15) % 1;
         const edge = Math.min(1, u / 0.12, (1 - u) / 0.12);
-        const p = flA.clone().lerp(flB, Easing.inOut(Easing.sin)(u)).setY(0.04 + Math.sin(u * Math.PI) * 0.35);
-        return <Bunch key={`f${k}`} p={p} s={edge * 1.25} />;
+        return <Bunch key={`f${k}`} p={flA.clone().lerp(flB, u).setY(0.02)} s={edge * 1.2} />;
       })}
-      <ArrivePulse p={flB} t={t} period={1 / (0.28 * 3)} color="#E86A8A" />
       {bank >= 0 ? (
         <Line points={[[SHOP.x, 1.0, SHOP.z - 0.4], [BANK.x + (SHOP.x - BANK.x) * (1 - toBank), 1.0, BANK.z + 0.5 + (SHOP.z - 0.4 - BANK.z - 0.5) * (1 - toBank)]]} color={P.amber} lineWidth={3} dashed dashSize={0.12} gapSize={0.08} />
       ) : null}
@@ -1032,11 +989,11 @@ const Overlay: React.FC<{ beats: Beats; frame: number; fit: Fit }> = ({ beats, f
       {b === "deal" ? (
         <>
           {share >= 0 ? (
-            <BigStat x={540} y={510} value={`${Math.round(40 * smooth(ramp(share, 0, 0.6)))}%`} label="OF WORLD DRAM SUPPLY · ANALYST ESTIMATE" color={K.amber} size={130} s={smooth(ramp(share, 0, 0.3))} />
+            <BigStat x={540} y={455} value={`${Math.round(40 * smooth(ramp(share, 0, 0.6)))}%`} label="OF WORLD DRAM SUPPLY · ANALYST ESTIMATE" color={K.amber} size={130} s={smooth(ramp(share, 0, 0.3))} />
           ) : (
             <Status y={470} label="WAFERS" lights={Array.from({ length: 8 }, (_, k) => (k < Math.min(8, Math.round(t * 2)) ? K.cyan : "#26304A"))} value="900K / MONTH" tone={K.cyan} s={sAt(0.3)} />
           )}
-          {pin(v3(DC_D.x - 0.5, 1.2, DC_D.z), "OPENAI · STARGATE", "cyan", sAt(0.3), -190, 30)}
+          {pin(v3(DC_D.x, 1.75, DC_D.z), "OPENAI · STARGATE", "cyan", sAt(0.3), 0, -95)}
           {pin(v3(FAB_S.x, 1.1, FAB_S.z), "SAMSUNG", "plain", sAt(0.6), -150, 90)}
           {pin(v3(FAB_H.x, 1.1, FAB_H.z), "SK HYNIX", "plain", sAt(0.9), 110, 120)}
           <Card s={sAt(1.4)}>
