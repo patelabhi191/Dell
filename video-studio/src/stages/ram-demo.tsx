@@ -83,33 +83,6 @@ const DOLLAR_TEX = makeTex(128, 128, (g) => {
   g.textBaseline = "middle";
   g.fillText("$", 64, 70);
 });
-/** Silicon wafer: rainbow sheen, grid of dies, flat notch. */
-const WAFER_TEX = makeTex(512, 512, (g) => {
-  const grd = g.createRadialGradient(220, 200, 20, 256, 256, 256);
-  grd.addColorStop(0, "#E6E9F5");
-  grd.addColorStop(0.35, "#A99BF2");
-  grd.addColorStop(0.6, "#6FD0E0");
-  grd.addColorStop(0.82, "#E8C887");
-  grd.addColorStop(1, "#8E9BB8");
-  g.save();
-  g.beginPath();
-  g.arc(256, 256, 252, 0, Math.PI * 2);
-  g.clip();
-  g.fillStyle = grd;
-  g.fillRect(0, 0, 512, 512);
-  g.strokeStyle = "rgba(20,24,40,0.55)";
-  g.lineWidth = 2;
-  for (let x = 12; x < 512; x += 26) {
-    for (let y = 12; y < 512; y += 26) {
-      const dx = x + 11 - 256;
-      const dy = y + 11 - 256;
-      if (dx * dx + dy * dy < 228 * 228) g.strokeRect(x, y, 22, 22);
-    }
-  }
-  g.restore();
-  g.fillStyle = "#1C2430";
-  g.fillRect(170, 496, 172, 16);
-});
 const DDR5_TEX = makeTex(512, 160, (g) => {
   g.fillStyle = "#121418";
   g.fillRect(0, 0, 512, 160);
@@ -430,15 +403,31 @@ const ReasonSet: React.FC<{ appear: number; vanish: number }> = ({ appear, vanis
   </group>
 );
 
-// ---------------------------------------------------------------- 3. deal: wafers from Samsung + SK Hynix
-const WAFER_GEO = new THREE.CylinderGeometry(0.42, 0.42, 0.03, 64);
-const WAFER_MATS = [
-  new THREE.MeshStandardMaterial({ color: "#B8C0D0", metalness: 0.9, roughness: 0.25 }),
-  new THREE.MeshStandardMaterial({ map: WAFER_TEX ?? undefined, metalness: 0.75, roughness: 0.22, emissive: "#3A3060", emissiveIntensity: 0.15 }),
-  new THREE.MeshStandardMaterial({ color: "#9AA4B8", metalness: 0.9, roughness: 0.3 }),
-];
+// ---------------------------------------------------------------- 3. deal: square chips from Samsung + SK Hynix
+/** Square silicon chip tile (owner's choice over round wafers): rainbow sheen, grid of dies. */
+const CHIP_TEX = makeTex(512, 512, (g) => {
+  const grd = g.createLinearGradient(0, 0, 512, 512);
+  grd.addColorStop(0, "#E6E9F5");
+  grd.addColorStop(0.3, "#A99BF2");
+  grd.addColorStop(0.55, "#6FD0E0");
+  grd.addColorStop(0.8, "#E8C887");
+  grd.addColorStop(1, "#8E9BB8");
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 512, 512);
+  g.strokeStyle = "rgba(20,24,40,0.6)";
+  g.lineWidth = 3;
+  for (let x = 16; x < 496; x += 40) for (let y = 16; y < 496; y += 40) g.strokeRect(x, y, 34, 34);
+  g.strokeStyle = "#C9D0DC";
+  g.lineWidth = 10;
+  g.strokeRect(5, 5, 502, 502);
+});
+const CHIP_GEO = new THREE.BoxGeometry(0.72, 0.035, 0.72);
+const CHIP_SIDE = new THREE.MeshStandardMaterial({ color: "#B8C0D0", metalness: 0.9, roughness: 0.25 });
+const CHIP_TOP = new THREE.MeshStandardMaterial({ map: CHIP_TEX ?? undefined, metalness: 0.75, roughness: 0.22, emissive: "#3A3060", emissiveIntensity: 0.15 });
+// BoxGeometry material order: +x, -x, +y (top), -y, +z, -z
+const CHIP_MATS = [CHIP_SIDE, CHIP_SIDE, CHIP_TOP, CHIP_SIDE, CHIP_SIDE, CHIP_SIDE];
 const Wafer: React.FC<{ p: V; s?: number; spin?: number }> = ({ p, s = 1, spin = 0 }) => (
-  <mesh geometry={WAFER_GEO} material={WAFER_MATS} position={p} rotation={[0, spin, 0]} scale={s} castShadow />
+  <mesh geometry={CHIP_GEO} material={CHIP_MATS} position={p} rotation={[0, spin, 0]} scale={s} castShadow />
 );
 const FAB_A = v3(-2.6, 0, -3.4); // Samsung
 const FAB_B = v3(2.6, 0, -3.4); // SK Hynix
@@ -499,7 +488,7 @@ const DealSet: React.FC<{ t: number; frame: number; share: number }> = ({ t, fra
           {Array.from({ length: 6 }, (_, k) => {
             const u = (t * 0.32 + k / 6 + li * 0.08) % 1;
             const p = lane.getPoint(u);
-            return <Wafer key={k} p={[p.x, 0.18, p.z]} s={1.35 * shrink} spin={t + k} />;
+            return <Wafer key={k} p={[p.x, 0.18, p.z]} s={1.0 * shrink} spin={0.6 + 0.12 * Math.sin(t * 2 + k)} />;
           })}
         </group>
       ))}
