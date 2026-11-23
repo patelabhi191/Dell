@@ -6,7 +6,7 @@ import { Line, MeshReflectorMaterial } from "@react-three/drei";
 import { Bloom, DepthOfField, EffectComposer, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { BeatsContext } from "../beats";
-import { BigStat, Callout, ChapterTabs, Disclaimer, K, KitDefs, MONO, TitleCard } from "../kit";
+import { BigStat, Callout, K, KitDefs, MONO, TitleCard } from "../kit";
 import { BODY } from "../theme";
 import { WarmUp, logRenderer } from "../three/common";
 
@@ -46,8 +46,11 @@ type V = [number, number, number];
 type Beats = Record<string, number>;
 const since = (beats: Beats, frame: number, name: string) => (beats[name] === undefined ? -999 : (frame - beats[name]) / FPS);
 
-const ORDER = ["price", "deal", "loop"] as const;
+const ORDER = ["price", "deal", "loop", "flower", "math", "bubble", "end"] as const;
 type Beat = (typeof ORDER)[number];
+/** Chapter tab each beat belongs to (the flower analogy and the ending sit inside a chapter). */
+const CHAPTERS = ["PRICE", "DEAL", "LOOP", "MATH", "BUBBLE"];
+const CHAPTER_OF: Record<Beat, number> = { price: 0, deal: 1, loop: 2, flower: 2, math: 3, bubble: 4, end: 4 };
 const current = (beats: Beats, frame: number): Beat => {
   let c: Beat = "price";
   ORDER.forEach((b) => {
@@ -70,6 +73,22 @@ const SHOTS: Record<Beat, [Pose, Pose]> = {
   loop: [
     { p: v3(1.4, 4.4, 11.5), t: v3(0, 0.8, 0) },
     { p: v3(-2.0, 4.0, 11.0), t: v3(0, 0.8, 0) },
+  ],
+  flower: [
+    { p: v3(-1.4, 3.8, 10.5), t: v3(0.2, 0.9, -0.8) },
+    { p: v3(1.6, 4.2, 11.0), t: v3(0.3, 0.9, -0.9) },
+  ],
+  math: [
+    { p: v3(4.6, 3.6, 11.5), t: v3(0, 1.6, 0) },
+    { p: v3(2.8, 3.2, 10.8), t: v3(0, 1.7, 0) },
+  ],
+  bubble: [
+    { p: v3(0.8, 1.9, 6.6), t: v3(0, 1.0, 0) },
+    { p: v3(-0.8, 1.7, 6.0), t: v3(0, 1.0, 0) },
+  ],
+  end: [
+    { p: v3(2.6, 2.4, 6.4), t: v3(0, 0.75, 0) },
+    { p: v3(1.2, 1.6, 4.6), t: v3(0, 0.8, 0) },
   ],
 };
 const poseAt = (beats: Beats, frame: number, total: number): Pose => {
@@ -115,10 +134,42 @@ const Dimm: React.FC<{ heat: number; p?: V; rotY?: number; s?: number }> = ({ he
   </group>
 );
 
-const PriceSet: React.FC<{ t: number }> = ({ t }) => {
+/** Wireframe memory stick: "memory that doesn't exist yet". */
+const GHOST_BOARD = new THREE.EdgesGeometry(new THREE.BoxGeometry(3.0, 0.82, 0.045));
+const GHOST_CHIP = new THREE.EdgesGeometry(new THREE.BoxGeometry(0.27, 0.36, 0.04));
+const GhostDimm: React.FC<{ p: V; rotY?: number; a: number }> = ({ p, rotY = 0, a }) =>
+  a <= 0.01 ? null : (
+    <group position={p} rotation={[0, rotY, 0]} scale={[1, 0.6 + 0.4 * a, 1]}>
+      <lineSegments geometry={GHOST_BOARD} position={[0, 0.9, 0]}>
+        <lineBasicMaterial color="#8FD8FF" transparent opacity={0.85 * a} toneMapped={false} />
+      </lineSegments>
+      {Array.from({ length: 8 }, (_, k) => (
+        <lineSegments key={k} geometry={GHOST_CHIP} position={[-1.22 + k * 0.35, 0.98, 0.04]}>
+          <lineBasicMaterial color="#8FD8FF" transparent opacity={0.6 * a} toneMapped={false} />
+        </lineSegments>
+      ))}
+      <mesh position={[0, 0.9, 0]}>
+        <boxGeometry args={[3.0, 0.82, 0.045]} />
+        <meshStandardMaterial color="#5FB8FF" emissive="#5FB8FF" emissiveIntensity={0.4} transparent opacity={0.08 * a} depthWrite={false} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+const GHOSTS: [number, number, number, number][] = [
+  [-2.6, 1.2, -1.6, 0.4],
+  [2.7, 0.9, -2.2, -0.5],
+  [-0.6, 1.9, -3.4, 0.15],
+  [1.4, 2.4, -1.4, -0.25],
+  [-3.2, 2.2, -3.0, 0.6],
+];
+
+const PriceSet: React.FC<{ t: number; ghost: number }> = ({ t, ghost }) => {
   const heat = smooth(ramp(t, 0.4, 2.8));
   return (
     <group>
+      {/* "memory that doesn't exist yet": wireframe sticks rise around the real one */}
+      {GHOSTS.map(([x, y, z, r], k) => (
+        <GhostDimm key={`gh${k}`} p={[x, y - 0.5 + Math.sin(t * 1.5 + k) * 0.06, z]} rotY={r} a={smooth(ramp(ghost, k * 0.12, k * 0.12 + 0.5))} />
+      ))}
       <Box p={[0, 0.22, 0]} s={[3.6, 0.44, 1.2]} c={P.slate} />
       <mesh position={[0, 0.445, 0.6]}>
         <boxGeometry args={[3.4, 0.01, 0.02]} />
@@ -151,8 +202,9 @@ const Wafer: React.FC<{ p: V; hue: number }> = ({ p, hue }) => (
     <meshStandardMaterial color={new THREE.Color().setHSL(0.6 + hue * 0.15, 0.25, 0.72)} metalness={0.9} roughness={0.18} />
   </mesh>
 );
-const DealSet: React.FC<{ t: number; frame: number }> = ({ t, frame }) => {
-  const share = 0.4 * smooth(ramp(t, 0.6, 2.4));
+/** `s`: seconds on the share clock (the ring fills from 0.6 s to 2.4 s); defaults to `t`. */
+const DealSet: React.FC<{ t: number; frame: number; s?: number }> = ({ t, frame, s }) => {
+  const share = 0.4 * smooth(ramp(s ?? t, 0.6, 2.4));
   return (
     <group>
       {/* the "AI factory" the wafers flow into */}
@@ -262,6 +314,204 @@ const LoopSet: React.FC<{ t: number }> = ({ t }) => (
   </group>
 );
 
+// ---- flower shop analogy: I pay you, you buy my flowers, I tell the bank I'm worth a billion
+const FLOWER_COLORS = ["#E86A8A", "#F2C14E", "#D9536A", "#B57BE0", "#F59B5A"];
+const SHOP = v3(-1.4, 0, 0.2);
+const YOU = v3(1.9, 0, 0.9);
+const BANK = v3(-0.1, 0, -3.3);
+const PAY_ARC = new THREE.QuadraticBezierCurve3(v3(-0.7, 1.3, 0.3), v3(0.6, 2.4, 0.6), v3(1.7, 1.4, 0.9));
+const BUY_ARC = new THREE.QuadraticBezierCurve3(v3(1.6, 0.9, 1.2), v3(0.4, 0.3, 2.1), v3(-0.6, 0.9, 0.7));
+const BANK_ARC = new THREE.QuadraticBezierCurve3(v3(-1.3, 1.9, -0.1), v3(-1.0, 3.2, -1.8), v3(-0.2, 1.7, -3.0));
+const Bill: React.FC<{ p: THREE.Vector3; spin: number }> = ({ p, spin }) => (
+  <mesh position={p} rotation={[0.3, spin, 0.2]} castShadow>
+    <boxGeometry args={[0.36, 0.015, 0.18]} />
+    <meshStandardMaterial color="#6CCB92" emissive="#1E6B3E" emissiveIntensity={0.6} roughness={0.6} />
+  </mesh>
+);
+const FlowerSet: React.FC<{ t: number; bank: number }> = ({ t, bank }) => (
+  <group>
+    {/* my flower shop */}
+    <group position={SHOP.toArray() as V}>
+      <Box p={[0, 0.4, 0]} s={[1.7, 0.8, 0.9]} c="#7A5A40" rough={0.8} />
+      <Box p={[0, 0.82, 0]} s={[1.8, 0.05, 1.0]} c="#E8DCC8" />
+      {[-0.82, 0.82].map((x) => (
+        <Box key={x} p={[x, 1.25, -0.42]} s={[0.06, 1.0, 0.06]} c="#5A4A3A" />
+      ))}
+      {Array.from({ length: 7 }, (_, k) => (
+        <Box key={`aw${k}`} p={[-0.78 + k * 0.26, 1.78, -0.1]} s={[0.26, 0.05, 0.9]} rot={[0.35, 0, 0]} c={k % 2 ? "#F2F2F2" : "#D9536A"} />
+      ))}
+      {Array.from({ length: 5 }, (_, k) => (
+        <group key={`pot${k}`} position={[-0.64 + k * 0.32, 0.85, 0.1]}>
+          <mesh position={[0, 0.1, 0]} castShadow>
+            <cylinderGeometry args={[0.1, 0.08, 0.2, 16]} />
+            <meshStandardMaterial color="#B5643C" roughness={0.8} />
+          </mesh>
+          {[0, 1, 2].map((j) => (
+            <mesh key={j} position={[Math.cos(j * 2.1 + k) * 0.06, 0.28 + j * 0.03, Math.sin(j * 2.1 + k) * 0.06]} castShadow>
+              <sphereGeometry args={[0.07, 12, 12]} />
+              <meshStandardMaterial color={FLOWER_COLORS[(k + j) % 5]} roughness={0.6} emissive={FLOWER_COLORS[(k + j) % 5]} emissiveIntensity={0.15} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+    {/* you */}
+    <group position={YOU.toArray() as V}>
+      <mesh position={[0, 0.55, 0]} castShadow>
+        <capsuleGeometry args={[0.22, 0.6, 6, 16]} />
+        <meshStandardMaterial color="#5B7DB8" roughness={0.6} />
+      </mesh>
+      <mesh position={[0, 1.25, 0]} castShadow>
+        <sphereGeometry args={[0.2, 20, 20]} />
+        <meshStandardMaterial color="#E9C8A8" roughness={0.6} />
+      </mesh>
+    </group>
+    {/* the bank */}
+    <group position={BANK.toArray() as V}>
+      <Box p={[0, 0.06, 0]} s={[1.8, 0.12, 1.2]} />
+      {[-0.6, -0.2, 0.2, 0.6].map((x) => (
+        <mesh key={x} position={[x, 0.6, 0.45]} castShadow>
+          <cylinderGeometry args={[0.07, 0.07, 0.95, 12]} />
+          <meshStandardMaterial color={P.light} roughness={0.5} />
+        </mesh>
+      ))}
+      <Box p={[0, 0.6, -0.1]} s={[1.6, 0.95, 0.7]} c={P.slate2} />
+      <Box p={[0, 1.13, 0]} s={[1.9, 0.12, 1.25]} c={P.light} />
+      <mesh position={[0, 1.33, 0]} rotation={[Math.PI / 2, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.32, 0.32, 1.9, 3]} />
+        <meshStandardMaterial color={P.light} roughness={0.5} />
+      </mesh>
+    </group>
+    {/* money goes round: I pay you, you pay it back for my flowers */}
+    {[PAY_ARC, BUY_ARC].map((c, k) => (
+      <group key={k}>
+        <Line points={c.getPoints(30)} color={P.green} lineWidth={2} dashed dashSize={0.1} gapSize={0.08} transparent opacity={0.8} />
+        {Array.from({ length: 4 }, (_, j) => (
+          <Bill key={j} p={c.getPoint((t * 0.5 + j / 4) % 1)} spin={t * 3 + j} />
+        ))}
+      </group>
+    ))}
+    {/* bouquet travelling to you */}
+    <group position={BUY_ARC.getPoint(1 - ((t * 0.5) % 1)).toArray() as V}>
+      {[0, 1, 2].map((j) => (
+        <mesh key={j} position={[j * 0.08 - 0.08, 0.1, 0]}>
+          <sphereGeometry args={[0.07, 10, 10]} />
+          <meshStandardMaterial color={FLOWER_COLORS[j]} />
+        </mesh>
+      ))}
+    </group>
+    {/* ...and the claim to the bank */}
+    {bank >= 0 ? <Line points={BANK_ARC.getPoints(30).slice(0, Math.max(2, Math.round(31 * smooth(ramp(bank, 0, 0.6)))))} color={P.amber} lineWidth={2.5} dashed dashSize={0.12} gapSize={0.08} /> : null}
+  </group>
+);
+
+// ---- the math: $2T needed a year vs revenue on track, $800B short (Bain, Sep 2025)
+const MathSet: React.FC<{ t: number; short: number }> = ({ t, short }) => {
+  const need = 3.2 * smooth(ramp(t, 0.6, 1.8));
+  const have = 3.2 * 0.6 * smooth(ramp(t, 1.6, 2.8));
+  const gap = smooth(ramp(short, 0, 0.4));
+  const gapEdges = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.0, 3.2 * 0.4, 1.0));
+  return (
+    <group>
+      <Box p={[0, 0.06, 0]} s={[4.2, 0.12, 2.0]} />
+      {need > 0.01 ? (
+        <Box p={[-1.0, 0.12 + need / 2, 0]} s={[1.0, need, 1.0]} c="#C98A2E" rough={0.5}>
+          <meshStandardMaterial color="#C98A2E" emissive={P.amber} emissiveIntensity={0.25} roughness={0.5} />
+        </Box>
+      ) : null}
+      {have > 0.01 ? (
+        <Box p={[1.0, 0.12 + have / 2, 0]} s={[1.0, have, 1.0]}>
+          <meshStandardMaterial color="#2C8FB8" emissive={P.cyan} emissiveIntensity={0.25} roughness={0.5} />
+        </Box>
+      ) : null}
+      {gap > 0.01 ? (
+        <group position={[1.0, 0.12 + 3.2 * 0.6 + 0.64, 0]}>
+          <lineSegments geometry={gapEdges}>
+            <lineBasicMaterial color={P.red} transparent opacity={gap} toneMapped={false} />
+          </lineSegments>
+          <mesh>
+            <boxGeometry args={[1.0, 1.28, 1.0]} />
+            <meshStandardMaterial color={P.red} emissive={P.red} emissiveIntensity={0.5} transparent opacity={0.16 * gap} depthWrite={false} toneMapped={false} />
+          </mesh>
+        </group>
+      ) : null}
+    </group>
+  );
+};
+
+// ---- the bubble: boom keeps RAM expensive, a pop could crash prices
+const BubbleSet: React.FC<{ t: number; pop: number; frame: number }> = ({ t, pop, frame }) => {
+  const popped = pop >= 0;
+  const burst = clamp01(pop / 0.6);
+  const wob = 1 + 0.035 * Math.sin(frame * 0.25) + 0.02 * Math.sin(frame * 0.41);
+  const tagY = popped ? Math.max(0.55, 2.25 - burst * 1.7) : 2.25 + Math.sin(t * 2) * 0.05;
+  return (
+    <group>
+      <Box p={[0, 0.22, 0]} s={[2.2, 0.44, 1.0]} />
+      <group position={[0, -0.05, 0]} scale={0.6}>
+        <Dimm heat={popped ? 1 - burst * 0.8 : 1} p={[0, 0.2, 0]} />
+      </group>
+      {!popped || burst < 1 ? (
+        <group position={[0, 1.15, 0]} scale={popped ? 1 + burst * 0.5 : wob}>
+          <mesh>
+            <sphereGeometry args={[1.45, 48, 48]} />
+            <meshStandardMaterial color="#CFEAFF" transparent opacity={(popped ? 1 - burst : 1) * 0.13} roughness={0.05} metalness={0.2} depthWrite={false} />
+          </mesh>
+          <mesh>
+            <sphereGeometry args={[1.47, 48, 48]} />
+            <meshStandardMaterial color="#9FD8FF" emissive="#9FD8FF" emissiveIntensity={0.6} transparent opacity={(popped ? 1 - burst : 1) * 0.12} side={THREE.BackSide} depthWrite={false} toneMapped={false} />
+          </mesh>
+        </group>
+      ) : null}
+      {popped && pop < 1.4
+        ? Array.from({ length: 48 }, (_, k) => {
+            const a = random(`ba${k}`) * Math.PI * 2;
+            const e = (random(`be${k}`) - 0.5) * Math.PI;
+            const r = 1.45 + burst * 1.6;
+            return (
+              <mesh key={k} position={[Math.cos(a) * Math.cos(e) * r, 1.15 + Math.sin(e) * r - pop * pop * 0.8, Math.sin(a) * Math.cos(e) * r]}>
+                <sphereGeometry args={[0.03, 6, 6]} />
+                {glow("#BFE8FF", 3, 1 - clamp01(pop / 1.4))}
+              </mesh>
+            );
+          })
+        : null}
+      {/* price tag: floats high, drops when it pops */}
+      <group position={[1.15, tagY, 0.3]} rotation={[0, -0.3, popped ? 0.4 * burst : 0.12]}>
+        <mesh>
+          <planeGeometry args={[0.7, 0.36]} />
+          {glow(popped ? P.green : P.amber, 1.4)}
+        </mesh>
+      </group>
+    </group>
+  );
+};
+
+// ---- the end: only one thing is real
+const EndSet: React.FC<{ t: number; real: number; frame: number }> = ({ t, real, frame }) => {
+  const fade = 1 - smooth(ramp(real, 0, 0.8));
+  const lit = smooth(ramp(real, 0.2, 0.8));
+  return (
+    <group>
+      {GHOSTS.map(([x, y, z, r], k) => (
+        <GhostDimm key={`eg${k}`} p={[x, y - 0.5, z]} rotY={r} a={fade} />
+      ))}
+      <mesh position={[0, 0.25, 0]} receiveShadow castShadow>
+        <cylinderGeometry args={[1.1, 1.2, 0.5, 48]} />
+        <meshStandardMaterial color={P.slate} roughness={0.6} />
+      </mesh>
+      <mesh position={[0, 0.505, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.0, 1.08, 64]} />
+        {glow(lit > 0 ? P.green : P.cyan, 1.5 + lit * 2)}
+      </mesh>
+      <group position={[0, 0.48 - 0.49, 0]} rotation={[0, Math.sin(t * 0.6) * 0.25, 0]} scale={0.62}>
+        <Dimm heat={0.4 + lit * 0.6} />
+      </group>
+      {void frame}
+    </group>
+  );
+};
+
 const CameraRig: React.FC<{ pose: Pose }> = ({ pose }) => {
   const camera = useThree((s) => s.camera);
   camera.position.copy(pose.p);
@@ -300,9 +550,13 @@ const World: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats, f
         <MeshReflectorMaterial blur={[300, 80]} resolution={1024} mixBlur={1} mixStrength={6} roughness={0.7} depthScale={1} minDepthThreshold={0.4} maxDepthThreshold={1.4} color={P.floor} metalness={0.4} mirror={0.35} />
       </mesh>
       <gridHelper args={[40, 40, "#36404F", "#303A48"]} position={[0, 0.003, 0]} />
-      {b === "price" ? <PriceSet t={t} /> : null}
-      {b === "deal" ? <DealSet t={t} frame={frame} /> : null}
+      {b === "price" ? <PriceSet t={t} ghost={since(beats, frame, "ghost")} /> : null}
+      {b === "deal" ? <DealSet t={t} s={beats.share !== undefined ? since(beats, frame, "share") + 0.6 : t} frame={frame} /> : null}
       {b === "loop" ? <LoopSet t={t} /> : null}
+      {b === "flower" ? <FlowerSet t={t} bank={since(beats, frame, "bank")} /> : null}
+      {b === "math" ? <MathSet t={t} short={since(beats, frame, "short")} /> : null}
+      {b === "bubble" ? <BubbleSet t={t} pop={since(beats, frame, "pop")} frame={frame} /> : null}
+      {b === "end" ? <EndSet t={t} real={since(beats, frame, "real")} frame={frame} /> : null}
       <WarmUp />
       <EffectComposer multisampling={4}>
         <DepthOfField target={pose.t.toArray() as V} focalLength={0.03} bokehScale={3} />
@@ -402,6 +656,43 @@ const PricePanel: React.FC<{ t: number; s: number }> = ({ t, s }) => {
   );
 };
 
+/** Amber/green statement tag. */
+const Tag: React.FC<{ y: number; text: string; color: string; s: number }> = ({ y, text, color, s }) => {
+  if (s <= 0.01) return null;
+  const w = text.length * 19 + 60;
+  return (
+    <g transform={`translate(540 ${y}) scale(${0.85 + 0.15 * s})`} opacity={s}>
+      <rect x={-w / 2} y={-34} width={w} height={68} rx={14} fill={K.panel} stroke={color} strokeWidth={3} />
+      <text x={0} y={11} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={32} fill={color} letterSpacing={1}>
+        {text}
+      </text>
+    </g>
+  );
+};
+
+/**
+ * Chapter tabs (owner's rule): the current chapter highlighted, finished chapters plain,
+ * upcoming chapters hidden. Slots keep fixed positions so tabs never jump.
+ */
+const ProgressTabs: React.FC<{ chapters: string[]; active: number; y?: number }> = ({ chapters, active, y = 300 }) => {
+  const w = Math.min(160, 860 / chapters.length);
+  const x0 = 540 - (w * chapters.length) / 2;
+  return (
+    <g>
+      {chapters.map((c, i) =>
+        i > active ? null : (
+          <g key={c} transform={`translate(${x0 + i * w} ${y})`}>
+            <rect x={4} y={-24} width={w - 8} height={48} rx={6} fill={i === active ? K.cyan : K.panel} stroke={i === active ? "none" : "rgba(255,255,255,0.45)"} strokeWidth={2} filter={i === active ? "url(#kglow)" : undefined} />
+            <text x={w / 2} y={8} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={20} fill={i === active ? "#081020" : K.white}>
+              {c}
+            </text>
+          </g>
+        ),
+      )}
+    </g>
+  );
+};
+
 const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats, frame, pose }) => {
   const proj = projector(pose);
   const b = current(beats, frame);
@@ -409,6 +700,12 @@ const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats,
   const sAt = (d: number, len = 0.3) => smooth(ramp(t, d, d + len));
   const T = frame / FPS;
   const flash = b !== "price" ? clamp01(1 - t / 0.2) : 0;
+  const ghost = since(beats, frame, "ghost");
+  const shareT = beats.share !== undefined ? since(beats, frame, "share") + 0.6 : t;
+  const bankT = since(beats, frame, "bank");
+  const shortT = since(beats, frame, "short");
+  const popT = since(beats, frame, "pop");
+  const realT = beats.real !== undefined ? since(beats, frame, "real") : t - 1;
   const pin = (p: THREE.Vector3, text: string, tone: "cyan" | "amber" | "green" | "red" | "plain", s: number, dx: number, dy: number) => {
     const a = proj(p);
     return <Callout x={a.x} y={a.y} tx={Math.max(250, Math.min(830, a.x + dx))} ty={Math.max(470, Math.min(1230, a.y + dy))} text={text} tone={tone} s={s} />;
@@ -416,20 +713,21 @@ const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats,
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ position: "absolute", inset: 0 }}>
       <KitDefs />
-      <ChapterTabs y={300} chapters={["PRICE", "DEAL", "LOOP", "MATH", "BUBBLE"]} active={ORDER.indexOf(b)} />
+      <ProgressTabs chapters={CHAPTERS} active={CHAPTER_OF[b]} />
 
       {b === "price" ? (
         <>
           <TitleCard y={520} line1="WHY RAM" line2="COSTS 4X" accent={K.amber} s={1 - smooth(ramp(T, 1.4, 1.8))} />
-          {pin(v3(0.15, 0.98, 0.06), "DDR5 MEMORY CHIP", "plain", sAt(1.6), -170, -230)}
+          {pin(v3(0.15, 0.98, 0.06), "DDR5 MEMORY CHIP", "plain", sAt(1.6) * (1 - smooth(ramp(ghost, -0.2, 0.1))), -170, -230)}
           <PricePanel t={t} s={sAt(0.2, 0.4)} />
           <Source y={1272} text="SOURCE: TOM'S HARDWARE RAM PRICE INDEX · 2025" s={sAt(1.2)} />
+          <Chip y={560} text="MEMORY THAT DOESN'T EXIST YET" color="#8FD8FF" s={smooth(ramp(ghost, 0.05, 0.35))} />
         </>
       ) : null}
 
       {b === "deal" ? (
         <>
-          <BigStat x={540} y={600} value={`${Math.round(40 * smooth(ramp(t, 0.6, 2.4)))}%`} label="OF WORLD DRAM · ANALYST ESTIMATE" color={K.amber} size={170} s={sAt(0.3)} />
+          <BigStat x={540} y={600} value={`${Math.round(40 * smooth(ramp(shareT, 0.6, 2.4)))}%`} label="OF WORLD DRAM · ANALYST ESTIMATE" color={K.amber} size={170} s={smooth(ramp(shareT, 0.3, 0.6))} />
           {pin(v3(0.9, 1.2, 0.9), "OPENAI · STARGATE", "cyan", sAt(0.5), 170, -90)}
           <Chip y={1140} text="UP TO 900,000 WAFERS / MONTH" color={K.white} s={sAt(1.0)} />
           <Source y={1210} text="LETTERS OF INTENT · OCT 1, 2025 · SAMSUNG + SK HYNIX" s={sAt(1.6)} />
@@ -454,7 +752,76 @@ const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats,
         </>
       ) : null}
 
-      <Disclaimer text="ILLUSTRATION · SIMPLIFIED · AI VOICE · SOURCES IN CAPTION" />
+      {b === "flower" ? (
+        <>
+          {pin(v3(SHOP.x, 1.9, SHOP.z), "MY FLOWER SHOP", "plain", sAt(0.2), -60, -250)}
+          {pin(v3(YOU.x, 1.5, YOU.z), "YOU", "plain", sAt(0.4), 30, -280)}
+          <Chip y={1100} text="I PAY YOU $1,000 → YOU BUY MY FLOWERS" color={K.green} s={sAt(0.9)} />
+          {(() => {
+            const sb = smooth(ramp(bankT, 0.2, 0.5));
+            if (sb <= 0.01) return null;
+            return (
+              <g transform={`translate(540 640) scale(${0.85 + 0.15 * sb})`} opacity={sb}>
+                <rect x={-300} y={-95} width={600} height={190} rx={18} fill="#F5F7FB" />
+                <rect x={-300} y={-95} width={600} height={46} rx={18} fill="#1F3A5F" />
+                <rect x={-300} y={-70} width={600} height={21} fill="#1F3A5F" />
+                <text x={0} y={-62} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={22} fill="#fff" letterSpacing={2}>
+                  BANK · SHOP VALUATION
+                </text>
+                <text x={0} y={40} textAnchor="middle" fontFamily={MONO} fontWeight={700} fontSize={64} fill="#1C7A4A">
+                  $1,000,000,000
+                </text>
+                <g transform={`translate(250 -70) rotate(10) scale(${smooth(ramp(bankT, 0.7, 0.9))})`}>
+                  <circle r={42} fill={K.red} />
+                  <text y={22} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={60} fill="#fff">
+                    ?
+                  </text>
+                </g>
+              </g>
+            );
+          })()}
+          <Tag y={1180} text="CIRCULAR MONEY, MADE-UP VALUE" color={K.amber} s={smooth(ramp(bankT, 1.0, 1.3))} />
+        </>
+      ) : null}
+
+      {b === "math" ? (
+        <>
+          {pin(v3(-1.0, 3.35, 0), "$2T NEEDED A YEAR BY 2030", "amber", sAt(1.2), -60, -150)}
+          {pin(v3(1.0, 2.05, 0.5), "REVENUE ON TRACK", "cyan", sAt(2.4), 60, 260)}
+          {pin(v3(1.0, 3.0, 0.5), "$800B SHORT", "red", smooth(ramp(shortT, 0.1, 0.4)), 70, -200)}
+          <Source y={1272} text="BAIN & COMPANY · GLOBAL TECHNOLOGY REPORT · SEP 2025" s={sAt(1.6)} />
+        </>
+      ) : null}
+
+      {b === "bubble" ? (
+        <>
+          <Tag y={560} text="BOOM → RAM STAYS EXPENSIVE" color={K.amber} s={sAt(0.3) * (1 - smooth(ramp(popT, -0.6, -0.3)))} />
+          <Tag y={560} text="BUBBLE → PRICES COULD CRASH" color={K.green} s={smooth(ramp(popT, 0, 0.3))} />
+        </>
+      ) : null}
+
+      {b === "end" ? (
+        <>
+          <TitleCard y={560} line1="ONLY ONE THING" line2="IS REAL" accent={K.green} s={smooth(ramp(realT, 0, 0.3)) * (1 - smooth(ramp(t, 4.3, 4.6)))} />
+          {pin(v3(0, 1.1, 0.1), "YOUR RAM", "green", smooth(ramp(realT, 0.9, 1.2)), 160, 150)}
+          {(() => {
+            const sf = smooth(ramp(t, 4.4, 4.7));
+            if (sf <= 0.01) return null;
+            return (
+              <g transform={`translate(540 600) scale(${0.8 + 0.2 * sf})`} opacity={sf}>
+                <rect x={-240} y={-55} width={480} height={110} rx={28} fill={K.red} filter="url(#kglow)" />
+                <text x={0} y={16} textAnchor="middle" fontFamily={BODY} fontWeight={900} fontSize={46} fill="#fff">
+                  + FOLLOW FOR MORE
+                </text>
+                <text x={0} y={100} textAnchor="middle" fontFamily={MONO} fontWeight={700} fontSize={28} fill={K.cyan}>
+                  @frontierin60
+                </text>
+              </g>
+            );
+          })()}
+        </>
+      ) : null}
+
       {flash > 0 ? <rect x={0} y={0} width={W} height={H} fill="#E8F2FF" opacity={0.4 * flash} /> : null}
     </svg>
   );

@@ -1,0 +1,110 @@
+{
+  "id": "008-why-ram-costs-4x",
+  "title": "Why RAM costs 4x (draft)",
+  "format": "info",
+  "theme": "cinema",
+  "stage": "ram-demo",
+  "canvas": "full",
+  "captionStyle": "box",
+  "voice": "am_michael",
+  "voiceSpeed": 1.15,
+  "humanize": true,
+  "voiceFx": true,
+  "pronounce": {
+    "RAM": "ram"
+  },
+  "pacing": {
+    "lead": 0.1,
+    "tail": 0.22,
+    "sentenceGap": 0.16,
+    "minScene": 1.8
+  },
+  "keywords": [
+    "ram",
+    "quadrupled",
+    "exist",
+    "openai",
+    "forty",
+    "nvidia",
+    "thirty",
+    "flowers",
+    "billion",
+    "trillion",
+    "short",
+    "boom",
+    "bubble",
+    "crash",
+    "real",
+    "investment",
+    "follow"
+  ],
+  "scenes": [
+    {
+      "type": "show",
+      "seconds": 6.9,
+      "beat": "price",
+      "speed": 1.12,
+      "cues": {
+        "ghost": "memory"
+      },
+      "narration": "RAM chip prices nearly quadrupled in three months. The reason? Memory that doesn't exist yet.",
+      "hold": 1
+    },
+    {
+      "type": "show",
+      "seconds": 11.4,
+      "beat": "deal",
+      "cues": {
+        "share": "40"
+      },
+      "narration": "OpenAI signed letters with Samsung and SK Hynix for up to nine hundred thousand memory wafers a month. Analysts say that's up to forty percent of the world's supply.",
+      "hold": 1
+    },
+    {
+      "type": "show",
+      "seconds": 7.2,
+      "beat": "loop",
+      "narration": "And the chip maker? Nvidia put thirty billion dollars into OpenAI, a company that runs on its chips."
+    },
+    {
+      "type": "show",
+      "seconds": 6.8,
+      "beat": "flower",
+      "cues": {
+        "bank": "bank"
+      },
+      "narration": "It's like I pay you a thousand dollars, you spend it on my flowers, and I tell the bank my shop is worth a billion."
+    },
+    {
+      "type": "show",
+      "seconds": 9.9,
+      "beat": "math",
+      "cues": {
+        "short": "short"
+      },
+      "narration": "And the math? Bain says AI needs two trillion dollars a year in revenue by 2030. It's on track to fall eight hundred billion short.",
+      "hold": 1.3
+    },
+    {
+      "type": "show",
+      "seconds": 6.2,
+      "beat": "bubble",
+      "cues": {
+        "pop": "crash"
+      },
+      "narration": "If the boom is real, RAM stays expensive. If it's a bubble, prices could crash.",
+      "hold": 1
+    },
+    {
+      "type": "show",
+      "seconds": 6.3,
+      "beat": "end",
+      "cues": {
+        "real": "real"
+      },
+      "narration": "In this whole chain, only one thing is real. Your investment in RAM, if you have one. Follow for more."
+    }
+  ],
+  "thumbnails": [],
+  "voiceover": "008-why-ram-costs-4x.mp3"
+}

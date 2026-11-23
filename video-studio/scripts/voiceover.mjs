@@ -82,13 +82,30 @@ const trimSilence = (samples, sampleRate) => {
   return samples.subarray(Math.max(0, a - keep), Math.min(samples.length, b + keep));
 };
 
+// "pronounce" in the episode maps words to how the voice should say them, e.g.
+// { "RAM": "ram" } so it is read as one word, not R-A-M. Captions keep the original spelling.
+const escapeRe = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const pronounce = (text) =>
+  Object.entries(episode.pronounce ?? {}).reduce((t, [word, say]) => t.replace(new RegExp(`\\b${escapeRe(word)}\\b`, "g"), say), text);
+
+// "humanize": small, repeatable speed changes between sentences and slightly slower
+// questions, so the read sounds less like one flat machine take.
+let sentenceNo = 0;
+const humanSpeed = (sentence, base) => {
+  if (!episode.humanize) return base;
+  sentenceNo++;
+  const jitter = Math.sin(sentenceNo * 2.399) * 0.035; // -3.5%..+3.5%, the same on every run
+  const question = /\?["')\]]*$/.test(sentence) ? 0.94 : 1;
+  return base * question * (1 + jitter);
+};
+
 // Speak sentence by sentence: keeps each request short and gives natural pauses.
 const speakLine = async (text, lineSpeed) => {
   const sentences = text.match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g).map((s) => s.trim());
   const parts = [];
   let sampleRate;
   for (const sentence of sentences.filter(Boolean)) {
-    const out = await tts.speak(sentence, lineSpeed);
+    const out = await tts.speak(pronounce(sentence), humanSpeed(sentence, lineSpeed));
     sampleRate = out.sampleRate;
     parts.push(trimSilence(out.samples, sampleRate));
   }
@@ -163,7 +180,13 @@ let output = wavPath;
 if (spawnSync("ffmpeg", ["-version"]).status === 0) {
   execFileSync("ffmpeg", [
     "-y", "-loglevel", "error", "-i", wavPath,
-    "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "44100", "-b:a", "96k", mp3Path,
+    // "voiceFx": voice EQ, gentle compression and a little room, so it sounds recorded,
+    // not dry text-to-speech.
+    "-af",
+    episode.voiceFx
+      ? "highpass=f=75,equalizer=f=180:t=q:w=1:g=2,equalizer=f=3200:t=q:w=1.2:g=2.5,equalizer=f=7500:t=q:w=1:g=-2,acompressor=threshold=-20dB:ratio=2.5:attack=8:release=120,aecho=0.85:0.6:18|32:0.10|0.06,loudnorm=I=-15:TP=-1.5:LRA=8"
+      : "loudnorm=I=-16:TP=-1.5:LRA=11",
+    "-ar", "44100", "-b:a", "128k", mp3Path,
   ]);
   rmSync(wavPath);
   output = mp3Path;

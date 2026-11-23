@@ -510,10 +510,11 @@ export const TitleCard: React.FC<{ y: number; line1: string; line2?: string; sub
     </g>
   );
 
-/** Small honesty footer ("Illustration, not real footage. AI voice. Sources in caption."). */
-export const Disclaimer: React.FC<{ text?: string }> = ({ text = "ILLUSTRATION · NOT REAL FOOTAGE · AI VOICE · SOURCES IN CAPTION" }) => (
-  <text x={540} y={1478} textAnchor="middle" fontFamily={MONO} fontSize={16} fill={K.muted} opacity={0.8} letterSpacing={1}>{text}</text>
-);
+/**
+ * Honesty footer: retired on the owner's instruction (2026-11-22). Videos carry no on-screen
+ * footer; sources live in the post caption file. Kept as a no-op so older stages still compile.
+ */
+export const Disclaimer: React.FC<{ text?: string }> = () => null;
 
 /** Closing channel card with a follow button being tapped. */
 export const EndCard: React.FC<{ t: number; s?: number; name?: string; handle?: string; tagline?: string }> = ({

@@ -9,6 +9,7 @@
     "render": "node scripts/render.mjs",
     "narration": "node scripts/narration.mjs",
     "voiceover": "node scripts/voiceover.mjs",
+    "voice-samples": "node scripts/voice-samples.mjs",
     "captions": "node scripts/captions.mjs",
     "thumbnail": "node scripts/thumbnail.mjs",
     "ref": "node scripts/ref.mjs",

@@ -64,8 +64,8 @@ explainer channel ("Why Though?").
   ("about 9 m").
 - **Receipts.** Screenshots of news articles and official pages with the source line visible
   ("abcnews.com", "Apple Support"), and short quotes ("Microsoft said").
-- **Honesty notes** in tiny type: "SIMPLIFIED EXAMPLE", "ILLUSTRATION · NOT REAL FOOTAGE · AI
-  VOICE · SOURCES IN CAPTION".
+- **No on-screen footer or credits** (owner's rule, 2026-11-22): no "ILLUSTRATION · AI VOICE ·
+  SOURCES IN CAPTION" line and no "via @someone" credit on screen. Sources go in the post caption.
 - **Title cards only twice:** a big two-line hook card at the start ("MILLIONS DOWNLOADING
   GTA 6?!") and the closing question card ("WILL LAUNCH DAY GO SMOOTHLY?").
 - **Brand badges** for the products involved (app icons, logos), small.
@@ -158,7 +158,7 @@ The building blocks for the reference look. A test sheet of all of them: composi
 | `Waveform`, `Meter`, `BarChart`, `Checklist`, `BigStat` | data graphics |
 | `NewsCard` | article screenshot with source line ("receipts") |
 | `TitleCard` | the two big title cards (hook and closing question) |
-| `Disclaimer` | tiny honesty footer |
+| `Disclaimer` | retired (draws nothing); do not use |
 | `EndCard` | channel card with a follow button being tapped |
 
 Palette (`K`): bg `#070B14`, cyan `#2ED3FF`, red `#FF4D5E`, amber `#FFB23F`, green `#3BE38B`,
@@ -180,8 +180,17 @@ stories.** Free, open-source (Apache 2.0), runs locally.
 | Speed | 1.2 (1.25 allowed), tight `"pacing"` | 0.88 |
 | Pace | about 180-187 words/min | about 160 words/min |
 
-Other routes if ever needed: ElevenLabs (paid plan for monetised use), Chatterbox (MIT, needs
-a GPU). New providers plug into `scripts/voiceover.mjs`.
+**Sounding human** (owner feedback 2026-11-22: Liam sounded robotic). Kokoro rates `am_liam`
+among its weaker voices; `am_michael`, `am_fenrir` and `am_puck` rate higher. Compare by ear with
+`npm run voice-samples`. Episode options read by `scripts/voiceover.mjs`:
+- `"pronounce": { "RAM": "ram" }` says a word the way people do (captions keep the spelling).
+- `"humanize": true` varies speed slightly per sentence and slows questions.
+- `"voiceFx": true` adds voice EQ, gentle compression and a little room.
+Speed 1.1-1.15 sounds more natural than 1.25.
+
+Other routes if ever needed: ElevenLabs (paid plan for monetised use), Chatterbox (MIT, runs on
+the RTX 3070; the most natural free option, needs Python and PyTorch). New providers plug into
+`scripts/voiceover.mjs`.
 
 ## 6. Script rules
 
@@ -225,8 +234,7 @@ npm run thumbnail -- <id>       # covers
 3. **Script** in `episodes/<id>.json` with the 9 beats; set `theme: cinema`, `canvas: full`,
    `captionStyle: box`, `keywords`.
 4. **Stage**: `src/stages/<name>.tsx` from the kit, registered in `fullStages`; status HUD,
-   pinned labels and data graphics in every shot; title cards at the start and end; honesty
-   footer.
+   pinned labels and data graphics in every shot; title cards at the start and end; no footer.
 5. **Voiceover**, **captions** (skim for misheard words).
 6. **Cover**: a frame of the world with a short title; show the mystery, not the answer;
    inside the 4:5 crop.
@@ -257,7 +265,7 @@ direction like "aerial shot" or "footage" becomes a camera move in our built wor
 - [ ] Captions 3-5 words, keywords set, misheard words fixed.
 - [ ] Text and key graphics inside the safe zones.
 - [ ] Under 60 s; pace about 180 words/min.
-- [ ] Facts verified; sources in the post; honesty footer on screen.
+- [ ] Facts verified; sources in the post (no footer or credit on screen).
 - [ ] Cover in the 4:5 crop; post with exactly 5 hashtags.
 - [ ] Nothing copied from a reference; watched once on a phone at full speed.
 

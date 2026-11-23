@@ -1,0 +1,91 @@
+1
+00:00:00,030 --> 00:00:02,424
+RAM chip prices nearly quadrupled in three
+
+2
+00:00:02,424 --> 00:00:02,965
+months.
+
+3
+00:00:03,004 --> 00:00:05,630
+The reason? Memory that doesn't exist yet.
+
+4
+00:00:07,030 --> 00:00:10,575
+OpenAI signed letters with Samsung and SK
+
+5
+00:00:10,778 --> 00:00:13,794
+Hynix for up to 900,000 memory wafers a
+
+6
+00:00:13,794 --> 00:00:14,155
+month.
+
+7
+00:00:14,190 --> 00:00:16,078
+Analysts say that's up to 40% of the
+
+8
+00:00:16,175 --> 00:00:17,030
+world's supply.
+
+9
+00:00:18,430 --> 00:00:22,155
+And the chip maker? Nvidia put $30 billion
+
+10
+00:00:22,155 --> 00:00:24,750
+into OpenAI, a company that runs on its
+
+11
+00:00:24,750 --> 00:00:25,230
+chips.
+
+12
+00:00:25,630 --> 00:00:28,518
+It's like I pay you $1,000, you spend it
+
+13
+00:00:28,518 --> 00:00:30,752
+on my flowers, and I tell the bank my shop
+
+14
+00:00:30,799 --> 00:00:32,030
+is worth a billion.
+
+15
+00:00:32,440 --> 00:00:35,270
+And the math? Bain says AI needs $2
+
+16
+00:00:35,490 --> 00:00:38,240
+trillion a year in revenue by 2030.
+
+17
+00:00:38,280 --> 00:00:40,860
+It's on track to fall 800 billion short.
+
+18
+00:00:42,330 --> 00:00:45,560
+If the boom is real, RAM stays expensive.
+
+19
+00:00:45,605 --> 00:00:47,130
+If it's a bubble, prices could crash.
+
+20
+00:00:48,530 --> 00:00:51,207
+In this whole chain, only one thing is
+
+21
+00:00:51,207 --> 00:00:51,624
+real.
+
+22
+00:00:51,656 --> 00:00:53,532
+Your investment in RAM, if you have one,
+
+23
+00:00:53,532 --> 00:00:54,430
+follow for more.
