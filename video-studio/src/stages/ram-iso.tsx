@@ -714,7 +714,8 @@ const BubbleSet: React.FC<{ t: number; pop: number; frame: number }> = ({ t, pop
   const burst = clamp01(pop / 0.5);
   const wob = 1 + 0.03 * Math.sin(frame * 0.25);
   const sheen = new THREE.Color().setHSL((frame * 0.004) % 1, 0.6, 0.7);
-  const pin = popped ? 1.55 : 3.0 - 1.35 * smooth(ramp(t, 0.3, 3.6));
+  // Pin creeps in from the right, sharp tip pointing left; the tip meets the bubble as it pops.
+  const pin = popped ? 1.75 : 3.1 - 1.35 * smooth(ramp(t, 0.3, 3.6));
   return (
     <group>
       <Pool p={[0, 0, 0]} r={1.6} color={popped ? P.green : P.amber} k={0.9} />
@@ -742,7 +743,7 @@ const BubbleSet: React.FC<{ t: number; pop: number; frame: number }> = ({ t, pop
           </mesh>
         </group>
       ) : null}
-      <group position={[pin, 1.75, 0.6]} rotation={[0, 0.5, Math.PI / 2 + 0.3]}>
+      <group position={[pin, 1.75, 0.6]} rotation={[0, 0.5, -Math.PI / 2 - 0.3]}>
         <mesh position={[0, -0.4, 0]}>
           <cylinderGeometry args={[0.014, 0.004, 0.8, 10]} />
           <meshStandardMaterial color="#D9DFE8" metalness={0.95} roughness={0.15} />
