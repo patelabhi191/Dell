@@ -2,7 +2,8 @@ import React, { useContext } from "react";
 import { AbsoluteFill, Easing, random, useCurrentFrame, useVideoConfig } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
-import { Line, MeshReflectorMaterial } from "@react-three/drei";
+import { Line, MeshReflectorMaterial, RoundedBox } from "@react-three/drei";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { Bloom, ChromaticAberration, DepthOfField, EffectComposer, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { BeatsContext } from "../beats";
@@ -124,8 +125,8 @@ const SHOTS: Record<Beat, [Pose, Pose]> = {
     { p: v3(1.6, 2.4, 7.4), t: v3(0, 0.45, -0.5) },
   ],
   deal: [
-    { p: v3(1.2, 6.0, 9.6), t: v3(0, 0.6, -1.0) },
-    { p: v3(-1.0, 5.2, 9.2), t: v3(0, 0.6, -1.0) },
+    { p: v3(0.5, 6.6, 10.8), t: v3(0, 0.5, -0.5) },
+    { p: v3(-0.6, 6.0, 10.2), t: v3(0, 0.5, -0.5) },
   ],
   loop: [
     { p: v3(0.4, 3.1, 8.8), t: v3(0.35, 1.2, -0.5) },
@@ -219,7 +220,9 @@ const DDR5Stick: React.FC<{ phase: number; heat?: number; p?: V; rotY?: number; 
     <Box p={[0, 0.88, 0]} s={[3.0, 0.78, 0.03]} c="#18201C" />
     {[-1, 1].map((side) => (
       <group key={side} position={[0, 0.92, side * 0.045]}>
-        <Box p={[0, 0, 0]} s={[3.08, 0.82, 0.03]} c="#16181D" metal={0.75} rough={0.32} />
+        <RoundedBox args={[3.08, 0.82, 0.03]} radius={0.012} smoothness={3} castShadow receiveShadow>
+          <meshStandardMaterial color="#16181D" metalness={0.8} roughness={0.28} />
+        </RoundedBox>
         {/* angular cut on the spreader */}
         <Box p={[0.9, 0.3, side * 0.018]} s={[1.0, 0.05, 0.012]} rot={[0, 0, -0.35]} c="#2B2F37" metal={0.8} rough={0.3} />
         {DDR5_TEX && side === 1 ? (
@@ -429,78 +432,186 @@ const CHIP_MATS = [CHIP_SIDE, CHIP_SIDE, CHIP_TOP, CHIP_SIDE, CHIP_SIDE, CHIP_SI
 const Wafer: React.FC<{ p: V; s?: number; spin?: number }> = ({ p, s = 1, spin = 0 }) => (
   <mesh geometry={CHIP_GEO} material={CHIP_MATS} position={p} rotation={[0, spin, 0]} scale={s} castShadow />
 );
-const FAB_A = v3(-2.6, 0, -3.4); // Samsung
-const FAB_B = v3(2.6, 0, -3.4); // SK Hynix
-const GATE = v3(0, 0, 0.6); // OpenAI Stargate
-const Fab: React.FC<{ p: THREE.Vector3; accent: string; frame: number }> = ({ p, accent, frame }) => (
+/** Name signs (names only, in brand colours; no logo artwork). */
+const signTex = (name: string, bg: string, ink: string, sub?: string, subInk?: string) =>
+  makeTex(512, 160, (g) => {
+    g.fillStyle = bg;
+    g.fillRect(0, 0, 512, 160);
+    g.fillStyle = ink;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    if (sub) {
+      g.font = "700 30px Arial, sans-serif";
+      g.fillStyle = subInk ?? ink;
+      g.fillText(sub, 256, 34);
+      g.fillStyle = ink;
+      g.font = "900 78px Arial, sans-serif";
+      g.fillText(name, 256, 100);
+    } else {
+      g.font = "900 88px Arial, sans-serif";
+      g.fillText(name, 256, 86);
+    }
+  });
+const SAMSUNG_TEX = signTex("SAMSUNG", "#1428A0", "#FFFFFF");
+const HYNIX_TEX = signTex("SK hynix", "#F4F4F6", "#E2231A");
+const STARGATE_TEX = signTex("STARGATE", "#0E1420", "#F4F6FA", "OPENAI", "#2ED3FF");
+
+// Layout (portrait-friendly): data centre at the back, the two fabs in front at the sides,
+// conveyor belts running from each fab up to the data centre, in full view.
+const GATE = v3(0, 0, -2.2); // OpenAI Stargate
+const FAB_A = v3(-1.6, 0, 0.7); // Samsung
+const FAB_B = v3(1.6, 0, 0.7); // SK Hynix
+const BELTS: [THREE.Vector3, THREE.Vector3][] = [
+  [v3(-1.05, 0, 0.15), v3(-0.5, 0, -1.45)],
+  [v3(1.05, 0, 0.15), v3(0.5, 0, -1.45)],
+];
+
+const Fab: React.FC<{ p: THREE.Vector3; sign: THREE.Texture | null; accent: string; frame: number; door: number }> = ({ p, sign, accent, frame, door }) => (
   <group position={p.toArray() as V}>
-    <Box p={[0, 0.55, 0]} s={[2.2, 1.1, 1.5]} c="#C9D0DA" rough={0.55} />
-    <Box p={[0, 1.13, 0]} s={[2.3, 0.08, 1.6]} c="#8E98A8" />
-    {[-0.7, 0, 0.7].map((x) => (
-      <Box key={x} p={[x, 1.28, -0.2]} s={[0.4, 0.22, 0.5]} c="#A9B2C0" />
+    <RoundedBox args={[1.35, 1.0, 1.1]} radius={0.05} smoothness={4} position={[0, 0.5, 0]} castShadow receiveShadow>
+      <meshStandardMaterial color="#D3D9E2" metalness={0.25} roughness={0.45} />
+    </RoundedBox>
+    {/* glass band and name sign on the front */}
+    <mesh position={[0, 0.32, 0.556]}>
+      <planeGeometry args={[1.2, 0.2]} />
+      <meshStandardMaterial color="#5E8FC0" metalness={0.9} roughness={0.08} emissive={accent} emissiveIntensity={0.35} />
+    </mesh>
+    {sign ? (
+      <mesh position={[0, 0.72, 0.557]}>
+        <planeGeometry args={[1.15, 0.36]} />
+        <meshStandardMaterial map={sign} roughness={0.4} metalness={0.1} />
+      </mesh>
+    ) : null}
+    {/* roof plant */}
+    {[-0.35, 0.35].map((x) => (
+      <RoundedBox key={x} args={[0.4, 0.16, 0.45]} radius={0.03} position={[x, 1.08, -0.15]} castShadow>
+        <meshStandardMaterial color="#A9B2C0" metalness={0.4} roughness={0.4} />
+      </RoundedBox>
     ))}
-    {[0.75, -0.75].map((x, k) => (
-      <group key={x}>
-        <mesh position={[x, 1.6, 0.45]} castShadow>
-          <cylinderGeometry args={[0.1, 0.12, 1.0, 16]} />
-          <meshStandardMaterial color="#9AA4B4" metalness={0.5} roughness={0.4} />
+    <mesh position={[-0.4 * door, 1.35, -0.3]} castShadow>
+      <cylinderGeometry args={[0.07, 0.09, 0.7, 16]} />
+      <meshStandardMaterial color="#9AA4B4" metalness={0.6} roughness={0.35} />
+    </mesh>
+    {Array.from({ length: 4 }, (_, j) => {
+      const u = ((frame / FPS) * 0.5 + j / 4) % 1;
+      return (
+        <mesh key={j} position={[-0.4 * door + u * 0.15, 1.75 + u * 0.8, -0.3]}>
+          <sphereGeometry args={[0.08 + u * 0.14, 12, 12]} />
+          <meshStandardMaterial color="#E8ECF2" transparent opacity={0.32 * (1 - u)} depthWrite={false} />
         </mesh>
-        {Array.from({ length: 4 }, (_, j) => {
-          const u = ((frame / FPS) * 0.5 + j / 4 + k * 0.3) % 1;
-          return (
-            <mesh key={j} position={[x + u * 0.2, 2.15 + u * 1.0, 0.45]}>
-              <sphereGeometry args={[0.1 + u * 0.18, 12, 12]} />
-              <meshStandardMaterial color="#E8ECF2" transparent opacity={0.35 * (1 - u)} depthWrite={false} />
-            </mesh>
-          );
-        })}
-      </group>
-    ))}
-    <mesh position={[0, 0.55, 0.755]}>
-      <planeGeometry args={[1.9, 0.18]} />
-      {glow(accent, 1.4)}
+      );
+    })}
+    {/* loading door where the belt starts */}
+    <mesh position={[0.676 * door, 0.3, -0.3]} rotation={[0, (Math.PI / 2) * door, 0]}>
+      <planeGeometry args={[0.5, 0.42]} />
+      <meshStandardMaterial color="#141A24" emissive={accent} emissiveIntensity={0.25} />
     </mesh>
   </group>
 );
-const LANE_A = new THREE.QuadraticBezierCurve3(FAB_A.clone().add(v3(0.6, 0.1, 0.9)), v3(-1.4, 0.1, -0.6), GATE.clone().add(v3(-0.9, 0.1, -0.4)));
-const LANE_B = new THREE.QuadraticBezierCurve3(FAB_B.clone().add(v3(-0.6, 0.1, 0.9)), v3(1.4, 0.1, -0.6), GATE.clone().add(v3(0.9, 0.1, -0.4)));
+
+/** A conveyor: frame, dark belt, side rails, rollers and legs, from a to b on the floor. */
+const Belt: React.FC<{ a: THREE.Vector3; b: THREE.Vector3; t: number }> = ({ a, b, t }) => {
+  const len = a.distanceTo(b);
+  const mid = a.clone().lerp(b, 0.5);
+  const ang = Math.atan2(b.z - a.z, b.x - a.x);
+  return (
+    <group position={[mid.x, 0, mid.z]} rotation={[0, -ang, 0]}>
+      {[-0.4, 0, 0.4].map((f) => (
+        <Box key={f} p={[f * len, 0.07, 0]} s={[0.06, 0.14, 0.42]} c="#2A313D" metal={0.6} rough={0.4} />
+      ))}
+      <RoundedBox args={[len, 0.06, 0.5]} radius={0.02} position={[0, 0.16, 0]} castShadow receiveShadow>
+        <meshStandardMaterial color="#39414E" metalness={0.7} roughness={0.35} />
+      </RoundedBox>
+      <Box p={[0, 0.195, 0]} s={[len - 0.04, 0.012, 0.4]} c="#11151B" rough={0.85} />
+      {[-0.26, 0.26].map((z) => (
+        <Box key={z} p={[0, 0.23, z]} s={[len, 0.05, 0.03]} c="#9AA4B4" metal={0.9} rough={0.2} />
+      ))}
+      {/* moving tread marks so the belt reads as running */}
+      {Array.from({ length: 8 }, (_, k) => (
+        <mesh key={k} position={[-len / 2 + (((k / 8 + t * 0.3) % 1) * len), 0.202, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[0.03, 0.38]} />
+          <meshStandardMaterial color="#2A313D" />
+        </mesh>
+      ))}
+    </group>
+  );
+};
+
+/** OpenAI's Stargate data centre: glass front with lit racks, roof plant, name sign. */
+const DataCentre: React.FC<{ frame: number }> = ({ frame }) => (
+  <group position={GATE.toArray() as V}>
+    <RoundedBox args={[2.1, 1.45, 1.3]} radius={0.06} smoothness={4} position={[0, 0.725, 0]} castShadow receiveShadow>
+      <meshStandardMaterial color="#3E485C" metalness={0.45} roughness={0.4} />
+    </RoundedBox>
+    {/* racks behind the glass */}
+    {Array.from({ length: 6 }, (_, k) => (
+      <group key={k} position={[-0.8 + k * 0.32, 0.6, 0.52]}>
+        <Box p={[0, 0, 0]} s={[0.24, 0.95, 0.2]} c="#1A2030" />
+        {Array.from({ length: 6 }, (_, j) => (
+          <mesh key={j} position={[0, -0.38 + j * 0.15, 0.101]}>
+            <boxGeometry args={[0.18, 0.025, 0.004]} />
+            {glow(P.cyan, 2.8 + 1.0 * Math.sin(frame * 0.2 + k + j * 1.7))}
+          </mesh>
+        ))}
+      </group>
+    ))}
+    <mesh position={[0, 0.6, 0.656]}>
+      <planeGeometry args={[1.95, 1.0]} />
+      <meshStandardMaterial color="#0E1A2A" metalness={0.9} roughness={0.05} transparent opacity={0.18} />
+    </mesh>
+    {/* fascia with the name */}
+    <Box p={[0, 1.3, 0.62]} s={[1.6, 0.42, 0.08]} c="#0E1420" />
+    {STARGATE_TEX ? (
+      <mesh position={[0, 1.3, 0.662]}>
+        <planeGeometry args={[1.5, 0.4]} />
+        <meshStandardMaterial map={STARGATE_TEX} emissive="#FFFFFF" emissiveIntensity={0.25} emissiveMap={STARGATE_TEX} />
+      </mesh>
+    ) : null}
+    {[-0.6, 0, 0.6].map((x) => (
+      <group key={x} position={[x, 1.5, -0.2]}>
+        <RoundedBox args={[0.42, 0.12, 0.42]} radius={0.03} castShadow>
+          <meshStandardMaterial color="#9AA4B4" metalness={0.5} roughness={0.35} />
+        </RoundedBox>
+        <mesh position={[0, 0.065, 0]} rotation={[0, frame * 0.3, 0]}>
+          <cylinderGeometry args={[0.15, 0.15, 0.01, 6]} />
+          <meshStandardMaterial color="#3A4250" />
+        </mesh>
+      </group>
+    ))}
+  </group>
+);
+
 const DealSet: React.FC<{ t: number; frame: number; share: number }> = ({ t, frame, share }) => {
   const shrink = 1 - 0.55 * smooth(ramp(share, 0, 0.5));
   const ring = 0.4 * smooth(ramp(share, 0.6, 2.2));
   return (
     <group>
-      <Fab p={FAB_A} accent="#5B8CFF" frame={frame} />
-      <Fab p={FAB_B} accent="#FF6A5B" frame={frame} />
-      {/* Stargate data centre */}
-      <group position={GATE.toArray() as V}>
-        <Box p={[0, 0.8, 0]} s={[2.0, 1.6, 1.6]} c={P.slate2} />
-        <Box p={[0, 1.65, 0]} s={[2.1, 0.1, 1.7]} c={P.light} />
-        {[-0.55, 0, 0.55].map((x) => (
-          <mesh key={x} position={[x, 0.9, 0.805]}>
-            <boxGeometry args={[0.32, 1.0, 0.01]} />
-            {glow(P.cyan, 0.9 + 0.3 * Math.sin(frame * 0.1 + x * 4))}
-          </mesh>
-        ))}
-      </group>
-      {[LANE_A, LANE_B].map((lane, li) => (
-        <group key={li}>
-          <Line points={lane.getPoints(30)} color="#3A4658" lineWidth={14} />
-          {Array.from({ length: 6 }, (_, k) => {
-            const u = (t * 0.32 + k / 6 + li * 0.08) % 1;
-            const p = lane.getPoint(u);
-            return <Wafer key={k} p={[p.x, 0.18, p.z]} s={1.0 * shrink} spin={0.6 + 0.12 * Math.sin(t * 2 + k)} />;
-          })}
-        </group>
-      ))}
-      {/* world DRAM supply ring, filling to 40% after the wafers shrink */}
+      <Fab p={FAB_A} sign={SAMSUNG_TEX} accent="#5B8CFF" frame={frame} door={1} />
+      <Fab p={FAB_B} sign={HYNIX_TEX} accent="#FF6A5B" frame={frame} door={-1} />
+      <DataCentre frame={frame} />
+      {BELTS.map(([a, b], li) => {
+        const ang = Math.atan2(b.z - a.z, b.x - a.x);
+        return (
+          <group key={li}>
+            <Belt a={a} b={b} t={t} />
+            {Array.from({ length: 4 }, (_, k) => {
+              const u = (t * 0.28 + k / 4 + li * 0.12) % 1;
+              const p = a.clone().lerp(b, u);
+              const edge = Math.min(1, u / 0.1, (1 - u) / 0.1);
+              return <Wafer key={k} p={[p.x, 0.225, p.z]} s={0.62 * shrink * edge} spin={-ang} />;
+            })}
+          </group>
+        );
+      })}
+      {/* world DRAM supply ring around the data centre, filling to 40% after the chips shrink */}
       <group position={[GATE.x, 0, GATE.z]}>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-          <ringGeometry args={[2.0, 2.25, 128]} />
+          <ringGeometry args={[1.65, 1.85, 128]} />
           <meshStandardMaterial color="#3A4558" roughness={0.8} />
         </mesh>
         {ring > 0.005 ? (
           <mesh rotation={[-Math.PI / 2, 0, Math.PI / 2]} position={[0, 0.03, 0]}>
-            <ringGeometry args={[1.97, 2.28, 128, 1, 0, Math.PI * 2 * ring]} />
+            <ringGeometry args={[1.62, 1.88, 128, 1, 0, Math.PI * 2 * ring]} />
             {glow(P.amber, 2.2)}
           </mesh>
         ) : null}
@@ -536,7 +647,9 @@ const Fan: React.FC<{ p: V; spin: number }> = ({ p, spin }) => (
 /** A proper graphics card standing on its edge, fans to camera. Centre at origin, 3.0 long. */
 const GraphicsCard: React.FC<{ t: number }> = ({ t }) => (
   <group>
-    <Box p={[0, 0, 0]} s={[3.0, 1.1, 0.42]} c="#24272E" metal={0.7} rough={0.35} />
+    <RoundedBox args={[3.0, 1.1, 0.42]} radius={0.06} smoothness={4} castShadow receiveShadow>
+      <meshStandardMaterial color="#24272E" metalness={0.75} roughness={0.3} />
+    </RoundedBox>
     {/* shroud facets */}
     <Box p={[0, 0.46, 0.215]} s={[2.9, 0.1, 0.02]} c="#3A3F48" metal={0.8} rough={0.25} />
     <Box p={[0, -0.46, 0.215]} s={[2.9, 0.1, 0.02]} c="#3A3F48" metal={0.8} rough={0.25} />
@@ -566,18 +679,18 @@ const GraphicsCard: React.FC<{ t: number }> = ({ t }) => (
     <Box p={[-0.2, -0.6, -0.1]} s={[1.6, 0.1, 0.02]} c={P.gold} metal={0.95} rough={0.25} />
   </group>
 );
-const GPU_POS = v3(0, 1.45, 0.3);
-const AI_POS = v3(1.9, 0, -2.2);
-const TOP_ARC = new THREE.QuadraticBezierCurve3(v3(1.0, 2.1, 0.2), v3(1.9, 3.0, -0.9), v3(1.9, 1.5, -1.9));
-const BOTTOM_ARC = new THREE.QuadraticBezierCurve3(v3(1.5, 0.4, -1.6), v3(1.3, 0.2, 0.2), v3(0.6, 0.7, 0.6));
+const GPU_POS = v3(-0.5, 1.3, 0.3);
+const AI_POS = v3(2.2, 0, -2.7);
+const TOP_ARC = new THREE.QuadraticBezierCurve3(v3(0.45, 1.9, 0.2), v3(1.7, 2.9, -1.2), v3(2.1, 1.3, -2.4));
+const BOTTOM_ARC = new THREE.QuadraticBezierCurve3(v3(1.8, 0.4, -2.1), v3(1.3, 0.2, -0.1), v3(0.3, 0.6, 0.6));
 const LoopSet: React.FC<{ t: number }> = ({ t }) => (
   <group>
-    <pointLight position={[0, 2.6, -1.0]} color={P.nvidia} intensity={12} distance={5} />
-    <Plinth p={[0, 0, 0.3]} r={1.1} color={P.nvidia} k={2} />
-    <group position={GPU_POS.toArray() as V} rotation={[0.18, 0.45 + Math.sin(t * 0.6) * 0.1, 0]} scale={0.78}>
+    <pointLight position={[-0.5, 2.5, -1.0]} color={P.nvidia} intensity={11} distance={5} />
+    <Plinth p={[-0.5, 0, 0.3]} r={0.9} color={P.nvidia} k={2} />
+    <group position={GPU_POS.toArray() as V} rotation={[0.18, 0.45 + Math.sin(t * 0.6) * 0.1, 0]} scale={0.62}>
       <GraphicsCard t={t} />
     </group>
-    <group position={AI_POS.toArray() as V} scale={0.75}>
+    <group position={AI_POS.toArray() as V} scale={0.7}>
       <Box p={[0, 0.06, 0]} s={[1.9, 0.12, 1.4]} c={P.slate} />
       {[-0.55, 0, 0.55].map((x) => (
         <group key={x} position={[x, 0, 0]}>
@@ -892,6 +1005,23 @@ const EndSet: React.FC<{ t: number; real: number }> = ({ t, real }) => {
 };
 
 // ---------------------------------------------------------------- world
+/**
+ * Studio reflections for metal and glass: three's built-in RoomEnvironment, prefiltered once
+ * (no HDR download at render time). Gives heat spreaders, the graphics card and glass real
+ * highlights instead of flat grey.
+ */
+const EnvLight: React.FC = () => {
+  const gl = useThree((st) => st.gl);
+  const scene = useThree((st) => st.scene);
+  if (!scene.environment) {
+    const pm = new THREE.PMREMGenerator(gl);
+    scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+    pm.dispose();
+  }
+  scene.environmentIntensity = 0.28;
+  return null;
+};
+
 const CameraRig: React.FC<{ pose: Pose }> = ({ pose }) => {
   const camera = useThree((s) => s.camera);
   camera.position.copy(pose.p);
@@ -911,6 +1041,7 @@ const World: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats, f
       <color attach="background" args={[P.bg]} />
       <fog attach="fog" args={[P.bg, 9, 26]} />
       <CameraRig pose={pose} />
+      <EnvLight />
       {/* R5-style: one soft key light, cool sky fill; neon only as accents and rim lights. */}
       <ambientLight color="#9AA8C2" intensity={0.5} />
       <hemisphereLight args={["#C8D6F0", "#1A2230", 0.85]} />
@@ -943,7 +1074,7 @@ const World: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats, f
       {b === "end" ? <EndSet t={t} real={beats.real !== undefined ? since(beats, frame, "real") : t - 1} /> : null}
       <WarmUp />
       <EffectComposer multisampling={4}>
-        <DepthOfField target={pose.t.toArray() as V} focalLength={0.03} bokehScale={3} />
+        <DepthOfField target={pose.t.toArray() as V} focalLength={0.03} bokehScale={b === "deal" || b === "flower" || b === "math" ? 1.1 : 3} />
         <Bloom mipmapBlur luminanceThreshold={0.7} luminanceSmoothing={0.2} intensity={0.85} />
         <ChromaticAberration offset={new THREE.Vector2(ca, ca * 0.6)} radialModulation={false} modulationOffset={0} />
         <Vignette eskil={false} offset={0.3} darkness={0.55} />
@@ -1134,11 +1265,8 @@ const Overlay: React.FC<{ beats: Beats; frame: number; pose: Pose }> = ({ beats,
 
       {b === "deal" ? (
         <>
-          {pin(v3(FAB_A.x, 1.4, FAB_A.z), "SAMSUNG", "cyan", sAt(0.3), -40, -170)}
-          {pin(v3(FAB_B.x, 1.4, FAB_B.z), "SK HYNIX", "red", sAt(0.6), 40, -170)}
-          {pin(v3(GATE.x + 0.6, 1.3, GATE.z + 0.8), "OPENAI · STARGATE", "plain", sAt(1.0), 150, 170)}
           <Chip y={1150} text="UP TO 900,000 WAFERS / MONTH" color={K.white} s={sAt(1.6) * (1 - smooth(ramp(shareT, -0.2, 0.1)))} />
-          <BigStat x={540} y={1120} value={`${Math.round(40 * smooth(ramp(shareT, 0, 0.6)))}%`} label="OF WORLD SUPPLY · ANALYST ESTIMATE" color={K.amber} size={150} s={smooth(ramp(shareT, 0, 0.3))} />
+          <BigStat x={540} y={590} value={`${Math.round(40 * smooth(ramp(shareT, 0, 0.6)))}%`} label="OF WORLD SUPPLY · ANALYST ESTIMATE" color={K.amber} size={150} s={smooth(ramp(shareT, 0, 0.3))} />
           <Source y={1268} text="LETTERS OF INTENT · OCT 1, 2025" s={sAt(2.2)} />
         </>
       ) : null}
