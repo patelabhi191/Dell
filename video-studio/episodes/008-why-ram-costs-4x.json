@@ -6,12 +6,19 @@
   "stage": "ram-demo",
   "canvas": "full",
   "captionStyle": "box",
-  "voice": "am_michael",
-  "voiceSpeed": 1.15,
+  "voice": "am_liam",
+  "voiceSpeed": 1.18,
   "humanize": true,
   "voiceFx": true,
   "pronounce": {
-    "RAM": "ram"
+    "2030": "twenty thirty",
+    "RAM": "ram",
+    "900,000": "nine hundred thousand",
+    "40%": "forty percent",
+    "$30 billion": "thirty billion dollars",
+    "$1,000": "a thousand dollars",
+    "$2 trillion": "two trillion dollars",
+    "$800 billion": "eight hundred billion dollars"
   },
   "pacing": {
     "lead": 0.1,
@@ -21,12 +28,14 @@
   },
   "keywords": [
     "ram",
+    "four",
     "quadrupled",
-    "exist",
+    "ai",
+    "made",
     "openai",
-    "forty",
+    "40%",
     "nvidia",
-    "thirty",
+    "$30",
     "flowers",
     "billion",
     "trillion",
@@ -41,68 +50,79 @@
   "scenes": [
     {
       "type": "show",
-      "seconds": 6.9,
+      "seconds": 5.5,
       "beat": "price",
-      "speed": 1.12,
+      "narration": "Why are RAM prices four times higher? Chip prices nearly quadrupled in just three months.",
+      "speed": 1.15,
+      "hold": 0.4,
       "cues": {
-        "ghost": "memory"
-      },
-      "narration": "RAM chip prices nearly quadrupled in three months. The reason? Memory that doesn't exist yet.",
-      "hold": 1
+        "sacks": "four"
+      }
     },
     {
       "type": "show",
-      "seconds": 11.4,
+      "seconds": 5.6,
+      "beat": "reason",
+      "narration": "The reason? AI companies are buying memory that hasn't even been made yet.",
+      "hold": 1,
+      "cues": {
+        "appear": "buying",
+        "vanish": "made"
+      }
+    },
+    {
+      "type": "show",
+      "seconds": 9.8,
       "beat": "deal",
+      "narration": "OpenAI signed letters with Samsung and SK Hynix for up to 900,000 memory wafers a month. Analysts say that's up to 40% of the world's supply.",
+      "hold": 1,
       "cues": {
-        "share": "40"
-      },
-      "narration": "OpenAI signed letters with Samsung and SK Hynix for up to nine hundred thousand memory wafers a month. Analysts say that's up to forty percent of the world's supply.",
-      "hold": 1
+        "share": "40%"
+      }
     },
     {
       "type": "show",
-      "seconds": 7.2,
+      "seconds": 6,
       "beat": "loop",
-      "narration": "And the chip maker? Nvidia put thirty billion dollars into OpenAI, a company that runs on its chips."
+      "narration": "And the chip maker? Nvidia put $30 billion into OpenAI, a company that runs on its chips."
     },
     {
       "type": "show",
-      "seconds": 6.8,
+      "seconds": 5.7,
       "beat": "flower",
+      "narration": "It's like I pay you $1,000, you spend it on my flowers, and I tell the bank my shop is worth a billion.",
       "cues": {
         "bank": "bank"
-      },
-      "narration": "It's like I pay you a thousand dollars, you spend it on my flowers, and I tell the bank my shop is worth a billion."
+      }
     },
     {
       "type": "show",
-      "seconds": 9.9,
+      "seconds": 9.1,
       "beat": "math",
+      "narration": "And the math? Bain says AI needs $2 trillion a year in revenue by 2030. It's on track to fall $800 billion short.",
+      "hold": 1.3,
       "cues": {
-        "short": "short"
-      },
-      "narration": "And the math? Bain says AI needs two trillion dollars a year in revenue by 2030. It's on track to fall eight hundred billion short.",
-      "hold": 1.3
+        "short": "short."
+      }
     },
     {
       "type": "show",
-      "seconds": 6.2,
+      "seconds": 5.5,
       "beat": "bubble",
-      "cues": {
-        "pop": "crash"
-      },
       "narration": "If the boom is real, RAM stays expensive. If it's a bubble, prices could crash.",
-      "hold": 1
+      "hold": 1,
+      "cues": {
+        "pop": "crash."
+      }
     },
     {
       "type": "show",
-      "seconds": 6.3,
+      "seconds": 6,
       "beat": "end",
+      "narration": "In this whole chain, only one thing is real. Your investment in RAM, if you have one. Follow for more.",
       "cues": {
-        "real": "real"
-      },
-      "narration": "In this whole chain, only one thing is real. Your investment in RAM, if you have one. Follow for more."
+        "real": "real."
+      }
     }
   ],
   "thumbnails": [],

@@ -180,13 +180,18 @@ stories.** Free, open-source (Apache 2.0), runs locally.
 | Speed | 1.2 (1.25 allowed), tight `"pacing"` | 0.88 |
 | Pace | about 180-187 words/min | about 160 words/min |
 
-**Sounding human** (owner feedback 2026-11-22: Liam sounded robotic). Kokoro rates `am_liam`
-among its weaker voices; `am_michael`, `am_fenrir` and `am_puck` rate higher. Compare by ear with
-`npm run voice-samples`. Episode options read by `scripts/voiceover.mjs`:
+**Sounding human** (owner feedback 2026-11-22). The owner compared voices and **keeps
+`am_liam`**; `npm run voice-samples` reads one line in several voices if that is revisited.
+Episode options read by `scripts/voiceover.mjs`:
 - `"pronounce": { "RAM": "ram" }` says a word the way people do (captions keep the spelling).
 - `"humanize": true` varies speed slightly per sentence and slows questions.
 - `"voiceFx": true` adds voice EQ, gentle compression and a little room.
-Speed 1.1-1.15 sounds more natural than 1.25.
+Speed 1.15-1.2 sounds more natural than 1.25. Write numbers the way captions should show them
+("900,000", "$30 billion", "40%") and add how to say them to `"pronounce"`.
+
+**Captions come from the script.** `npm run voiceover` also writes `captions/<id>.json` and `.srt`
+with the exact script words, timed from where each sentence sits in the audio, so text and
+speech always match. `npm run captions` (Whisper) is only for checking.
 
 Other routes if ever needed: ElevenLabs (paid plan for monetised use), Chatterbox (MIT, runs on
 the RTX 3070; the most natural free option, needs Python and PyTorch). New providers plug into

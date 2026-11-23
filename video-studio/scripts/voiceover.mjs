@@ -85,8 +85,11 @@ const trimSilence = (samples, sampleRate) => {
 // "pronounce" in the episode maps words to how the voice should say them, e.g.
 // { "RAM": "ram" } so it is read as one word, not R-A-M. Captions keep the original spelling.
 const escapeRe = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// Longest terms first, matched as whole tokens (works for "$30 billion", "40%", "900,000").
 const pronounce = (text) =>
-  Object.entries(episode.pronounce ?? {}).reduce((t, [word, say]) => t.replace(new RegExp(`\\b${escapeRe(word)}\\b`, "g"), say), text);
+  Object.entries(episode.pronounce ?? {})
+    .sort((a, b) => b[0].length - a[0].length)
+    .reduce((t, [word, say]) => t.replace(new RegExp(`(?<![\\w$])${escapeRe(word)}(?![\\w%])`, "g"), say), text);
 
 // "humanize": small, repeatable speed changes between sentences and slightly slower
 // questions, so the read sounds less like one flat machine take.
@@ -112,12 +115,43 @@ const speakLine = async (text, lineSpeed) => {
   const gap = Math.round((episode.pacing?.sentenceGap ?? SENTENCE_GAP) * sampleRate);
   const total = parts.reduce((n, p) => n + p.length, 0) + gap * (parts.length - 1);
   const samples = new Float32Array(total);
+  const spans = [];
   let at = 0;
-  for (const p of parts) {
+  sentences.filter(Boolean).forEach((sentence, k) => {
+    const p = parts[k];
     samples.set(p, at);
+    spans.push({ text: sentence, offset: at / sampleRate, dur: p.length / sampleRate });
     at += p.length + gap;
+  });
+  return { samples, sampleRate, spans };
+};
+
+// Captions straight from the script: the exact words, timed from where each sentence really
+// sits in the audio, spread over the sentence by rough syllable count (commas add a beat).
+// Text always matches the speech; timing is exact per sentence. (`npm run captions` is the
+// older Whisper route, kept for checking.)
+const syllables = (token) => {
+  const word = token.toLowerCase();
+  if (/\d/.test(word)) {
+    const digits = (word.match(/\d/g) ?? []).length;
+    return Math.min(7, 1.5 * digits) + (word.includes("$") ? 1.5 : 0) + (word.includes("%") ? 2 : 0);
   }
-  return { samples, sampleRate };
+  const groups = word.replace(/[^a-z]/g, "").replace(/e$/, "").match(/[aeiouy]+/g);
+  return Math.max(1, groups ? groups.length : 1);
+};
+const captionWords = [];
+const timeSentence = (sentence, startAt, dur) => {
+  const tokens = sentence.split(/\s+/).filter(Boolean);
+  const weights = tokens.map((t) => syllables(t) + (/[,;:]$/.test(t) ? 1.2 : 0));
+  const sum = weights.reduce((a, b) => a + b, 0);
+  const speech = Math.max(0.1, dur - 0.06);
+  let acc = 0;
+  tokens.forEach((text, k) => {
+    const s = startAt + 0.03 + (acc / sum) * speech;
+    acc += weights[k];
+    const e = startAt + 0.03 + ((acc - (/[,;:]$/.test(text) ? 1.2 : 0)) / sum) * speech;
+    captionWords.push({ text, start: +s.toFixed(3), end: +e.toFixed(3), id: `w${captionWords.length}` });
+  });
 };
 
 const clips = [];
@@ -138,6 +172,7 @@ for (const [i, scene] of episode.scenes.entries()) {
       Math.ceil((lead + spoken + (episode.pacing?.tail ?? TAIL) + (scene.hold ?? 0)) * 10) / 10,
     );
     clips.push({ at: start + lead, samples: clip.samples });
+    for (const span of clip.spans) timeSentence(span.text, start + lead + span.offset, span.dur);
     console.log(`scene ${i + 1}: ${spoken.toFixed(1)}s spoken -> ${scene.seconds}s on screen`);
   } else {
     console.log(`scene ${i + 1}: no narration, keeping ${scene.seconds}s`);
@@ -198,3 +233,21 @@ episode.voiceover = output.replace("public/audio/", "");
 writeFileSync(file, JSON.stringify(episode, null, 2) + "\n");
 const wordCount = episode.scenes.reduce((n, s) => n + (s.narration?.trim().split(/\s+/).length ?? 0), 0);
 console.log(`\nWrote ${output} (${start.toFixed(1)}s, ${Math.round((wordCount / start) * 60)} words/min) and updated ${file}`);
+
+// Script captions (default; set "scriptCaptions": false to keep using Whisper's).
+if (episode.scriptCaptions !== false) {
+  mkdirSync("captions", { recursive: true });
+  writeFileSync(`captions/${id}.json`, JSON.stringify(captionWords, null, 2) + "\n");
+  const ts = (x) => {
+    const ms = Math.round(x * 1000);
+    const p = (n, l = 2) => String(n).padStart(l, "0");
+    return `${p(Math.floor(ms / 3600000))}:${p(Math.floor(ms / 60000) % 60)}:${p(Math.floor(ms / 1000) % 60)},${p(ms % 1000, 3)}`;
+  };
+  const lines = [];
+  for (let k = 0; k < captionWords.length; k += 6) {
+    const g = captionWords.slice(k, k + 6);
+    lines.push(`${lines.length + 1}\n${ts(g[0].start)} --> ${ts(g[g.length - 1].end)}\n${g.map((w) => w.text).join(" ")}\n`);
+  }
+  writeFileSync(`captions/${id}.srt`, lines.join("\n"));
+  console.log(`Wrote captions/${id}.json and .srt from the script (${captionWords.length} words, exact text).`);
+}
