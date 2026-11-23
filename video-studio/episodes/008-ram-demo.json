@@ -1,0 +1,46 @@
+{
+  "id": "008-ram-demo",
+  "title": "RAM prices UI demo (R4/R5 look)",
+  "format": "info",
+  "theme": "cinema",
+  "stage": "ram-demo",
+  "canvas": "full",
+  "captionStyle": "box",
+  "voice": "am_liam",
+  "voiceSpeed": 1.25,
+  "keywords": [
+    "ram",
+    "quadrupled",
+    "openai",
+    "forty",
+    "memory",
+    "gpu",
+    "investing",
+    "customer",
+    "openai's",
+    "40%"
+  ],
+  "scenes": [
+    {
+      "type": "show",
+      "seconds": 3.2,
+      "beat": "price",
+      "speed": 1.24,
+      "narration": "RAM chip prices nearly quadrupled in three months."
+    },
+    {
+      "type": "show",
+      "seconds": 3.7,
+      "beat": "deal",
+      "narration": "OpenAI's deal could take up to forty percent of the world's memory."
+    },
+    {
+      "type": "show",
+      "seconds": 3.7,
+      "beat": "loop",
+      "narration": "And the GPU maker? It's investing in its own customer."
+    }
+  ],
+  "thumbnails": [],
+  "voiceover": "008-ram-demo.mp3"
+}

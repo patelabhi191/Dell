@@ -1,0 +1,176 @@
+[
+  {
+    "text": "RAM",
+    "start": 0.03,
+    "end": 0.24,
+    "id": "w0"
+  },
+  {
+    "text": "chip",
+    "start": 0.24,
+    "end": 0.56,
+    "id": "w1"
+  },
+  {
+    "text": "prices",
+    "start": 0.56,
+    "end": 1.04,
+    "id": "w2"
+  },
+  {
+    "text": "nearly",
+    "start": 1.04,
+    "end": 1.47,
+    "id": "w3"
+  },
+  {
+    "text": "quadrupled",
+    "start": 1.52,
+    "end": 2.32,
+    "id": "w4"
+  },
+  {
+    "text": "in",
+    "start": 2.32,
+    "end": 2.48,
+    "id": "w5"
+  },
+  {
+    "text": "three",
+    "start": 2.48,
+    "end": 2.77,
+    "id": "w6"
+  },
+  {
+    "text": "months.",
+    "start": 3.4,
+    "end": 3.42,
+    "id": "w7"
+  },
+  {
+    "text": "OpenAI's",
+    "start": 3.45,
+    "end": 4.02,
+    "id": "w8"
+  },
+  {
+    "text": "deal",
+    "start": 4.06,
+    "end": 4.4,
+    "id": "w10"
+  },
+  {
+    "text": "could",
+    "start": 4.4,
+    "end": 4.6,
+    "id": "w11"
+  },
+  {
+    "text": "take",
+    "start": 4.6,
+    "end": 4.76,
+    "id": "w12"
+  },
+  {
+    "text": "up",
+    "start": 4.76,
+    "end": 4.86,
+    "id": "w13"
+  },
+  {
+    "text": "to",
+    "start": 4.86,
+    "end": 5.03,
+    "id": "w14"
+  },
+  {
+    "text": "40%",
+    "start": 5.03,
+    "end": 5.63,
+    "id": "w15"
+  },
+  {
+    "text": "of",
+    "start": 5.63,
+    "end": 5.72,
+    "id": "w16"
+  },
+  {
+    "text": "the",
+    "start": 5.72,
+    "end": 5.84,
+    "id": "w17"
+  },
+  {
+    "text": "world's",
+    "start": 5.84,
+    "end": 6.12,
+    "id": "w18"
+  },
+  {
+    "text": "memory.",
+    "start": 6.12,
+    "end": 7.12,
+    "id": "w19"
+  },
+  {
+    "text": "And",
+    "start": 7.15,
+    "end": 7.42,
+    "id": "w20"
+  },
+  {
+    "text": "the",
+    "start": 7.42,
+    "end": 7.71,
+    "id": "w21"
+  },
+  {
+    "text": "GPU",
+    "start": 7.71,
+    "end": 8.02,
+    "id": "w22"
+  },
+  {
+    "text": "maker?",
+    "start": 8.02,
+    "end": 8.59,
+    "id": "w23"
+  },
+  {
+    "text": "it's",
+    "start": 8.66,
+    "end": 8.85,
+    "id": "w24"
+  },
+  {
+    "text": "investing",
+    "start": 8.85,
+    "end": 9.33,
+    "id": "w25"
+  },
+  {
+    "text": "in",
+    "start": 9.42,
+    "end": 9.46,
+    "id": "w26"
+  },
+  {
+    "text": "its",
+    "start": 9.46,
+    "end": 9.62,
+    "id": "w27"
+  },
+  {
+    "text": "own",
+    "start": 9.62,
+    "end": 9.76,
+    "id": "w28"
+  },
+  {
+    "text": "customer.",
+    "start": 9.78,
+    "end": 10.42,
+    "id": "w29"
+  }
+]

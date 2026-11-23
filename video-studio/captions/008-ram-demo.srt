@@ -1,0 +1,23 @@
+1
+00:00:00,030 --> 00:00:02,770
+RAM chip prices nearly quadrupled in three
+
+2
+00:00:03,400 --> 00:00:03,420
+months.
+
+3
+00:00:03,450 --> 00:00:05,840
+OpenAI's deal could take up to 40% of the
+
+4
+00:00:05,840 --> 00:00:07,120
+world's memory.
+
+5
+00:00:07,150 --> 00:00:09,620
+And the GPU maker? it's investing in its
+
+6
+00:00:09,620 --> 00:00:10,420
+own customer.

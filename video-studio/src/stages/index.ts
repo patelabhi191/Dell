@@ -4,6 +4,7 @@ import { GroundStopStage } from "./groundstop";
 import { GroundStopCinema } from "./groundstop-cinema";
 import { GroundStop3D } from "./groundstop-3d";
 import { OutageCity } from "./outage-city";
+import { RamDemo } from "./ram-demo";
 import { SkyStage } from "./sky";
 
 /**
@@ -25,4 +26,5 @@ export const fullStages: Record<string, React.FC> = {
   "groundstop-cinema": GroundStopCinema,
   "groundstop-3d": GroundStop3D,
   "outage-city": OutageCity,
+  "ram-demo": RamDemo,
 };
