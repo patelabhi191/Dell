@@ -116,16 +116,18 @@ type Fit = { pos: THREE.Vector3; target: THREE.Vector3; zoom: number };
 type Box3 = [V, V];
 /** Bounding box of each scene's objects (world units). The camera fits it into BAND. */
 const SCENE_BOX: Record<Beat, Box3> = {
-  price: [[-2.5, 0, -0.3], [2.5, 2.8, 0.3]],
-  reason: [[-2.5, 0, -0.7], [3.9, 2.8, 0.7]],
+  price: [[-2.5, 0, -0.3], [2.5, 2.8, 1.9]],
+  reason: [[-2.5, 0, -0.7], [3.9, 3.6, 0.7]],
   deal: [[-2.1, 0, -2.1], [3.0, 1.9, 2.9]],
   loop: [[-2.3, 0, -1.95], [1.95, 1.8, 1.85]],
   flower: [[-2.0, 0, -2.4], [1.8, 1.6, 1.85]],
-  math: [[-1.35, 0, -1.35], [1.35, 3.3, 1.35]],
-  bubble: [[-1.5, 0, -1.5], [1.5, 2.85, 1.5]],
+  math: [[-1.35, 0, -1.35], [1.35, 3.25, 1.35]],
+  bubble: [[-1.5, 0.2, -1.5], [1.5, 2.8, 1.5]],
   end: [[-1.2, 0, -1.2], [1.2, 2.7, 1.2]],
 };
-const fitBox = (box: Box3, azDeg: number, zoomMul: number): Fit => {
+/** From Deal onwards: closer framing, small side margins (owner's request). */
+const WIDE = { top: 530, bottom: 1175, left: 45, right: 1035 };
+const fitBox = (box: Box3, azDeg: number, zoomMul: number, band: typeof BAND = BAND): Fit => {
   const a = (azDeg * Math.PI) / 180;
   const dir = v3(Math.sin(a) * Math.cos(EL), Math.sin(EL), Math.cos(a) * Math.cos(EL));
   const [mn, mx] = box;
@@ -148,11 +150,11 @@ const fitBox = (box: Box3, azDeg: number, zoomMul: number): Fit => {
         y0 = Math.min(y0, (q.y * H) / 2);
         y1 = Math.max(y1, (q.y * H) / 2);
       }
-  const bw = BAND.right - BAND.left;
-  const bh = BAND.bottom - BAND.top;
+  const bw = band.right - band.left;
+  const bh = band.bottom - band.top;
   const zoom = Math.min(bw / (x1 - x0), bh / (y1 - y0)) * zoomMul;
   // Put the box centre at the band centre (screen y measured upward from the middle).
-  const want = H / 2 - (BAND.top + BAND.bottom) / 2;
+  const want = H / 2 - (band.top + band.bottom) / 2;
   const right = v3(1, 0, 0).applyQuaternion(cam.quaternion);
   const up = v3(0, 1, 0).applyQuaternion(cam.quaternion);
   const cx = (x0 + x1) / 2;
@@ -180,7 +182,9 @@ const shotAt = (beats: Beats, frame: number, total: number): Fit => {
   const [a0, a1] = AZ[b];
   // Slow push-in through each shot; a quick settle after each cut (R4 cuts are calm).
   const settle = i === 0 ? 0 : 1 - smooth(ramp((frame - s) / FPS, 0, 0.3));
-  return fitBox(SCENE_BOX[b], a0 + (a1 - a0) * u, 1.0 + 0.05 * u + 0.05 * settle);
+  const wide = i >= ORDER.indexOf("deal");
+  const extra = b === "math" || b === "bubble" ? 1.1 : 1.0;
+  return fitBox(SCENE_BOX[b], a0 + (a1 - a0) * u, (wide ? 0.97 : 1.0) * extra * (1 + 0.04 * u + 0.04 * settle), wide ? WIDE : BAND);
 };
 
 // ---------------------------------------------------------------- 3D building blocks
@@ -221,16 +225,24 @@ const Pool: React.FC<{ p: V; r: number; color: string; k?: number }> = ({ p, r, 
   ) : null;
 
 /** RAM stick standing upright like an R4 rack: PCB, chips, gold contacts, top status light. */
-const RamStick: React.FC<{ p: V; led: string; ledK?: number; s?: number }> = ({ p, led, ledK = 2.4, s = 1 }) => (
+const RamStick: React.FC<{ p: V; led: string; ledK?: number; s?: number; act?: number; seed?: number }> = ({ p, led, ledK = 2.4, s = 1, act = 0, seed = 0 }) => (
   <group position={p} scale={s}>
     <Block p={[0, 0, 0]} s={[0.95, 0.16, 0.36]} c="#1A222D" />
     <RoundedBox args={[0.78, 2.4, 0.07]} radius={0.02} smoothness={3} position={[0, 0.16 + 1.2, 0]} castShadow receiveShadow>
       <Matte c={P.pcb} rough={0.55} />
     </RoundedBox>
     {[0, 1, 2, 3].map((k) => (
-      <RoundedBox key={k} args={[0.5, 0.36, 0.05]} radius={0.015} position={[0, 0.5 + k * 0.5, 0.055]} castShadow>
-        <Matte c="#11151B" metal={0.3} rough={0.4} />
-      </RoundedBox>
+      <group key={k}>
+        <RoundedBox args={[0.5, 0.36, 0.05]} radius={0.015} position={[0, 0.5 + k * 0.5, 0.055]} castShadow>
+          <Matte c="#11151B" metal={0.3} rough={0.4} />
+        </RoundedBox>
+        {act > 0.01 ? (
+          <mesh position={[0, 0.5 + k * 0.5, 0.082]}>
+            <planeGeometry args={[0.36, 0.05]} />
+            {glow(P.cyan, act * (Math.sin(seed * 3.1 + k * 2.3) > 0 ? 3 : 0.6))}
+          </mesh>
+        ) : null}
+      </group>
     ))}
     <mesh position={[0, 0.24, 0.037]}>
       <boxGeometry args={[0.7, 0.08, 0.004]} />
@@ -346,28 +358,61 @@ const GpuBlock: React.FC<{ p: V; t: number }> = ({ p, t }) => (
   </group>
 );
 
+/** Cloth money sack: flat-bottomed bulging body, pinched neck, tie cord, flared top, $ print. */
+const SACK_BODY = new THREE.LatheGeometry(
+  [
+    [0.0, 0.0],
+    [0.2, 0.01],
+    [0.3, 0.08],
+    [0.34, 0.2],
+    [0.33, 0.33],
+    [0.27, 0.45],
+    [0.15, 0.55],
+    [0.08, 0.6],
+  ].map(([x, y]) => new THREE.Vector2(x, y)),
+  36,
+);
+const SACK_TOP = new THREE.LatheGeometry(
+  [
+    [0.07, 0.0],
+    [0.09, 0.05],
+    [0.16, 0.12],
+    [0.19, 0.17],
+    [0.12, 0.19],
+    [0.0, 0.2],
+  ].map(([x, y]) => new THREE.Vector2(x, y)),
+  24,
+);
+const SACK_CLOTH = new THREE.MeshStandardMaterial({ color: "#C8A46E", roughness: 0.95, metalness: 0 });
+const SACK_DARK = new THREE.MeshStandardMaterial({ color: "#A9874F", roughness: 0.95, metalness: 0 });
 const MoneySack: React.FC<{ s?: number }> = ({ s = 1 }) => (
   <group scale={s}>
-    <mesh position={[0, 0.3, 0]} scale={[1, 0.92, 0.92]} castShadow>
-      <sphereGeometry args={[0.3, 22, 18]} />
-      <meshStandardMaterial color="#C9A66B" roughness={0.9} />
-    </mesh>
-    <mesh position={[0, 0.6, 0]} castShadow>
-      <cylinderGeometry args={[0.06, 0.12, 0.1, 14]} />
-      <meshStandardMaterial color="#B8945A" roughness={0.9} />
-    </mesh>
-    <mesh position={[0, 0.68, 0]}>
-      <coneGeometry args={[0.1, 0.12, 12]} />
-      <meshStandardMaterial color="#B8945A" roughness={0.9} />
+    <mesh geometry={SACK_BODY} material={SACK_CLOTH} castShadow receiveShadow />
+    <mesh geometry={SACK_TOP} material={SACK_DARK} position={[0, 0.6, 0]} castShadow />
+    <mesh position={[0, 0.61, 0]} rotation={[Math.PI / 2, 0, 0]}>
+      <torusGeometry args={[0.085, 0.022, 8, 24]} />
+      <meshStandardMaterial color="#6B4A22" roughness={0.8} />
     </mesh>
     {DOLLAR_TEX ? (
-      <mesh position={[0, 0.32, 0.28]}>
-        <planeGeometry args={[0.26, 0.26]} />
+      <mesh position={[0, 0.27, 0.338]} rotation={[-0.08, 0, 0]}>
+        <planeGeometry args={[0.3, 0.3]} />
         <meshStandardMaterial map={DOLLAR_TEX} transparent roughness={0.9} />
       </mesh>
     ) : null}
   </group>
 );
+
+/** An item travelling a lane: hops (bounce) or glides, with a pulse where it lands. */
+const hop = (u: number, hops: number, h: number) => Math.abs(Math.sin(u * Math.PI * hops)) * h;
+const ArrivePulse: React.FC<{ p: THREE.Vector3; t: number; period: number; color: string }> = ({ p, t, period, color }) => {
+  const k = (t % period) / period;
+  return (
+    <mesh position={[p.x, 0.015, p.z]} rotation={[-Math.PI / 2, 0, 0]} scale={0.3 + k * 1.1}>
+      <ringGeometry args={[0.32, 0.36, 40]} />
+      {glow(color, 2, 1 - k)}
+    </mesh>
+  );
+};
 const ChipTile: React.FC<{ p: THREE.Vector3; s?: number; tint?: string }> = ({ p, s = 1, tint }) => (
   <group position={p.toArray() as V} scale={s}>
     <RoundedBox args={[0.42, 0.05, 0.42]} radius={0.012} castShadow>
@@ -412,17 +457,30 @@ const Lane: React.FC<{ a: THREE.Vector3; b: THREE.Vector3; color: string; t: num
 const ROW = [-2.0, -1.0, 0, 1.0, 2.0];
 
 /** 1. Hook: a row of RAM sticks; their lights go from cyan to red as the price quadruples. */
-const PriceSet: React.FC<{ t: number; x4: number }> = ({ t, x4 }) => {
+const PriceSet: React.FC<{ t: number; x4: number; frame: number }> = ({ t, x4, frame }) => {
   const heat = smooth(ramp(x4, 0, 1.2));
   return (
     <group>
       {ROW.map((x, k) => {
         const h = smooth(ramp(x4, k * 0.12, k * 0.12 + 0.5));
         const led = h > 0 ? mix(P.amber, P.red, h) : P.cyan;
+        // RAM at work: data packets run in along a short lane and the chips flicker
+        const pkt = h > 0 ? led : P.cyan;
         return (
           <group key={k}>
             <Pool p={[x, 0, 0.3]} r={0.9} color={h > 0 ? led : P.cyan} k={0.7 + 0.5 * heat} />
-            <RamStick p={[x, 0, 0]} led={led} ledK={2.2 + 1.5 * h * Math.abs(Math.sin(t * 6 + k))} />
+            <Line points={[[x, 0.012, 1.9], [x, 0.012, 0.25]]} color={pkt} lineWidth={1.5} transparent opacity={0.4} />
+            {Array.from({ length: 3 }, (_, j) => {
+              const u = (t * 0.9 + j / 3 + k * 0.17) % 1;
+              const z = 1.9 - u * 1.65;
+              return (
+                <mesh key={j} position={[x, 0.08 + u * u * 0.9, z]}>
+                  <boxGeometry args={[0.12, 0.12, 0.12]} />
+                  {glow(pkt, 2.6, 1 - Math.max(0, (u - 0.85) / 0.15))}
+                </mesh>
+              );
+            })}
+            <RamStick p={[x, 0, 0]} led={led} ledK={2.2 + 1.5 * h * Math.abs(Math.sin(t * 6 + k))} act={1} seed={Math.floor(frame / 3) + k * 7} />
           </group>
         );
       })}
@@ -430,27 +488,52 @@ const PriceSet: React.FC<{ t: number; x4: number }> = ({ t, x4 }) => {
   );
 };
 
-/** 2. Reason: sticks slide into the AI data centre; ordered-but-not-made outlines follow. */
+/** 2. Reason: sticks lift out of the row and fly to the AI data centre, one after another,
+ *  without stopping. On "hasn't been made yet" they turn see-through and slow down. */
 const DC_R = v3(3.2, 0, 0);
-const ReasonSet: React.FC<{ t: number; buy: number; vanish: number }> = ({ t, buy, vanish }) => (
-  <group>
-    <Pool p={[DC_R.x, 0, DC_R.z]} r={1.3} color={P.cyan} k={0.8} />
-    <ServerStack p={[DC_R.x, 0, DC_R.z]} n={5} w={1.3} />
-    {ROW.map((x, k) => {
-      const go = smooth(ramp(buy, k * 0.1, k * 0.1 + 0.9));
-      const px = x + (DC_R.x - x) * go;
-      const s = 1 - 0.75 * smooth(ramp(go, 0.7, 1));
-      return go < 0.999 ? <RamStick key={k} p={[px, 0, 0]} s={s} led={P.red} /> : null;
-    })}
-    {ROW.map((x, k) => {
-      const a = smooth(ramp(vanish, k * 0.08, k * 0.08 + 0.35));
-      const go = smooth(ramp(vanish, 0.6 + k * 0.08, 1.6 + k * 0.08));
-      const px = x + (DC_R.x - x) * go;
-      return <GhostStick key={`g${k}`} p={[px, 0, 0]} a={a * (1 - smooth(ramp(go, 0.75, 1)))} />;
-    })}
-    {void t}
-  </group>
-);
+const STREAM = 8;
+const ReasonSet: React.FC<{ t: number; buy: number; vanish: number; frame: number }> = ({ t, buy, vanish, frame }) => {
+  const v1 = 0.42; // trips per second per slot before "made yet"
+  const v2 = 0.2; // slower afterwards
+  const run = buy < 0 ? 0 : vanish < 0 ? buy * v1 : (buy - vanish) * v1 + vanish * v2;
+  const ghost = smooth(ramp(vanish, 0, 0.6));
+  return (
+    <group>
+      <Pool p={[DC_R.x, 0, DC_R.z]} r={1.3} color={P.cyan} k={0.8} />
+      <ServerStack p={[DC_R.x, 0, DC_R.z]} n={5} w={1.3} k={2 + Math.abs(Math.sin(frame * 0.2))} />
+      {/* the row of slots the sticks come from */}
+      {ROW.map((x, k) => (
+        <Block key={`slot${k}`} p={[x, 0, 0]} s={[0.95, 0.16, 0.36]} c="#1A222D" edge={ghost > 0 ? "#8FD8FF" : P.red} edgeK={0.8} />
+      ))}
+      {buy < 0
+        ? ROW.map((x, k) => <RamStick key={k} p={[x, 0, 0]} led={P.red} />)
+        : Array.from({ length: STREAM }, (_, i) => {
+            const prog = run + i / STREAM;
+            const u = prog % 1;
+            const x0 = ROW[i % ROW.length];
+            // lift for the first 25%, then arc over to the data centre and drop in
+            const lift = smooth(ramp(u, 0, 0.25));
+            const fly = smooth(ramp(u, 0.25, 1));
+            const x = x0 + (DC_R.x - x0) * fly;
+            const y = 1.0 * lift + Math.sin(fly * Math.PI) * 0.9 + 1.4 * smooth(ramp(u, 0.85, 1)) * 0;
+            const sc = 1 - 0.6 * smooth(ramp(u, 0.8, 1));
+            const fade = Math.min(1, u / 0.08, (1 - u) / 0.06);
+            return ghost > 0.5 ? (
+              <group key={i} position={[x, y, 0]} scale={sc}>
+                <GhostStick p={[0, -0.16, 0]} a={fade} />
+              </group>
+            ) : (
+              <group key={i} position={[x, y, 0]} scale={sc * (0.85 + 0.15 * fade)}>
+                <RamStick p={[0, 0, 0]} led={P.red} />
+              </group>
+            );
+          })}
+      {/* trail of light along the flight path */}
+      <Line points={Array.from({ length: 20 }, (_, k) => [-0.2 + (DC_R.x + 0.2) * (k / 19), 1.0 + Math.sin((k / 19) * Math.PI) * 0.9 + 1.4, 0] as V)} color={ghost > 0 ? "#8FD8FF" : P.red} lineWidth={1.5} dashed dashSize={0.1} gapSize={0.1} transparent opacity={0.35} />
+      {void t}
+    </group>
+  );
+};
 
 /** 3. Deal: Samsung + SK Hynix fabs send chips along lanes to OpenAI's Stargate. */
 const DC_D = v3(-1.4, 0, -1.4);
@@ -505,23 +588,32 @@ const LoopSet: React.FC<{ t: number; stake: number }> = ({ t, stake }) => {
       <ServerStack p={[OA.x, 0, OA.z]} n={4} w={1.2} />
       <Lane a={chipsA} b={chipsB} color={P.nvidia} t={t} />
       <Lane a={cashA} b={cashB} color={P.amber} t={t} />
-      {Array.from({ length: 4 }, (_, k) => {
-        const u = (t * 0.32 + k / 4) % 1;
+      {Array.from({ length: 5 }, (_, k) => {
+        const u = (t * 0.34 + k / 5) % 1;
         const edge = Math.min(1, u / 0.1, (1 - u) / 0.1);
-        return <ChipTile key={`c${k}`} p={chipsA.clone().lerp(chipsB, u).setY(0.04)} s={edge} tint={P.nvidia} />;
+        const p = chipsA.clone().lerp(chipsB, Easing.inOut(Easing.sin)(u)).setY(0.08 + Math.sin(u * Math.PI) * 0.25);
+        return (
+          <group key={`c${k}`} position={p.toArray() as V} rotation={[0, u * Math.PI * 2, 0]}>
+            <ChipTile p={v3(0, 0, 0)} s={edge} tint={P.nvidia} />
+          </group>
+        );
       })}
-      {Array.from({ length: 3 }, (_, k) => {
-        const u = (t * 0.28 + k / 3 + 0.15) % 1;
+      <ArrivePulse p={chipsB} t={t} period={1 / (0.34 * 5)} color={P.nvidia} />
+      {Array.from({ length: 4 }, (_, k) => {
+        const u = (t * 0.26 + k / 4 + 0.1) % 1;
         const edge = Math.min(1, u / 0.12, (1 - u) / 0.12);
         const p = cashA.clone().lerp(cashB, u);
+        const y = hop(u, 3, 0.32);
+        const squash = 1 - 0.18 * Math.max(0, 1 - y / 0.08);
         return (
-          <group key={`m${k}`} position={[p.x, 0, p.z]} scale={edge * 0.75}>
+          <group key={`m${k}`} position={[p.x, y, p.z]} scale={[edge * 0.62, edge * 0.62 * squash, edge * 0.62]} rotation={[0, -0.6 + u, 0]}>
             <MoneySack />
           </group>
         );
       })}
+      <ArrivePulse p={cashB} t={t} period={1 / (0.26 * 4)} color={P.amber} />
       {stake >= 0 && st < 1 ? (
-        <group position={arc.getPoint(st).toArray() as V} scale={1.2}>
+        <group position={arc.getPoint(st).toArray() as V} scale={1.25} rotation={[0, st * Math.PI * 2, 0]}>
           <MoneySack />
         </group>
       ) : null}
@@ -605,20 +697,25 @@ const FlowerSet: React.FC<{ t: number; bank: number }> = ({ t, bank }) => {
       <Lane a={mA} b={mB} color={P.amber} t={t} />
       <Lane a={flA} b={flB} color="#E86A8A" t={t} />
       {Array.from({ length: 3 }, (_, k) => {
-        const u = (t * 0.3 + k / 3) % 1;
+        const u = (t * 0.28 + k / 3) % 1;
         const edge = Math.min(1, u / 0.12, (1 - u) / 0.12);
         const p = mA.clone().lerp(mB, u);
+        const y = hop(u, 3, 0.28);
+        const squash = 1 - 0.18 * Math.max(0, 1 - y / 0.08);
         return (
-          <group key={`m${k}`} position={[p.x, 0, p.z]} scale={edge * 0.6}>
+          <group key={`m${k}`} position={[p.x, y, p.z]} scale={[edge * 0.55, edge * 0.55 * squash, edge * 0.55]} rotation={[0, 0.6 + u, 0]}>
             <MoneySack />
           </group>
         );
       })}
+      <ArrivePulse p={mB} t={t} period={1 / (0.28 * 3)} color={P.amber} />
       {Array.from({ length: 3 }, (_, k) => {
-        const u = (t * 0.3 + k / 3 + 0.15) % 1;
+        const u = (t * 0.28 + k / 3 + 0.17) % 1;
         const edge = Math.min(1, u / 0.12, (1 - u) / 0.12);
-        return <Bunch key={`f${k}`} p={flA.clone().lerp(flB, u).setY(0.02)} s={edge * 1.2} />;
+        const p = flA.clone().lerp(flB, Easing.inOut(Easing.sin)(u)).setY(0.04 + Math.sin(u * Math.PI) * 0.35);
+        return <Bunch key={`f${k}`} p={p} s={edge * 1.25} />;
       })}
+      <ArrivePulse p={flB} t={t} period={1 / (0.28 * 3)} color="#E86A8A" />
       {bank >= 0 ? (
         <Line points={[[SHOP.x, 1.0, SHOP.z - 0.4], [BANK.x + (SHOP.x - BANK.x) * (1 - toBank), 1.0, BANK.z + 0.5 + (SHOP.z - 0.4 - BANK.z - 0.5) * (1 - toBank)]]} color={P.amber} lineWidth={3} dashed dashSize={0.12} gapSize={0.08} />
       ) : null}
@@ -798,8 +895,8 @@ const World: React.FC<{ beats: Beats; frame: number; fit: Fit }> = ({ beats, fra
         <meshStandardMaterial color={P.floor} roughness={0.92} metalness={0.05} />
       </mesh>
       <gridHelper args={[60, 60, P.grid1, P.grid2]} position={[0, 0.003, 0]} />
-      {b === "price" ? <PriceSet t={t} x4={since(beats, frame, "x4")} /> : null}
-      {b === "reason" ? <ReasonSet t={t} buy={since(beats, frame, "buy")} vanish={since(beats, frame, "vanish")} /> : null}
+      {b === "price" ? <PriceSet t={t} x4={since(beats, frame, "x4")} frame={frame} /> : null}
+      {b === "reason" ? <ReasonSet t={t} buy={since(beats, frame, "buy")} vanish={since(beats, frame, "vanish")} frame={frame} /> : null}
       {b === "deal" ? <DealSet t={t} frame={frame} share={since(beats, frame, "share")} /> : null}
       {b === "loop" ? <LoopSet t={t} stake={since(beats, frame, "stake")} /> : null}
       {b === "flower" ? <FlowerSet t={t} bank={since(beats, frame, "bank")} /> : null}
@@ -893,7 +990,7 @@ const Overlay: React.FC<{ beats: Beats; frame: number; fit: Fit }> = ({ beats, f
   /** Label pinned beside a 3D point; kept inside the 3D band. */
   const pin = (p: THREE.Vector3, text: string, tone: "cyan" | "amber" | "green" | "red" | "plain", s: number, dx: number, dy: number) => {
     const a = proj(p);
-    return <Callout x={a.x} y={a.y} tx={Math.max(220, Math.min(860, a.x + dx))} ty={Math.max(BAND.top + 20, Math.min(BAND.bottom - 20, a.y + dy))} text={text} tone={tone} s={s} />;
+    return <Callout x={a.x} y={a.y} tx={Math.max(200, Math.min(880, a.x + dx))} ty={Math.max(WIDE.top + 20, Math.min(WIDE.bottom - 20, a.y + dy))} text={text} tone={tone} s={s} />;
   };
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ position: "absolute", inset: 0 }}>
@@ -928,7 +1025,7 @@ const Overlay: React.FC<{ beats: Beats; frame: number; fit: Fit }> = ({ beats, f
             s={1}
           />
           {pin(v3(DC_R.x, 2.2, DC_R.z), "AI DATA CENTRE", "cyan", smooth(ramp(buy, -0.3, 0)), -40, -160)}
-          {pin(v3(-1.0, 2.7, 0), "NOT MADE YET", "plain", smooth(ramp(vanish, 0.2, 0.5)), -60, -120)}
+          {pin(v3(0.6, 3.0, 0), "NOT MADE YET", "plain", smooth(ramp(vanish, 0.3, 0.6)), -160, -110)}
         </>
       ) : null}
 
@@ -939,7 +1036,7 @@ const Overlay: React.FC<{ beats: Beats; frame: number; fit: Fit }> = ({ beats, f
           ) : (
             <Status y={470} label="WAFERS" lights={Array.from({ length: 8 }, (_, k) => (k < Math.min(8, Math.round(t * 2)) ? K.cyan : "#26304A"))} value="900K / MONTH" tone={K.cyan} s={sAt(0.3)} />
           )}
-          {pin(v3(DC_D.x, 1.7, DC_D.z), "OPENAI · STARGATE", "cyan", sAt(0.3), -40, -140)}
+          {pin(v3(DC_D.x - 0.5, 1.2, DC_D.z), "OPENAI · STARGATE", "cyan", sAt(0.3), -190, 30)}
           {pin(v3(FAB_S.x, 1.1, FAB_S.z), "SAMSUNG", "plain", sAt(0.6), -150, 90)}
           {pin(v3(FAB_H.x, 1.1, FAB_H.z), "SK HYNIX", "plain", sAt(0.9), 110, 120)}
           <Card s={sAt(1.4)}>
