@@ -1795,7 +1795,11 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
   margin-bottom:14px;overflow:hidden;box-shadow:0 10px 34px rgba(0,0,0,.30)}
 .pl-seg.open{background:rgba(255,255,255,.042);border-color:rgba(94,234,212,.34)}
 .pl-seghead{display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer}
-.pl-caret{flex:none;width:18px;color:var(--pl-inc);font-size:11px;transition:transform .2s}
+.pl-caret{flex:none;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;
+  border-radius:8px;color:var(--pl-inc);cursor:pointer;transition:transform .2s,background .15s}
+.pl-caret svg{display:block}
+.pl-caret:hover{background:rgba(94,234,212,.1)}
+@media (prefers-reduced-motion:reduce){.pl-caret{transition:none}}
 .pl-seg.open .pl-caret{transform:rotate(90deg)}
 .pl-segname{flex:1 1 auto;min-width:0;background:rgba(255,255,255,.08);
   border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px 14px;color:var(--text);
@@ -1820,8 +1824,8 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
 @media(max-width:700px){
   .pl-seghead{flex-wrap:wrap;row-gap:9px}
   .pl-caret{order:0}
-  .pl-segname{flex:1 1 calc(100% - 30px);order:1}
-  .pl-startwrap{order:2;flex:0 1 auto;margin-left:30px}
+  .pl-segname{flex:1 1 calc(100% - 40px);order:1}
+  .pl-startwrap{order:2;flex:0 1 auto;margin-left:40px}
   .pl-startwrap .pl-start{width:112px;min-width:0}
   .pl-segsum{order:3;flex:1 1 auto;text-align:right;min-width:0;font-size:10.5px}
   .pl-segdel{order:4;flex:none}
@@ -11606,6 +11610,11 @@ const PL_TRASH='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stro
   ' stroke-width="2.1" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const PL_PEN='<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"'+
   ' stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/></svg>';
+/* The segment's open/closed triangle. Drawn rather than typed: the "▸" glyph
+   at 11px was a 6px speck that varied with the font. Points right when closed;
+   the caret turns 90deg to point down when the segment is open. */
+const PL_TRI='<svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true">'+
+  '<path d="M4 2.2 L11.2 7 L4 11.8 Z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>';
 const PL_DEL='<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"'+
   ' stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
@@ -11692,7 +11701,7 @@ function plSegHTML(seg){
          carries no default button styling, so nothing on screen moves. */
       '<span class="pl-caret" role="button" tabindex="0"'+
         ' aria-expanded="'+(!!seg.open)+'"'+
-        ' aria-label="'+(seg.open?'Collapse':'Expand')+' this segment">▸</span>'+
+        ' aria-label="'+(seg.open?'Collapse':'Expand')+' this segment">'+PL_TRI+'</span>'+
       '<input class="pl-segname" type="text" value="'+plEsc(seg.name)+'" placeholder="Name this segment" aria-label="Segment name">'+
       '<span class="pl-startwrap"><span>Start</span>'+
         '<input class="pl-start" type="text" inputmode="decimal" value="'+plMoney(seg.start)+'" aria-label="Starting balance"></span>'+

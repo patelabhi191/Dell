@@ -648,6 +648,34 @@ const section = t => console.log(`\n── ${t} ──`);
   check(gate.startBal === true, 'editing the starting balance does too', String(gate.startBal));
   check(gate.newSeg === true, 'and so does creating a segment', String(gate.newSeg));
 
+  /* ── the open/closed triangle is big enough to see and hit ────────────── */
+  section('the segment triangle');
+  {
+    const R = await open(browser, url, Object.assign({}, SEED, { 'sparta.plan': JSON.stringify({ segments: [
+      { id: 'c1', name: 'Closed', start: 0, open: false, items: [] },
+      { id: 'o1', name: 'Open', start: 0, open: true, items: [] }] }) }));
+    const p = R.page;
+    await p.click('#viewSeg button[data-view="plan"]'); await p.mouse.move(0, 0); await p.waitForTimeout(400);
+    const tri = await p.evaluate(() => [...document.querySelectorAll('.pl-caret')].map(c => {
+      const g = c.querySelector('svg'), b = c.getBoundingClientRect();
+      const m = new DOMMatrix(getComputedStyle(c).transform);
+      return { drawn: !!g, glyph: g ? Math.round(g.getBoundingClientRect().width) : 0,
+        box: [Math.round(b.width), Math.round(b.height)], deg: Math.round(Math.atan2(m.b, m.a) * 180 / Math.PI),
+        text: c.textContent.trim() } }));
+    /* The "▸" glyph at 11px was a 6px speck; it is a drawn triangle now. */
+    check(tri.length === 2 && tri.every(t => t.drawn && t.glyph >= 14 && t.text === ''),
+      'it is a drawn 14px triangle, not the small text glyph', JSON.stringify(tri));
+    check(tri.every(t => t.box[0] >= 28 && t.box[1] >= 28), '...in a 28px target', JSON.stringify(tri.map(t => t.box)));
+    check(tri[0].deg === 0 && tri[1].deg === 90, 'it points right when closed and down when open',
+      `${tri[0].deg} / ${tri[1].deg}`);
+    await p.click('.pl-seg[data-id="c1"] .pl-caret'); await p.waitForTimeout(350);
+    const turned = await p.evaluate(() => { const c = document.querySelector('.pl-seg[data-id="c1"] .pl-caret');
+      const m = new DOMMatrix(getComputedStyle(c).transform); return Math.round(Math.atan2(m.b, m.a) * 180 / Math.PI) });
+    check(turned === 90, 'pressing it opens the segment and turns it down', String(turned));
+    check(R.errs.length === 0, 'no page errors in this section', R.errs.join(' | '));
+    await R.ctx.close();
+  }
+
   /* ── looking is not editing, and typing is not lost ───────────────────── */
   section('view state, the save window, and a date that is not one');
   {

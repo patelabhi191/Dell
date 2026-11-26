@@ -2384,6 +2384,12 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Plan: a bigger segment triangle** (2026-11-27). The open/closed caret was the "▸" glyph at 11px,
+  about 6px of ink. It is now a drawn 14px triangle (`PL_TRI`) in a 28px target with a hover tint,
+  pointing right when closed and turning 90deg to point down when open. The narrow-width header
+  offsets moved from 30px to 40px to match the wider caret. Pinned in `test-plan.js`.
+  The owner also floated, then dropped, a link from a Yearly note to a Plan segment: following it
+  would switch tabs and lose their place on Yearly.
 - **The note box loses its accent edge** (2026-11-27). The owner asked for the teal left bar on an
   opened transaction note to go. `.yf-note-text` now uses the app's plain inset box (the Past sells
   summary tiles' fill, `--stroke` hairline and `--r-ctl` corner). Pinned in `test-ui.js`.
