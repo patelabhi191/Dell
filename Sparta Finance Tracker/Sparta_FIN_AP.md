@@ -2384,6 +2384,19 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Archives: who brought it in and who spent it, on the Month by month hover** (2026-11-27).
+  Pointing at (or tapping) a bar shows the month, its figure, and the ABI / POO split, e.g.
+  "Mar income $6,500 / ABI $4,000 · POO $2,500"; spending bars say "spent".
+  - `arcSnapshot` now stores `mIncWho` / `mExpWho` (`{ABI:[12],POO:[12]}`) from the same loop and
+    test as `mInc` / `mExp`, so the two people always add up to the bar. `arcDummyRec` invents a
+    split that adds up. `normalizeArchives` coerces it, or deletes a malformed one.
+  - Records sealed before this have no split. `arcWho()` derives one from the ledger rows for that
+    year (they are never pruned), cached until the list is redrawn, and `arcBarTip()` shows a
+    month's split ONLY where it still adds up to the sealed bar; otherwise the total alone. A sealed
+    card stays a point-in-time record.
+  - The tip (`.arc-bartip`) sits in `.ay-mid`, outside the phone's `.ay-scroll`, so it is not
+    clipped, and is placed from the bar's own box. Scrolling the bars hides it.
+  Pinned in `test-archives.js` §14.
 - **Archives: the edit button edits Start and Life things only** (2026-11-27). The ✎ on a year card
   used to ask for six figures in six `prompt()` boxes. It now opens the card in an editing state
   (`arcEditId` / `arcDraft`): Start becomes a field in the header and Life things becomes a line

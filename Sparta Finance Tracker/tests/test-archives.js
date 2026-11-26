@@ -1182,6 +1182,59 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     await L.ctx.close();
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  section('14 · who brought it in, who spent it -- the Month by month hover');
+  {
+    const H = await open(browser, url, SEED); const p = H.page;
+    await p.setViewportSize({ width: 1440, height: 1000 });
+    const r = await p.evaluate(() => {
+      state.yf.txns.filter(t => t.tab !== 'me').slice(0, 3).forEach(t => t.who = 'POO');
+      applyView('archive'); state.archives = [];
+      const snap = arcSnapshot(YEAR_OF_SEED()); snap.id = 'snap';
+      const dum = arcDummyRec(2019); dum.id = 'dum';
+      const old = arcSnapshot(YEAR_OF_SEED()); old.id = 'old'; old.year = YEAR_OF_SEED(); delete old.mIncWho; delete old.mExpWho;
+      const off = arcSnapshot(YEAR_OF_SEED()); off.id = 'off'; delete off.mIncWho; delete off.mExpWho; off.mInc = off.mInc.map(v => v ? v + 1 : 0);
+      state.archives.push(snap, dum);
+      normalizeArchives();
+      const adds = a => a.mInc.every((v, i) => Math.abs(a.mIncWho.ABI[i] + a.mIncWho.POO[i] - v) < 0.01) &&
+                        a.mExp.every((v, i) => Math.abs(a.mExpWho.ABI[i] + a.mExpWho.POO[i] - v) < 0.01);
+      const firstIn = a => a.mInc.findIndex(v => v > 0);
+      return { snapAdds: adds(snap), dumAdds: adds(dum), snapPoo: snap.mIncWho.POO.some(v => v > 0),
+        oldTip: arcBarTip(old, firstIn(old), 'in'), offTip: arcBarTip(off, firstIn(off), 'in') };
+      function YEAR_OF_SEED(){ return +state.yf.txns.find(t => t.tab !== 'me').date.slice(0, 4) }
+    });
+    check(r.snapAdds && r.snapPoo, '14: a year taken from the ledger stores ABI and POO per month, adding up to each bar');
+    check(r.dumAdds, '14: a dummy year invents a split that adds up too');
+    /* Older cards were sealed before the split existed: it is derived from the
+       ledger, and SHOWN only where it still adds up to the bar that was sealed. */
+    check(/ABI \$[\d,]+ \u00b7 POO \$[\d,]+/.test(r.oldTip), '14: an older card derives the split from the ledger', r.oldTip);
+    check(!/ABI/.test(r.offTip) && /income \$/.test(r.offTip),
+      '14: ...but shows the total alone where the ledger no longer matches what was sealed', r.offTip);
+
+    await p.evaluate(() => { arcOpen.clear(); arcOpen.add('snap'); renderArchives() });
+    await p.waitForTimeout(250);
+    const bar = p.locator('.ay[data-id="snap"] .arcbar[data-k="in"]').first();
+    await bar.scrollIntoViewIfNeeded(); await bar.hover(); await p.waitForTimeout(200);
+    const tip = await p.evaluate(() => { const t = document.querySelector('.ay[data-id="snap"] .arc-bartip');
+      const b = document.querySelector('.ay[data-id="snap"] .arcbar[data-k="in"]').getBoundingClientRect(), q = t.getBoundingClientRect();
+      return { text: t.innerText.replace(/\n/g, ' | '), shown: t.style.opacity,
+        centred: Math.abs((q.left + q.width / 2) - (b.left + b.width / 2)) <= 1, above: q.bottom <= b.top + 1,
+        outsideScroller: !t.closest('.ay-scroll') } });
+    check(tip.shown === '1' && /income \$/.test(tip.text) && /ABI \$.* POO \$/.test(tip.text),
+      '14: pointing at an income bar shows the month, its figure, and ABI and POO', tip.text);
+    check(tip.centred && tip.above && tip.outsideScroller, '14: ...centred above the bar, outside the phone scroller',
+      JSON.stringify(tip));
+    await p.mouse.move(0, 0); await p.waitForTimeout(150);
+    check(await p.evaluate(() => document.querySelector('.ay[data-id="snap"] .arc-bartip').style.opacity) === '0',
+      '14: and it goes when the pointer leaves');
+    const ob = p.locator('.ay[data-id="snap"] .arcbar[data-k="out"]').first();
+    await ob.hover(); await p.waitForTimeout(150);
+    check(/spent \$/.test(await p.evaluate(() => document.querySelector('.ay[data-id="snap"] .arc-bartip').innerText)),
+      '14: a spending bar says spent');
+    check(H.errs.length === 0, '14: no page errors', H.errs.join(' | '));
+    await H.ctx.close();
+  }
+
   console.log(`\nARCHIVES: ${pass} passed, ${fail} failed`);
   await browser.close(); srv.close();
   process.exit(fail ? 1 : 0);

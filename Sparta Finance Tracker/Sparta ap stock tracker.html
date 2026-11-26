@@ -2201,7 +2201,8 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
 .arc-svg{width:100%;height:auto;display:block;overflow:visible}
 /* 75% and centred: at full width the bars sat so far apart the year stopped
    reading as one shape. The remaining quarter is left empty on purpose. */
-.ay-mid{width:91%;margin:0 auto}
+.ay-mid{width:91%;margin:0 auto;position:relative}
+.arcbar{cursor:pointer}
 .arc-tw{position:relative}
 /* heading row: the title on the left, the category gear on the right, the way
    Monthly's skeu-h carries its own */
@@ -5631,6 +5632,10 @@ function normalizeArchives(){
        arcMatrix, arcTable and arcMeIncLine all read their own array off the
        same record and would each need a guard of their own. */
     a.mInc=arc12(a.mInc); a.mExp=arc12(a.mExp); a.meInc=arc12(a.meInc);
+    // the per-person split behind the bars' hover; absent on records sealed
+    // before it existed, which arcWho() then derives (see there)
+    ['mIncWho','mExpWho'].forEach(k=>{ const v=a[k];
+      if(v && typeof v==='object') a[k]={ABI:arc12(v.ABI),POO:arc12(v.POO)}; else delete a[k] });
     if(!Array.isArray(a.exp)) a.exp=[];
     if(!Array.isArray(a.inc)) a.inc=[];
     if(!Array.isArray(a.highlights)) a.highlights=[];
@@ -5667,9 +5672,13 @@ function arcSnapshot(year){
     const txns=yfTxns();
     const ix=yfCatIndex(txns);      // the same one pass the tab makes
     const mInc=Array(12).fill(0), mExp=Array(12).fill(0);
+    /* Who brought each month's money in and who spent it, for the bars' hover.
+       Same loop, same test, so the two people always add up to the bar. */
+    const mIncWho={ABI:Array(12).fill(0),POO:Array(12).fill(0)}, mExpWho={ABI:Array(12).fill(0),POO:Array(12).fill(0)};
     txns.forEach(t=>{
-      const m=parseInt((t.date||'').slice(5,7),10)-1;
-      if(m>=0&&m<12){ if(t.type==='income') mInc[m]+=t.amt; else if(!t.allot) mExp[m]+=t.amt; }
+      const m=parseInt((t.date||'').slice(5,7),10)-1, w=t.who==='POO'?'POO':'ABI';
+      if(m>=0&&m<12){ if(t.type==='income'){ mInc[m]+=t.amt; mIncWho[w][m]+=t.amt }
+        else if(!t.allot){ mExp[m]+=t.amt; mExpWho[w][m]+=t.amt } }
     });
     // the same two figures renderYF now takes, by the same two definitions and
     // over the array already in hand: a row the month loop cannot place is
@@ -5721,7 +5730,7 @@ function arcSnapshot(year){
       entries: inYear.length, entriesYf: txns.length, entriesMe: meRows.length,
       meInc,
       exp:cat('expense'), inc:cat('income'),
-      mInc, mExp,
+      mInc, mExp, mIncWho, mExpWho,
       contrib:{ abiT:cb('TFSA','ABI'), abiF:cb('FHSA','ABI'),
                 pooT:cb('TFSA','POO'), pooF:cb('FHSA','POO') },
       highlights: hl,
@@ -5748,6 +5757,10 @@ function arcDummyRec(year){
   const mInc=[],mExp=[];
   for(let i=0;i<12;i++){ mInc.push(Math.round(r(i,4600,8200)/10)*10);
                          mExp.push(Math.round(r(i+20,2100,5200)/10)*10) }
+  // a made-up split for the hover, ABI's share first so the two add up exactly
+  const split=(arr,k)=>{ const A=arr.map((v,i)=>Math.round(v*r(k+i,45,80)/100/10)*10);
+    return {ABI:A, POO:arr.map((v,i)=>v-A[i])} };
+  const mIncWho=split(mInc,60), mExpWho=split(mExp,80);
   const totInc=mInc.reduce((a,b)=>a+b,0), totExp=mExp.reduce((a,b)=>a+b,0);
   const start=Math.round(r(99,6000,30000)/50)*50, end=start+totInc-totExp;
   const invested=Math.round(r(7,3000,11000)/50)*50, moved=Math.round(r(8,500,4000)/50)*50;
@@ -5776,7 +5789,7 @@ function arcDummyRec(year){
     exp: fixRow(fixRow(mk(['Rent','Investment','Other Bank','Credit Bill','Travel','Personal'],30),
       'Investment',invested), 'Other Bank',moved),
     inc: mk(['Paycheck','Bonus','Gift/Stocks'],60),
-    mInc, mExp,
+    mInc, mExp, mIncWho, mExpWho,
     contrib:{ abiT:Math.round(r(11,0,7000)/50)*50, abiF:Math.round(r(12,0,8000)/50)*50,
               pooT:Math.round(r(13,0,7000)/50)*50, pooF:Math.round(r(14,0,8000)/50)*50 },
     highlights:[{key:'peakExp',tone:'exp',title:'Biggest spending month',line:ln},
@@ -5913,6 +5926,28 @@ function arcContribLine(c){
   return '<span>ABI put '+arc$(c.abiT)+' into TFSA and '+arc$(c.abiF)+' into FHSA.</span>'+
          '<span>POO added '+arc$(c.pooT)+' TFSA, '+arc$(c.pooF)+' FHSA.</span>';
 }
+/* Who brought in and who spent each month, for the bars' hover. A record
+   sealed since this existed carries it. An older one is derived from the
+   ledger rows for its year (they are never pruned) -- but a sealed card is a
+   point-in-time record, so a month's split is only SHOWN when the two people
+   still add up to the bar that was sealed (arcBarTip checks). A dummy without
+   one shows the total alone. Cached per card until the list is redrawn. */
+const arcWhoCache=new Map();
+function arcWho(a){
+  if(a.mIncWho && a.mExpWho) return {inc:a.mIncWho, exp:a.mExpWho};
+  if(a.dummy) return null;
+  if(arcWhoCache.has(a.id)) return arcWhoCache.get(a.id);
+  let res=null;
+  try{ const r=arcSnapshot(a.year); res={inc:r.mIncWho, exp:r.mExpWho} }catch(e){}
+  arcWhoCache.set(a.id,res); return res;
+}
+function arcBarTip(a,m,k){
+  const tot=(k==='in'?a.mInc:a.mExp)[m]||0, who=arcWho(a), part=who && (k==='in'?who.inc:who.exp);
+  let html='<b>'+ARC_MON[m]+'</b> '+(k==='in'?'income':'spent')+' '+arc$(tot);
+  if(part && Math.abs((part.ABI[m]||0)+(part.POO[m]||0)-tot)<0.01)
+    html+='<br>ABI '+arc$(part.ABI[m]||0)+' \u00b7 POO '+arc$(part.POO[m]||0);
+  return html;
+}
 function arcBars(a,uidSuffix){
   const U=uidSuffix||'';
   const max=Math.max(...a.mInc,...a.mExp,1), H=112, T=14;
@@ -5943,10 +5978,10 @@ function arcBars(a,uidSuffix){
     const x=60+i*70;
     // full opacity: .92 muted every bar by 8% before the glass even reached it
     // the rim is what makes it read as glass rather than as a faded fill
-    if(a.mInc[i]>0) out+='<rect x="'+x+'" y="'+y(a.mInc[i]).toFixed(1)+'" width="19" height="'+
+    if(a.mInc[i]>0) out+='<rect class="arcbar" data-m="'+i+'" data-k="in" x="'+x+'" y="'+y(a.mInc[i]).toFixed(1)+'" width="19" height="'+
       (H-y(a.mInc[i])).toFixed(1)+'" rx="3" fill="url(#arcGi'+U+')" stroke="var(--arc-in-rim)" '+
       'stroke-width="1" filter="url(#arcGlow'+U+')"/>';
-    if(a.mExp[i]>0) out+='<rect x="'+(x+21)+'" y="'+y(a.mExp[i]).toFixed(1)+'" width="19" height="'+
+    if(a.mExp[i]>0) out+='<rect class="arcbar" data-m="'+i+'" data-k="out" x="'+(x+21)+'" y="'+y(a.mExp[i]).toFixed(1)+'" width="19" height="'+
       (H-y(a.mExp[i])).toFixed(1)+'" rx="3" fill="url(#arcGo'+U+')" stroke="var(--arc-out-rim)" '+
       'stroke-width="1" filter="url(#arcGlowO'+U+')"/>';
     out+='<text x="'+(x+20)+'" y="130" text-anchor="middle" font-size="9.5" fill="var(--text-dim)">'+
@@ -6161,7 +6196,7 @@ function arcCardHTML(a){
   const body = !open ? '' :
     '<div class="ay-body">'+
       '<div class="ay-sec"><p class="ay-bh">Month by month</p>'+
-        '<div class="ay-mid"><div class="ay-scroll">'+arcBars(a,a.id)+'</div></div></div>'+
+        '<div class="ay-mid"><div class="ay-scroll">'+arcBars(a,a.id)+'</div><div class="arc-tip arc-bartip"></div></div></div>'+
       '<div class="ay-sec"><div class="ay-3">'+
         '<div class="ay-hlcol"><p class="ay-bh">Highlights</p><div class="ay-hlbox">'+contribBlock+
           '<ul class="ay-hl">'+pts+'</ul></div></div>'+
@@ -6248,6 +6283,7 @@ function arcRedrawTrend(card,rec){
 }
 function renderArchives(){
   const box=$('arcList'); if(!box) return;
+  arcWhoCache.clear();
   normalizeArchives();
   if(arcEditId && !state.archives.some(a=>a.id===arcEditId)) arcEditEnd();   // its year went away
   box.innerHTML = state.archives.length
@@ -6278,6 +6314,23 @@ function arcBind(){
     tip.style.opacity='1';
   });
   box.addEventListener('pointerout',e=>{ if(e.target.closest('.archit')) hideTips() });
+  /* The Month by month bars: the month's figure and who it came from. The tip
+     sits outside the bars' phone scroller, so it is not clipped, and is placed
+     from the bar's own box so it lands on it wherever that has scrolled to. */
+  box.addEventListener('pointerover',e=>{
+    const bar=e.target.closest('.arcbar'); if(!bar) return;
+    const card=bar.closest('.ay'), rec=card && state.archives.find(a=>a.id===card.dataset.id); if(!rec) return;
+    const wrap=bar.closest('.ay-mid'), tip=wrap && wrap.querySelector('.arc-bartip'); if(!tip) return;
+    tip.innerHTML=arcBarTip(rec,+bar.dataset.m,bar.dataset.k);
+    const b=bar.getBoundingClientRect(), w=wrap.getBoundingClientRect();
+    tip.style.left=(b.left+b.width/2-w.left)+'px'; tip.style.top=(b.top-w.top-8)+'px';
+    tip.style.opacity='1';
+  });
+  box.addEventListener('pointerout',e=>{ const bar=e.target.closest('.arcbar'); if(!bar) return;
+    const tip=bar.closest('.ay-mid') && bar.closest('.ay-mid').querySelector('.arc-bartip'); if(tip) tip.style.opacity='0' });
+  // scrolling the bars on a phone would leave the tip over the wrong month
+  box.addEventListener('scroll',e=>{ if(!e.target.classList || !e.target.classList.contains('ay-scroll')) return;
+    const tip=e.target.parentElement.querySelector('.arc-bartip'); if(tip) tip.style.opacity='0' },true);
   // ticking a category redraws ONLY the chart, so the popover stays open and the
   // card does not jump back to the top under the cursor
   box.addEventListener('change',e=>{
