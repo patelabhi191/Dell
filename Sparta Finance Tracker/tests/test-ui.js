@@ -2093,6 +2093,50 @@ const section = t => console.log(`\n── ${t} ──`);
     await O.ctx.close();
   }
 
+  /* ── a six-figure balance stays inside its card ───────────────────────── */
+  section('account balances fit their cards');
+  {
+    /* At 1440px each account card has 158px of content, and "C$952,084.88"
+       at 26px is 176px: it ran past the card's edge. The owner's balances go
+       up to six figures, so the widest real one is C$999,999.99. */
+    const B = await open(browser, url, SEED);
+    const fit = () => B.page.evaluate(() => ['tfsaVal', 'fhsaVal', 'otherVal', 'pooVal'].map(id => {
+      const e = document.getElementById(id); if (!e.offsetParent) return null;
+      const card = e.closest('.stat'), c = card.getBoundingClientRect();
+      const g = document.createRange(); g.selectNodeContents(e); const ink = g.getBoundingClientRect();
+      return { id, size: parseFloat(getComputedStyle(e).fontSize),
+        over: ink.right - (c.right - parseFloat(getComputedStyle(card).paddingRight)) };
+    }).filter(Boolean));
+    const set = big => B.page.evaluate(big => { state.ccy = 'CAD'; state.holdings = [];
+      state.cash = big ? { TFSA: 999999.99 / state.fx, FHSA: 834390.40 / state.fx, Other: 730000 / state.fx }
+                       : { TFSA: 2500 / state.fx, FHSA: 1200 / state.fx, Other: 340 / state.fx };
+      render(); applyView('dash') }, big);
+
+    await set(true);
+    for (const w of [1440, 1280, 1024, 390]) {
+      await B.page.setViewportSize({ width: w, height: 900 }); await B.page.waitForTimeout(350);
+      const f = await fit();
+      check(f.length >= 3 && f.every(x => x.over <= 0),
+        `${w}px: C$999,999.99 and its neighbours stay inside their cards`,
+        f.map(x => `${x.id} ${x.over.toFixed(1)}px`).join(', '));
+      check(new Set(f.map(x => x.size)).size === 1,
+        `${w}px: ...all at one size, not four`, f.map(x => x.size).join(' / '));
+    }
+    /* Shrinking is a last resort: where the figures fit, they keep the full
+       26px, and a phone (full-width cards) never shrinks them. */
+    await B.page.setViewportSize({ width: 390, height: 900 }); await B.page.waitForTimeout(300);
+    const phone = await fit();
+    check(phone.every(x => x.size === 26), '390px: a six-figure balance keeps its full size on a phone',
+      phone.map(x => x.size).join(' / '));
+    await set(false);
+    await B.page.setViewportSize({ width: 1440, height: 900 }); await B.page.waitForTimeout(350);
+    const small = await fit();
+    check(small.every(x => x.size === 26 && x.over <= 0),
+      '1440px: a small balance is not shrunk, and grows back after a big one', small.map(x => x.size).join(' / '));
+    check(B.errs.length === 0, 'no page errors', B.errs.join(' | '));
+    await B.ctx.close();
+  }
+
   await browser.close(); srv.close();
   console.log(`\nUI: ${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

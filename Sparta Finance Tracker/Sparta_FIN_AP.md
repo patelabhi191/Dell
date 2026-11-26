@@ -2384,6 +2384,14 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Account balances fit their cards** (2026-11-26). At 1440px each Dashboard account card has
+  158px of content and "C$952,084.88" at 26px is 176px, so a six-figure balance ran past the card's
+  edge. The owner's balances top out at six figures (C$999,999.99). `statFit()` runs after
+  `render()` writes the four balances, on resize, and when the Dashboard is shown: it shrinks the
+  figure only as far as the widest one needs, and gives all four cards that same size. Where the
+  figures fit they keep 26px; a phone, with full-width cards, never shrinks them. Measured at
+  1440/1280/1024/390 with C$999,999.99: inside the card at every width. Note that at 1024px even a
+  five-figure balance did not fit at 26px, so it now shrinks there too. Pinned in `test-ui.js`.
 - **Full-ledger contrast pass** (2026-11-26). Sampling the painted pixel on the five-year fixture
   (fuller, lighter pictures behind the glass than the small test fixture) found 27 pieces of text
   under 4.5:1; all 27 now clear it, lowest 4.59:1. The inks:

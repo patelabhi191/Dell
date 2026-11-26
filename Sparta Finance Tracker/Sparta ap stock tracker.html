@@ -4932,6 +4932,28 @@ function cashInScope(){
 }
 
 /* ============ render ============ */
+/* A SIX-FIGURE BALANCE DID NOT FIT ITS CARD. At 1440px the right-hand column
+   gives each account card 158px of content, and "C$952,084.88" at 26px is 176px
+   wide -- it ran past the card's edge into the gap. The figure is shrunk only
+   as far as the widest one needs, and all the cards take that same size, so
+   four balances side by side never sit at four different sizes. Nothing
+   changes while they fit; a phone, where each card is the full width, never
+   shrinks them at all. Measured with the inline size cleared, so it can grow
+   back when the balance or the window allows. */
+const STAT_NUMS=['tfsaVal','fhsaVal','otherVal','pooVal'];
+function statFit(){
+  const els=STAT_NUMS.map(id=>$(id)).filter(Boolean);
+  els.forEach(e=>{ e.style.fontSize='' });
+  let k=1;
+  els.forEach(e=>{ if(!e.offsetParent || !e.clientWidth) return;   // hidden card, or tab not showing
+    if(e.scrollWidth>e.clientWidth) k=Math.min(k, e.clientWidth/e.scrollWidth) });
+  if(k>=1) return;
+  const base=parseFloat(getComputedStyle(els[0]).fontSize)||26;
+  // a hair under the exact ratio: glyph widths do not scale perfectly linearly
+  const px=Math.max(14, Math.floor(base*k*0.98*10)/10);
+  els.forEach(e=>{ e.style.fontSize=px+'px' });
+}
+window.addEventListener('resize',()=>{ clearTimeout(statFit.t); statFit.t=setTimeout(statFit,120) });
 function render(){
   const scoped=state.holdings.filter(inScope);
   const inv=invested(scoped), mv=marketVal(scoped), cash=cashInScope();
@@ -4963,6 +4985,7 @@ function render(){
      switch and reads C$0.00 beside the others rather than a bare 0. */
   $('pooVal').textContent=fmt(0);
   $('pooCash').textContent='Cash '+fmt(0);
+  statFit();
 
   // table
   const rowPL=h=>{ const price=h.price??h.avg, cost=h.qty*h.avg;
@@ -6990,6 +7013,8 @@ function applyView(view){
   $('planView').style.display=view==='plan'?'block':'none';
   // the tab has a width now: place any phone chart that was drawn while hidden
   if(typeof chartScrollPending==='function') chartScrollPending();
+  // ...and fit the account balances, which cannot be measured while hidden
+  if(dash && typeof statFit==='function') statFit();
   // appendChild MOVES the node, it does not copy it, so the notepad is the
   // same element on both tabs and cannot fall out of step with itself.
   if(view==='dash'||view==='contrib'){
