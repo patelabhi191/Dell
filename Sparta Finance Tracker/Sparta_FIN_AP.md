@@ -2384,6 +2384,22 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Notes on Yearly transactions** (2026-11-26). Owner's spec: Yearly only, free text, opening
+  inline for now. A note icon sits inside the right end of the Description box (`#yfNoteBtn`);
+  pressing it opens a full-width Note box (`#yfNote`, max 1,000 characters) under the form row. The
+  icon turns teal when the note has text. In the list, a row with a note shows the same icon right
+  after its description (`.yf-note-tog`); clicking it inserts a note row directly under the
+  transaction, and a second click folds it. Open notes are kept in `yfNoteOpen`, so a re-render
+  (any edit or sync) leaves them open. Editing a row loads its note; emptying it on save removes it.
+  - Stored as `t.note` on the row in `state.yf.txns`, so it saves and syncs with the transaction.
+    `normalizeYF` coerces it to a string and drops a blank one; the list writes it with
+    `textContent`, never as markup, and keeps line breaks (`pre-wrap`).
+  - On a phone the table scrolls sideways, so the note box is capped to the screen width.
+  - Both icons are hidden in print; an open note prints under its row.
+  - The owner's screenshot drew the icon next to the category name on rows with no description;
+    it was placed after the DESCRIPTION, as the spec's words say. Worth confirming with them.
+  Pinned in `test-ui.js`. `test-ui-edits.js`'s Contributor/Description pairing check now compares
+  the form's grid cells, since the Description box gained a wrapper.
 - **Account balances fit their cards** (2026-11-26). At 1440px each Dashboard account card has
   158px of content and "C$952,084.88" at 26px is 176px, so a six-figure balance ran past the card's
   edge. The owner's balances top out at six figures (C$999,999.99). `statFit()` runs after

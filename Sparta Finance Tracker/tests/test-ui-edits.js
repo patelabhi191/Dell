@@ -106,8 +106,10 @@ async function open(browser, url) {
   console.log('\n── Contributor + Description paired on one line ──');
   await go('yearly');
   const yfPair = await page.evaluate(() => {
-    const who = document.getElementById('yfWho').closest('div');
-    const desc = document.getElementById('yfDesc').closest('div');
+    // the grid CELLS: the Description box now has a wrapper of its own, which
+    // holds the note icon and sits below the cell's label
+    const who = document.getElementById('yfWho').closest('#yfForm > div');
+    const desc = document.getElementById('yfDesc').closest('#yfForm > div');
     return who.getBoundingClientRect().top === desc.getBoundingClientRect().top;
   });
   check(yfPair, 'Yearly Finance: Contributor + Description same row (same top offset)');

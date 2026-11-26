@@ -2093,6 +2093,103 @@ const section = t => console.log(`\n── ${t} ──`);
     await O.ctx.close();
   }
 
+  /* ── transaction notes on Yearly ──────────────────────────────────────── */
+  section('a Yearly transaction can carry a note');
+  {
+    const N = await open(browser, url, SEED); const p = N.page;
+    await p.setViewportSize({ width: 1440, height: 1000 });
+    await p.evaluate(() => applyView('yearly')); await p.waitForTimeout(300);
+    const formState = () => p.evaluate(() => ({ open: !document.getElementById('yfNoteWrap').hidden,
+      shown: getComputedStyle(document.getElementById('yfNoteWrap')).display !== 'none',
+      expanded: document.getElementById('yfNoteBtn').getAttribute('aria-expanded'),
+      has: document.getElementById('yfNoteBtn').classList.contains('has'),
+      val: document.getElementById('yfNote').value }));
+
+    const f0 = await formState();
+    check(!f0.open && !f0.shown && f0.expanded === 'false', 'the note box starts closed', JSON.stringify(f0));
+    /* the icon lives INSIDE the Description box, at its right end */
+    const pos = await p.evaluate(() => { const i = document.getElementById('yfDesc').getBoundingClientRect(),
+      b = document.getElementById('yfNoteBtn').getBoundingClientRect();
+      return { inside: b.left > i.left && b.right <= i.right && b.top >= i.top && b.bottom <= i.bottom,
+        nearRight: i.right - b.right <= 10 } });
+    check(pos.inside && pos.nearRight, 'the note icon sits inside the right end of the Description box', JSON.stringify(pos));
+
+    await p.evaluate(() => { document.getElementById('yfType').value = 'expense'; yfFillCats();
+      document.getElementById('yfDate').value = '2026-03-20' });
+    await p.fill('#yfAmt', '400'); await p.fill('#yfDesc', 'Banff hotel');
+    await p.click('#yfNoteBtn');
+    const f1 = await formState();
+    check(f1.open && f1.shown && f1.expanded === 'true', 'pressing it opens the note box', JSON.stringify(f1));
+    const NOTE = 'Sam paid on his card.\nI sent my half <b>($200)</b> by e-transfer.';
+    await p.fill('#yfNote', NOTE);
+    check((await formState()).has, '...and the icon turns teal once there is text in it');
+    await p.click('#yfSave'); await p.waitForTimeout(250);
+
+    const saved = await p.evaluate(() => { const t = state.yf.txns.find(x => x.desc === 'Banff hotel');
+      const stored = JSON.parse(localStorage.getItem(nsKey('sparta.yf.data'))).txns.find(x => x.desc === 'Banff hotel');
+      return { id: t && t.id, note: t && t.note, disk: stored && stored.note } });
+    check(saved.note === NOTE && saved.disk === NOTE, 'the note is saved with the transaction, on disk too',
+      JSON.stringify(saved.note));
+    const f2 = await formState();
+    check(!f2.open && f2.val === '' && !f2.has, 'and the form clears and closes the note after adding', JSON.stringify(f2));
+
+    /* In the list: only rows WITH a note show the icon, after the description. */
+    const list = await p.evaluate(id => { const b = document.querySelector('#yfTxBody [data-nid="' + id + '"]');
+      const span = b && b.parentElement.querySelector('span');
+      return { icons: document.querySelectorAll('#yfTxBody .yf-note-tog').length,
+        afterDesc: !!(b && span && span.textContent === 'Banff hotel' &&
+          b.getBoundingClientRect().left >= span.getBoundingClientRect().right - 1),
+        openRows: document.querySelectorAll('#yfTxBody tr.yf-note-row').length } }, saved.id);
+    check(list.icons === 1 && list.afterDesc, 'only the row with a note shows the icon, right after its description',
+      JSON.stringify(list));
+    check(list.openRows === 0, 'the note starts folded in the list', String(list.openRows));
+
+    await p.click(`#yfTxBody [data-nid="${saved.id}"]`); await p.waitForTimeout(150);
+    const opened = await p.evaluate(id => { const row = document.querySelector('#yfTxBody [data-nid="' + id + '"]').closest('tr');
+      const next = row.nextElementSibling, box = next && next.querySelector('.yf-note-text');
+      return { isNote: !!(next && next.classList.contains('yf-note-row')), text: box && box.textContent,
+        markup: !!(box && box.querySelector('b')), wrap: box && getComputedStyle(box).whiteSpace,
+        expanded: document.querySelector('#yfTxBody [data-nid="' + id + '"]').getAttribute('aria-expanded') } }, saved.id);
+    check(opened.isNote && opened.text === NOTE, 'clicking it opens the note inline, directly under its row', JSON.stringify(opened));
+    check(!opened.markup, '...as text: markup typed into a note is shown, never run');
+    check(opened.wrap === 'pre-wrap' && opened.expanded === 'true', '...keeping its line breaks, and saying it is open',
+      `${opened.wrap} / ${opened.expanded}`);
+    /* a re-render (any edit, any sync) keeps it open */
+    await p.evaluate(() => renderYF());
+    check(await p.evaluate(() => document.querySelectorAll('#yfTxBody tr.yf-note-row').length) === 1,
+      'a redraw of the list leaves an opened note open');
+    await p.click(`#yfTxBody [data-nid="${saved.id}"]`); await p.waitForTimeout(120);
+    check(await p.evaluate(() => document.querySelectorAll('#yfTxBody tr.yf-note-row').length) === 0,
+      'and a second click folds it away');
+
+    /* Editing loads the note; clearing it on save removes it and the icon. */
+    await p.click(`#yfTxBody [data-eid="${saved.id}"]`); await p.waitForTimeout(150);
+    const fe = await formState();
+    check(fe.open && fe.val === NOTE && fe.has, 'editing the row opens its note in the form', JSON.stringify(fe));
+    await p.fill('#yfNote', ''); await p.click('#yfSave'); await p.waitForTimeout(250);
+    const gone = await p.evaluate(id => ({ note: 'note' in state.yf.txns.find(x => x.id === id),
+      icon: !!document.querySelector('#yfTxBody [data-nid="' + id + '"]') }), saved.id);
+    check(!gone.note && !gone.icon, 'emptying the note on save removes it, and its icon', JSON.stringify(gone));
+
+    /* A note from a pulled or hand-edited record is coerced to text. */
+    const norm = await p.evaluate(() => { const t = state.yf.txns.find(x => x.tab !== 'me');
+      t.note = 12345; normalizeYF(); const a = t.note; t.note = '   '; normalizeYF();
+      return { num: a, blank: 'note' in t } });
+    check(norm.num === '12345' && norm.blank === false, 'a stored note is made text, and a blank one dropped', JSON.stringify(norm));
+
+    /* On a phone the table scrolls sideways; a long note must wrap within the card. */
+    await p.setViewportSize({ width: 390, height: 900 });
+    const phone = await p.evaluate(() => { const t = state.yf.txns.find(x => x.tab !== 'me');
+      t.note = 'A long note. '.repeat(30); renderYF();
+      document.querySelector('#yfTxBody [data-nid="' + t.id + '"]').click();
+      const n = document.querySelector('.yf-note-text').getBoundingClientRect(),
+        c = document.querySelector('#yfTxTable').closest('.tscroll').getBoundingClientRect();
+      return { over: Math.round(n.right - c.right), page: document.documentElement.scrollWidth - document.documentElement.clientWidth } });
+    check(phone.over <= 0 && phone.page <= 0, '390px: a long note wraps inside the visible card', JSON.stringify(phone));
+    check(N.errs.length === 0, 'no page errors', N.errs.join(' | '));
+    await N.ctx.close();
+  }
+
   /* ── a six-figure balance stays inside its card ───────────────────────── */
   section('account balances fit their cards');
   {

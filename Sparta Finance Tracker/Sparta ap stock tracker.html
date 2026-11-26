@@ -1488,6 +1488,37 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .yf-addcat input{flex:1;padding:8px 10px;font-size:12.5px}
 .yf-addcat .btn{padding:8px 14px;font-size:12px}
 .yf-edit{border:none;background:transparent;color:var(--text-faint);font-size:13px;padding:4px 7px;border-radius:8px;cursor:pointer}
+/* TRANSACTION NOTES. The icon sits inside the right end of the Description
+   box, the way a clear-field cross sits in a search box, and opens a note area
+   under the form. In the list, a row that HAS a note shows the same icon after
+   its description and opens the note inline under the row. Same ink as the
+   row's other icon buttons; teal when it means "there is something here". */
+.yf-descwrap{position:relative}
+.yf-descwrap input{width:100%;padding-right:40px}
+.yf-note-btn,.yf-note-tog{border:none;background:transparent;color:var(--text-faint);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;border-radius:8px;
+  transition:color .15s,background .15s}
+.yf-note-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:30px;height:30px}
+.yf-note-btn:hover,.yf-note-tog:hover{color:var(--teal);background:rgba(94,234,212,.1)}
+.yf-note-btn.has,.yf-note-btn[aria-expanded="true"]{color:var(--teal)}
+.yf-notewrap[hidden]{display:none}
+.yf-notewrap textarea{min-height:70px;width:100%}
+.yf-desc{display:flex;align-items:center;gap:6px;min-width:0}
+.yf-desc>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.yf-note-tog{flex:none;width:24px;height:22px;padding:0;color:var(--teal)}
+.yf-note-tog svg{width:14px;height:14px}
+/* the target is bigger than the glyph, as the app's other small controls are */
+.yf-note-tog{position:relative}
+.yf-note-tog::before{content:"";position:absolute;inset:-5px -3px}
+.yf-note-tog[aria-expanded="true"]{background:rgba(94,234,212,.12)}
+tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
+.yf-note-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12.5px;line-height:1.55;
+  color:var(--text-dim);text-align:left;padding:8px 12px;border-radius:10px;
+  background:rgba(255,255,255,.04);border-left:2px solid rgba(94,234,212,.55)}
+/* On a phone the table is wider than the card and scrolls sideways, and the
+   note row spans all of it -- a long note would run off the visible card and
+   need scrolling to read. It wraps within the screen instead. */
+@media(max-width:560px){ .yf-note-text{max-width:calc(100vw - 92px)} }
 .yf-edit:hover{color:var(--teal);background:rgba(94,234,212,.1)}
 .tag-inc{background:rgba(56,189,248,.15);color:var(--yf-inc);border:1px solid rgba(56,189,248,.4)}
 .tag-exp{background:rgba(249,115,22,.15);color:var(--yf-exp);border:1px solid rgba(249,115,22,.4)}
@@ -2870,6 +2901,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
      The chart's range switch and the log's collapse arrow are the same kind of
      thing on the other tabs. */
   .pl-form,.pl-acts,.pl-segdel,.pl-caret,.pl-new,#rangeSeg,.collapse-btn{display:none!important}
+  .yf-note-btn,.yf-note-tog{display:none!important}
   /* With the form gone the list is the whole segment, so it takes the row. */
   .pl-split{display:block!important}
   /* The Stock Calculator holds nothing: it is six boxes that are empty the
@@ -4129,7 +4161,18 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
         </div>
         <div>
           <label for="yfDesc">Description</label>
-          <input id="yfDesc" placeholder="DVS Pay">
+          <!-- the note opens from the Description box: it is more about the
+               same thing, not a field of its own -->
+          <div class="yf-descwrap">
+            <input id="yfDesc" placeholder="DVS Pay">
+            <button type="button" class="yf-note-btn" id="yfNoteBtn" aria-expanded="false"
+                    aria-controls="yfNoteWrap" aria-label="Add a note" title="Add a note"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-4 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M7.5 10h9M7.5 13h6"/></svg></button>
+          </div>
+        </div>
+        <div class="full yf-notewrap" id="yfNoteWrap" hidden>
+          <label for="yfNote">Note</label>
+          <textarea id="yfNote" maxlength="1000"
+            placeholder="Who paid, what it was for, anything worth remembering"></textarea>
         </div>
         <div class="duo full">
           <button class="btn primary" id="yfSave">Add transaction</button>
@@ -8184,6 +8227,12 @@ function normalizeYF(){
      trade. Zeroed, it shows as $0 in the list where it can be seen and fixed;
      left alone, one of them made every figure on two tabs read $NaN. */
   y.txns.forEach(t=>{ t.amt=fin(t.amt); });
+  /* A note is free text or it is absent. Coerced here because it is printed
+     (escaped) in the list and written back into a textarea, and a pulled or
+     hand-edited record could carry anything; an empty one is dropped so "has a
+     note" can be read straight off the field. */
+  y.txns.forEach(t=>{ if(t.note==null) return; const v=String(t.note).trim().slice(0,1000);
+    if(v) t.note=v; else delete t.note; });
   /* INCOME OR EXPENSE, AND NOTHING ELSE -- the same fold normalizePlan already
      applies to a plan item's type, and for a sharper reason here. Three figures
      test for 'expense' and one for 'income', so a row carrying NEITHER was in
@@ -9240,6 +9289,11 @@ function yfHiStart(){
   // out from under someone reading it
   yfHiTimer=setInterval(()=>{ if(!yfHiHover) yfHiShow(yfHiIdx+1); },5000);
 }
+/* Defined ahead of renderYF, which runs during load and reads both. */
+const YF_NOTE_ICON='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-4 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M7.5 10h9M7.5 13h6"/></svg>';
+/* Which rows have their note open. renderYF() rebuilds the list on every edit
+   and every sync, and a note the reader opened should still be open after. */
+const yfNoteOpen=new Set();
 function renderYF(){
  try{
   if(!$('yfStartVal')) return;
@@ -9556,11 +9610,13 @@ function renderYF(){
     tr.innerHTML=`<td style="text-align:left">${txDate(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.type==='income'?'tag-inc':'tag-exp'}" style="margin:0">${t.type==='income'?'IN':'EXP'}</span></td>
       <td class="${t.type==='income'?'yf-pos':'yf-neg'}" style="font-weight:600">${yf$2(t.amt)}${yfSpendNote(t)}</td>
-      <td style="text-align:left;max-width:220px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(t.desc||'').replace(/</g,'&lt;')}</div>${yfPaidNote(t)}</td>
+      <td style="text-align:left;max-width:220px"><div class="yf-desc"><span>${(t.desc||'').replace(/</g,'&lt;')}</span>${t.note
+        ? `<button class="yf-note-tog" data-nid="${t.id}" aria-expanded="${yfNoteOpen.has(t.id)}" aria-label="${yfNoteOpen.has(t.id)?'Hide':'Show'} note" title="${yfNoteOpen.has(t.id)?'Hide':'Show'} note">${YF_NOTE_ICON}</button>` : ''}</div>${yfPaidNote(t)}</td>
       <td style="text-align:left">${txCat(t)}${txTags(t)}</td>
       <td style="text-align:left"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
       <td style="white-space:nowrap"><button class="yf-edit" data-eid="${t.id}" title="Edit">\u270e</button><button class="rm" data-did="${t.id}" title="Delete">\u2715</button></td>`;
     tb.appendChild(tr);
+    if(t.note && yfNoteOpen.has(t.id)) tb.appendChild(yfNoteRow(t));
   });
   $('yfTxTable').style.display=list.length?'table':'none';
   $('yfTxEmpty').style.display=list.length?'none':'block';
@@ -9679,12 +9735,44 @@ function yfFillCats(){
   $('yfCat').innerHTML=cats.map(c=>`<option>${esc(c)}</option>`).join('');
   if(cats.includes(cur)) $('yfCat').value=cur;
 }
+/* ---------- transaction notes ---------- */
+
+function yfNoteRow(t){
+  const tr=document.createElement('tr');
+  tr.className='yf-note-row'; tr.dataset.nrow=t.id;
+  tr.innerHTML='<td colspan="7"><div class="yf-note-text"></div></td>';
+  tr.querySelector('.yf-note-text').textContent=t.note;   // textContent: a note is text, never markup
+  return tr;
+}
+function yfNoteToggle(id, btn){
+  const t=state.yf.txns.find(x=>x.id===id); if(!t||!t.note) return;
+  const row=btn.closest('tr'), next=row.nextElementSibling;
+  const open=!(next && next.dataset.nrow===id);
+  if(open){ yfNoteOpen.add(id); row.after(yfNoteRow(t)) }
+  else { yfNoteOpen.delete(id); next.remove() }
+  btn.setAttribute('aria-expanded', String(open));
+  btn.setAttribute('aria-label', (open?'Hide':'Show')+' note'); btn.title=(open?'Hide':'Show')+' note';
+}
+/* The form's note area: opened by the icon in the Description box, shown on
+   its own whenever the transaction being edited already has a note. */
+function yfNoteFormSet(text, open){
+  $('yfNote').value=text||'';
+  const show = open===undefined ? !!text : open;
+  $('yfNoteWrap').hidden=!show;
+  $('yfNoteBtn').setAttribute('aria-expanded', String(show));
+  yfNoteFormMark();
+}
+function yfNoteFormMark(){
+  const has=!!$('yfNote').value.trim();
+  $('yfNoteBtn').classList.toggle('has', has);
+  const l=has?'Edit note':'Add a note'; $('yfNoteBtn').setAttribute('aria-label',l); $('yfNoteBtn').title=l;
+}
 function yfSaveTx(){
   markUserEdit();
   normalizeYF();
   const type=$('yfType').value, date=$('yfDate').value,
         amt=parseFloat($('yfAmt').value), desc=$('yfDesc').value.trim(), cat=$('yfCat').value,
-        who=$('yfWho').value||'ABI';
+        who=$('yfWho').value||'ABI', note=$('yfNote').value.trim().slice(0,1000);
   if(!date){ toast('Pick a date'); return }
   if(isNaN(amt)){ toast('Enter an amount'); return }
   /* NO CATEGORY, NO ROW -- the same trade Add Expense already makes for a Bill
@@ -9717,6 +9805,7 @@ function yfSaveTx(){
   if(yfEditId){
     const t=state.yf.txns.find(x=>x.id===yfEditId);
     if(t){ Object.assign(t,{type,date,amt,desc,cat,who});
+      if(note) t.note=note; else { delete t.note; yfNoteOpen.delete(t.id) }
       /* allotM is "the bill month this line is filed under", and Monthly reads
          it in preference to the line's own date. Moving the BILL to another
          month left its lines behind in the old one: August's bill, with its
@@ -9725,9 +9814,11 @@ function yfSaveTx(){
       toast('Transaction updated'); }
     yfCancelEdit();
   } else {
-    state.yf.txns.push({id:uid(),type,date,amt,desc,cat,who,tab:'yf'});
+    const rec={id:uid(),type,date,amt,desc,cat,who,tab:'yf'};
+    if(note) rec.note=note;
+    state.yf.txns.push(rec);
     toast((type==='income'?'Income':'Expense')+' added \u2014 '+yf$2(amt));
-    $('yfAmt').value=''; $('yfDesc').value='';
+    $('yfAmt').value=''; $('yfDesc').value=''; yfNoteFormSet('');
   }
   const ty=parseInt(String(date).slice(0,4),10);
   if(ty && ty!==state.yfYear) state.yfYear=ty;    // follow the record you just entered
@@ -9740,6 +9831,7 @@ function yfStartEdit(id){
   $('yfDate').value=t.date; $('yfAmt').value=t.amt;
   $('yfDesc').value=t.desc||''; $('yfCat').value=t.cat;
   $('yfWho').value=t.who||'ABI';
+  yfNoteFormSet(t.note||'');
   $('yfSave').textContent='Update transaction';
   $('yfCancelEdit').style.display='';
   if($('yfForm').scrollIntoView) $('yfForm').scrollIntoView({behavior:'smooth',block:'center'});
@@ -9748,7 +9840,7 @@ function yfCancelEdit(){
   yfEditId=null;
   $('yfSave').textContent='Add transaction';
   $('yfCancelEdit').style.display='none';
-  $('yfAmt').value=''; $('yfDesc').value='';
+  $('yfAmt').value=''; $('yfDesc').value=''; yfNoteFormSet('');
 }
 function yfDelete(id){
   markUserEdit();
@@ -9886,10 +9978,17 @@ $('yfCancelEdit').onclick=yfCancelEdit;
   });
 });
 $('yfTxBody').addEventListener('click',e=>{
-  const ed=e.target.closest('[data-eid]'), dl=e.target.closest('[data-did]');
+  const ed=e.target.closest('[data-eid]'), dl=e.target.closest('[data-did]'), nt=e.target.closest('[data-nid]');
+  if(nt){ yfNoteToggle(nt.dataset.nid, nt); return }
   if(ed) yfStartEdit(ed.dataset.eid);
   else if(dl) yfDelete(dl.dataset.did);
 });
+$('yfNoteBtn').addEventListener('click',()=>{
+  const open=$('yfNoteWrap').hidden;
+  yfNoteFormSet($('yfNote').value, open);
+  if(open) $('yfNote').focus();
+});
+$('yfNote').addEventListener('input', yfNoteFormMark);
 $('yfModeSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
   yfChartMode=b.dataset.mode;
   $('yfModeSeg').querySelectorAll('button').forEach(x=>x.className='');
