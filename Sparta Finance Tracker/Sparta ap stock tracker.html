@@ -28,7 +28,7 @@
   --yf-inc:#38BDF8; --yf-exp:#F97316;   /* income blue / expense orange, used across Yearly */
   --yf-start:#A085F3;                            /* amethyst - opening balance */
   --yf-end:#ADCB66;                              /* olive - closing balance */
-  --yf-c-inv:#4ADE80;  --yf-c-mov:#E55959;       /* green / red */
+  --yf-c-inv:#4ADE80;  --yf-c-mov:#F06C6C;       /* green / red; red lifted from #E55959, which sampled 4.39:1 on Yearly's tile */
   --yf-growth:#80D95C;                           /* savings growth */
   --yf-c-sav:#06B6D4;  --yf-c-off:#D98D4C;       /* cyan / bronze */
   --bg:#071520;
@@ -150,7 +150,11 @@
      is deliberately its own (section 5), the two are within six hundredths of
      each other, and #93A2B8 measures 5.4:1 -- so there is nothing to fix here,
      only a choice about whether the tab keeps its own grey. */
-  --sk-dim:#93A2B8;
+  /* Monthly's muted ink. #93A2B8 measured 3.5-4.4:1 on the painted pixel: the
+     Monthly glass runs brightness(1.06) saturate(210%), which LIGHTENS what is
+     behind every label on that tab, so a grey that clears 4.5 on Yearly does
+     not clear it here. Raised until the faintest one ("Amount ($)") does. */
+  --sk-dim:#B6C3D5;
   --teal:#5EEAD4;      /* TFSA + gains */
   --violet:#A78BFA;    /* FHSA */
   --rose:#FB7185;      /* losses */
@@ -1416,6 +1420,9 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
    with its column; the first column is a NAME and stays left. */
 #yfExpTable th,#yfExpTable td,#yfIncTable th,#yfIncTable td,
 .yf-mtable th,.yf-mtable td{text-align:right}
+/* --text-faint sampled 4.06-4.4:1 here: these headings sit on the table's own
+   tinted band, which is lighter than a panel. The dim ink clears it. */
+.yf-mtable th{color:var(--text-dim)}
 #yfExpTable th:first-child,#yfExpTable td:first-child,
 #yfIncTable th:first-child,#yfIncTable td:first-child,
 .yf-mtable th:first-child,.yf-mtable td:first-child{text-align:left}
@@ -1607,7 +1614,7 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .skeu-drop:hover,.skeu-drop.over{border-color:rgba(94,234,212,.65);background:rgba(94,234,212,.09)}
 .skeu-drop-icon{font-size:22px;color:var(--sk-amber)}
 .skeu-drop-main{font-size:13.5px;font-weight:600;color:var(--text)}
-.skeu-drop-sub{font-size:11.5px;color:#8695AB}
+.skeu-drop-sub{font-size:11.5px;color:var(--sk-dim)}
 /* category bars */
 .me-bars{display:flex;flex-direction:column;gap:7px}
 .me-bar-row{display:grid;grid-template-columns:172px 1fr 92px;gap:10px;align-items:center;font-size:12.5px}
@@ -4190,7 +4197,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
           <select id="meImpAllot"></select>
         </div>
         <div>
-          <label for="meImpSrc">Statement source <span style="opacity:.85">(optional)</span></label>
+          <label for="meImpSrc">Statement source <span>(optional)</span></label>
           <input id="meImpSrc" maxlength="40" placeholder="Amex Gold">
         </div>
         <div class="full"><div class="note" id="meImpAllotNote" style="margin-top:0"></div></div>
@@ -4996,6 +5003,11 @@ function render(){
      between .85 and .9 at 11px is not perceptible; the difference in whether the
      claim survives a future change to the backdrop is the whole point.
 
+     AND THEN NOT EVEN .9. On a phone, with a large ledger, the price line's
+     loss colour sampled 4.45:1 at .9 -- the moving field behind the glass is
+     lighter there than any row measured above. The dimming is gone; the
+     sub-line is set apart by its smaller size, which is enough.
+
      The gain colour is far brighter against the dark panel and passed at every
      value tried, so the failure only ever showed on a position that was DOWN --
      the number most worth being able to read. Both sub-lines share one value;
@@ -5029,9 +5041,9 @@ function render(){
         ></a><small>${esc(h.acct)}${h.ccy?' · '+esc(h.ccy):''}${h.manual?' · manual':''}</small></span></td>
       <td>${h.qty}</td>
       <td>${fmtNat(h.avg,c)}</td>
-      <td class="${pxCls}" style="font-weight:600">${fmtNat(price,c)}<br><span style="font-size:10.5px;opacity:.9">${arrow} ${(pxDiff>=0?'+':'')+pxDiff.toFixed(2)}%</span></td>
+      <td class="${pxCls}" style="font-weight:600">${fmtNat(price,c)}<br><span style="font-size:10.5px">${arrow} ${(pxDiff>=0?'+':'')+pxDiff.toFixed(2)}%</span></td>
       <td>${fmtNat(val,c)}</td>
-      <td class="pl ${pnl>0?'up':pnl<0?'down':'flat'}">${signedNat(pnl,c)}<br><span style="font-size:11px;opacity:.9">${(pnl>=0?'+':'')+pct.toFixed(2)}%</span></td>
+      <td class="pl ${pnl>0?'up':pnl<0?'down':'flat'}">${signedNat(pnl,c)}<br><span style="font-size:11px">${(pnl>=0?'+':'')+pct.toFixed(2)}%</span></td>
       <td style="white-space:nowrap"><button class="rm sell" title="Sell to cash" data-id="${h.id}">$</button><button class="rm" title="Remove from portfolio" data-id="${h.id}">✕</button></td>`;
     tb.appendChild(tr);
   });
@@ -9309,7 +9321,7 @@ function renderYF(){
   let grid='',ylab='';
   [0,top/2,top].forEach(v=>{const y=py(v);
     grid+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="rgba(255,255,255,.08)"/>`;
-    ylab+=`<text x="${L-8}" y="${y+4}" text-anchor="end" font-size="12" fill="rgba(234,240,250,.5)">$${v>=1000?(v/1000)+'k':v}</text>`;});
+    ylab+=`<text x="${L-8}" y="${y+4}" text-anchor="end" font-size="12" fill="rgba(234,240,250,.74)">$${v>=1000?(v/1000)+'k':v}</text>`;});
   let bars='',xl='';
   for(let i=0;i<12;i++){
     const cx=L+band*i+band/2;                       // month centre
@@ -10098,7 +10110,7 @@ function meRecoverImportCats(){
 
 
 /* ---- palette: one distinct colour per category, tuned for the dark metal face ---- */
-const ME_COLORS={'Groceries':'#7FBF6A','Household supplies':'#C9A87C','Health/medical':'#D9705E',
+const ME_COLORS={'Groceries':'#7FBF6A','Household supplies':'#C9A87C','Health/medical':'#E8806E',
   'General':'#6FA8DC','TV/Phone/Internet':'#63C7D6','Dining Out':'#E8B15C',
   'Taxi/Rental':'#B5CC5E','Transit':'#8FD17A','Indoor Entertainment':'#A78BFA',
   'Outdoor Entertainment':'#5EEAD4','Shopping':'#E8875C','Fees/Subscription':'#D96C8A',

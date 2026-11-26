@@ -2384,6 +2384,26 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Full-ledger contrast pass** (2026-11-26). Sampling the painted pixel on the five-year fixture
+  (fuller, lighter pictures behind the glass than the small test fixture) found 27 pieces of text
+  under 4.5:1; all 27 now clear it, lowest 4.59:1. The inks:
+  - `--sk-dim` `#93A2B8` -> `#B6C3D5`: Monthly's labels, "TOTAL SPENT", "DAILY AVERAGE", table
+    headings. The Monthly glass runs `brightness(1.06) saturate(210%)`, which lightens what is
+    behind every label on that tab. `.skeu-drop-sub` now uses the token instead of its own grey, and
+    the "(optional)" hint lost its extra `opacity:.85` (it was 3.06:1).
+  - Yearly chart `$` axis: hardcoded `rgba(234,240,250,.5)` -> `.74` (was 3.35:1).
+  - `.yf-mtable th` -> `--text-dim` (month headings were 4.06-4.4:1 on the table's tinted band).
+  - `--yf-c-mov` `#E55959` -> `#F06C6C` ("Moved else", 4.39:1). Its KNOWN exception in
+    `test-contrast.js` is removed.
+  - Health/medical in `ME_COLORS` `#D9705E` -> `#E8806E` (Monthly bar name, 4.36:1).
+  - Holdings `%` sub-lines: inline `opacity:.9` removed. On a phone with a large ledger the price
+    line sampled 4.45:1 even at .9; the smaller size sets the sub-line apart.
+  Pinned in `test-contrast.js` §13. `test-ui.js`'s holdings sub-line probe now finds the lines by
+  their text rather than by the opacity attribute that is gone.
+  Found and NOT fixed, for the owner: `test-plan.js` "the tile is clearly separated from the page"
+  is flaky because, with the mouse parked, the Plan card reads 49.3 against a backdrop of 54.7 --
+  a difference of 5.4 against the check's threshold of 8. It passes only when an earlier click
+  leaves the pointer hovering over the card, which darkens it to 46.4.
 - **Charts are readable on a phone** (2026-11-16). Each chart is a fixed viewBox scaled to its
   card, so at 390px the Yearly, Monthly and Contributions charts came out 72 to 86px tall with axis
   labels 3 to 5px high. Below 560px each SVG now sits in a `.chart-scroll` box and is drawn 760px

@@ -1967,7 +1967,10 @@ const section = t => console.log(`\n── ${t} ──`);
        one. One capture, so the backdrop is read from a single consistent paint. */
     const spans = await O.page.evaluate(() => {
       const out = [];
-      document.querySelectorAll('#hbody span[style*="opacity"]').forEach((el, i) => {
+      /* The two % sub-lines, found by what they SAY rather than by their old
+         inline opacity, which is gone: on a full ledger even .9 sampled 4.45:1. */
+      [...document.querySelectorAll('#hbody td span')]
+        .filter(el => /%$/.test((el.textContent || '').trim())).forEach((el, i) => {
         const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
         el.setAttribute('data-plprobe', String(i));
         out.push({ i, text: (el.textContent || '').trim(), op: Number(cs.opacity),

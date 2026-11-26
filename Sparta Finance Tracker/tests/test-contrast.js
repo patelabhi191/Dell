@@ -199,8 +199,6 @@ const CONTRAST = (root) => {
       why: 'renderHoldings emits style="opacity:.75" over --rose' },
     { tab: 'dash', sel: 'span', text: '▼ -6.08%', floor: 4.29, who: 'JS',
       why: 'renderHoldings emits style="opacity:.8" over --rose' },
-    { tab: 'yearly', sel: 'b#yfMoved', floor: 4.15, who: 'ACCENT',
-      why: '--yf-c-mov #E55959 is the "moved elsewhere" colour; a second red is the drift this file removes' },
     /* --violet on its own 15% tint, over body.contrib-view .panel -- which at
        rgba(255,255,255,.085) is the lightest panel in the app, so the same
        chip measures 4.67 on Dashboard and 4.07 here. Every way out is worse
@@ -354,8 +352,9 @@ const CONTRAST = (root) => {
     const l = document.querySelector('label[for="meImpSrc"] span');
     return l ? parseFloat(getComputedStyle(l).opacity) : null;
   });
-  // Monthly's labels are already #93A2B8; .55 on top of that measured 2.88:1
-  check(optOp !== null && optOp >= 0.8,
+  // the hint carries no dimming of its own now: Monthly's glass lightens what is
+  // behind it, and even .85 on the label colour sampled 3.06:1
+  check(optOp !== null && optOp >= 0.99,
     'the hint inherits enough of its label to stay readable', `opacity ${optOp}`);
 
   /* ── 3. the carousel dots ─────────────────────────────────────────────── */
@@ -788,6 +787,39 @@ const CONTRAST = (root) => {
   check(cols.head === 'right', 'the heading sits over the edge its figures share', cols.head);
   check(cols.input === 'right', 'a planned amount is right-aligned inside its box', cols.input);
   check(cols.name === 'left' || cols.name === 'start', 'while the category name stays on the left', cols.name);
+
+  /* ── 13. the faint texts measured on a FULL ledger ──────────────────────
+     The tab sweep above runs on a small fixture. With five years of data the
+     pictures behind the glass are fuller and lighter, and 27 pieces of text
+     came in under 4.5:1 there. The inks that fixed them are pinned here at
+     their values, because each was raised to clear a measured floor. */
+  section('13. the inks raised for the full-ledger contrast pass');
+  await go('monthly');
+  const inks = await page.evaluate(() => {
+    const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim().toUpperCase();
+    const col = sel => { const e = document.querySelector(sel); return e ? getComputedStyle(e).color : null };
+    applyView('yearly');
+    const ax = [...document.querySelectorAll('#yfChart text')].find(t => t.getAttribute('text-anchor') === 'end');
+    const th = col('#yfMTable thead th:nth-child(2)'), dim = getComputedStyle(document.body).getPropertyValue('--text-dim');
+    const probe = document.createElement('span'); probe.style.color = 'var(--text-dim)'; document.body.appendChild(probe);
+    const dimRgb = getComputedStyle(probe).color; probe.remove();
+    applyView('monthly');
+    return { skDim: css('--sk-dim'), mov: css('--yf-c-mov'), health: meColor('Health/medical').toUpperCase(),
+      drop: col('#meFileName'), label: col('label[for="meImpSrc"]'),
+      axis: ax ? ax.getAttribute('fill') : null, th, dimRgb };
+  });
+  check(inks.skDim === '#B6C3D5', "Monthly's muted ink is the raised one", inks.skDim);
+  check(inks.drop === inks.label, '"or click to choose a file" uses it too, not a grey of its own',
+    `${inks.drop} vs ${inks.label}`);
+  check(inks.mov === '#F06C6C', '"Moved else" red is the lifted one', inks.mov);
+  check(inks.health === '#E8806E', 'Health/medical is the lifted coral', inks.health);
+  check(/,\s*\.74\)$/.test(inks.axis || ''), 'the Yearly chart\'s $ axis uses the dim ink, not .5', inks.axis);
+  check(inks.th === inks.dimRgb, 'the twelve-month table headings use --text-dim', `${inks.th} vs ${inks.dimRgb}`);
+  await go('dash');
+  const sub = await page.evaluate(() => [...document.querySelectorAll('#hbody td span')]
+    .filter(s => /%$/.test(s.textContent.trim())).map(s => parseFloat(getComputedStyle(s).opacity)));
+  check(sub.length > 0 && sub.every(o => o === 1),
+    'the holdings % sub-lines are not dimmed; their size sets them apart', JSON.stringify(sub));
 
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
