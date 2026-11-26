@@ -2154,6 +2154,11 @@ const section = t => console.log(`\n── ${t} ──`);
     check(!opened.markup, '...as text: markup typed into a note is shown, never run');
     check(opened.wrap === 'pre-wrap' && opened.expanded === 'true', '...keeping its line breaks, and saying it is open',
       `${opened.wrap} / ${opened.expanded}`);
+    /* The owner asked for the teal accent edge to go: the note box is the
+       app's plain inset box, one hairline all round. */
+    const edge = await p.evaluate(() => { const c = getComputedStyle(document.querySelector('#yfTxBody .yf-note-text'));
+      return { l: c.borderLeftWidth + ' ' + c.borderLeftColor, t: c.borderTopWidth + ' ' + c.borderTopColor } });
+    check(edge.l === edge.t, 'the note box has no accent edge: its left border matches the rest', JSON.stringify(edge));
     /* a re-render (any edit, any sync) keeps it open */
     await p.evaluate(() => renderYF());
     check(await p.evaluate(() => document.querySelectorAll('#yfTxBody tr.yf-note-row').length) === 1,

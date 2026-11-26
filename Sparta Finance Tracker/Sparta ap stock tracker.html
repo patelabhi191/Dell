@@ -1525,8 +1525,11 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 .yf-note-tog[aria-expanded="true"]{background:rgba(94,234,212,.12)}
 tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
 .yf-note-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12.5px;line-height:1.55;
-  color:var(--text-dim);text-align:left;padding:8px 12px;border-radius:10px;
-  background:rgba(255,255,255,.04);border-left:2px solid rgba(94,234,212,.55)}
+  color:var(--text-dim);text-align:left;padding:8px 12px;
+  /* the app's own inset box -- the same fill, hairline and corner as the Past
+     sells summary tiles -- rather than an accent edge of its own (the owner
+     asked for the teal left bar to go, 2026-11-27) */
+  background:rgba(255,255,255,.028);border:1px solid var(--stroke);border-radius:var(--r-ctl)}
 /* On a phone the table is wider than the card and scrolls sideways, and the
    note row spans all of it -- a long note would run off the visible card and
    need scrolling to read. It wraps within the screen instead. */

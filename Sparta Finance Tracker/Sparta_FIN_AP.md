@@ -2384,6 +2384,9 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **The note box loses its accent edge** (2026-11-27). The owner asked for the teal left bar on an
+  opened transaction note to go. `.yf-note-text` now uses the app's plain inset box (the Past sells
+  summary tiles' fill, `--stroke` hairline and `--r-ctl` corner). Pinned in `test-ui.js`.
 - **Centred columns, by the owner's choice** (2026-11-27). Transactions' Type and Who (heading and
   tags) and the Planned column of Expenses and Income (heading, Totals figure and the input boxes)
   are centred. Planned is now the one centred figure column on Yearly; its boxes are one width, so
