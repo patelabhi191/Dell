@@ -2246,8 +2246,11 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
 /* Highlights spans both rows so the hairline beside it still runs full height;
    Contributions takes the width of Expenses and Income together underneath. */
 .ay-3 .ay-hlcol{grid-column:1;grid-row:1/3}
-.ay-3 .ay-contrib{grid-column:2/4;grid-row:2;padding-top:14px;margin-top:14px;
-  border-top:1px solid rgba(255,255,255,.10)}
+/* Contributions: the first thing in the Highlights pane, on a tile tinted in
+   its own teal so it reads as set apart from the observations under it. */
+.ay-hlbox .ay-contrib{margin:12px 0 6px;padding:9px 12px;border-radius:var(--r-ctl);
+  background:rgba(45,212,191,.09);border:1px solid rgba(45,212,191,.30);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
 .ay-contrib .h{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
   font-weight:var(--fw-label);margin-bottom:3px;color:var(--hl-contrib)}
 .ay-contrib .l{font-size:12px;line-height:1.38;color:var(--text);font-weight:500}
@@ -2336,7 +2339,7 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
      implicit tracks 2-4 that do not exist here, so the row silently went back to
      three columns on a phone. They have to be reset, not just the template. */
   .ay-3 .ay-hlcol{grid-column:1;grid-row:auto}
-  .ay-3 .ay-contrib{grid-column:1;grid-row:auto;margin-top:0;padding-top:14px}
+
   .ay-mid{width:100%}
   /* the two SVGs keep their aspect ratio, so a 900-wide viewBox squashed into a
      phone makes the month labels unreadable. They scroll instead of shrinking. */
@@ -6010,10 +6013,11 @@ function arcCardHTML(a){
   const contrib=arcContribLine(a.contrib);
   const pts=hl.map(h=>'<li class="t-'+arcHlTone(h)+'"><div class="h">'+arcEsc(h.title)+
       '</div><div class="l">'+arcEsc(h.line)+'</div></li>').join('');
-  /* Contributions is not an observation about the year the way the highlights
-     are -- it is a statement of fact, and it belongs with the figures. It sits
-     under Expenses and Income across both their columns, in a highlight's shape
-     but with no pane of its own. */
+  /* Contributions leads the Highlights pane, as its own tinted tile. It sat
+     under Expenses and Income for a while, as a fact rather than an
+     observation; the owner moved it here (2026-11-27) to free that space for
+     Life things, and asked for it to stand out a little from the points below
+     it -- hence a tile rather than one more line in the list. */
   const contribBlock = contrib
     ? '<div class="ay-contrib"><div class="h">Contributions</div><div class="l">'+contrib+'</div></div>'
     : '';
@@ -6023,11 +6027,10 @@ function arcCardHTML(a){
       '<div class="ay-sec"><p class="ay-bh">Month by month</p>'+
         '<div class="ay-mid"><div class="ay-scroll">'+arcBars(a,a.id)+'</div></div></div>'+
       '<div class="ay-sec"><div class="ay-3">'+
-        '<div class="ay-hlcol"><p class="ay-bh">Highlights</p><div class="ay-hlbox"><ul class="ay-hl">'+
-          pts+'</ul></div></div>'+
+        '<div class="ay-hlcol"><p class="ay-bh">Highlights</p><div class="ay-hlbox">'+contribBlock+
+          '<ul class="ay-hl">'+pts+'</ul></div></div>'+
         '<div><p class="ay-bh">Expenses</p>'+arcTable(a.exp||[])+'</div>'+
         '<div><p class="ay-bh">Income</p>'+arcTable(a.inc||[])+'</div>'+
-        contribBlock+
       '</div></div>'+
       '<div class="ay-sec"><div class="ay-bhrow"><p class="ay-bh">12-month trend</p>'+
         '<span class="ay-bhright">'+trend.label+trend.gear+'</span></div>'+trend.html+'</div>'+

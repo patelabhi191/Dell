@@ -2384,6 +2384,11 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Archives: Contributions moves into Highlights** (2026-11-27). This REVERSES the earlier choice
+  to keep Contributions out of the highlights list, under Expenses and Income. The owner moved it to
+  free that space for Life things, and asked for it to stand out: it is now the first thing in the
+  Highlights pane, on its own tile tinted in `--hl-contrib` teal (`.ay-hlbox .ay-contrib`), not one
+  more point in the list. `test-archives.js` §4 updated to pin the new placement.
 - **Plan: a bigger segment triangle** (2026-11-27). The open/closed caret was the "▸" glyph at 11px,
   about 6px of ink. It is now a drawn 14px triangle (`PL_TRI`) in a 28px target with a hover tint,
   pointing right when closed and turning 90deg to point down when open. The narrow-width header

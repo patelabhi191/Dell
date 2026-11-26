@@ -182,8 +182,9 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     first: (document.querySelector('.ay-contrib .l') || {}).innerText || '',
     firstLines: document.querySelectorAll('.ay-contrib .l span').length,
     contribInList: document.querySelectorAll('.ay-hl .t-contrib').length,
-    contribSpan: document.querySelector('.ay-contrib')
-      ? getComputedStyle(document.querySelector('.ay-contrib')).gridColumn : '',
+    contribInPane: !!document.querySelector('.ay-hlbox > .ay-contrib'),
+    contribFirst: !!document.querySelector('.ay-hlbox > .ay-contrib:first-child'),
+    contribLoose: !!document.querySelector('.ay-3 > .ay-contrib'),
     contribPane: document.querySelector('.ay-contrib')
       ? getComputedStyle(document.querySelector('.ay-contrib')).backgroundColor : '',
     // every point wears one of the five tone classes, none left unclassified
@@ -213,12 +214,16 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     body.expRows.join(','));
   check(body.incRows.join(',') === 'Paycheck', 'the Income table lists its own', body.incRows.join(','));
   check(/ABI put .* into TFSA/.test(body.first) && /POO added/.test(body.first),
-    'the contributions line sits under Expenses and Income', body.first.replace(/\n/g, ' | '));
+    'the contributions line reads ABI then POO', body.first.replace(/\n/g, ' | '));
   check(body.firstLines === 2, 'with ABI on one line and POO on the next', String(body.firstLines));
-  check(body.contribInList === 0, 'and is NOT in the highlights list any more');
-  check(body.contribSpan === '2 / 4', 'spanning both table columns', body.contribSpan);
-  check(body.contribPane === 'rgba(0, 0, 0, 0)',
-    'with no pane of its own \u2014 Highlights is still the only block on glass', body.contribPane);
+  /* The owner moved Contributions into Highlights (2026-11-27), as the first
+     thing in its pane and on a tile of its own -- not as one more point. */
+  check(body.contribInPane && body.contribFirst && !body.contribLoose,
+    'Contributions leads the Highlights pane, no longer under Expenses and Income',
+    JSON.stringify({ inPane: body.contribInPane, first: body.contribFirst, loose: body.contribLoose }));
+  check(body.contribInList === 0, '...as its own tile, not one more point in the list');
+  check(body.contribPane !== 'rgba(0, 0, 0, 0)',
+    '...tinted so it stands apart from the points under it', body.contribPane);
   check(body.tones.length > 1 && body.tones.every(Boolean) && new Set(body.tones).size >= 3,
     'every highlight is coloured by what it says, across at least three tones',
     [...new Set(body.tones)].join(','));
