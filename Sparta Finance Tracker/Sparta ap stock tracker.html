@@ -1434,9 +1434,13 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 #yfExpTable th:first-child,#yfExpTable td:first-child,
 #yfIncTable th:first-child,#yfIncTable td:first-child,
 .yf-mtable th:first-child,.yf-mtable td:first-child{text-align:left}
-/* the Planned input is a figure in a column too: its box sits on the column's
-   right edge and its digits on the box's, so 654.47 stacks over 1092.72 */
-#yfExpTable .yf-plan-in,#yfIncTable .yf-plan-in{margin-left:auto;margin-right:0}
+/* PLANNED IS CENTRED, by the owner's choice (2026-11-27): its heading, the
+   Totals figure and every input box sit on the column's middle. The boxes are
+   one width, so their edges still line up, and the digits stay right-aligned
+   inside each box, so 654.47 still stacks over 1092.72. */
+#yfExpTable th:nth-child(3),#yfExpTable td:nth-child(3),
+#yfIncTable th:nth-child(3),#yfIncTable td:nth-child(3){text-align:center}
+#yfExpTable .yf-plan-in,#yfIncTable .yf-plan-in{margin-left:auto;margin-right:auto}
 .yf-plan-in{width:86px;text-align:right;padding:6px 8px;font-size:12.5px;margin-left:auto}
 #yfExpTable td,#yfIncTable td{padding:4px 7px;font-size:12px}
 #yfExpTable th,#yfIncTable th{padding:6px 7px}
@@ -4189,7 +4193,7 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
       </div>
       <div class="tscroll" style="margin-top:16px;max-height:420px;overflow-y:auto">
         <table class="htable" id="yfTxTable">
-          <thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Type</th><th>Amount</th><th style="text-align:left">Description</th><th style="text-align:left">Category</th><th style="text-align:left">Who</th><th></th></tr></thead>
+          <thead><tr><th style="text-align:left">Date</th><th style="text-align:center">Type</th><th>Amount</th><th style="text-align:left">Description</th><th style="text-align:left">Category</th><th style="text-align:center">Who</th><th></th></tr></thead>
           <tbody id="yfTxBody"></tbody>
         </table>
       </div>
@@ -9616,12 +9620,12 @@ function renderYF(){
   list.forEach(t=>{
     const tr=document.createElement('tr');
     tr.innerHTML=`<td style="text-align:left">${txDate(t)}</td>
-      <td style="text-align:left"><span class="acct-tag ${t.type==='income'?'tag-inc':'tag-exp'}" style="margin:0">${t.type==='income'?'IN':'EXP'}</span></td>
+      <td style="text-align:center"><span class="acct-tag ${t.type==='income'?'tag-inc':'tag-exp'}" style="margin:0">${t.type==='income'?'IN':'EXP'}</span></td>
       <td class="${t.type==='income'?'yf-pos':'yf-neg'}" style="font-weight:600">${yf$2(t.amt)}${yfSpendNote(t)}</td>
       <td style="text-align:left;max-width:220px"><div class="yf-desc"><span>${(t.desc||'').replace(/</g,'&lt;')}</span>${t.note
         ? `<button class="yf-note-tog" data-nid="${t.id}" aria-expanded="${yfNoteOpen.has(t.id)}" aria-label="${yfNoteOpen.has(t.id)?'Hide':'Show'} note" title="${yfNoteOpen.has(t.id)?'Hide':'Show'} note">${YF_NOTE_ICON}</button>` : ''}</div>${yfPaidNote(t)}</td>
       <td style="text-align:left">${txCat(t)}${txTags(t)}</td>
-      <td style="text-align:left"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
+      <td style="text-align:center"><span class="acct-tag ${t.who==='POO'?'tag-fhsa':'tag-tfsa'}" style="margin:0">${t.who||'ABI'}</span></td>
       <td style="white-space:nowrap"><button class="yf-edit" data-eid="${t.id}" title="Edit">\u270e</button><button class="rm" data-did="${t.id}" title="Delete">\u2715</button></td>`;
     tb.appendChild(tr);
     if(t.note && yfNoteOpen.has(t.id)) tb.appendChild(yfNoteRow(t));

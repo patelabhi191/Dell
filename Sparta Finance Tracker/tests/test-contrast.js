@@ -781,7 +781,11 @@ const CONTRAST = (root) => {
       tab: getComputedStyle(document.querySelector('#yfExpTable tbody td:nth-child(2)')).fontVariantNumeric };
   });
   check(cols.spend >= 0 && cols.spend <= 0.5, 'Spend: every figure ends on the same edge', `${cols.spend}px apart`);
-  check(cols.planned >= 0 && cols.planned <= 0.5, 'Planned: every input box does too', `${cols.planned}px apart`);
+  /* Planned is the exception the owner chose: centred (13b below). Its boxes
+     are one width, so they still line up edge to edge with each other. */
+  const boxes = await page.evaluate(() => { const r = [...document.querySelectorAll('#yfExpTable .yf-plan-in')]
+    .map(i => i.getBoundingClientRect().right); return r.length > 1 ? Math.max(...r) - Math.min(...r) : -1 });
+  check(boxes >= 0 && boxes <= 0.5, 'Planned: the input boxes line up with each other', `${boxes}px apart`);
   check(cols.earned >= 0 && cols.earned <= 0.5, 'Earned, on the income table', `${cols.earned}px apart`);
   check(cols.jan >= 0 && cols.jan <= 0.5, 'and a month column of the twelve-month table', `${cols.jan}px apart`);
   check(cols.head === 'right', 'the heading sits over the edge its figures share', cols.head);
@@ -820,6 +824,28 @@ const CONTRAST = (root) => {
     .filter(s => /%$/.test(s.textContent.trim())).map(s => parseFloat(getComputedStyle(s).opacity)));
   check(sub.length > 0 && sub.every(o => o === 1),
     'the holdings % sub-lines are not dimmed; their size sets them apart', JSON.stringify(sub));
+
+  /* ── 13b. the columns the owner asked to centre ─────────────────────────
+     Transactions' Type and Who, and the Planned column of Expenses and
+     Income: heading and content share one middle. */
+  section('13b. Type, Who and Planned sit on the centre of their headings');
+  await go('yearly');
+  const ctr = await page.evaluate(() => {
+    const mid = r => r.left + r.width / 2;
+    const ink = e => { const g = document.createRange(); g.selectNodeContents(e); return mid(g.getBoundingClientRect()) };
+    const off = (tb, i, pick) => { const hm = ink(document.querySelector(tb + ' thead th:nth-child(' + i + ')'));
+      const v = [...document.querySelectorAll(tb + ' tbody tr')].map(tr => tr.cells[i - 1]).filter(Boolean)
+        .map(c => Math.abs(pick(c) - hm));
+      return v.length ? Math.max(...v) : -1 };
+    const tag = c => mid(c.querySelector('.acct-tag').getBoundingClientRect());
+    const plan = c => c.querySelector('input') ? mid(c.querySelector('input').getBoundingClientRect()) : ink(c);
+    return { type: off('#yfTxTable', 2, tag), who: off('#yfTxTable', 6, tag),
+      exp: off('#yfExpTable', 3, plan), inc: off('#yfIncTable', 3, plan) };
+  });
+  check(ctr.type >= 0 && ctr.type <= 1, 'Transactions: the IN/EXP tags are centred under TYPE', `${ctr.type.toFixed(1)}px off`);
+  check(ctr.who >= 0 && ctr.who <= 1, 'Transactions: the ABI/POO tags are centred under WHO', `${ctr.who.toFixed(1)}px off`);
+  check(ctr.exp >= 0 && ctr.exp <= 1, 'Expenses: the Totals figure and the boxes are centred under PLANNED', `${ctr.exp.toFixed(1)}px off`);
+  check(ctr.inc >= 0 && ctr.inc <= 1, 'Income: the same under PLANNED', `${ctr.inc.toFixed(1)}px off`);
 
   /* ── 14. no seams between Yearly's table headings ───────────────────────
      Each heading cell carried its own backdrop blur, and a per-cell blur

@@ -2384,6 +2384,12 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Centred columns, by the owner's choice** (2026-11-27). Transactions' Type and Who (heading and
+  tags) and the Planned column of Expenses and Income (heading, Totals figure and the input boxes)
+  are centred. Planned is now the one centred figure column on Yearly; its boxes are one width, so
+  they still line up with each other, and digits stay right-aligned inside each box. Monthly's own
+  Who column is untouched. Pinned in `test-contrast.js` §13b; §12's Planned check now asserts the
+  boxes line up rather than the column being right-aligned.
 - **Ask: no extra space under the input** (2026-11-27). With Frequent questions open and no answer
   yet, the form's 10px of room for an answer left 33px under the input against 23px above the
   heading. `.ask-form:has(+ .ask-out:empty)` drops that margin; both are 23px now. Pinned in
