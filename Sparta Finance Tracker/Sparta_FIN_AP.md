@@ -2384,6 +2384,10 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Ask: no extra space under the input** (2026-11-27). With Frequent questions open and no answer
+  yet, the form's 10px of room for an answer left 33px under the input against 23px above the
+  heading. `.ask-form:has(+ .ask-out:empty)` drops that margin; both are 23px now. Pinned in
+  `test-ask.js` §7b.
 - **No lines between Yearly's table headings** (2026-11-27). `#yearlyView .htable thead th` carried
   `backdrop-filter:blur(6px)` per cell; per-cell blurs disagree at shared edges, drawing a faint
   vertical seam between headings on all three Yearly tables (brightest 16-19 luminance against its

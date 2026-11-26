@@ -1208,6 +1208,10 @@ footer{margin-top:34px;text-align:center;color:var(--text-faint);font-size:11.5p
 /* Before the first question there is nothing under the rule, and a rule with
    nothing under it reads as a cut-off card rather than a divider. */
 .ask-out:empty{border-top:none;padding-top:0}
+/* ...and the form's 10px of room for an answer goes too while there is none.
+   With Frequent questions open it left 33px under the input against 23px above
+   the heading, so the card looked unfinished at the bottom. */
+.ask-form:has(+ .ask-out:empty){margin-bottom:0}
 .ask-head{font-family:var(--font-display);font-size:24px;font-weight:700;
   line-height:1.15;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--text)}
 .ask-line{font-size:12.5px;color:var(--text-dim);margin-top:4px;line-height:1.5}

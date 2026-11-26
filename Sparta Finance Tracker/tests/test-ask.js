@@ -321,6 +321,19 @@ const digits = s => String(s).replace(/[^0-9]/g, '');
   check(survived.shown && survived.expanded === 'true',
     '7b: a re-render does not shut a list the reader opened', JSON.stringify(survived));
 
+  /* With the chips open and no answer yet, the space under the input matches
+     the space above the heading. The form's room for an answer used to stay,
+     leaving 33px at the bottom against 23 at the top. */
+  await O.page.evaluate(() => { document.getElementById('askOut').innerHTML = '' });   // as on a fresh load
+  await O.page.mouse.move(0, 0); await O.page.waitForTimeout(450);
+  const gap = await O.page.evaluate(() => { const P = document.getElementById('yfBlankPanel').getBoundingClientRect();
+    const f = document.getElementById('askForm').getBoundingClientRect();
+    const h = document.querySelector('#yfBlankPanel .sec-head').getBoundingClientRect();
+    return { empty: document.getElementById('askOut').innerHTML === '', top: Math.round(h.top - P.top),
+      bottom: Math.round(P.bottom - f.bottom), tall: Math.round(P.height) >= Math.round(document.getElementById('yfHiPanel').getBoundingClientRect().height) } });
+  check(gap.empty && gap.tall, '7b: (no answer on screen, and Ask is the taller card)', JSON.stringify(gap));
+  check(Math.abs(gap.bottom - gap.top) <= 2, '7b: open with no answer, the input sits as far from the bottom as the heading from the top',
+      JSON.stringify(gap));
   await O.page.click('#askChipsBtn');
   await O.page.waitForTimeout(200);
   const reshut = await vis();
