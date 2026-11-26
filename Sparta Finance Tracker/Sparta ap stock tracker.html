@@ -1302,8 +1302,12 @@ label.dropzone,label.skeu-drop{letter-spacing:normal;text-transform:none}
 #yearlyView input,#yearlyView select{
   background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.20);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-#yearlyView .htable thead th{
-  background:rgba(255,255,255,.05);backdrop-filter:blur(6px)}
+/* The tint only. Each heading cell used to carry backdrop-filter:blur(6px) as
+   well, and a blur is computed PER CELL: at every edge where two cells meet the
+   two blurred pictures disagree, which drew a faint vertical line between the
+   headings -- TYPE | AMOUNT | DESCRIPTION -- on all three Yearly tables. The
+   band reads the same without it; the seams do not. */
+#yearlyView .htable thead th{background:rgba(255,255,255,.05)}
 /* tighter, continuous look for this tab only */
 #yearlyView .statrow{gap:8px}
 #yearlyView>.statrow{margin:8px 0}

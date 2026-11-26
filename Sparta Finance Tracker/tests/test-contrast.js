@@ -821,6 +821,33 @@ const CONTRAST = (root) => {
   check(sub.length > 0 && sub.every(o => o === 1),
     'the holdings % sub-lines are not dimmed; their size sets them apart', JSON.stringify(sub));
 
+  /* ── 14. no seams between Yearly's table headings ───────────────────────
+     Each heading cell carried its own backdrop blur, and a per-cell blur
+     disagrees with its neighbour at the shared edge: a faint vertical line
+     between TYPE | AMOUNT | DESCRIPTION, on all three tables. Scanned on the
+     painted band with the heading text hidden. */
+  section('14. the Yearly header bands are one surface, with no lines between headings');
+  await go('yearly');
+  for (const id of ['yfTxTable', 'yfExpTable', 'yfMTable']) {
+    const bf = await page.evaluate(id => getComputedStyle(document.querySelector('#' + id + ' thead th')).backdropFilter, id);
+    await page.evaluate(id => { document.querySelectorAll('#' + id + ' thead th').forEach(t => t.style.color = 'transparent');
+      const h = document.querySelector('#' + id + ' thead');
+      window.scrollTo({ top: h.getBoundingClientRect().top + scrollY - 300, behavior: 'instant' }) }, id);
+    await page.mouse.move(0, 0); await page.waitForTimeout(450);
+    const box = await page.evaluate(id => { const q = document.querySelector('#' + id + ' thead tr').getBoundingClientRect();
+      const l = Math.max(0, Math.round(q.left) + 2);
+      return { x: l, y: Math.round(q.top + q.height / 2), w: Math.min(innerWidth, Math.round(q.right)) - l - 4 } }, id);
+    const buf = await page.screenshot({ clip: { x: box.x, y: box.y, width: box.w, height: 1 } });
+    const spike = await page.evaluate(async b => { const i = new Image(); i.src = 'data:image/png;base64,' + b; await i.decode();
+      const c = document.createElement('canvas'); c.width = i.width; c.height = 1; const g = c.getContext('2d'); g.drawImage(i, 0, 0);
+      const d = g.getImageData(0, 0, i.width, 1).data, L = [];
+      for (let x = 0; x < i.width; x++) L.push(0.2126 * d[x * 4] + 0.7152 * d[x * 4 + 1] + 0.0722 * d[x * 4 + 2]);
+      let w = 0; for (let x = 4; x < L.length - 4; x++) w = Math.max(w, Math.abs(L[x] - (L[x - 4] + L[x + 4]) / 2)); return w }, buf.toString('base64'));
+    await page.evaluate(id => document.querySelectorAll('#' + id + ' thead th').forEach(t => t.style.color = ''), id);
+    check((bf === 'none' || !bf) && spike < 5, `${id}: no line between headings`,
+      `brightest seam ${spike.toFixed(1)} (was 16-19), backdrop-filter ${bf}`);
+  }
+
   check(errs.length === 0, 'no page errors', errs.join(' | '));
   await ctx.close();
   console.log(`\nCONTRAST: ${pass} passed, ${fail} failed`);

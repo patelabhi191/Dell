@@ -2384,6 +2384,11 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **No lines between Yearly's table headings** (2026-11-27). `#yearlyView .htable thead th` carried
+  `backdrop-filter:blur(6px)` per cell; per-cell blurs disagree at shared edges, drawing a faint
+  vertical seam between headings on all three Yearly tables (brightest 16-19 luminance against its
+  neighbours). The blur is gone, the band's tint stays; seams now measure under 2. It predates this
+  week's changes (identical at `0d1f80e`). Pinned in `test-contrast.js` §14.
 - **Notes on Yearly transactions** (2026-11-26). Owner's spec: Yearly only, free text, opening
   inline for now. A note icon sits inside the right end of the Description box (`#yfNoteBtn`);
   pressing it opens a full-width Note box (`#yfNote`, max 1,000 characters) under the form row. The
