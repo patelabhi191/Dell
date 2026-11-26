@@ -1994,7 +1994,11 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
   --arc-out-g2:color-mix(in srgb, var(--arc-bar-out) 62%, transparent);
   --arc-out-rim:color-mix(in srgb, #fff 48%, var(--arc-bar-out));
   --hl-alarm:#FF6B6B; --hl-spend:#FFA23D; --hl-good:#4ADE80;
-  --hl-info:#7DA8FF; --hl-contrib:#2DD4BF}
+  --hl-info:#7DA8FF;
+  /* ice grey-blue, by the owner's choice (2026-11-27), in place of the teal it
+     started as: calm enough to sit apart from the coloured points under it
+     without competing with them, and clear of every highlight tone */
+  --hl-contrib:#B3C6DF}
 #archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
   border-radius:10px;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:22px 24px}
 #archiveView h3{font-family:var(--font-display);font-size:var(--fs-eyebrow);font-weight:var(--fw-label);letter-spacing:var(--ls-label);
@@ -2247,9 +2251,9 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
    Contributions takes the width of Expenses and Income together underneath. */
 .ay-3 .ay-hlcol{grid-column:1;grid-row:1/3}
 /* Contributions: the first thing in the Highlights pane, on a tile tinted in
-   its own teal so it reads as set apart from the observations under it. */
+   its own ice grey-blue so it reads as set apart from the observations under it. */
 .ay-hlbox .ay-contrib{margin:12px 0 6px;padding:9px 12px;border-radius:var(--r-ctl);
-  background:rgba(45,212,191,.09);border:1px solid rgba(45,212,191,.30);
+  background:rgba(160,184,216,.10);border:1px solid rgba(179,198,223,.30);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
 .ay-contrib .h{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
   font-weight:var(--fw-label);margin-bottom:3px;color:var(--hl-contrib)}

@@ -2400,8 +2400,10 @@ and draft years; Monthly's five category renderers escape the name.
 - **Archives: Contributions moves into Highlights** (2026-11-27). This REVERSES the earlier choice
   to keep Contributions out of the highlights list, under Expenses and Income. The owner moved it to
   free that space for Life things, and asked for it to stand out: it is now the first thing in the
-  Highlights pane, on its own tile tinted in `--hl-contrib` teal (`.ay-hlbox .ay-contrib`), not one
-  more point in the list. `test-archives.js` §4 updated to pin the new placement.
+  Highlights pane, on its own tile (`.ay-hlbox .ay-contrib`), not one more point in the list.
+  `test-archives.js` §4 updated to pin the new placement. The tile started teal; at the owner's
+  request it is ice grey-blue (`--hl-contrib` `#2DD4BF` -> `#B3C6DF`, tint and edge to match),
+  clear of every highlight tone. The heading measures 5.4:1 on the painted tile.
 - **Plan: a bigger segment triangle** (2026-11-27). The open/closed caret was the "▸" glyph at 11px,
   about 6px of ink. It is now a drawn 14px triangle (`PL_TRI`) in a 28px target with a hover tint,
   pointing right when closed and turning 90deg to point down when open. The narrow-width header
