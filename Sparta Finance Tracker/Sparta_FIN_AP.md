@@ -2408,10 +2408,11 @@ and draft years; Monthly's five category renderers escape the name.
     line sampled 4.45:1 even at .9; the smaller size sets the sub-line apart.
   Pinned in `test-contrast.js` §13. `test-ui.js`'s holdings sub-line probe now finds the lines by
   their text rather than by the opacity attribute that is gone.
-  Found and NOT fixed, for the owner: `test-plan.js` "the tile is clearly separated from the page"
-  is flaky because, with the mouse parked, the Plan card reads 49.3 against a backdrop of 54.7 --
-  a difference of 5.4 against the check's threshold of 8. It passes only when an earlier click
-  leaves the pointer hovering over the card, which darkens it to 46.4.
+  `test-plan.js` "the tile is clearly separated from the page" was flaky: with the mouse parked
+  the Plan card reads 49.3 against a backdrop of 54.7, a difference of 5.4 against the check's
+  threshold of 8, and it passed only when an earlier click left the pointer hovering over the card,
+  which darkens it to 46.4. The owner chose to keep the card's look (2026-11-26), so the check now
+  parks the pointer and measures at rest against a bar of 4. Six runs in a row read identically.
 - **Charts are readable on a phone** (2026-11-16). Each chart is a fixed viewBox scaled to its
   card, so at 390px the Yearly, Monthly and Contributions charts came out 72 to 86px tall with axis
   labels 3 to 5px high. Below 560px each SVG now sits in a `.chart-scroll` box and is drawn 760px

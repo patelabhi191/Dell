@@ -304,9 +304,20 @@ const section = t => console.log(`\n── ${t} ──`);
      What the design actually needs is that the tile is DISTINGUISHABLE from the
      page, not that it is lighter. So: a measurable difference, in the direction
      the pass chose, plus the edge that does the separating. */
+  /* MEASURED AT REST, with the pointer parked. An earlier click leaves the
+     pointer over the segment, and the card's hover state darkens it: the tile
+     read 46.4 hovered and 49.3 at rest, against a backdrop that read 54.7 every
+     time. The old threshold of 8 had been met only by the hover, so the check
+     passed or failed on where the mouse happened to be.
+     At rest the separation is 5.4. The owner chose to keep the card as it
+     looks rather than darken it, so the bar is set under what the card truly
+     has, with a margin: 4. The edge check below is what does the separating;
+     this one guards against the tile and the page becoming the SAME shade. */
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(500);
   const onTile = await pxAt(box.x, box.y);
   const onBack = await pxAt(6, 620);
-  check(Math.abs(lum(onTile) - lum(onBack)) > 8,
+  check(Math.abs(lum(onTile) - lum(onBack)) > 4,
     'the tile is clearly separated from the page behind it',
     `tile ${lum(onTile).toFixed(1)} vs bg ${lum(onBack).toFixed(1)}`);
   check(lum(onTile) < lum(onBack),
