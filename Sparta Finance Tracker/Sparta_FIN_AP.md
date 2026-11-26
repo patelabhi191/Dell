@@ -2384,6 +2384,19 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Archives: Life things** (2026-11-27). Every year card (sealed, the current year's preview and
+  dummy years) has a LIFE THINGS box under Expenses and Income, across both columns: the year in
+  the owner's own words. Stored as `rec.life`, a list of `{t,x}` lines where `t` is `'h'` heading,
+  `'b'` bullet or `'p'` paragraph. `arcLifeClean()` (called from `normalizeArchives`) folds an
+  unknown type to `'p'`, trims, drops blanks and non-objects, and caps at 80 lines of 400
+  characters. `arcLifeHTML()` groups consecutive bullets into one list and escapes everything.
+  - **Kept across a re-snapshot.** `arcAddYear` (replacing the current year) and `arcAutoSeal`
+    (sealing a preview at the year end) re-take the figures from the ledger; both now carry the old
+    record's `life` across, so notes written during the year survive the seal.
+  - Styles carry `#archiveView` because the tab's `#archiveView p` (an id selector) otherwise paints
+    the `<p>` headings and paragraphs in the dim prose ink at 12.5px.
+  - Empty years show a hint to press the edit button. Editing comes in the next step.
+  Pinned in `test-archives.js` §13; §4 and §11 now expect the extra section.
 - **Archives: Contributions moves into Highlights** (2026-11-27). This REVERSES the earlier choice
   to keep Contributions out of the highlights list, under Expenses and Income. The owner moved it to
   free that space for Life things, and asked for it to stand out: it is now the first thing in the

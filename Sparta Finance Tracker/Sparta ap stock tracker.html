@@ -2256,6 +2256,31 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
 .ay-contrib .l{font-size:12px;line-height:1.38;color:var(--text);font-weight:500}
 .ay-contrib .l span{display:block}
 .ay-contrib .l span+span{margin-top:4px}
+/* LIFE THINGS, under Expenses and Income across both their columns. The same
+   glass as the Highlights pane beside it; headings in the Archives violet,
+   bullets marked with a dot of it, and text at the Highlights' own size and ink.
+   The headings and paragraphs are <p>, so they carry #archiveView first: the
+   tab's `#archiveView p` is an id selector and otherwise paints every one of
+   them in the dim prose ink at 12.5px -- grey headings, and paragraphs dimmer
+   and larger than the bullets beside them. */
+.ay-3 .ay-life{grid-column:2/4;grid-row:2;padding-top:16px;margin-top:16px;
+  border-top:1px solid rgba(255,255,255,.10)}
+.ay-life .ay-bhrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ay-life .ay-bh{margin:0}
+.ay-lifebox{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.10);border-radius:var(--r-card);
+  padding:12px 16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.17),0 8px 22px rgba(5,8,22,.18)}
+#archiveView .ay-lifebox .lh{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
+  font-weight:var(--fw-label);color:var(--arc);margin:0 0 5px}
+#archiveView .ay-lifebox .lh:not(:first-child){margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+#archiveView .ay-lifebox .lt{font-size:12px;line-height:1.5;color:var(--text);font-weight:500;margin:0 0 4px;
+  white-space:pre-wrap;overflow-wrap:anywhere}
+.ay-lifebox ul{margin:0 0 4px;padding:0;list-style:none}
+.ay-lifebox li{position:relative;padding-left:15px;font-size:12px;line-height:1.5;color:var(--text);
+  font-weight:500;overflow-wrap:anywhere}
+.ay-lifebox li+li{margin-top:3px}
+.ay-lifebox li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;
+  border-radius:50%;background:var(--arc)}
+#archiveView .ay-lifeempty{font-size:12px;color:var(--text-dim);margin:0;line-height:1.5}
 /* the same hairline that separates the stat columns in the header */
 .ay-3>*{padding:0 22px}
 .ay-3>*:first-child{padding-left:0}
@@ -2339,6 +2364,7 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
      implicit tracks 2-4 that do not exist here, so the row silently went back to
      three columns on a phone. They have to be reset, not just the template. */
   .ay-3 .ay-hlcol{grid-column:1;grid-row:auto}
+  .ay-3 .ay-life{grid-column:1;grid-row:auto;margin-top:0;padding-top:14px}
 
   .ay-mid{width:100%}
   /* the two SVGs keep their aspect ratio, so a 900-wide viewBox squashed into a
@@ -5532,6 +5558,20 @@ const arc12=v=>Array.from({length:12},(_,i)=>{
   const n=Array.isArray(v)?v[i]:undefined;
   return (typeof n==='number'&&isFinite(n))?n:0;
 });
+/* LIFE THINGS: the year in words -- moves, trips, jobs, lessons -- written by
+   the owner, never by the app. A list of lines, each a heading ('h'), a
+   bullet ('b') or a plain paragraph ('p'). Typed by hand and pulled from the
+   cloud, so it is cleaned on the way in: the type folds to one of the three,
+   the text is a trimmed string, blank lines go, and the list has a ceiling
+   so a runaway paste cannot bloat the record that every device syncs. */
+const ARC_LIFE_MAX=80, ARC_LIFE_LEN=400;
+function arcLifeClean(v){
+  if(!Array.isArray(v)) return [];
+  return v.filter(l=>l&&typeof l==='object').map(l=>({
+    t: l.t==='h'||l.t==='b' ? l.t : 'p',
+    x: String(l.x==null?'':l.x).trim().slice(0,ARC_LIFE_LEN) }))
+    .filter(l=>l.x).slice(0,ARC_LIFE_MAX);
+}
 function normalizeArchives(){
   if(!Array.isArray(state.archives)) state.archives=[];
   /* THE YEAR HAS TO BE A NUMBER, and nothing guaranteed it was. Three places
@@ -5569,6 +5609,7 @@ function normalizeArchives(){
     ARC_CONTRIB.forEach(k=>{ if(typeof a.contrib[k]!=='number' || !isFinite(a.contrib[k])) a.contrib[k]=0 });
     ['entries','entriesYf','entriesMe'].forEach(k=>{
       if(typeof a[k]!=='number' || !isFinite(a[k])) a[k]=0 });
+    a.life=arcLifeClean(a.life);
   });
   // newest first, the way a list of years is read
   state.archives.sort((a,b)=>b.year-a.year);
@@ -5728,6 +5769,9 @@ function arcAddYear(){
   if(prior && !confirm(year+' is already archived.\n\nReplace it with the current figures?')) return;
   arcUnbury(year);                   // asking for it back lifts the tombstone
   const rec=arcSnapshot(year);
+  /* The figures are re-taken from the ledger; the words are not the ledger's
+     to replace. Life things written on the old record come across. */
+  if(prior && prior.life && prior.life.length) rec.life=prior.life;
   if(prior) state.archives[state.archives.indexOf(prior)]=rec;
   else state.archives.push(rec);
   normalizeArchives(); arcPersist(); renderArchives();
@@ -5765,6 +5809,8 @@ function arcAutoSeal(){
     if(buried.indexOf(y)>-1) return;                   // deleted on purpose; see arcBuried
     const rec=arcSnapshot(y);
     if(!rec.entries && !rec.stats.start) return;       // an empty year is not an archive
+    // a preview being sealed keeps the Life things written on it during the year
+    if(prior && prior.life && prior.life.length) rec.life=prior.life;
     if(prior) state.archives[state.archives.indexOf(prior)]=rec;
     else state.archives.push(rec);
     changed++;
@@ -6007,6 +6053,23 @@ function arcMeIncLine(a){
   return '<p class="ay-bnote ay-menote">Monthly income this year: <b>'+arc$(tot)+
     '</b> — recorded on Monthly, counted in none of the figures above.</p>';
 }
+/* Life things, read-only. Consecutive bullets share one list; a heading after
+   anything gets a hairline above it, so each section reads as its own. */
+function arcLifeHTML(a){
+  const lines=a.life||[];
+  let out='', ul=false;
+  lines.forEach(l=>{
+    if(l.t!=='b' && ul){ out+='</ul>'; ul=false }
+    if(l.t==='h') out+='<p class="lh">'+arcEsc(l.x)+'</p>';
+    else if(l.t==='b'){ if(!ul){ out+='<ul>'; ul=true } out+='<li>'+arcEsc(l.x)+'</li>' }
+    else out+='<p class="lt">'+arcEsc(l.x)+'</p>';
+  });
+  if(ul) out+='</ul>';
+  if(!lines.length) out='<p class="ay-lifeempty">Nothing noted for '+a.year+' yet. Press \u270e above to add '+
+    'what happened: moves, trips, jobs, lessons.</p>';
+  return '<div class="ay-life"><div class="ay-bhrow"><p class="ay-bh">Life things</p></div>'+
+    '<div class="ay-lifebox">'+out+'</div></div>';
+}
 function arcCardHTML(a){
   const open=arcOpen.has(a.id), st=a.stats||{};
   const hl=(a.highlights||[]);
@@ -6031,6 +6094,7 @@ function arcCardHTML(a){
           '<ul class="ay-hl">'+pts+'</ul></div></div>'+
         '<div><p class="ay-bh">Expenses</p>'+arcTable(a.exp||[])+'</div>'+
         '<div><p class="ay-bh">Income</p>'+arcTable(a.inc||[])+'</div>'+
+        arcLifeHTML(a)+
       '</div></div>'+
       '<div class="ay-sec"><div class="ay-bhrow"><p class="ay-bh">12-month trend</p>'+
         '<span class="ay-bhright">'+trend.label+trend.gear+'</span></div>'+trend.html+'</div>'+

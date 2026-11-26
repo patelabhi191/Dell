@@ -206,7 +206,7 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     bars: document.querySelectorAll('.ay-sec:nth-child(1) rect').length,
     chev: getComputedStyle(document.querySelector('.ay-chev')).transform,
   }));
-  check(body.secs.join('|') === 'Month by month|Highlights|Expenses|Income|12-month trend|Category by month · Monthly',
+  check(body.secs.join('|') === 'Month by month|Highlights|Expenses|Income|Life things|12-month trend|Category by month · Monthly',
     'the body is laid out in the agreed order', body.secs.join(' / '));
   check(body.expRows.includes('Rent') && body.expRows.includes('Investment')
      && body.expRows.includes('Credit Card'),
@@ -534,7 +534,7 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     rows: document.querySelectorAll('.ay-cm tbody tr').length,
     contrib: !!document.querySelector('.ay-contrib'),
   }));
-  check(shape.secs === 6 && shape.bars === 24 && shape.trend === 12 && shape.rows > 0 && shape.contrib,
+  check(shape.secs === 7 && shape.bars === 24 && shape.trend === 12 && shape.rows > 0 && shape.contrib,
     'an expanded dummy draws the whole card — bars, trend, matrix and contributions',
     JSON.stringify(shape));
   await page.evaluate(() => { state.archives = []; arcPersist(); renderArchives() });
@@ -1054,6 +1054,74 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
 
     check(R.errs.length === 0, '12: no page errors', R.errs.join(' | '));
     await R.ctx.close();
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  section('13 · Life things');
+  {
+    const L = await open(browser, url, SEED); const p = L.page;
+    await p.evaluate(() => applyView('archive')); await p.waitForTimeout(250);
+    const r = await p.evaluate(() => {
+      const yr = new Date().getFullYear();
+      /* three kinds of card: a sealed past year, the current year's preview,
+         and a dummy -- the owner wants Life things on all of them */
+      state.archives = [];
+      const past = arcDummyRec(yr - 2); past.dummy = false; past.id = 'past';
+      const dummy = arcDummyRec(yr - 1); dummy.id = 'dum';
+      const cur = arcSnapshot(yr); cur.id = 'cur';
+      state.archives.push(past, dummy, cur);
+      past.life = [{ t: 'h', x: 'Big moments' }, { t: 'b', x: 'Moved <b>house</b>' }, { t: 'b', x: 'Trip to Banff' },
+        { t: 'h', x: 'Work' }, { t: 'p', x: 'New role in June.' }, { t: 'zz', x: '  folded  ' }, { t: 'b', x: '   ' }, 'junk', null];
+      normalizeArchives();
+      arcOpen.clear(); ['past', 'dum', 'cur'].forEach(id => arcOpen.add(id)); renderArchives();
+      const box = id => document.querySelector('.ay[data-id="' + id + '"] .ay-lifebox');
+      const pb = box('past');
+      return {
+        stored: state.archives.find(a => a.id === 'past').life.map(l => l.t + ':' + l.x),
+        onEvery: ['past', 'dum', 'cur'].every(id => !!box(id)),
+        heading: [...document.querySelectorAll('.ay[data-id="past"] .ay-life .ay-bh')].map(e => e.textContent)[0],
+        lists: pb.querySelectorAll('ul').length, bullets: pb.querySelectorAll('li').length,
+        heads: pb.querySelectorAll('.lh').length, paras: pb.querySelectorAll('.lt').length,
+        markup: !!pb.querySelector('li b'),
+        emptyHint: !!box('cur').querySelector('.ay-lifeempty') && !!box('dum').querySelector('.ay-lifeempty'),
+        place: getComputedStyle(document.querySelector('.ay[data-id="past"] .ay-life')).gridColumn,
+        headInk: getComputedStyle(pb.querySelector('.lh')).color,
+        textInk: getComputedStyle(pb.querySelector('.lt')).color, bulletInk: getComputedStyle(pb.querySelector('li')).color,
+        textSize: getComputedStyle(pb.querySelector('.lt')).fontSize, bulletSize: getComputedStyle(pb.querySelector('li')).fontSize,
+      };
+    });
+    check(r.stored.join('|') === 'h:Big moments|b:Moved <b>house</b>|b:Trip to Banff|h:Work|p:New role in June.|p:folded',
+      '13: lines are cleaned on the way in -- types folded, blanks and junk dropped', r.stored.join(' | '));
+    check(r.onEvery, '13: every card has a Life things box: sealed, current-year preview and dummy');
+    check(r.heading === 'Life things' && r.place === '2 / 4',
+      '13: titled Life things, under Expenses and Income across both their columns', `${r.heading} / ${r.place}`);
+    check(r.lists === 1 && r.bullets === 2 && r.heads === 2 && r.paras === 2,
+      '13: headings, one list for the run of bullets, and plain paragraphs', JSON.stringify(r));
+    check(!r.markup, '13: anything typed is shown as text, never run');
+    check(r.emptyHint, '13: a year with nothing written says how to add it');
+    /* The tab's `#archiveView p` would otherwise paint headings and paragraphs
+       in its dim prose ink: headings in violet, text matching the bullets. */
+    check(r.headInk === 'rgb(139, 147, 248)', '13: headings are in the Archives violet', r.headInk);
+    check(r.textInk === r.bulletInk && r.textSize === r.bulletSize,
+      '13: plain text matches the bullets in size and ink', `${r.textInk} ${r.textSize} / ${r.bulletInk} ${r.bulletSize}`);
+
+    /* The figures of a preview are re-taken at the year end and by Add year;
+       the words must come across, not be wiped with them. */
+    const carried = await p.evaluate(() => {
+      const yr = new Date().getFullYear();
+      const cur = state.archives.find(a => a.id === 'cur');
+      cur.life = [{ t: 'p', x: 'written during the year' }];
+      const realConfirm = window.confirm; window.confirm = () => true;
+      arcAddYear(); window.confirm = realConfirm;
+      const again = state.archives.find(a => a.year === yr);
+      const disk = JSON.parse(localStorage.getItem(nsKey('sparta.archives'))).find(a => a.year === yr);
+      return { mem: again && again.life, disk: disk && disk.life };
+    });
+    check(carried.mem && carried.mem[0] && carried.mem[0].x === 'written during the year' &&
+          carried.disk && carried.disk[0] && carried.disk[0].x === 'written during the year',
+      '13: re-taking the current year keeps its Life things, on disk too', JSON.stringify(carried));
+    check(L.errs.length === 0, '13: no page errors', L.errs.join(' | '));
+    await L.ctx.close();
   }
 
   console.log(`\nARCHIVES: ${pass} passed, ${fail} failed`);
