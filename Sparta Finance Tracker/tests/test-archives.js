@@ -336,20 +336,78 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
   check(await page.$$eval('.ay', n => n.length) === 1,
     'and replaces it rather than listing the year twice');
 
-  // edit
-  const vals = ['1000', '2000', '300', '400', '500', '600'];
-  let pi = 0;
+  // edit: the pencil opens the card for editing, and only Start and Life things
+  // can change -- the six prompts it used to ask are gone (the owner's call,
+  // 2026-11-27: the other figures are tied to the ledger and to each other)
   page.removeAllListeners('dialog');
-  page.on('dialog', d => { dialogs++; d.type() === 'prompt' ? d.accept(vals[pi++]) : d.accept(); });
+  let e_edPrompts = 0;
+  page.on('dialog', d => { dialogs++; if (d.type() === 'prompt') e_edPrompts++; d.accept(); });
+  const edBefore = await page.evaluate(() => JSON.parse(JSON.stringify(state.archives[0].stats)));
   await page.click('.ay-act[data-act="edit"]');
-  await page.waitForTimeout(400);
-  const ed = await page.evaluate(() => ({
-    sta: document.querySelector('.ay-s b.sta').textContent,
-    end: document.querySelector('.ay-s b.end').textContent,
-    gro: document.querySelector('.ay-gro em').textContent,
-  }));
-  check(ed.sta === '$1,000' && ed.end === '$2,000', 'edit writes the figures it was given', JSON.stringify(ed));
-  check(ed.gro === '+100.0%', 'and recomputes growth from them rather than keeping the old one', ed.gro);
+  await page.waitForTimeout(250);
+  const e_opened = await page.evaluate(() => ({
+    editing: !!document.querySelector('.ay.editing'), open: !!document.querySelector('.ay.open'),
+    startField: !!document.querySelector('.ay-s [data-arc-start]'),
+    otherFields: document.querySelectorAll('.ay-top input').length,
+    focus: !!(document.activeElement && document.activeElement.matches('[data-arc-start]')) }));
+  check(e_edPrompts === 0, 'edit asks nothing in pop-ups any more', String(e_edPrompts));
+  check(e_opened.editing && e_opened.open && e_opened.startField && e_opened.focus,
+    'it opens the card in an editing state, with Start as a field and the caret in it', JSON.stringify(e_opened));
+  check(e_opened.otherFields === 1, 'Start is the ONLY figure that can be edited', String(e_opened.otherFields));
+
+  await page.fill('.ay-s [data-arc-start]', '1000');
+  await page.fill('.ay.editing textarea.ay-lin[data-li="0"]', 'Big moments');
+  await page.click('.ay.editing [data-act="ladd"]'); await page.keyboard.type('Moved house');
+  await page.click('.ay.editing [data-act="ltype"][data-li="1"][data-lt="b"]');
+  await page.click('.ay.editing [data-act="lsave"]');
+  await page.waitForTimeout(300);
+  const e_ed = await page.evaluate(() => { const a = state.archives[0];
+    return { sta: document.querySelector('.ay-s b.sta').textContent, gro: document.querySelector('.ay-gro em').textContent,
+      stats: a.stats, life: a.life, edited: a.edited, editing: !!document.querySelector('.ay.editing') } });
+  const e_delta = 1000 - edBefore.start;
+  check(e_ed.sta === '$1,000' && !e_ed.editing, 'Save writes the new Start and leaves editing', e_ed.sta);
+  check(Math.abs(e_ed.stats.end - (edBefore.end + e_delta)) < 0.01,
+    'End moves by the same amount -- it is Start plus the year\'s leftover', `${edBefore.end} -> ${e_ed.stats.end}`);
+  check(e_ed.stats.saved === edBefore.saved && e_ed.stats.offPaper === edBefore.offPaper &&
+        e_ed.stats.invested === edBefore.invested && e_ed.stats.moved === edBefore.moved,
+    'while Saved total, Off paper sav, Invested and Moved else do not move at all');
+  const e_wantGro = ((e_ed.stats.end / 1000 - 1) * 100);
+  check(Math.abs(e_ed.stats.growth - e_wantGro) < 0.01 && e_ed.gro === (e_wantGro >= 0 ? '+' : '\u2212') + Math.abs(e_wantGro).toFixed(1) + '%',
+    'and growth is recomputed from the new Start and End', e_ed.gro);
+  check(e_ed.edited === true, 'a corrected Start marks the record hand-edited, so the seal will not overwrite it');
+  check(JSON.stringify(e_ed.life) === JSON.stringify([{ t: 'h', x: 'Big moments' }, { t: 'b', x: 'Moved house' }]),
+    'and the Life things lines are saved with their types', JSON.stringify(e_ed.life));
+
+  /* Cancel and Escape leave everything as it was. */
+  const e_snap = await page.evaluate(() => JSON.stringify(state.archives[0]));
+  await page.click('.ay-act[data-act="edit"]'); await page.waitForTimeout(200);
+  await page.fill('.ay-s [data-arc-start]', '5'); await page.fill('.ay.editing textarea.ay-lin[data-li="0"]', 'changed');
+  await page.click('.ay.editing [data-act="lcancel"]'); await page.waitForTimeout(200);
+  check(await page.evaluate(() => JSON.stringify(state.archives[0])) === e_snap && !(await page.$('.ay.editing')),
+    'Cancel throws the draft away and leaves editing');
+  await page.click('.ay-act[data-act="edit"]'); await page.waitForTimeout(200);
+  await page.fill('.ay-s [data-arc-start]', '7');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+  check(await page.evaluate(() => JSON.stringify(state.archives[0])) === e_snap && !(await page.$('.ay.editing')),
+    'and so does Escape');
+
+  /* Words alone must not freeze a preview: the current year is still sealed
+     from the ledger at the year end unless a FIGURE was corrected. */
+  const e_wordsOnly = await page.evaluate(async () => { const a = state.archives[0]; a.edited = false;
+    arcEditStart(a); renderArchives();
+    const t = document.querySelector('.ay.editing textarea.ay-lin[data-li="0"]'); t.value = 'Just words';
+    t.dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('.ay.editing [data-act="lsave"]').click();
+    return { edited: !!a.edited, first: a.life[0] && a.life[0].x } });
+  check(e_wordsOnly.first === 'Just words' && e_wordsOnly.edited === false,
+    'saving only Life things does NOT mark the figures hand-edited', JSON.stringify(e_wordsOnly));
+
+  /* A Start that is not a number is refused, and the editor stays open. */
+  await page.click('.ay-act[data-act="edit"]'); await page.waitForTimeout(200);
+  await page.fill('.ay-s [data-arc-start]', 'abc');
+  await page.click('.ay.editing [data-act="lsave"]'); await page.waitForTimeout(200);
+  check(!!(await page.$('.ay.editing')), 'a Start that is not a number is refused, and editing stays open');
+  await page.click('.ay.editing [data-act="lcancel"]'); await page.waitForTimeout(150);
 
   // a negative growth paints red, which is the only thing the sign drives
   await page.evaluate(() => {

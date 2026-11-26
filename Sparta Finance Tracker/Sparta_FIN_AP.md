@@ -2384,6 +2384,22 @@ and draft years; Monthly's five category renderers escape the name.
   correctly and done nothing at all, with no error to find it by. Now delegated from the document
   and handling two behaviours: `data-help` toggles the sibling disclosure (the drawer's six),
   `data-dialog` opens a modal. `test-ask.js` §7 pins both.
+- **Archives: the edit button edits Start and Life things only** (2026-11-27). The ✎ on a year card
+  used to ask for six figures in six `prompt()` boxes. It now opens the card in an editing state
+  (`arcEditId` / `arcDraft`): Start becomes a field in the header and Life things becomes a line
+  editor (an H / bullet / text switch per line, a growing text box, a remove cross, + Add line,
+  Cancel, Save). Escape cancels. End, Invested, Moved else, Saved total and Off paper sav are not
+  offered: they are tied to the ledger and to each other (the owner's call).
+  - **Start moves End with it.** End is Start plus the year's leftover, so Save shifts End by the
+    same amount; Saved total, Off paper sav, Invested and Moved else do not move; growth is
+    recomputed. A changed Start sets `rec.edited` as before, so the seal will not overwrite it.
+    Saving only Life things does NOT set it, so the current year's preview is still sealed from the
+    ledger at the year end.
+  - The edit works on a draft, so Cancel is a true undo and a re-render mid-edit redraws the editor
+    from what was typed. While editing, the card header is a `<div>` rather than its toggle
+    `<button>`, because an input cannot live inside a button.
+  - A Start that is not a number is refused with a toast and the editor stays open.
+  `test-archives.js` §6's six-prompt check is replaced by checks for the editor.
 - **Archives: Life things** (2026-11-27). Every year card (sealed, the current year's preview and
   dummy years) has a LIFE THINGS box under Expenses and Income, across both columns: the year in
   the owner's own words. Stored as `rec.life`, a list of `{t,x}` lines where `t` is `'h'` heading,

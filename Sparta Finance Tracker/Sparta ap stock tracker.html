@@ -2285,6 +2285,31 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
 .ay-lifebox li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;
   border-radius:50%;background:var(--arc)}
 #archiveView .ay-lifeempty{font-size:12px;color:var(--text-dim);margin:0;line-height:1.5}
+/* editing: the card is outlined, Start becomes a field, each line gets an
+   H / bullet / text switch, a text box that grows, and a remove cross */
+.ay.editing{box-shadow:0 0 0 1px rgba(139,147,248,.45),0 10px 34px rgba(0,0,0,.35)}
+.ay-editbar{font-size:var(--fs-micro);color:var(--arc);font-weight:var(--fw-label);letter-spacing:var(--ls-label);
+  text-transform:uppercase}
+#archiveView .ay-s .ay-stin{width:118px;padding:4px 8px;font-size:15px;font-weight:700;color:var(--yf-start);
+  font-variant-numeric:tabular-nums;border:1px solid rgba(139,147,248,.55);border-radius:8px;background:rgba(0,0,0,.2)}
+.ay-lifeed{display:flex;flex-direction:column;gap:7px}
+.ay-lrow{display:grid;grid-template-columns:auto 1fr 26px;gap:8px;align-items:start}
+.ay-lseg{display:inline-flex;margin-top:3px;border:1px solid rgba(255,255,255,.12);border-radius:8px;overflow:hidden;
+  background:rgba(0,0,0,.18)}
+#archiveView .ay-lseg button{border:0;border-radius:0;background:transparent;padding:5px 9px;font-size:11px;
+  font-weight:700;color:var(--text-dim);min-width:30px;letter-spacing:.02em}
+#archiveView .ay-lseg button+button{border-left:1px solid rgba(255,255,255,.10)}
+#archiveView .ay-lseg button.on{background:rgba(139,147,248,.26);color:var(--text)}
+#archiveView .ay-lifebox textarea.ay-lin{width:100%;padding:7px 10px;font-size:12.5px;min-height:0;line-height:1.45;
+  resize:none;overflow:hidden;white-space:pre-wrap;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.14);border-radius:8px;color:var(--text);font-family:inherit}
+#archiveView .ay-lifebox textarea.ay-lin.isH{text-transform:uppercase;letter-spacing:var(--ls-label);font-size:11px;
+  font-weight:700;color:var(--arc)}
+#archiveView .ay-lx{width:26px;height:26px;margin-top:3px;padding:0;background:transparent;color:var(--text-faint);border:0}
+#archiveView .ay-lx:hover{color:var(--text)}
+.ay-ledfoot{display:flex;align-items:center;gap:8px;margin-top:6px}
+#archiveView .ay-ladd{background:transparent;border:1px dashed rgba(139,147,248,.45);color:var(--arc);padding:6px 12px}
+.ay-ledfoot .sp{flex:1}
 /* the same hairline that separates the stat columns in the header */
 .ay-3>*{padding:0 22px}
 .ay-3>*:first-child{padding-left:0}
@@ -2369,6 +2394,10 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
      three columns on a phone. They have to be reset, not just the template. */
   .ay-3 .ay-hlcol{grid-column:1;grid-row:auto}
   .ay-3 .ay-life{grid-column:1;grid-row:auto;margin-top:0;padding-top:14px}
+  /* on a phone the switch sits above its line, so the text box gets the width */
+  .ay-lrow{grid-template-columns:1fr 26px}
+  .ay-lrow .ay-lseg{grid-column:1/3;justify-self:start;margin-top:0}
+  .ay-lrow textarea.ay-lin{grid-column:1} .ay-lrow .ay-lx{grid-column:2}
 
   .ay-mid{width:100%}
   /* the two SVGs keep their aspect ratio, so a 900-wide viewBox squashed into a
@@ -6057,6 +6086,46 @@ function arcMeIncLine(a){
   return '<p class="ay-bnote ay-menote">Monthly income this year: <b>'+arc$(tot)+
     '</b> — recorded on Monthly, counted in none of the figures above.</p>';
 }
+/* EDITING A YEAR CARD. One card at a time. The edit works on a DRAFT -- the
+   Start figure as typed and a copy of the Life things lines -- so Cancel is a
+   true undo and a re-render mid-edit (a sync, a resize) redraws the editor from
+   the draft rather than losing what was typed. Only Start and Life things are
+   editable: End, Invested, Moved else, Saved total and Off paper sav are tied
+   to the ledger and to each other, so they are not offered (the owner's call,
+   2026-11-27). */
+let arcEditId=null, arcDraft=null;
+function arcEditStart(rec){
+  arcEditId=rec.id;
+  arcDraft={ start:String(Math.round((rec.stats.start||0)*100)/100),
+             life:(rec.life||[]).map(l=>({t:l.t,x:l.x})) };
+  if(!arcDraft.life.length) arcDraft.life.push({t:'h',x:''});   // somewhere to start typing
+  arcOpen.add(rec.id);
+}
+function arcEditEnd(){ arcEditId=null; arcDraft=null }
+const ARC_LT=[['h','H','Heading'],['b','\u2022','Bullet'],['p','Aa','Text']];
+function arcLifeEditHTML(){
+  const rows=arcDraft.life.map((l,i)=>
+    '<div class="ay-lrow"><div class="ay-lseg" role="group" aria-label="Line '+(i+1)+' type">'+
+      ARC_LT.map(([t,lab,name])=>'<button type="button" data-act="ltype" data-li="'+i+'" data-lt="'+t+'"'+
+        ' class="'+(l.t===t?'on':'')+'" aria-pressed="'+(l.t===t)+'" title="'+name+'">'+lab+'</button>').join('')+
+    '</div><textarea class="ay-lin'+(l.t==='h'?' isH':'')+'" rows="1" data-li="'+i+'" maxlength="'+ARC_LIFE_LEN+'"'+
+      ' aria-label="Line '+(i+1)+'" placeholder="'+(l.t==='h'?'Heading':l.t==='b'?'Bullet point':'Text')+'">'+
+      arcEsc(l.x)+'</textarea>'+
+    '<button type="button" class="ay-lx" data-act="ldel" data-li="'+i+'" title="Remove line" aria-label="Remove line '+(i+1)+'">\u2715</button></div>'
+  ).join('');
+  return '<div class="ay-life"><div class="ay-bhrow"><p class="ay-bh">Life things</p><span class="ay-editbar">Editing</span></div>'+
+    '<div class="ay-lifebox"><div class="ay-lifeed">'+rows+
+      '<div class="ay-ledfoot"><button type="button" class="ay-ladd" data-act="ladd"'+
+        (arcDraft.life.length>=ARC_LIFE_MAX?' disabled':'')+'>+ Add line</button><span class="sp"></span>'+
+      '<button type="button" class="btn" data-act="lcancel">Cancel</button>'+
+      '<button type="button" class="btn primary" data-act="lsave">Save</button></div>'+
+    '</div></div></div>';
+}
+/* the text boxes grow with what is in them, so a long line is read whole */
+function arcLifeGrow(root){
+  (root||document).querySelectorAll('#arcList textarea.ay-lin').forEach(t=>{
+    t.style.height='auto'; t.style.height=(t.scrollHeight+2)+'px' });
+}
 /* Life things, read-only. Consecutive bullets share one list; a heading after
    anything gets a hairline above it, so each section reads as its own. */
 function arcLifeHTML(a){
@@ -6098,7 +6167,7 @@ function arcCardHTML(a){
           '<ul class="ay-hl">'+pts+'</ul></div></div>'+
         '<div><p class="ay-bh">Expenses</p>'+arcTable(a.exp||[])+'</div>'+
         '<div><p class="ay-bh">Income</p>'+arcTable(a.inc||[])+'</div>'+
-        arcLifeHTML(a)+
+        (arcEditId===a.id && arcDraft ? arcLifeEditHTML() : arcLifeHTML(a))+
       '</div></div>'+
       '<div class="ay-sec"><div class="ay-bhrow"><p class="ay-bh">12-month trend</p>'+
         '<span class="ay-bhright">'+trend.label+trend.gear+'</span></div>'+trend.html+'</div>'+
@@ -6117,7 +6186,14 @@ function arcCardHTML(a){
      sealed year, which is the whole contract arcSnapshot exists to keep. */
   const growable=(st.start||0)>0;
   const dn=growable&&(st.growth||0)<0;
-  return '<div class="ay'+(open?' open':'')+'" data-id="'+a.id+'">'+
+  const editing = arcEditId===a.id && !!arcDraft;
+  const headOpen = editing ? '<div class="ay-head">' :
+    '<button class="ay-head" type="button" data-act="toggle" aria-expanded="'+open+'">';
+  const staCell = editing
+    ? '<input class="ay-stin" data-arc-start inputmode="decimal" aria-label="Start balance for '+a.year+'" value="'+
+        arcEsc(arcDraft.start)+'">'
+    : '<b class="sta">'+arc$(st.start)+'</b>';
+  return '<div class="ay'+(open?' open':'')+(editing?' editing':'')+'" data-id="'+a.id+'">'+
     '<div class="ay-top">'+
       /* The whole point of this button is that it opens the card, and it is
          the primary control on the tab -- but it announced nothing, so a screen
@@ -6125,12 +6201,12 @@ function arcCardHTML(a){
          in hand two dozen lines up. The Settings drawer's `i` buttons already
          toggle hidden and aria-expanded together; these four were the ones
          that did not follow it. */
-      '<button class="ay-head" type="button" data-act="toggle" aria-expanded="'+open+'">'+
+      headOpen+
         '<span class="ay-id"><span class="ay-yr">'+a.year+'</span>'+
           '<span class="ay-meta">'+meta+'</span></span>'+
         '<span class="ay-nums">'+
           '<span class="ay-col">'+
-            '<span class="ay-s"><span>Start</span><b class="sta">'+arc$(st.start)+'</b></span>'+
+            '<span class="ay-s"><span>Start</span>'+staCell+'</span>'+
             '<span class="ay-s"><span>End</span><b class="end">'+arc$(st.end)+'</b></span></span>'+
           '<span class="ay-col">'+
             '<span class="ay-s"><span>Invested</span><b class="inv">'+arc$(st.invested)+'</b></span>'+
@@ -6142,11 +6218,12 @@ function arcCardHTML(a){
             (growable?arcPct(st.growth):'\u2014')+'</em>'+
             '<span>Savings growth</span></span>'+
         '</span>'+
-      '</button>'+
+      (editing?'</div>':'</button>')+
       '<div class="ay-acts">'+
         '<svg class="ay-chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
           'stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'+
-        '<button class="ay-act" type="button" data-act="edit" title="Edit values" aria-label="Edit '+a.year+'">'+
+        '<button class="ay-act" type="button" data-act="edit" title="Edit Start and Life things" aria-label="Edit '+a.year+'"'+
+          ' aria-pressed="'+editing+'">'+
           '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" '+
           'stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/>'+
           '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'+
@@ -6172,10 +6249,12 @@ function arcRedrawTrend(card,rec){
 function renderArchives(){
   const box=$('arcList'); if(!box) return;
   normalizeArchives();
+  if(arcEditId && !state.archives.some(a=>a.id===arcEditId)) arcEditEnd();   // its year went away
   box.innerHTML = state.archives.length
     ? state.archives.map(arcCardHTML).join('')
     : '<p class="arc-none" style="padding:18px 2px">No years archived yet — press <b>+ Add year</b> to seal '+
       new Date().getFullYear()+'.';
+  if(arcEditId) arcLifeGrow(box);
 }
 /* One delegated listener on the list, bound once. The cards are rebuilt on every
    render, so anything bound to a card would die with it and re-binding would
@@ -6214,6 +6293,17 @@ function arcBind(){
     box.querySelectorAll('.arc-pop.open').forEach(p=>p.classList.remove('open'));
     box.querySelectorAll('.arc-gear').forEach(g=>g.setAttribute('aria-expanded','false'));
   });
+  box.addEventListener('input',e=>{
+    if(!arcDraft) return;
+    const t=e.target;
+    if(t.matches('textarea.ay-lin')){ const i=+t.dataset.li; if(arcDraft.life[i]) arcDraft.life[i].x=t.value;
+      t.style.height='auto'; t.style.height=(t.scrollHeight+2)+'px' }
+    else if(t.matches('[data-arc-start]')) arcDraft.start=t.value;
+  });
+  // Escape abandons the edit, the way it closes every dialog in the app
+  box.addEventListener('keydown',e=>{
+    if(e.key==='Escape' && arcEditId && e.target.closest('.ay.editing')){ e.preventDefault(); arcEditEnd(); renderArchives() }
+  });
   box.addEventListener('click',e=>{
     const btn=e.target.closest('[data-act]'); if(!btn) return;
     const card=btn.closest('.ay'); if(!card) return;
@@ -6236,29 +6326,54 @@ function arcBind(){
       if(!confirm('Delete the '+rec.year+' archive?\n\nThis removes the sealed record. '+
                   'Your Yearly and Monthly rows are not touched.')) return;
       state.archives=state.archives.filter(a=>a.id!==id);
+      if(arcEditId===id) arcEditEnd();
       arcBury(rec.year);                    // or the rollover re-seals it on the next load
       arcOpen.delete(id); arcPersist(); renderArchives();
       toast(rec.year+' archive deleted'); return;
     }
     if(act==='edit'){
-      /* Testing-phase editing: the six headline figures, which are the ones worth
-         correcting by hand. The tables and highlights stay as sealed. */
-      const f=[['start','Start'],['end','End'],['invested','Invested'],
-               ['moved','Moved else'],['saved','Saved total'],['offPaper','Off paper sav']];
+      if(arcEditId===id) return;                   // already editing this one
+      arcEditStart(rec); renderArchives();
+      const f=box.querySelector('.ay[data-id="'+id+'"] [data-arc-start]'); if(f) f.focus();
+      return;
+    }
+    if(arcEditId!==id || !arcDraft) return;        // the rest belong to the card being edited
+    const li=+btn.dataset.li;
+    const refocus=i=>{ const t=box.querySelector('.ay[data-id="'+id+'"] textarea[data-li="'+i+'"]'); if(t) t.focus() };
+    if(act==='ltype'){ if(arcDraft.life[li]){ arcDraft.life[li].t=btn.dataset.lt; renderArchives(); refocus(li) } return }
+    if(act==='ldel'){ arcDraft.life.splice(li,1); renderArchives(); refocus(Math.max(0,li-1)); return }
+    if(act==='ladd'){
+      if(arcDraft.life.length>=ARC_LIFE_MAX) return;
+      /* a new line under a bullet is another bullet; anywhere else, plain text */
+      const last=arcDraft.life[arcDraft.life.length-1];
+      arcDraft.life.push({t:last&&last.t==='b'?'b':'p',x:''});
+      renderArchives(); refocus(arcDraft.life.length-1); return;
+    }
+    if(act==='lcancel'){ arcEditEnd(); renderArchives(); return }
+    if(act==='lsave'){
+      const raw=String(arcDraft.start).replace(/[$,\s]/g,'');
+      const n=raw===''?NaN:Number(raw);
+      if(!isFinite(n)){ toast('Start needs to be a number'); return }
       const st=Object.assign({},rec.stats);
-      for(const [k,label] of f){
-        const v=prompt(rec.year+' — '+label, String(Math.round(st[k]||0)));
-        if(v===null) return;                       // cancel leaves everything alone
-        const n=parseFloat(String(v).replace(/[^0-9.-]/g,''));
-        if(!isNaN(n)) st[k]=n;
+      const nextStart=Math.round(n*100)/100, delta=nextStart-(st.start||0);
+      const life=arcLifeClean(arcDraft.life);
+      const startChanged=Math.abs(delta)>=0.005;
+      if(startChanged){
+        /* End is Start plus the year's leftover, so it moves by the same
+           amount; Saved total and Off paper sav are the leftover and its
+           split, so they do not move at all. Growth follows from the two. */
+        st.start=nextStart; st.end=Math.round(((st.end||0)+delta)*100)/100;
+        st.growth=st.start>0 ? (st.end/st.start-1)*100 : 0;
+        rec.stats=st;
+        /* A hand-corrected figure is final: arcAutoSeal() will not re-take a
+           record carrying this. Words alone do not set it -- the current
+           year's preview must still be sealed from the ledger at the year end. */
+        rec.edited=true;
       }
-      st.growth = st.start>0 ? (st.end/st.start-1)*100 : 0;
-      rec.stats=st;
-      /* Once a figure has been corrected by hand, nothing automatic may
-         overwrite it -- arcAutoSeal() checks this before upgrading a preview. */
-      rec.edited=true;
-      arcPersist(); renderArchives();
-      toast(rec.year+' figures updated');
+      rec.life=life;
+      arcEditEnd(); arcPersist(); renderArchives();
+      toast(rec.year+(startChanged?' start and life things':' life things')+' saved');
+      return;
     }
   });
 }
