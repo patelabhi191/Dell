@@ -2452,6 +2452,9 @@ and draft years; Monthly's five category renderers escape the name.
   yet, the form's 10px of room for an answer left 33px under the input against 23px above the
   heading. `.ask-form:has(+ .ask-out:empty)` drops that margin; both are 23px now. Pinned in
   `test-ask.js` §7b.
+- **Stock Calculator: thousands separators** (2026-11-27, review). `calcFmt` printed large figures
+  bare ("cost 262345675.50") while every other figure in the app is grouped. The whole part is now
+  grouped ("262,345,675.50"); decimals are unchanged. Pinned in `test-calc.js` §1.
 - **Contributions fit a 360px phone** (2026-11-27, review). The 9-column grid was 16px wider than
   the tile at 360px (and 1px short of overflowing at 390px). At ≤420px the tile padding, column gap
   and divider margins tighten and the text drops to 11.5px; it now fits even with $95,000 / $16,000.

@@ -8907,7 +8907,11 @@ const calcFmt = (n, min) => { if(!isFinite(n)) return '—';
   if(s.indexOf('.')<0) s += '.';
   let dec = s.length - s.indexOf('.') - 1;
   while(dec < lo){ s += '0'; dec++ }
-  return s.replace(/\.$/,''); };
+  s = s.replace(/\.$/,'');
+  /* Thousands separators on the whole part, as every other figure in the app
+     has: "cost 262345675.50" was unreadable at a glance. */
+  const dot = s.indexOf('.'), whole = dot<0 ? s : s.slice(0,dot), frac = dot<0 ? '' : s.slice(dot);
+  return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + frac; };
 const calcQty = n => calcFmt(n, 0);
 
 /* The figure first and its sentence to the right of it, on the same baseline

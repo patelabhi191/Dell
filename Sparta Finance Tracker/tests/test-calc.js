@@ -60,7 +60,8 @@ const section = t => console.log(`\n── ${t} ──`);
   check(a1.head === want1.toFixed(4), '1: (held*avg + buying*price) / total shares',
     `${a1.head} vs ${want1.toFixed(4)}`);
   check(/15 shares/.test(a1.line), '1: ...over the combined share count', a1.line);
-  check(/2867\.00/.test(a1.line), '1: ...and the total cost keeps its cents', a1.line);
+  check(/2,867\.00/.test(a1.line), '1: ...and the total cost keeps its cents', a1.line);
+  check(/cost 2,867\.00/.test(a1.line), '1: ...with a thousands separator, like every other figure', a1.line);
   check(/avg UP/.test(a1.line), '1: buying higher is reported as averaging up', a1.line);
 
   const a2 = await avg(200, 10, 100, 10);
