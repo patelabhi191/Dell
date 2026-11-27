@@ -220,19 +220,19 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     'the Expenses table lists every category the year used, configured or not',
     body.expRows.join(','));
   check(body.incRows.join(',') === 'Paycheck', 'the Income table lists its own', body.incRows.join(','));
-  check(/ABI[\s\S]*TFSA[\s\S]*\$[\s\S]*\|[\s\S]*FHSA[\s\S]*POO[\s\S]*TFSA[\s\S]*FHSA/.test(body.first),
-    'the contributions read ABI -> TFSA $ | FHSA $, then POO the same', body.first.replace(/\s+/g, ' '));
+  check(/ABHI[\s\S]*TFSA[\s\S]*\$[\s\S]*FHSA[\s\S]*POO[\s\S]*TFSA[\s\S]*FHSA/.test(body.first),
+    'the contributions read ABHI -> TFSA $ | FHSA $, then POO the same', body.first.replace(/\s+/g, ' '));
   /* Owner (2026-11-27): the | and the figures sit at the same place on both
      lines, whatever the amounts; heading green, TFSA teal, FHSA violet,
      figures in plain white ink, all centred. */
   { const A = body.cAlign, same = a => a.length >= 2 && a.length % 2 === 0
       && a.slice(0, a.length / 2).join() === a.slice(a.length / 2).join();
     check(same(A.sep) && same(A.d) && same(A.v),
-      'the $ signs, figures and | line up between ABI and POO', JSON.stringify(A)); }
-  check(body.cInk.h === 'rgb(45, 212, 191)' && body.cInk.kt === 'rgb(94, 234, 212)'
+      'the $ signs, figures and divider line up between ABHI and POO', JSON.stringify(A)); }
+  check(body.cInk.h === 'rgb(239, 203, 104)' && body.cInk.kt === 'rgb(94, 234, 212)'
      && body.cInk.kf === 'rgb(167, 139, 250)' && body.cInk.v === 'rgb(234, 240, 250)'
      && body.cInk.center === 'center',
-    'heading green, TFSA teal, FHSA violet, figures white, centred', JSON.stringify(body.cInk));
+    'heading gold (not TFSA teal), TFSA teal, FHSA violet, figures white, centred', JSON.stringify(body.cInk));
   check(body.firstLines === 2, 'with ABI on one line and POO on the next', String(body.firstLines));
   /* The owner moved Contributions into Highlights (2026-11-27), as the first
      thing in its pane and on a tile of its own -- not as one more point. */

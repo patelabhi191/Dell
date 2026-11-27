@@ -2452,6 +2452,10 @@ and draft years; Monthly's five category renderers escape the name.
   yet, the form's 10px of room for an answer left 33px under the input against 23px above the
   heading. `.ask-form:has(+ .ask-out:empty)` drops that margin; both are 23px now. Pinned in
   `test-ask.js` §7b.
+- **Contributions: gold heading, ABHI, hairline divider** (2026-11-27). The green heading matched
+  TFSA beside it, so `--hl-contrib` is now soft gold `#EFCB68`, clear of teal, violet and the four
+  highlight tones. The tile labels ABI as "ABHI" (display only; the contributor key is still ABI).
+  The typed | is now a 1px hairline (`.sep`), still on the shared grid so it lines up.
 - **Archives Contributions as an aligned table** (2026-11-27). Owner's format:
   `ABI → TFSA $1,500 | FHSA $8,000`, POO underneath. `arcContribLine` now emits one 9-column grid
   shared by both rows (name, arrow, TFSA, $, figure, |, FHSA, $, figure), so the $ signs, the
