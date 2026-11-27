@@ -2452,6 +2452,13 @@ and draft years; Monthly's five category renderers escape the name.
   yet, the form's 10px of room for an answer left 33px under the input against 23px above the
   heading. `.ask-form:has(+ .ask-out:empty)` drops that margin; both are 23px now. Pinned in
   `test-ask.js` §7b.
+- **Archives Contributions as an aligned table** (2026-11-27). Owner's format:
+  `ABI → TFSA $1,500 | FHSA $8,000`, POO underneath. `arcContribLine` now emits one 9-column grid
+  shared by both rows (name, arrow, TFSA, $, figure, |, FHSA, $, figure), so the $ signs, the
+  right-aligned tabular figures and the | sit at the same x on both lines whatever the amounts.
+  Heading back to the green it had (`--hl-contrib:#2DD4BF`), TFSA in the Dashboard teal, FHSA in
+  violet, figures in plain `--text` at weight 400, all centred; the tile's ice-blue fill is kept.
+  Pinned in `test-archives.js`.
 - **PIN: once per tab** (2026-11-27). Owner's rule: "enter this once, if authenticated then fine on
   the tab or browser till I close that tab." On the phone a restored tab was being reloaded by the
   browser, and each fresh load asked again. A successful unlock now writes a fingerprint of the PIN

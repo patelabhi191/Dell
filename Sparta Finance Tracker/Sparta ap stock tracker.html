@@ -1998,7 +1998,7 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
   /* ice grey-blue, by the owner's choice (2026-11-27), in place of the teal it
      started as: calm enough to sit apart from the coloured points under it
      without competing with them, and clear of every highlight tone */
-  --hl-contrib:#B3C6DF}
+  --hl-contrib:#2DD4BF}
 #archiveView .panel{background:rgba(255,255,255,.022);border:1px solid rgba(255,255,255,.09);
   border-radius:10px;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:22px 24px}
 #archiveView h3{font-family:var(--font-display);font-size:var(--fs-eyebrow);font-weight:var(--fw-label);letter-spacing:var(--ls-label);
@@ -2257,10 +2257,19 @@ tr.yf-note-row td{padding:0 8px 10px!important;border-top:none!important}
   background:rgba(160,184,216,.10);border:1px solid rgba(179,198,223,.30);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
 .ay-contrib .h{font-size:var(--fs-micro);letter-spacing:var(--ls-label);text-transform:uppercase;
-  font-weight:var(--fw-label);margin-bottom:3px;color:var(--hl-contrib)}
-.ay-contrib .l{font-size:12px;line-height:1.38;color:var(--text);font-weight:500}
-.ay-contrib .l span{display:block}
-.ay-contrib .l span+span{margin-top:4px}
+  font-weight:var(--fw-label);margin-bottom:5px;color:var(--hl-contrib);text-align:center}
+/* ABI -> TFSA $1,500 | FHSA $8,000, POO underneath, the columns shared so the
+   $ signs, figures and bars line up; the block is centred in the tile. */
+.ay-contrib .l{display:grid;grid-template-columns:repeat(9,auto);justify-content:center;
+  align-items:baseline;column-gap:5px;row-gap:4px;font-size:12px;line-height:1.38;
+  color:var(--text);font-weight:400;font-variant-numeric:tabular-nums}
+.ay-contrib .l .w{font-weight:600;letter-spacing:.04em}
+.ay-contrib .l .ar{color:var(--sk-dim);padding:0 2px}
+.ay-contrib .l .kt{color:var(--teal);font-weight:600}
+.ay-contrib .l .kf{color:var(--violet);font-weight:600}
+.ay-contrib .l .d{margin-left:1px;margin-right:-3px}
+.ay-contrib .l .v{text-align:right}
+.ay-contrib .l .sep{color:var(--sk-dim);padding:0 4px}
 /* LIFE THINGS, under Expenses and Income across both their columns. The same
    glass as the Highlights pane beside it; headings in the Archives violet,
    bullets marked with a dot of it, and text at the Highlights' own size and ink.
@@ -5935,8 +5944,15 @@ function arcContribLine(c){
      put $0 into TFSA and $0 into FHSA." arcMeIncLine, ten lines down, already
      suppresses its own section the same way. */
   if(!c || !(c.abiT||c.abiF||c.pooT||c.pooF)) return '';
-  return '<span>ABI put '+arc$(c.abiT)+' into TFSA and '+arc$(c.abiF)+' into FHSA.</span>'+
-         '<span>POO added '+arc$(c.pooT)+' TFSA, '+arc$(c.pooF)+' FHSA.</span>';
+  /* One grid for both people, so each column -- the $, the figure, the bar
+     between the two accounts -- sits at the same place on both lines whatever
+     the amounts are. Figures are right-aligned in tabular digits. */
+  const n=v=>Math.abs(Math.round(+v||0)).toLocaleString('en-CA');
+  const row=(who,t,f)=>'<span class="w">'+who+'</span><span class="ar">\u2192</span>'+
+    '<span class="kt">TFSA</span><span class="d">$</span><span class="v">'+n(t)+'</span>'+
+    '<span class="sep">|</span>'+
+    '<span class="kf">FHSA</span><span class="d">$</span><span class="v">'+n(f)+'</span>';
+  return row('ABI',c.abiT,c.abiF)+row('POO',c.pooT,c.pooF);
 }
 /* Who brought in and who spent each month, for the bars' hover. A record
    sealed since this existed carries it. An older one is derived from the
