@@ -2452,6 +2452,10 @@ and draft years; Monthly's five category renderers escape the name.
   yet, the form's 10px of room for an answer left 33px under the input against 23px above the
   heading. `.ask-form:has(+ .ask-out:empty)` drops that margin; both are 23px now. Pinned in
   `test-ask.js` §7b.
+- **Contributions fit a 360px phone** (2026-11-27, review). The 9-column grid was 16px wider than
+  the tile at 360px (and 1px short of overflowing at 390px). At ≤420px the tile padding, column gap
+  and divider margins tighten and the text drops to 11.5px; it now fits even with $95,000 / $16,000.
+  Pinned in `test-archives.js` §15.
 - **Contributions: gold heading, ABHI, hairline divider** (2026-11-27). The green heading matched
   TFSA beside it, so `--hl-contrib` is now soft gold `#EFCB68`, clear of teal, violet and the four
   highlight tones. The tile labels ABI as "ABHI" (display only; the contributor key is still ABI).

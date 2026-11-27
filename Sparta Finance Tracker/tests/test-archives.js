@@ -1253,6 +1253,25 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     await H.ctx.close();
   }
 
+  section('15 · Contributions fit a narrow phone');
+  {
+    /* The two-line grid is 9 columns wide. At 360px the tile has ~220px inside
+       it; with carry-forward figures ($95,000 / $16,000) it must still fit. */
+    const N = await open(browser, url, SEED); const p = N.page;
+    await p.setViewportSize({ width: 360, height: 780 });
+    const r = await p.evaluate(() => {
+      applyView('archive'); state.archives = [];
+      const d = arcDummyRec(2019); d.id = 'nar';
+      d.contrib = { abiT: 95000, abiF: 16000, pooT: 0, pooF: 16000 };
+      state.archives.push(d); normalizeArchives(); arcOpen.add('nar'); renderArchives();
+      const l = document.querySelector('.ay[data-id="nar"] .ay-contrib .l');
+      return l ? { sw: l.scrollWidth, cw: l.clientWidth } : null;
+    });
+    check(r && r.sw <= r.cw, '15: the Contributions grid fits inside its tile at 360px', JSON.stringify(r));
+    check(N.errs.length === 0, '15: no page errors', N.errs.join(' | '));
+    await N.ctx.close();
+  }
+
   console.log(`\nARCHIVES: ${pass} passed, ${fail} failed`);
   await browser.close(); srv.close();
   process.exit(fail ? 1 : 0);
