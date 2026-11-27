@@ -2172,7 +2172,7 @@ the decorative field actually painted behind the glass. Both agreed it failed, s
 it here, but **do not quote one instrument's number as the other's**: section 9's rule stands, the
 sampled pixel is ground truth and the derived figure is the conservative screen.
 
-### ONE DECISION STILL WAITING ON THE OWNER — not blocked on more work
+### OWNER DECISIONS — all four settled (2026-11-27)
 
 1. ~~**`Invested` and `Moved else` are keyed to the literal category names**~~ `'Investment'` and
    `'Other Bank'` (`renderYF`, and `arcSnapshot`). Renaming either category is one click with no
@@ -2198,7 +2198,7 @@ sampled pixel is ground truth and the derived figure is the conservative screen.
    paper**. A year's finances print as a near-blank page on which the decorative `aria-hidden`
    artwork comes out *stronger than the data*. See `screens/print/yearly-as-printed.png`. ~15 lines
    would fix it; left alone because nobody has said they print this.
-4. **The quota toast is new user-facing copy.** The `localStorage`-full fix reports once per session
+4. ~~**The quota toast is new user-facing copy.**~~ **SETTLED 2026-11-27: the owner keeps the message.** The `localStorage`-full fix reports once per session
    via the existing toast. Justified (an error path that previously lied by omission) but it does add
    a string to the UI, which the standing rule discourages. Accept, or reduce it to console-only.
 
@@ -2452,6 +2452,10 @@ and draft years; Monthly's five category renderers escape the name.
   yet, the form's 10px of room for an answer left 33px under the input against 23px above the
   heading. `.ask-form:has(+ .ask-out:empty)` drops that margin; both are 23px now. Pinned in
   `test-ask.js` §7b.
+- **Archives says ABHI** (2026-11-27). The owner wants ABHI wherever Archives names a person (the
+  same length as POO): the Contributions tile, the Month by month hover, and highlight text such as
+  "Who spent what". `arcName()` swaps it at render; the contributor key and the sealed text stay
+  ABI, and the other tabs keep ABI. Pinned in `test-archives.js` §16.
 - **Stock Calculator: thousands separators** (2026-11-27, review). `calcFmt` printed large figures
   bare ("cost 262345675.50") while every other figure in the app is grouped. The whole part is now
   grouped ("262,345,675.50"); decimals are unchanged. Pinned in `test-calc.js` §1.

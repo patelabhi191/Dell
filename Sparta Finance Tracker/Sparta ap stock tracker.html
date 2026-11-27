@@ -5979,11 +5979,15 @@ function arcWho(a){
   try{ const r=arcSnapshot(a.year); res={inc:r.mIncWho, exp:r.mExpWho} }catch(e){}
   arcWhoCache.set(a.id,res); return res;
 }
+/* Archives says "ABHI" wherever it names a person -- the same length as POO,
+   the owner's choice (2026-11-27). Display only: the contributor key, and the
+   text sealed into a record, stay ABI. */
+const arcName = t => String(t).replace(/\bABI\b/g,'ABHI');
 function arcBarTip(a,m,k){
   const tot=(k==='in'?a.mInc:a.mExp)[m]||0, who=arcWho(a), part=who && (k==='in'?who.inc:who.exp);
   let html='<b>'+ARC_MON[m]+'</b> '+(k==='in'?'income':'spent')+' '+arc$(tot);
   if(part && Math.abs((part.ABI[m]||0)+(part.POO[m]||0)-tot)<0.01)
-    html+='<br>ABI '+arc$(part.ABI[m]||0)+' \u00b7 POO '+arc$(part.POO[m]||0);
+    html+='<br>ABHI '+arc$(part.ABI[m]||0)+' \u00b7 POO '+arc$(part.POO[m]||0);
   return html;
 }
 function arcBars(a,uidSuffix){
@@ -6220,8 +6224,8 @@ function arcCardHTML(a){
   const open=arcOpen.has(a.id), st=a.stats||{};
   const hl=(a.highlights||[]);
   const contrib=arcContribLine(a.contrib);
-  const pts=hl.map(h=>'<li class="t-'+arcHlTone(h)+'"><div class="h">'+arcEsc(h.title)+
-      '</div><div class="l">'+arcEsc(h.line)+'</div></li>').join('');
+  const pts=hl.map(h=>'<li class="t-'+arcHlTone(h)+'"><div class="h">'+arcEsc(arcName(h.title))+
+      '</div><div class="l">'+arcEsc(arcName(h.line))+'</div></li>').join('');
   /* Contributions leads the Highlights pane, as its own tinted tile. It sat
      under Expenses and Income for a while, as a fact rather than an
      observation; the owner moved it here (2026-11-27) to free that space for

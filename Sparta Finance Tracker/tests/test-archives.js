@@ -1225,7 +1225,7 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
     check(r.dumAdds, '14: a dummy year invents a split that adds up too');
     /* Older cards were sealed before the split existed: it is derived from the
        ledger, and SHOWN only where it still adds up to the bar that was sealed. */
-    check(/ABI \$[\d,]+ \u00b7 POO \$[\d,]+/.test(r.oldTip), '14: an older card derives the split from the ledger', r.oldTip);
+    check(/ABHI \$[\d,]+ \u00b7 POO \$[\d,]+/.test(r.oldTip), '14: an older card derives the split from the ledger', r.oldTip);
     check(!/ABI/.test(r.offTip) && /income \$/.test(r.offTip),
       '14: ...but shows the total alone where the ledger no longer matches what was sealed', r.offTip);
 
@@ -1238,7 +1238,7 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
       return { text: t.innerText.replace(/\n/g, ' | '), shown: t.style.opacity,
         centred: Math.abs((q.left + q.width / 2) - (b.left + b.width / 2)) <= 1, above: q.bottom <= b.top + 1,
         outsideScroller: !t.closest('.ay-scroll') } });
-    check(tip.shown === '1' && /income \$/.test(tip.text) && /ABI \$.* POO \$/.test(tip.text),
+    check(tip.shown === '1' && /income \$/.test(tip.text) && /ABHI \$.* POO \$/.test(tip.text),
       '14: pointing at an income bar shows the month, its figure, and ABI and POO', tip.text);
     check(tip.centred && tip.above && tip.outsideScroller, '14: ...centred above the bar, outside the phone scroller',
       JSON.stringify(tip));
@@ -1251,6 +1251,25 @@ const stat = k => (document.querySelector('.ay-s b.' + k) || {}).textContent;
       '14: a spending bar says spent');
     check(H.errs.length === 0, '14: no page errors', H.errs.join(' | '));
     await H.ctx.close();
+  }
+
+  section('16 · Archives says ABHI');
+  {
+    const A = await open(browser, url, SEED); const p = A.page;
+    const r = await p.evaluate(() => {
+      applyView('archive'); state.archives = [];
+      const d = arcDummyRec(2019); d.id = 'nm';
+      d.highlights = [{ key: 'who', tone: 'info', title: 'Who spent what', line: 'ABI 60% ($6,000) · POO 40% ($4,000).' }];
+      state.archives.push(d); normalizeArchives(); arcOpen.add('nm'); renderArchives();
+      const c = document.querySelector('.ay[data-id="nm"]');
+      return { hl: c.querySelector('.ay-hl').textContent, tip: arcBarTip(d, 0, 'in'),
+        stored: state.archives[0].highlights[0].line };
+    });
+    check(/ABHI 60%/.test(r.hl) && !/\bABI\b/.test(r.hl), '16: a highlight names ABHI on the card', r.hl);
+    check(/ABHI \$/.test(r.tip) && !/\bABI\b/.test(r.tip), '16: the bar hover names ABHI', r.tip);
+    check(/^ABI 60%/.test(r.stored), '16: ...display only: the sealed text is unchanged', r.stored);
+    check(A.errs.length === 0, '16: no page errors', A.errs.join(' | '));
+    await A.ctx.close();
   }
 
   section('15 · Contributions fit a narrow phone');
