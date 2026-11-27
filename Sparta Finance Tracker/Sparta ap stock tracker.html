@@ -3121,7 +3121,19 @@ a,button,label,summary,input,select,textarea,[role="button"]{touch-action:manipu
     var code = localStorage.getItem('sparta.pinCode');
     /* six digits, with or without the JSON quotes: the keypad can type nothing
        else, so any other stored value is a lock with no key (see pinCodeOk) */
-    if(!on || !code || !/^"?\d{6}"?$/.test(code)) document.getElementById('pinGate').style.display = 'none';
+    var locked = on && code && /^"?\d{6}"?$/.test(code);
+    /* ONCE PER TAB. A tab that has already been unlocked stays unlocked until
+       it is closed -- the owner's rule (2026-11-27). A phone reloads or
+       restores a backgrounded tab on its own, and asking again each time read
+       as the app locking itself at random. sessionStorage lives exactly as
+       long as the tab and survives its reloads, which is the lifetime wanted.
+       The mark is a fingerprint of the code, so a changed PIN asks again. */
+    if(locked){
+      var c = String(code).replace(/"/g,''), h = 5381, k = 'sparta-pin:' + c;
+      for(var i=0;i<k.length;i++) h = ((h<<5)+h+k.charCodeAt(i))|0;
+      try{ if(sessionStorage.getItem('sparta.pinOk') === String(h>>>0)) locked = false; }catch(e){}
+    }
+    if(!locked) document.getElementById('pinGate').style.display = 'none';
     else document.body.style.overflow = 'hidden';
   }catch(e){ document.getElementById('pinGate').style.display = 'none'; }
 })();
@@ -7688,6 +7700,12 @@ state.yearly.forEach(r=>{
     store.set('sparta.pinCode', pinGood ? String(p.pin.code) : null);
     if(p.pin.code) store.set('sparta.pinHash', null);   // code is now the source of truth
     if(typeof pinRefreshSettingsUI==='function') pinRefreshSettingsUI();
+    /* A lock that arrives with the data has to close THIS tab too, unless it
+       has already been unlocked with that code. Before, a device that had not
+       yet received the PIN showed the pulled ledger unlocked until it next
+       reloaded -- the very case the PIN exists for. */
+    if(p.pin.on && pinGood && typeof pinOpen==='function' && $('pinGate') &&
+       $('pinGate').style.display==='none' && !pinTabOk(String(p.pin.code))) pinOpen('unlock');
   }
   if(typeof normalizeYF==='function'){ normalizeYF(); store.set('sparta.yf.data',state.yf) }
   if(typeof normalizeME==='function'){ normalizeME(); store.set('sparta.me',state.me) }
@@ -12229,6 +12247,11 @@ const pinCode=()=>store.get('sparta.pinCode',null);
    pinOpen already states, that a lock which cannot be verified must not trap
    the owner out of their own data. */
 const pinCodeOk=c=>/^\d{6}$/.test(String(c==null?'':c));
+/* The tab's unlocked mark: the same fingerprint the pre-paint script checks. */
+const pinFp=c=>{ let h=5381; const k='sparta-pin:'+String(c==null?'':c);
+  for(let i=0;i<k.length;i++) h=((h<<5)+h+k.charCodeAt(i))|0; return String(h>>>0) };
+function pinMarkTab(code){ try{ sessionStorage.setItem('sparta.pinOk', pinFp(code)) }catch(e){} }
+function pinTabOk(code){ try{ return sessionStorage.getItem('sparta.pinOk')===pinFp(code) }catch(e){ return false } }
 const pinHasCode=()=>pinCodeOk(pinCode());
 /* THE LOCK WAS A PICTURE OF A LOCK. The gate covers the page, which stops the
    mouse, but the app underneath was still in the tab order: eleven presses of
@@ -12313,7 +12336,7 @@ function pinCloseOverlay(){                    // used for setup/change completi
 async function pinSubmit(){
   const entered=pinBuf;
   if(pinMode==='unlock'){
-    if(entered===String(pinCode())){ pinShowMsg('Unlocked'); pinCloseOverlay() }
+    if(entered===String(pinCode())){ pinMarkTab(entered); pinShowMsg('Unlocked'); pinCloseOverlay() }
     else { pinShowMsg('Wrong PIN — try again', true); pinShake(true) }
     return;
   }
@@ -12326,6 +12349,7 @@ async function pinSubmit(){
       markUserEdit();
       store.set('sparta.pinCode', entered);
       store.set('sparta.pinOn', true);
+      pinMarkTab(entered);                         // the person who set it is in
       persist();                                   // push the new PIN to Firebase
       $('pinToggle').checked=true;
       pinRefreshSettingsUI();
@@ -12345,6 +12369,7 @@ async function pinSubmit(){
     if(!pinFirstEntry){ pinFirstEntry=entered; pinBuf=''; pinRenderDots(); pinShowMsg('Confirm your new PIN'); return }
     if(entered===pinFirstEntry){
       markUserEdit(); store.set('sparta.pinCode', entered); persist();
+      pinMarkTab(entered);
       toast('PIN updated');
       pinCloseOverlay();
     } else {
@@ -12362,7 +12387,7 @@ function pinKey(k){
 function pinRefreshSettingsUI(){
   const on=pinIsOn(), has=pinHasCode();
   if($('pinToggle')) $('pinToggle').checked=on;
-  if($('pinStatusLine')) $('pinStatusLine').textContent = on ? 'On \u2014 required each time this page loads' : 'Off';
+  if($('pinStatusLine')) $('pinStatusLine').textContent = on ? 'On \u2014 asked once per tab; closing the tab locks it again' : 'Off';
   if($('pinRemoveBtn')) $('pinRemoveBtn').style.display = has ? '' : 'none';
   if($('pinChangeBtn')) $('pinChangeBtn').textContent = has ? 'Change PIN' : 'Set PIN';
 }

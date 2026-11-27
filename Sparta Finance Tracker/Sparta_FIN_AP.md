@@ -2452,6 +2452,13 @@ and draft years; Monthly's five category renderers escape the name.
   yet, the form's 10px of room for an answer left 33px under the input against 23px above the
   heading. `.ask-form:has(+ .ask-out:empty)` drops that margin; both are 23px now. Pinned in
   `test-ask.js` §7b.
+- **PIN: once per tab** (2026-11-27). Owner's rule: "enter this once, if authenticated then fine on
+  the tab or browser till I close that tab." On the phone a restored tab was being reloaded by the
+  browser, and each fresh load asked again. A successful unlock now writes a fingerprint of the PIN
+  to `sessionStorage` (`sparta.pinOk`); the pre-paint script skips the gate when it matches. That
+  survives reloads of the same tab and clears when the tab closes; a new tab asks; a changed PIN
+  asks again. A PIN pulled from the cloud now locks a tab nobody has unlocked (`applyPayload`).
+  Settings reads "asked once per tab". Pinned in `test-pin.js` §5–§6.
 - **No lines between Yearly's table headings** (2026-11-27). `#yearlyView .htable thead th` carried
   `backdrop-filter:blur(6px)` per cell; per-cell blurs disagree at shared edges, drawing a faint
   vertical seam between headings on all three Yearly tables (brightest 16-19 luminance against its

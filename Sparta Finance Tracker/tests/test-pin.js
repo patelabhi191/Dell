@@ -5,7 +5,8 @@
    console. What it has to do is the two things a lock promises: keep someone at
    the keyboard out of the ledger while it is showing, and never lock the OWNER
    out with a code that cannot be entered. Both were false. */
-const { serve, launch, open, SEED } = require('./lib');
+const { serve, launch, open, stub, SEED } = require('./lib');
+const stubFor = p => stub(p);
 const { APP } = require('./paths');
 
 let pass = 0, fail = 0;
@@ -155,6 +156,61 @@ const section = t => console.log(`\n── ${t} ──`);
     check(pulled.off.on === false && pulled.off.code === '246810',
       '4: and a lock switched off elsewhere stays off here, code kept', JSON.stringify(pulled.off));
     check(O.errs.length === 0, '4: no page errors', O.errs.join(' | '));
+    await O.ctx.close();
+  }
+
+  /* ── 5. once per tab ──────────────────────────────────────────────────── */
+  section('5. enter it once, and the tab stays unlocked until it is closed');
+  {
+    /* The owner's rule: the PIN keeps out someone who only has the URL. Asked
+       once; a phone reloading or restoring that same tab must not ask again,
+       and closing the tab must. sessionStorage is the tab's lifetime. */
+    const O = await locked('"123456"'); const p = O.page;
+    await p.waitForTimeout(300);
+    for (const k of '123456') await p.keyboard.press(k);
+    await p.waitForTimeout(700);
+    check(!(await gateUp(p)), '5: unlocked');
+    await p.reload({ waitUntil: 'load' }); await p.waitForTimeout(400);
+    check(!(await gateUp(p)), '5: reloading the SAME tab does not ask again');
+    check(await p.evaluate(() => [...document.body.children].every(e => !e.inert)),
+      '5: ...and nothing is left inert behind a gate that never showed');
+
+    /* a second tab is a new session: sessionStorage is per tab */
+    const p2 = await O.ctx.newPage(); await stubFor(p2);
+    await p2.goto(url, { waitUntil: 'load' }); await p2.waitForTimeout(400);
+    check(await gateUp(p2), '5: a NEW tab asks for the PIN');
+    await p2.close();
+
+    /* a changed PIN asks again, even in the tab that was unlocked */
+    await p.evaluate(() => { store.set('sparta.pinCode', '654321') });
+    await p.reload({ waitUntil: 'load' }); await p.waitForTimeout(400);
+    check(await gateUp(p), '5: after the PIN is changed, even the unlocked tab asks again');
+    for (const k of '654321') await p.keyboard.press(k);
+    await p.waitForTimeout(700);
+    check(!(await gateUp(p)), '5: ...and the new PIN opens it');
+    check(await p.evaluate(() => /once per tab/.test(document.getElementById('pinStatusLine').textContent)),
+      '5: Settings says how it behaves -- once per tab');
+    check(O.errs.length === 0, '5: no page errors', O.errs.join(' | '));
+    await O.ctx.close();
+  }
+
+  /* ── 6. a PIN that arrives from the cloud ────────────────────────────── */
+  section('6. a PIN pulled from the cloud locks a tab nobody has unlocked');
+  {
+    const O = await open(browser, url, SEED); const p = O.page;
+    await p.waitForTimeout(300);
+    check(!(await gateUp(p)), '6: (no PIN on this device yet, so no gate)');
+    await p.evaluate(() => applyPayload(Object.assign(corePayload(), { pin: { on: true, code: '246810' } })));
+    await p.waitForTimeout(300);
+    check(await gateUp(p), '6: the moment the data arrives with a PIN, this tab locks');
+    for (const k of '246810') await p.keyboard.press(k);
+    await p.waitForTimeout(700);
+    check(!(await gateUp(p)), '6: ...and the pulled PIN opens it');
+    /* a later pull with the same PIN must not lock a tab that is already in */
+    await p.evaluate(() => applyPayload(Object.assign(corePayload(), { pin: { on: true, code: '246810' } })));
+    await p.waitForTimeout(300);
+    check(!(await gateUp(p)), '6: a later sync with the same PIN leaves an unlocked tab alone');
+    check(O.errs.length === 0, '6: no page errors', O.errs.join(' | '));
     await O.ctx.close();
   }
 
